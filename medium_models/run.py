@@ -632,12 +632,15 @@ def main():
     if training_args.no_predict:
         training_args.do_predict = False
 
+    training_args.local_rank = -1
     # Setup logging
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
         level=logging.INFO if training_args.local_rank in [-1, 0] else logging.WARN,
     )
+    print("参数")
+    print(training_args.local_rank)
 
     # Load prompt/template/mapping file
     if data_args.prompt:

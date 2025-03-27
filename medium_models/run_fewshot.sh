@@ -12,6 +12,8 @@ NUM_GPU=${NUM_GPU:-1}           # by default use 1 GPU, set to 0 for CPU-only tr
 OPT=${OPT:-"adam"}
 STEPS=${STEPS:-1000}
 
+echo "GPU数量: $NUM_GPU"
+
 TASK_EXTRA=""
 case $TASK in
     SST-2)
@@ -108,7 +110,7 @@ if [[ $NUM_GPU > 1 ]]; then
 
     # Allow multiple threads
     export OMP_NUM_THREADS=8
-
+    echo "确实有问题"
     python -m torch.distributed.launch --nproc_per_node $NUM_GPU --master_port $PORT_ID run.py \
         $ALL_ARGS_TOGETHER
 else
