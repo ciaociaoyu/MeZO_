@@ -10,25 +10,7 @@ def get_label(task, line):
     if task in ["MNLI", "MRPC", "QNLI", "QQP", "RTE", "SNLI", "SST-2", "STS-B", "WNLI", "CoLA"]:
         # GLUE style
         line = line.strip().split('\t')
-        if task == 'CoLA':
-            return line[1]
-        elif task == 'MNLI':
-            return line[-1]
-        elif task == 'MRPC':
-            return line[0]
-        elif task == 'QNLI':
-            return line[-1]
-        elif task == 'QQP':
-            return line[-1]
-        elif task == 'RTE':
-            return line[-1]
-        elif task == 'SNLI':
-            return line[-1]
-        elif task == 'SST-2':
-            return line[-1]
-        elif task == 'STS-B':
-            return 0 if float(line[-1]) < 2.5 else 1
-        elif task == 'WNLI':
+        if task == 'SST-2':
             return line[-1]
         else:
             raise NotImplementedError
@@ -76,54 +58,70 @@ def split_header(task, lines):
 
 def main():
     parser = argparse.ArgumentParser()
-    # 只使用 SST-2 数据集
+    parser.add_argument("--k", type=int, default=16,
+        help="Training examples for each class.")
     parser.add_argument("--task", type=str, nargs="+",
         default=['SST-2'],
         help="Task names")
+    parser.add_argument("--seed", type=int, nargs="+",
+        default=[16],
+        help="Random seeds")
+
     parser.add_argument("--data_dir", type=str, default="data/original", help="Path to original data")
     parser.add_argument("--output_dir", type=str, default="data", help="Output path")
+    parser.add_argument("--mode", type=str, default='k-shot', choices=['k-shot', 'k-shot-10x', 'k-shot-1k-test'], help="k-shot or k-shot-10x (10x dev set)")
 
     args = parser.parse_args()
-    # 使用传统划分方式，将输出放到 data/traditional/ 下
-    args.output_dir = os.path.join(args.output_dir, "traditional")
+    args.output_dir = os.path.join(args.output_dir, args.mode)
 
-    # 加载数据集（这里只会加载 SST-2）
+    k = args.k
+    print("K =", k)
     datasets = load_datasets(args.data_dir, args.task)
 
-    for task, dataset in datasets.items():
-        print("| Task = %s" % task)
-        # 对于 GLUE 格式任务，读取 train 和 dev 文件（包含 header 和所有数据行）
-        train_header, train_lines = split_header(task, dataset["train"])
-        dev_header, dev_lines = split_header(task, dataset["dev"])
+    for seed in args.seed:
+        print("Seed = %d" % (seed))
+        for task, dataset in datasets.items():
+            # Set random seed
+            np.random.seed(seed)
 
-        # 设置输出目录
-        task_dir = os.path.join(args.output_dir, task)
-        os.makedirs(task_dir, exist_ok=True)
+            # Shuffle the training set
+            print("| Task = %s" % (task))
+            train_header, train_lines = split_header(task, dataset["train"])
+            dev_header, dev_lines = split_header(task, dataset["dev"])
+            
+            np.random.shuffle(train_lines)
 
-        # 写入完整的训练集
-        with open(os.path.join(task_dir, "train.tsv"), "w") as f:
-            for line in train_header:
-                f.write(line)
-            for line in train_lines:
-                f.write(line)
-        # 将原始 dev 数据集划分为两部分：前一半用于验证，后一半用于测试
-        split_index = len(dev_lines) // 4
-        dev_lines_eval = dev_lines[:split_index]
-        dev_lines_test = dev_lines[split_index:]
+            # Set up dir
+            task_dir = os.path.join(args.output_dir, task)
+            setting_dir = os.path.join(task_dir, f"{k}-{seed}")
+            os.makedirs(setting_dir, exist_ok=True)
 
-        # 写入验证集（dev.tsv）使用划分后的前一半数据
-        with open(os.path.join(task_dir, "dev.tsv"), "w") as f:
-            for line in dev_header:
-                f.write(line)
-            for line in dev_lines_eval:
-                f.write(line)
 
-        # 写入测试集（test.tsv）使用划分后的后一半数据
-        with open(os.path.join(task_dir, "test.tsv"), "w") as f:
-            for line in dev_header:
-                f.write(line)
-            for line in dev_lines_test:
-                f.write(line)
+            # 写入完整的训练集
+            with open(os.path.join(setting_dir, "train.tsv"), "w") as f:
+                for line in train_header:
+                    f.write(line)
+                for line in train_lines:
+                    f.write(line)
+            # 将原始 dev 数据集划分为两部分：前一半用于验证，后一半用于测试
+            split_index = len(dev_lines) // 4
+            dev_lines_eval = dev_lines[:split_index]
+            dev_lines_test = dev_lines[split_index:]
+
+            # 写入验证集（dev.tsv）使用划分后的前一半数据
+            with open(os.path.join(setting_dir, "dev.tsv"), "w") as f:
+                for line in dev_header:
+                    f.write(line)
+                for line in dev_lines_eval:
+                    f.write(line)
+
+            # 写入测试集（test.tsv）使用划分后的后一半数据
+            with open(os.path.join(setting_dir, "test.tsv"), "w") as f:
+                for line in dev_header:
+                    f.write(line)
+                for line in dev_lines_test:
+                    f.write(line)
+
 
 if __name__ == "__main__":
     main()
