@@ -1119,6 +1119,7 @@ def main():
                 if 'evaluation_strategy' in final_result:
                     final_result.pop('evaluation_strategy')
                 f.write(str(final_result) + '\n')
+                print("有东西吗")
 
     logger.info('****** Output Dir *******')
     logger.info(training_args.output_dir)
