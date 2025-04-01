@@ -639,8 +639,8 @@ def main():
         datefmt="%m/%d/%Y %H:%M:%S",
         level=logging.INFO if training_args.local_rank in [-1, 0] else logging.WARN,
     )
-    print("参数")
-    print(training_args.local_rank)
+    # print("参数")
+    # print(training_args.local_rank)
 
     # Load prompt/template/mapping file
     if data_args.prompt:
