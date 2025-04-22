@@ -160,25 +160,37 @@ class Trainer(LinearHeadTrainer):
 
     # === Begin Adaptive h (Berahas et al.) ===
     def estimate_nu3(self, model, loss_fn, inputs, h=1e-3):
-        v = torch.randn_like(inputs["input_ids"].float())
+        v = torch.randn_like(model.base_model.embeddings.word_embeddings.weight)
         v = v / torch.norm(v)
-        with torch.no_grad():
-            f2 = self.zo_forward(model, {"input_ids": inputs["input_ids"] + 2 * h * v, **inputs})
-            f1 = self.zo_forward(model, {"input_ids": inputs["input_ids"] + h * v, **inputs})
-            f_1 = self.zo_forward(model, {"input_ids": inputs["input_ids"] - h * v, **inputs})
-            f_2 = self.zo_forward(model, {"input_ids": inputs["input_ids"] - 2 * h * v, **inputs})
+        original = model.base_model.embeddings.word_embeddings.weight.data.clone()
+        try:
+            with torch.no_grad():
+                model.base_model.embeddings.word_embeddings.weight.data.copy_(original + 2 * h * v)
+                f2 = self.zo_forward(model, inputs)
+                model.base_model.embeddings.word_embeddings.weight.data.copy_(original + h * v)
+                f1 = self.zo_forward(model, inputs)
+                model.base_model.embeddings.word_embeddings.weight.data.copy_(original - h * v)
+                f_1 = self.zo_forward(model, inputs)
+                model.base_model.embeddings.word_embeddings.weight.data.copy_(original - 2 * h * v)
+                f_2 = self.zo_forward(model, inputs)
+        finally:
+            model.base_model.embeddings.word_embeddings.weight.data.copy_(original)
         nu3 = abs((-f2 + 2*f1 - 2*f_1 + f_2) / (2 * h ** 3))
         logger.info(f"Estimated nu3: {nu3}")
         return nu3
 
     def estimate_noise(self, model, loss_fn, inputs, q=6, delta=1e-4):
-        v = torch.randn_like(inputs["input_ids"].float())
+        v = torch.randn_like(model.base_model.embeddings.word_embeddings.weight)
         v = v / torch.norm(v)
+        original = model.base_model.embeddings.word_embeddings.weight.data.clone()
         f_vals = []
-        for i in range(q + 1):
-            offset_inputs = {"input_ids": inputs["input_ids"] + i * delta * v, **inputs}
-            with torch.no_grad():
-                f_vals.append(self.zo_forward(model, offset_inputs).item())
+        try:
+            for i in range(q + 1):
+                model.base_model.embeddings.word_embeddings.weight.data.copy_(original + i * delta * v)
+                with torch.no_grad():
+                    f_vals.append(self.zo_forward(model, inputs).item())
+        finally:
+            model.base_model.embeddings.word_embeddings.weight.data.copy_(original)
         T = [[0] * (q + 1) for _ in range(q + 1)]
         for i in range(q + 1):
             T[i][0] = f_vals[i]
