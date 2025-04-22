@@ -167,7 +167,9 @@ class Trainer(LinearHeadTrainer):
             f1 = self.zo_forward(model, {"input_ids": inputs["input_ids"] + h * v, **inputs})
             f_1 = self.zo_forward(model, {"input_ids": inputs["input_ids"] - h * v, **inputs})
             f_2 = self.zo_forward(model, {"input_ids": inputs["input_ids"] - 2 * h * v, **inputs})
-        return abs((-f2 + 2*f1 - 2*f_1 + f_2) / (2 * h ** 3))
+        nu3 = abs((-f2 + 2*f1 - 2*f_1 + f_2) / (2 * h ** 3))
+        logger.info(f"Estimated nu3: {nu3}")
+        return nu3
 
     def estimate_noise(self, model, loss_fn, inputs, q=6, delta=1e-4):
         v = torch.randn_like(inputs["input_ids"].float())
@@ -186,7 +188,9 @@ class Trainer(LinearHeadTrainer):
         j = 3
         gamma = (math.factorial(j)**2) / math.factorial(2*j)
         s_j_sq = gamma / (q + 1 - j) * sum(T[i][j]**2 for i in range(q + 1 - j))
-        return math.sqrt(s_j_sq)
+        epsilon_f = math.sqrt(s_j_sq)
+        logger.info(f"Estimated epsilon_f: {epsilon_f}")
+        return epsilon_f
     # === End Adaptive h ===
 
     def create_optimizer_and_scheduler(self, num_training_steps: int):
@@ -534,6 +538,9 @@ class Trainer(LinearHeadTrainer):
             self.nu3 = self.estimate_nu3(model, self.compute_loss, example_inputs)
             self.adaptive_h = (self.epsilon_f / self.nu3) ** (1/3) * (3 ** (1/3))
             logger.info(f"Using adaptive h = {self.adaptive_h:.6e}")
+            if torch.isnan(torch.tensor(self.adaptive_h)).item() or self.adaptive_h < 1e-8:
+                logger.warning(f"Adaptive h is NaN or too small: {self.adaptive_h}, setting to minimum threshold 1e-4")
+                self.adaptive_h = 1e-4
         # === End Adaptive h ===
         self.epoch = 0
         epochs_trained = 0
@@ -621,9 +628,16 @@ class Trainer(LinearHeadTrainer):
                                 loss2 = self.zo_forward(model, inputs)
                                 model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=1.0/c_i)
 
+                                # Debugging: check for NaN in losses
+                                if torch.isnan(loss1).item() or torch.isnan(loss2).item():
+                                    logger.warning("NaN encountered in loss during ZO forward step.")
+
                                 # === Begin Adaptive h (Berahas et al.) ===
                                 eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
                                 projected_grad = (loss1 - loss2) / (2 * eps)
+                                # Debugging: check for NaN or Inf in projected_grad
+                                if torch.isnan(projected_grad).item() or torch.isinf(projected_grad).item():
+                                    logger.warning(f"projected_grad became invalid. loss1: {loss1.item()}, loss2: {loss2.item()}, eps: {eps}")
                                 # === End Adaptive h ===
                                 # scale grad according to number of zs sampled
                                 if not self.args.scale_lr_with_samples:
@@ -673,9 +687,16 @@ class Trainer(LinearHeadTrainer):
                                     model, random_vector = self.perturb_parameters(model, random_vector, scaling_factor=-2)
                                 loss2 = self.zo_forward(model, inputs)
 
+                            # Debugging: check for NaN in losses
+                            if torch.isnan(loss1).item() or torch.isnan(loss2).item():
+                                logger.warning("NaN encountered in loss during ZO forward step.")
+
                             # === Begin Adaptive h (Berahas et al.) ===
                             eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
                             projected_grad = (loss1 - loss2) / (2 * eps)
+                            # Debugging: check for NaN or Inf in projected_grad
+                            if torch.isnan(projected_grad).item() or torch.isinf(projected_grad).item():
+                                logger.warning(f"projected_grad became invalid. loss1: {loss1.item()}, loss2: {loss2.item()}, eps: {eps}")
                             # === End Adaptive h ===
 
                             # scale grad according to accumulation
