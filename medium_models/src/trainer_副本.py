@@ -158,37 +158,6 @@ class Trainer(LinearHeadTrainer):
     Adding some functions based on Transformers' Trainer class.
     """
 
-    # === Begin Adaptive h (Berahas et al.) ===
-    def estimate_nu3(self, model, loss_fn, inputs, h=1e-3):
-        v = torch.randn_like(inputs["input_ids"].float())
-        v = v / torch.norm(v)
-        with torch.no_grad():
-            f2 = self.zo_forward(model, {"input_ids": inputs["input_ids"] + 2 * h * v, **inputs})
-            f1 = self.zo_forward(model, {"input_ids": inputs["input_ids"] + h * v, **inputs})
-            f_1 = self.zo_forward(model, {"input_ids": inputs["input_ids"] - h * v, **inputs})
-            f_2 = self.zo_forward(model, {"input_ids": inputs["input_ids"] - 2 * h * v, **inputs})
-        return abs((-f2 + 2*f1 - 2*f_1 + f_2) / (2 * h ** 3))
-
-    def estimate_noise(self, model, loss_fn, inputs, q=6, delta=1e-4):
-        v = torch.randn_like(inputs["input_ids"].float())
-        v = v / torch.norm(v)
-        f_vals = []
-        for i in range(q + 1):
-            offset_inputs = {"input_ids": inputs["input_ids"] + i * delta * v, **inputs}
-            with torch.no_grad():
-                f_vals.append(self.zo_forward(model, offset_inputs).item())
-        T = [[0] * (q + 1) for _ in range(q + 1)]
-        for i in range(q + 1):
-            T[i][0] = f_vals[i]
-        for j in range(1, q + 1):
-            for i in range(q + 1 - j):
-                T[i][j] = T[i+1][j-1] - T[i][j-1]
-        j = 3
-        gamma = (math.factorial(j)**2) / math.factorial(2*j)
-        s_j_sq = gamma / (q + 1 - j) * sum(T[i][j]**2 for i in range(q + 1 - j))
-        return math.sqrt(s_j_sq)
-    # === End Adaptive h ===
-
     def create_optimizer_and_scheduler(self, num_training_steps: int):
         """
         Based on Transformers' default one, we add fixing layer option where the bottom n layers' parameters
@@ -275,10 +244,7 @@ class Trainer(LinearHeadTrainer):
         torch.manual_seed(random_seed)
         for name, param in self.named_parameters_to_optim:
             z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-            # === Begin Adaptive h (Berahas et al.) ===
-            eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
-            param.data = param.data + scaling_factor * z * eps
-            # === End Adaptive h ===
+            param.data = param.data + scaling_factor * z * self.args.zero_order_eps
         return model
 
     def norm_perturb_parameters(self, model: nn.Module, random_vector=None, scaling_factor=1):
@@ -296,13 +262,10 @@ class Trainer(LinearHeadTrainer):
             if cname in self.cs:
                 z = z / self.cs[cname]
 
-            # === Begin Adaptive h (Berahas et al.) ===
-            eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
-            param.data = param.data + scaling_factor * z * eps
-            # === End Adaptive h ===
+            param.data = param.data + scaling_factor * z * self.args.zero_order_eps
 
         return model, random_vector
-
+    
     def perturb_parameters(self, model: nn.Module, random_vector=None, scaling_factor=1):
         if random_vector is None:
             random_vector = {}
@@ -313,10 +276,7 @@ class Trainer(LinearHeadTrainer):
             else:
                 z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
                 random_vector[name] = z
-            # === Begin Adaptive h (Berahas et al.) ===
-            eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
-            param.data = param.data + scaling_factor * z * eps
-            # === End Adaptive h ===
+            param.data = param.data + scaling_factor * z * self.args.zero_order_eps
 
         return model, random_vector
 
@@ -332,10 +292,7 @@ class Trainer(LinearHeadTrainer):
                 else:
                     z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
                     random_vector[name] = z
-                # === Begin Adaptive h (Berahas et al.) ===
-                eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
-                param.data = param.data + scaling_factor * z * eps
-                # === End Adaptive h ===
+                param.data = param.data + scaling_factor * z * self.args.zero_order_eps
 
         return model, random_vector
 
@@ -345,16 +302,16 @@ class Trainer(LinearHeadTrainer):
             if self.should_optim(name, param):
                 self.named_parameters_to_optim.append((name, param))
 
-        self.cs = {'embed': 0.0, 'lm_head': 0.0}
+        self.cs = {'embed': 0.0, 'lm_head': 0.0} 
         # OPT: embed_tokens; embed_positions
         # RoBERTa: embeddings
         self.num_params = copy.deepcopy(self.cs)
         self.num_model_layers = model.config.num_hidden_layers
         layer_name = "layers" if model.config.model_type == "opt" else "layer"
-        for i in range(self.num_model_layers):
+        for i in range(self.num_model_layers): 
             self.cs[f'{layer_name}.{i}.'] = 0.0
             self.num_params[f'{layer_name}.{i}.'] = 0
-
+        
         # ZO estimation of c's
         if self.args.zo_variant != 'param_norm' and self.args.use_zo_grad_est:
             for layer in self.cs.keys():
@@ -368,7 +325,7 @@ class Trainer(LinearHeadTrainer):
                 self.cs[layer] = torch.abs(projected_grad)
 
                 model, z = self.perturb_single_layer(model, layer_name=layer, random_vector=z)
-
+        
         # no need to run backprop if we are using parameter norm variant, can just measure them
         elif self.args.zo_variant == 'param_norm':
             for name, param in self.named_parameters_to_optim:
@@ -383,15 +340,15 @@ class Trainer(LinearHeadTrainer):
                 self.cs[ckey] = torch.sqrt(self.cs[ckey])
                 if self.args.scale_norm_by_num_params:
                     self.cs[ckey] /= torch.sqrt(self.cs[ckey])
-
+            
             for ckey in self.cs:
                 if self.cs[ckey] != 0:
                     self.cs[ckey] = self.cs[ckey].detach().item()
-
+        
         # backpropagation estimation fo ZO c's
         #   this is mostly for debugging purposes to disentangle the variance from using ZO to estimate c
         #   from the effectiveness of the preconditioners
-        else:
+        else: 
             model.eval()
             inputs = self._prepare_inputs(inputs)
             with self.compute_loss_context_manager():
@@ -430,7 +387,7 @@ class Trainer(LinearHeadTrainer):
 
     def get_num_samples(self):
         if self.args.zero_order_sample_scheduler is None:
-            noise_sample_time = 1
+            noise_sample_time = 1 
         elif self.args.zero_order_sample_scheduler == "linear":
             noise_sample_time = max(1, int(self.state.global_step / self.args.max_steps * self.args.zero_order_sample))
         elif self.args.zero_order_sample_scheduler == "constant":
@@ -526,15 +483,6 @@ class Trainer(LinearHeadTrainer):
         self.state.global_step = 0
         start_time = time.time()
         self.state.zo_forward_step = 0
-        # === Begin Adaptive h (Berahas et al.) ===
-        if getattr(self.args, "use_adaptive_h", False):
-            logger.info("Estimating noise level and third derivative for adaptive h...")
-            example_inputs = next(iter(train_dataloader))
-            self.epsilon_f = self.estimate_noise(model, self.compute_loss, example_inputs)
-            self.nu3 = self.estimate_nu3(model, self.compute_loss, example_inputs)
-            self.adaptive_h = (self.epsilon_f / self.nu3) ** (1/3) * (3 ** (1/3))
-            logger.info(f"Using adaptive h = {self.adaptive_h:.6e}")
-        # === End Adaptive h ===
         self.epoch = 0
         epochs_trained = 0
         steps_trained_in_current_epoch = 0
@@ -590,12 +538,12 @@ class Trainer(LinearHeadTrainer):
                     self.initialize_c(model, inputs)
                 elif step == 0 and self.args.zo_variant is not None and self.args.recompute_norms:
                     self.initialize_c(model, inputs)
-
+                
                 # Skip past any already trained steps if resuming training
                 if steps_trained_in_current_epoch > 0:
                     steps_trained_in_current_epoch -= 1
                     continue
-
+                    
                 if self.args.zero_order_optim:
                     # Get parameters that should be optimized (for layer-wise optimization and prefix-tuning)
                     self.named_parameters_to_optim = []
@@ -614,21 +562,18 @@ class Trainer(LinearHeadTrainer):
                             for _ in range(num_zs):
                                 c_i = self.cs[layer]
                                 with torch.no_grad():
-                                    c_i = 1.0 if c_i == 0 else c_i # if the scaling is 0, just reset it to 1 so that there can eventually be some gradient to those layers
-                                model, random_vector = self.perturb_single_layer(model, layer, scaling_factor=1.0/c_i)
-                                loss1 = self.zo_forward(model, inputs)
-                                model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=-2.0/c_i)
-                                loss2 = self.zo_forward(model, inputs)
-                                model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=1.0/c_i)
+                                    c_i = 1.0 if c_i == 0 else c_i # if the scaling is 0, just reset it to 1 so that there can eventually be some gradient to those layers 
+                                    model, random_vector = self.perturb_single_layer(model, layer, scaling_factor=1.0/c_i)
+                                    loss1 = self.zo_forward(model, inputs)
+                                    model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=-2.0/c_i)
+                                    loss2 = self.zo_forward(model, inputs)
+                                    model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=1.0/c_i)
 
-                                # === Begin Adaptive h (Berahas et al.) ===
-                                eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
-                                projected_grad = (loss1 - loss2) / (2 * eps)
-                                # === End Adaptive h ===
+                                projected_grad = (loss1 - loss2) / (2 * self.args.zero_order_eps)
                                 # scale grad according to number of zs sampled
                                 if not self.args.scale_lr_with_samples:
                                     projected_grad = projected_grad / float(num_zs)
-
+                                
                                 for name, param in self.named_parameters_to_optim:
                                     if self.retrieve_c(name) == layer:
                                         z_tilde = random_vector[name] * c_i
@@ -670,13 +615,10 @@ class Trainer(LinearHeadTrainer):
                                 elif self.args.zo_variant is not None:
                                     model, random_vector = self.norm_perturb_parameters(model, random_vector, scaling_factor=-2)
                                 else:
-                                    model, random_vector = self.perturb_parameters(model, random_vector, scaling_factor=-2)
+                                    model, random_vector = self.perturb_parameters(model, random_vector, scaling_factor=-2)                 
                                 loss2 = self.zo_forward(model, inputs)
 
-                            # === Begin Adaptive h (Berahas et al.) ===
-                            eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
-                            projected_grad = (loss1 - loss2) / (2 * eps)
-                            # === End Adaptive h ===
+                            projected_grad = (loss1 - loss2) / (2 * self.args.zero_order_eps)
 
                             # scale grad according to accumulation
                             if self.args.gradient_accumulation_steps > 1:

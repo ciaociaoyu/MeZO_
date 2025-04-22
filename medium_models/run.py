@@ -513,7 +513,6 @@ class DynamicTrainingArguments(TrainingArguments):
         metadata={"help": "Maximize accuracy instead of minimizing loss"}
     )
 
-
     ## hessian trainer args
     num_hvp_vecs: int = field(
         default=128,
@@ -527,6 +526,11 @@ class DynamicTrainingArguments(TrainingArguments):
     head_tuning: bool = field(
         default=False,
         metadata={"help": "Tune the head only"}
+    )
+
+    use_adaptive_h: bool = field(
+        default=True,
+        metadata={"help": "Use adaptive finite difference step size h (based on estimated epsilon_f and nu_3) instead of fixed zero_order_eps"}
     )
 
 
