@@ -529,7 +529,7 @@ class DynamicTrainingArguments(TrainingArguments):
     )
 
     use_adaptive_h: bool = field(
-        default=False,
+        default=True,
         metadata={"help": "Use adaptive finite difference step size h (based on estimated epsilon_f and nu_3) instead of fixed zero_order_eps"}
     )
 
