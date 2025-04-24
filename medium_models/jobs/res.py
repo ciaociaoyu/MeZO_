@@ -66,12 +66,12 @@ def plot_results(df_train, df_eval, window_size=100, alpha=0.01):
 
     # 图1：训练 loss 随 global_step 的变化（显示原始及平滑后的曲线）
     plt.figure(figsize=(10, 6))
-    plt.plot(df_train['global_step'], df_train['loss'], label='原始 Loss', alpha=0.3)
-    plt.plot(df_train['global_step'], df_train['loss_rolling'], label=f'移动平均 (window={window_size})', linewidth=2)
-    plt.plot(df_train['global_step'], df_train['loss_ema'], label=f'EMA (alpha={alpha})', linewidth=2)
+    plt.plot(df_train['global_step'], df_train['loss'], label='original Loss', alpha=0.3)
+    plt.plot(df_train['global_step'], df_train['loss_rolling'], label=f'shift_avg (window={window_size})', linewidth=2)
+    # plt.plot(df_train['global_step'], df_train['loss_ema'], label=f'EMA (alpha={alpha})', linewidth=2)
     plt.xlabel('Global Step')
     plt.ylabel('Loss')
-    plt.title('训练 Loss vs Global Step (平滑处理)')
+    plt.title('train Loss vs Global Step (平滑处理)')
     plt.legend()
     plt.grid(True)
     plt.savefig("loss_vs_global_step_smoothed.png")
@@ -102,7 +102,7 @@ def plot_results(df_train, df_eval, window_size=100, alpha=0.01):
 
 if __name__ == "__main__":
     # 请确保文件路径正确
-    filepath = "sst-2full_36129372_1.out"
+    filepath = "ModifiedH-sst-2full_36712920_1.out"
     training_records, eval_records = parse_log_file(filepath)
     df_train, df_eval = create_dataframes(training_records, eval_records)
 

@@ -532,6 +532,10 @@ class DynamicTrainingArguments(TrainingArguments):
         default=True,
         metadata={"help": "Use adaptive finite difference step size h (based on estimated epsilon_f and nu_3) instead of fixed zero_order_eps"}
     )
+    update_noise_every: int = field(
+        default=1000,
+        metadata={"help": "Number of steps between re-estimating epsilon_f and nu3 during training"}
+    )
 
 
 @dataclass

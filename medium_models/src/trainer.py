@@ -471,6 +471,11 @@ class Trainer(LinearHeadTrainer):
         self.objective = -float("inf")
         self.dev_objective = dev_objective if dev_objective is not None else default_dev_objective
 
+        # === Begin Adaptive h update freq ===
+        # You can also make this self.args.update_noise_every if you want it configurable
+        update_noise_every = getattr(self.args, "update_noise_every", 1000)
+        # === End Adaptive h update freq ===
+
         # Data loading.
         train_dataloader = self.get_train_dataloader()
         num_update_steps_per_epoch = len(train_dataloader) // self.args.gradient_accumulation_steps
@@ -715,7 +720,7 @@ class Trainer(LinearHeadTrainer):
                             if self.args.gradient_accumulation_steps > 1:
                                 assert self.args.zero_order_use_trainer_optim, 'grad accumulation not implemented for non-trainer ZO yet'
                                 projected_grad = projected_grad / self.args.gradient_accumulation_steps
-                            
+
                             # scale grad according to number of zs sampled
                             if not self.args.scale_lr_with_samples:
                                 projected_grad = projected_grad / float(num_zs)
@@ -726,7 +731,7 @@ class Trainer(LinearHeadTrainer):
                                 if self.args.efficient_zero_order:
                                     # print(random_seed)
                                     torch.manual_seed(random_seed)
-                                
+
                                 for name, param in self.named_parameters_to_optim:
                                     # recover noise used in perturbations
                                     if self.args.efficient_zero_order:
@@ -748,7 +753,7 @@ class Trainer(LinearHeadTrainer):
                             if self.args.efficient_zero_order:
                                 model = self.efficient_perturb_parameters(model, random_seed)
                             elif self.args.zo_variant is not None:
-                                model, random_vector = self.norm_perturb_parameters(model, random_vector)   
+                                model, random_vector = self.norm_perturb_parameters(model, random_vector)
                             else:
                                 model, random_vector = self.perturb_parameters(model, random_vector)
 
@@ -767,7 +772,7 @@ class Trainer(LinearHeadTrainer):
                             # Update the parameters and step scheduler
                             optimizer.step()
                             scheduler.step()
-                        
+
                             # logging
                             if (self.args.logging_steps > 0 and self.state.global_step % self.args.logging_steps == 0) or (
                                 self.state.global_step == 1 and self.args.logging_first_step
@@ -794,20 +799,20 @@ class Trainer(LinearHeadTrainer):
                                 logs["time"] = int(time.time() - start_time)
                                 self.log(logs)
                                 logger.info(str(logs))
-                            
+
                             model.zero_grad()
                             self.state.global_step += 1
                             self.epoch = epoch + (step + 1) / len(epoch_iterator)
                     # if not using the trainer, the updates are resampled and directly applied to the parameters
                     else:
-                        # Efficient mode 
+                        # Efficient mode
                         # WARNING: no gradient accumulation when not storing the grad
                         assert self.args.gradient_accumulation_steps == 1, 'gradient accumulation is not supported for zero-order optimization'
                         assert self.args.zero_order_sample_scheduler is None
                         assert not self.args.zero_order_clip_grad, 'gradient clipping not implemented yet for non-trainer ZO'
 
                         if self.args.efficient_zero_order:
-                            torch.manual_seed(random_seed)     
+                            torch.manual_seed(random_seed)
                         for name, param in self.named_parameters_to_optim:
                             if self.args.efficient_zero_order:
                                 z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
@@ -832,7 +837,7 @@ class Trainer(LinearHeadTrainer):
 
                         self.state.global_step += 1
                         self.epoch = epoch + (step + 1) / len(epoch_iterator)
-                    
+
                     # Debug information
                     # print("%.5f, %.5f" % (loss1.item(), loss2.item()))
                     # print("Loss: %.10f, projected_grad: %.5f" % (loss1, projected_grad))
@@ -889,6 +894,18 @@ class Trainer(LinearHeadTrainer):
 
                             self.log(logs)
                             logger.info(str(logs))
+
+                # === Begin Adaptive h: update h every update_noise_every steps ===
+                if getattr(self.args, "use_adaptive_h", False) and self.state.global_step % update_noise_every == 0 and self.state.global_step > 0:
+                    logger.info(f"Re-estimating epsilon_f and nu3 at step {self.state.global_step}...")
+                    self.epsilon_f = self.estimate_noise(model, self.compute_loss, inputs)
+                    self.nu3 = self.estimate_nu3(model, self.compute_loss, inputs)
+                    self.adaptive_h = (self.epsilon_f / self.nu3) ** (1 / 3) * (3 ** (1 / 3))
+                    logger.info(f"Updated adaptive h = {self.adaptive_h:.6e}")
+                    if torch.isnan(torch.tensor(self.adaptive_h)).item() or self.adaptive_h < 1e-8:
+                        logger.warning(f"Adaptive h is NaN or too small: {self.adaptive_h}, setting to minimum threshold 1e-4")
+                        self.adaptive_h = 1e-4
+                # === End Adaptive h update ===
 
                 if self.args.max_steps > 0 and self.state.global_step > self.args.max_steps or (self.args.max_zo_forward_steps > 0 and self.state.zo_forward_step > self.args.max_zo_forward_steps):
                     epoch_iterator.close()
