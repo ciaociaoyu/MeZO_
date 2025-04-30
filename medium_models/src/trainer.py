@@ -160,36 +160,46 @@ class Trainer(LinearHeadTrainer):
 
     # === Begin Adaptive h (Berahas et al.) ===
     def estimate_nu3(self, model, loss_fn, inputs, h=1e-3):
+        # === Float64 precision for more stable epsilon_f / nu3 estimation ===
         v = torch.randn_like(model.base_model.embeddings.word_embeddings.weight)
         v = v / torch.norm(v)
         original = model.base_model.embeddings.word_embeddings.weight.data.clone()
+        # Cast to float64 for estimation
+        original64 = original.to(dtype=torch.float64)
+        v64 = v.to(dtype=torch.float64)
         try:
             with torch.no_grad():
-                model.base_model.embeddings.word_embeddings.weight.data.copy_(original + 2 * h * v)
+                model.base_model.embeddings.word_embeddings.weight.data.copy_((original64 + 2 * h * v64).to(dtype=original.dtype))
                 f2 = self.zo_forward(model, inputs)
-                model.base_model.embeddings.word_embeddings.weight.data.copy_(original + h * v)
+                model.base_model.embeddings.word_embeddings.weight.data.copy_((original64 + h * v64).to(dtype=original.dtype))
                 f1 = self.zo_forward(model, inputs)
-                model.base_model.embeddings.word_embeddings.weight.data.copy_(original - h * v)
+                model.base_model.embeddings.word_embeddings.weight.data.copy_((original64 - h * v64).to(dtype=original.dtype))
                 f_1 = self.zo_forward(model, inputs)
-                model.base_model.embeddings.word_embeddings.weight.data.copy_(original - 2 * h * v)
+                model.base_model.embeddings.word_embeddings.weight.data.copy_((original64 - 2 * h * v64).to(dtype=original.dtype))
                 f_2 = self.zo_forward(model, inputs)
         finally:
+            # === Revert back to float32 after estimation ===
             model.base_model.embeddings.word_embeddings.weight.data.copy_(original)
         nu3 = abs((-f2 + 2*f1 - 2*f_1 + f_2) / (2 * h ** 3))
         logger.info(f"Estimated nu3: {nu3}")
-        return nu3
+        # Return as float64 Python float for precision
+        return float(nu3)
 
     def estimate_noise(self, model, loss_fn, inputs, q=6, delta=1e-4):
+        # === Float64 precision for more stable epsilon_f / nu3 estimation ===
         v = torch.randn_like(model.base_model.embeddings.word_embeddings.weight)
         v = v / torch.norm(v)
         original = model.base_model.embeddings.word_embeddings.weight.data.clone()
+        original64 = original.to(dtype=torch.float64)
+        v64 = v.to(dtype=torch.float64)
         f_vals = []
         try:
             for i in range(q + 1):
-                model.base_model.embeddings.word_embeddings.weight.data.copy_(original + i * delta * v)
+                model.base_model.embeddings.word_embeddings.weight.data.copy_((original64 + i * delta * v64).to(dtype=original.dtype))
                 with torch.no_grad():
                     f_vals.append(self.zo_forward(model, inputs).item())
         finally:
+            # === Revert back to float32 after estimation ===
             model.base_model.embeddings.word_embeddings.weight.data.copy_(original)
         T = [[0] * (q + 1) for _ in range(q + 1)]
         for i in range(q + 1):
@@ -202,7 +212,8 @@ class Trainer(LinearHeadTrainer):
         s_j_sq = gamma / (q + 1 - j) * sum(T[i][j]**2 for i in range(q + 1 - j))
         epsilon_f = math.sqrt(s_j_sq)
         logger.info(f"Estimated epsilon_f: {epsilon_f}")
-        return epsilon_f
+        # Return as float64 Python float for precision
+        return float(epsilon_f)
     # === End Adaptive h ===
 
     def create_optimizer_and_scheduler(self, num_training_steps: int):
@@ -554,10 +565,18 @@ class Trainer(LinearHeadTrainer):
             self.epsilon_f = self.estimate_noise(model, self.compute_loss, example_inputs)
             self.nu3 = self.estimate_nu3(model, self.compute_loss, example_inputs)
             self.adaptive_h = (self.epsilon_f / self.nu3) ** (1/3) * (3 ** (1/3))
+            # Ensure adaptive h returns to float32 after high-precision estimation
+            self.adaptive_h = float(self.adaptive_h)
+            self.adaptive_h = torch.tensor(self.adaptive_h, dtype=torch.float32)
             logger.info(f"Using adaptive h = {self.adaptive_h:.6e}")
+            previous_adaptive_h = self.adaptive_h
             if torch.isnan(torch.tensor(self.adaptive_h)).item() or self.adaptive_h < 1e-8:
-                logger.warning(f"Adaptive h is NaN or too small: {self.adaptive_h}, setting to minimum threshold 1e-4")
-                self.adaptive_h = 1e-4
+                logger.warning(f"Adaptive h estimation invalid (value: {self.adaptive_h}), keeping previous adaptive h value.")
+                self.adaptive_h = previous_adaptive_h
+            else:
+                previous_adaptive_h = self.adaptive_h
+        else:
+            previous_adaptive_h = getattr(self, "adaptive_h", 1e-4)
         # === End Adaptive h ===
         self.epoch = 0
         epochs_trained = 0
@@ -901,10 +920,15 @@ class Trainer(LinearHeadTrainer):
                     self.epsilon_f = self.estimate_noise(model, self.compute_loss, inputs)
                     self.nu3 = self.estimate_nu3(model, self.compute_loss, inputs)
                     self.adaptive_h = (self.epsilon_f / self.nu3) ** (1 / 3) * (3 ** (1 / 3))
+                    # Ensure adaptive h returns to float32 after high-precision estimation
+                    self.adaptive_h = float(self.adaptive_h)
+                    self.adaptive_h = torch.tensor(self.adaptive_h, dtype=torch.float32)
                     logger.info(f"Updated adaptive h = {self.adaptive_h:.6e}")
                     if torch.isnan(torch.tensor(self.adaptive_h)).item() or self.adaptive_h < 1e-8:
-                        logger.warning(f"Adaptive h is NaN or too small: {self.adaptive_h}, setting to minimum threshold 1e-4")
-                        self.adaptive_h = 1e-4
+                        logger.warning(f"Adaptive h estimation invalid (value: {self.adaptive_h}), keeping previous adaptive h value.")
+                        self.adaptive_h = previous_adaptive_h
+                    else:
+                        previous_adaptive_h = self.adaptive_h
                 # === End Adaptive h update ===
 
                 if self.args.max_steps > 0 and self.state.global_step > self.args.max_steps or (self.args.max_zo_forward_steps > 0 and self.state.zo_forward_step > self.args.max_zo_forward_steps):
