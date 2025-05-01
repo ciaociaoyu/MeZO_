@@ -53,7 +53,7 @@ def create_dataframes(training_records, eval_records):
     return df_train, df_eval
 
 
-def plot_results(df_train, df_eval, window_size=100, alpha=0.01):
+def plot_results(df_train, df_eval, window_size=10, alpha=0.01, compare_plot=False, compare_filepath=None):
     """
     绘制三个图：
     1. 训练 loss（包含原始数据、移动平均和 EMA 平滑后数据）随 global_step 的变化
@@ -69,6 +69,11 @@ def plot_results(df_train, df_eval, window_size=100, alpha=0.01):
     plt.plot(df_train['global_step'], df_train['loss'], label='original Loss', alpha=0.3)
     plt.plot(df_train['global_step'], df_train['loss_rolling'], label=f'shift_avg (window={window_size})', linewidth=2)
     # plt.plot(df_train['global_step'], df_train['loss_ema'], label=f'EMA (alpha={alpha})', linewidth=2)
+    if compare_plot and compare_filepath is not None:
+        training_records_cmp, _ = parse_log_file(compare_filepath)
+        df_train_cmp, _ = create_dataframes(training_records_cmp, [])
+        df_train_cmp['loss_rolling'] = df_train_cmp['loss'].rolling(window=window_size).mean()
+        plt.plot(df_train_cmp['global_step'], df_train_cmp['loss_rolling'], label=f'Comparison Loss (window={window_size})', linewidth=2, linestyle='--')
     plt.xlabel('Global Step')
     plt.ylabel('Loss')
     plt.title('train Loss vs Global Step (平滑处理)')
@@ -77,32 +82,33 @@ def plot_results(df_train, df_eval, window_size=100, alpha=0.01):
     plt.savefig("loss_vs_global_step_smoothed.png")
 
     # 图2：评估 accuracy 随 global_step 的变化
-    if not df_eval.empty:
-        plt.figure(figsize=(10, 6))
-        plt.plot(df_eval['global_step'], df_eval['eval_acc'], marker='o', color='green')
-        plt.xlabel('Global Step')
-        plt.ylabel('Eval Accuracy')
-        plt.title('评估 Accuracy vs Global Step')
-        plt.grid(True)
-        plt.savefig("eval_acc_vs_global_step.png")
-
-        # 图3：评估 loss 随 global_step 的变化
-        plt.figure(figsize=(10, 6))
-        plt.plot(df_eval['global_step'], df_eval['eval_loss'], marker='o', color='red')
-        plt.xlabel('Global Step')
-        plt.ylabel('Eval Loss')
-        plt.title('评估 Loss vs Global Step')
-        plt.grid(True)
-        plt.savefig("eval_loss_vs_global_step.png")
-    else:
-        print("评估数据为空，跳过评估图表绘制。")
+    # if not df_eval.empty:
+        # plt.figure(figsize=(10, 6))
+        # plt.plot(df_eval['global_step'], df_eval['eval_acc'], marker='o', color='green')
+        # plt.xlabel('Global Step')
+        # plt.ylabel('Eval Accuracy')
+        # plt.title('评估 Accuracy vs Global Step')
+        # plt.grid(True)
+        # plt.savefig("eval_acc_vs_global_step.png")
+        #
+        # # 图3：评估 loss 随 global_step 的变化
+        # plt.figure(figsize=(10, 6))
+        # plt.plot(df_eval['global_step'], df_eval['eval_loss'], marker='o', color='red')
+        # plt.xlabel('Global Step')
+        # plt.ylabel('Eval Loss')
+        # plt.title('评估 Loss vs Global Step')
+        # plt.grid(True)
+        # plt.savefig("eval_loss_vs_global_step.png")
+    # else:
+    #     print("评估数据为空，跳过评估图表绘制。")
 
     plt.show()
 
 
 if __name__ == "__main__":
     # 请确保文件路径正确
-    filepath = "ModifiedH-sst-2full_36712920_1.out"
+    filepath = "Modified_stepH-sst-2full_36766105_1.out"
+    filepath2 = "sst-2full_test.out"
     training_records, eval_records = parse_log_file(filepath)
     df_train, df_eval = create_dataframes(training_records, eval_records)
 
@@ -112,4 +118,4 @@ if __name__ == "__main__":
     print(df_eval.head())
 
     # window_size 和 alpha 参数可根据需要调整
-    plot_results(df_train, df_eval, window_size=100, alpha=0.01)
+    plot_results(df_train, df_eval, window_size=50, alpha=0.01, compare_plot=1, compare_filepath=filepath2)
