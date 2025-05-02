@@ -181,7 +181,11 @@ class Trainer(LinearHeadTrainer):
             # === Revert back to float32 after estimation ===
             model.base_model.embeddings.word_embeddings.weight.data.copy_(original)
         nu3 = abs((-f2 + 2*f1 - 2*f_1 + f_2) / (2 * h ** 3))
-        logger.info(f"Estimated nu3: {nu3}")
+        if nu3 == 0:
+            nu3 = 20
+            logger.warning(f"Estimated nu3 is 0, set it to 20")
+        else:
+            logger.info(f"Estimated nu3: {nu3}")
         # Return as float64 Python float for precision
         return float(nu3)
 
@@ -570,7 +574,7 @@ class Trainer(LinearHeadTrainer):
             self.adaptive_h = torch.tensor(self.adaptive_h, dtype=torch.float32)
             logger.info(f"Using adaptive h = {self.adaptive_h:.6e}")
             previous_adaptive_h = self.adaptive_h
-            if torch.isnan(torch.tensor(self.adaptive_h)).item() or self.adaptive_h < 1e-8:
+            if torch.isnan(torch.tensor(self.adaptive_h)).item() or self.adaptive_h < 1e-8 or torch.isinf(adaptive_h_tensor):
                 logger.warning(f"Adaptive h estimation invalid (value: {self.adaptive_h}), keeping previous adaptive h value.")
                 self.adaptive_h = previous_adaptive_h
             else:
