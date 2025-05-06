@@ -7,8 +7,12 @@ BS=${BS:-64}
 LR=${LR:-1e-6}
 EPS=${EPS:-1e-3}
 WD=${WD:-0}
+# This is true seting
 STEP=${STEP:-100000}
 EVAL_STEP=${EVAL_STEP:-10000}
+# This is for testing
+# STEP=${STEP:-100}
+# EVAL_STEP=${EVAL_STEP:-10}
 MODEL=${MODEL:-roberta-large}
 
 LOGITS=$(jq -n '{"SNLI": 3, "MNLI": 3, "trec": 6, "sst-5": 5}["'$TASK'"] // 2')
