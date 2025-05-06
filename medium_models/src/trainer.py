@@ -161,50 +161,90 @@ class Trainer(LinearHeadTrainer):
     # === Begin Adaptive h (Berahas et al.) ===
     def estimate_nu3(self, model, loss_fn, inputs, h=1e-3):
         # === Float64 precision for more stable epsilon_f / nu3 estimation ===
-        v = torch.randn_like(model.base_model.embeddings.word_embeddings.weight)
-        v = v / torch.norm(v)
-        original = model.base_model.embeddings.word_embeddings.weight.data.clone()
-        # Cast to float64 for estimation
-        original64 = original.to(dtype=torch.float64)
-        v64 = v.to(dtype=torch.float64)
+        # Collect all parameters to optimize
+        names, params = [], []
+        for name, param in model.named_parameters():
+            if self.should_optim(name, param):
+                names.append(name)
+                params.append(param)
+        # Flatten and concatenate all parameter tensors
+        param_shapes = [p.data.shape for p in params]
+        param_numels = [p.data.numel() for p in params]
+        total_numel = sum(param_numels)
+        device = params[0].data.device if params else torch.device("cpu")
+        dtype = params[0].data.dtype if params else torch.float32
+        # Save original parameter tensors (float64)
+        originals = [p.data.detach().clone().to(dtype=torch.float64) for p in params]
+        # Generate a global random direction v (float64)
+        v_flat = torch.randn(total_numel, dtype=torch.float64, device=device)
+        v_flat = v_flat / torch.norm(v_flat)
+        # Split v_flat into shapes matching each parameter
+        v_splits = torch.split(v_flat, param_numels)
+        v_list = [v.view(shape) for v, shape in zip(v_splits, param_shapes)]
+        # Helper to set params to originals + alpha * v
+        def set_params(alpha):
+            for p, orig, v in zip(params, originals, v_list):
+                p.data.copy_((orig + alpha * v).to(dtype=dtype))
         try:
             with torch.no_grad():
-                model.base_model.embeddings.word_embeddings.weight.data.copy_((original64 + 2 * h * v64).to(dtype=original.dtype))
+                set_params(2 * h)
                 f2 = self.zo_forward(model, inputs)
-                model.base_model.embeddings.word_embeddings.weight.data.copy_((original64 + h * v64).to(dtype=original.dtype))
+                set_params(h)
                 f1 = self.zo_forward(model, inputs)
-                model.base_model.embeddings.word_embeddings.weight.data.copy_((original64 - h * v64).to(dtype=original.dtype))
+                set_params(-h)
                 f_1 = self.zo_forward(model, inputs)
-                model.base_model.embeddings.word_embeddings.weight.data.copy_((original64 - 2 * h * v64).to(dtype=original.dtype))
+                set_params(-2 * h)
                 f_2 = self.zo_forward(model, inputs)
         finally:
-            # === Revert back to float32 after estimation ===
-            model.base_model.embeddings.word_embeddings.weight.data.copy_(original)
+            # Restore original parameters
+            for p, orig in zip(params, originals):
+                p.data.copy_(orig.to(dtype=dtype))
+        # All computations in float64
+        f2 = float(f2)
+        f1 = float(f1)
+        f_1 = float(f_1)
+        f_2 = float(f_2)
         nu3 = abs((-f2 + 2*f1 - 2*f_1 + f_2) / (2 * h ** 3))
         if nu3 == 0:
             nu3 = 20
             logger.warning(f"Estimated nu3 is 0, set it to 20")
         else:
             logger.info(f"Estimated nu3: {nu3}")
-        # Return as float64 Python float for precision
         return float(nu3)
 
     def estimate_noise(self, model, loss_fn, inputs, q=6, delta=1e-4):
         # === Float64 precision for more stable epsilon_f / nu3 estimation ===
-        v = torch.randn_like(model.base_model.embeddings.word_embeddings.weight)
-        v = v / torch.norm(v)
-        original = model.base_model.embeddings.word_embeddings.weight.data.clone()
-        original64 = original.to(dtype=torch.float64)
-        v64 = v.to(dtype=torch.float64)
+        # Collect all parameters to optimize
+        names, params = [], []
+        for name, param in model.named_parameters():
+            if self.should_optim(name, param):
+                names.append(name)
+                params.append(param)
+        param_shapes = [p.data.shape for p in params]
+        param_numels = [p.data.numel() for p in params]
+        total_numel = sum(param_numels)
+        device = params[0].data.device if params else torch.device("cpu")
+        dtype = params[0].data.dtype if params else torch.float32
+        originals = [p.data.detach().clone().to(dtype=torch.float64) for p in params]
+        # Generate a global random direction v (float64)
+        v_flat = torch.randn(total_numel, dtype=torch.float64, device=device)
+        v_flat = v_flat / torch.norm(v_flat)
+        v_splits = torch.split(v_flat, param_numels)
+        v_list = [v.view(shape) for v, shape in zip(v_splits, param_shapes)]
+        # Helper to set params to originals + alpha * v
+        def set_params(alpha):
+            for p, orig, v in zip(params, originals, v_list):
+                p.data.copy_((orig + alpha * v).to(dtype=dtype))
         f_vals = []
         try:
             for i in range(q + 1):
-                model.base_model.embeddings.word_embeddings.weight.data.copy_((original64 + i * delta * v64).to(dtype=original.dtype))
+                set_params(i * delta)
                 with torch.no_grad():
-                    f_vals.append(self.zo_forward(model, inputs).item())
+                    f_vals.append(float(self.zo_forward(model, inputs)))
         finally:
-            # === Revert back to float32 after estimation ===
-            model.base_model.embeddings.word_embeddings.weight.data.copy_(original)
+            # Restore original parameters
+            for p, orig in zip(params, originals):
+                p.data.copy_(orig.to(dtype=dtype))
         T = [[0] * (q + 1) for _ in range(q + 1)]
         for i in range(q + 1):
             T[i][0] = f_vals[i]
@@ -216,7 +256,6 @@ class Trainer(LinearHeadTrainer):
         s_j_sq = gamma / (q + 1 - j) * sum(T[i][j]**2 for i in range(q + 1 - j))
         epsilon_f = math.sqrt(s_j_sq)
         logger.info(f"Estimated epsilon_f: {epsilon_f}")
-        # Return as float64 Python float for precision
         return float(epsilon_f)
     # === End Adaptive h ===
 
@@ -574,7 +613,7 @@ class Trainer(LinearHeadTrainer):
             self.adaptive_h = torch.tensor(self.adaptive_h, dtype=torch.float32)
             logger.info(f"Using adaptive h = {self.adaptive_h:.6e}")
             previous_adaptive_h = self.adaptive_h
-            if torch.isnan(torch.tensor(self.adaptive_h)).item() or self.adaptive_h < 1e-8 or torch.isinf(adaptive_h_tensor):
+            if torch.isnan(torch.tensor(self.adaptive_h)).item() or self.adaptive_h < 1e-8 or torch.isinf(torch.tensor(self.adaptive_h)):
                 logger.warning(f"Adaptive h estimation invalid (value: {self.adaptive_h}), keeping previous adaptive h value.")
                 self.adaptive_h = previous_adaptive_h
             else:
