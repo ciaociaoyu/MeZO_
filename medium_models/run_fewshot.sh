@@ -10,6 +10,7 @@ TRAINER=${TRAINER:-"standard"}  # choose from "standard" and "linearhead"
 TAG=${TAG:-}                    # set a tag to distinguish and aggregate runs in the log
 NUM_GPU=${NUM_GPU:-1}           # by default use 1 GPU, set to 0 for CPU-only training
 OPT=${OPT:-"adam"}
+USE_H=${USE_H:-"True"}
 STEPS=${STEPS:-1000}
 
 echo "GPU数量: $NUM_GPU"
@@ -98,6 +99,7 @@ ALL_ARGS_TOGETHER="
     --logging_steps 10
     --per_device_eval_batch_size 4
     --evaluate_during_training
+    --use_adaptive_h $USE_H
     $TASK_EXTRA
     $LOAD_KERNELS
     $@
@@ -110,7 +112,6 @@ if [[ $NUM_GPU > 1 ]]; then
 
     # Allow multiple threads
     export OMP_NUM_THREADS=8
-    echo "确实有问题"
     python -m torch.distributed.launch --nproc_per_node $NUM_GPU --master_port $PORT_ID run.py \
         $ALL_ARGS_TOGETHER
 else

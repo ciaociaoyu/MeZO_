@@ -14,6 +14,7 @@ EVAL_STEP=${EVAL_STEP:-10000}
 # STEP=${STEP:-100}
 # EVAL_STEP=${EVAL_STEP:-10}
 MODEL=${MODEL:-roberta-large}
+USE_H=${USE_H:-"True"}
 
 LOGITS=$(jq -n '{"SNLI": 3, "MNLI": 3, "trec": 6, "sst-5": 5}["'$TASK'"] // 2')
 
@@ -24,6 +25,7 @@ echo "BS: $BS"
 echo "LR: $LR"
 echo "EPS: $EPS"
 echo "Step: $STEP; Eval step: $EVAL_STEP"
+echo "Using adaptive h: $USE_H"
 
 GR_TAG=seed$SEED-bs$BS-lr$LR-eps$EPS-wd$WD-step$STEP-evalstep$EVAL_STEP
 EXTRA_TAG=${EXTRA_TAG:-ft}
@@ -32,6 +34,6 @@ echo "Grid search tag: $GR_TAG"
 echo "Tag: $TAG"
 
 TYPE=prompt GRID_TAG=$GR_TAG TAG=$TAG STEPS=$STEP TASK=$TASK SEED=$SEED MODEL=$MODEL K=$K \
-    bash run_fewshot.sh --per_device_train_batch_size $BS --learning_rate $LR --eval_steps $EVAL_STEP --weight_decay $WD --zero_order_eps $EPS \
+    bash run_fewshot.sh --per_device_train_batch_size $BS --learning_rate $LR --eval_steps $EVAL_STEP --weight_decay $WD --zero_order_eps $EPS --use_adaptive_h $USE_H\
     --zero_order_optim --lr_scheduler_type "constant" --optimizer "sgd" --efficient_zero_order \
     $@
