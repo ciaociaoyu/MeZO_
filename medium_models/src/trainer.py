@@ -859,6 +859,8 @@ class Trainer(LinearHeadTrainer):
                                 logs["max_steps"] = self.args.max_steps
                                 logs["max_zo_forward_steps"] = self.args.max_zo_forward_steps
                                 logs["time"] = int(time.time() - start_time)
+                                # Log current eps value as float
+                                logs["eps"] = eps if isinstance(eps, float) else eps.item()
                                 self.log(logs)
                                 logger.info(str(logs))
 
@@ -893,6 +895,8 @@ class Trainer(LinearHeadTrainer):
                                 logs["max_steps"] = self.args.max_steps
                                 logs["max_zo_forward_steps"] = self.args.max_zo_forward_steps
                                 logs["time"] = int(time.time() - start_time)
+                                # Log current eps value as float
+                                logs["eps"] = eps if isinstance(eps, float) else eps.item()
                                 self.log(logs)
                                 logger.info(str(logs))
 
