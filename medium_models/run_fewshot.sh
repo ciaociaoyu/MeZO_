@@ -100,6 +100,8 @@ ALL_ARGS_TOGETHER="
     --per_device_eval_batch_size 4
     --evaluate_during_training
     --use_adaptive_h $USE_H
+    --use_c_scale $USE_C
+    --use_layerwise_h $USE_LH
     $TASK_EXTRA
     $LOAD_KERNELS
     $@

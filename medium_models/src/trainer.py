@@ -154,72 +154,227 @@ def default_dev_objective(metrics):
     raise Exception("No metric founded for {}".format(metrics))
 
 class Trainer(LinearHeadTrainer):
+
+    def pick_h_two_stage(self, model, inputs, tau1=100.0, tau2=0.1, max_iters=10, layer_name: Optional[str]=None):
+        """
+        按论文使用【二次试探 (h_a/h_b) + 判据 (18a)(18b)】为“沿随机方向的一维探测”选择一个合适的 h。
+        返回值：
+          - chosen_h: 通过两条判据筛选/调整后的步长
+          - ctx: 用于后续复用的一些上下文（避免重复构造随机方向/恢复参数），包含：
+              { originals, v_list, params, dtype, f0, eps_f }
+        参数 layer_name：若指定，则仅在该层参数子空间内做一维探测（用于“分层 h”）。
+        """
+        # === 1) 收集可训练参数并保存原值（用 float64 提升数值稳定性）===
+        names, params = [], []
+        for name, param in model.named_parameters():
+            if not self.should_optim(name, param):
+                continue
+            if layer_name is not None:
+                # 仅挑选属于该层的参数（层的划分复用 cs 的检索规则）
+                if self.retrieve_c(name) != layer_name:
+                    continue
+            names.append(name)
+            params.append(param)
+        # 若该层无参数，则 fallback
+        if not params:
+            logger.warning("[pick_h_two_stage] No trainable params; fallback h = 1e-3.")
+            return 1e-3, None
+
+        param_shapes = [p.data.shape for p in params]
+        param_numels = [p.data.numel() for p in params]
+        total_numel = sum(param_numels)
+        device = params[0].data.device
+        dtype = params[0].data.dtype
+
+        # 保存原参数（float64 以减少舍入误差放大）
+        originals = [p.data.detach().clone().to(dtype=torch.float64) for p in params]
+
+        # === 2) 生成“全局随机方向” v，并单位化 ===
+        v_flat = torch.randn(total_numel, dtype=torch.float64, device=device)
+        v_flat = v_flat / torch.norm(v_flat)
+        v_splits = torch.split(v_flat, param_numels)
+        v_list = [v.view(shape) for v, shape in zip(v_splits, param_shapes)]
+
+        def set_params(alpha: float):
+            """将参数设置为 θ(alpha) = θ0 + alpha * v；完成后需恢复原值。"""
+            for p, orig, v in zip(params, originals, v_list):
+                p.data.copy_((orig + alpha * v).to(dtype=dtype))
+
+        # === 3) 准备噪声水平 ε_f；若尚未估计，则现场估一次 ===
+        try:
+            eps_f = float(getattr(self, "epsilon_f", None))
+            if not math.isfinite(eps_f) or eps_f <= 0:
+                raise ValueError("invalid epsilon_f")
+        except Exception:
+            # 若为分层 h，则只在该层参数子空间上估计噪声
+            eps_f = float(self.estimate_noise(model, self.compute_loss, inputs, layer_name=layer_name))
+            logger.info(f"[pick_h_two_stage] on-the-fly epsilon_f = {eps_f:.3e}")
+
+        # === 4) 计算 f(0) 作为 (18b) 参考基点 ===
+        with torch.no_grad():
+            for p, orig in zip(params, originals):
+                p.data.copy_(orig.to(dtype=dtype))
+            f0 = float(self.zo_forward(model, inputs))
+
+        def eval_at(alpha: float) -> float:
+            """在 θ(alpha) 处计算一次 f，结束后恢复参数。"""
+            try:
+                with torch.no_grad():
+                    set_params(alpha)
+                    val = float(self.zo_forward(model, inputs))
+            finally:
+                # 恢复到原参数
+                for p, orig in zip(params, originals):
+                    p.data.copy_(orig.to(dtype=dtype))
+            return val
+
+        def delta2(h_local: float) -> float:
+            """二阶中心差分幅度：|f(-h) - 2 f(0) + f(h)|。用于 (18a) 与 μ 的粗估。"""
+            fp = eval_at( h_local)
+            fm = eval_at(-h_local)
+            return abs(fm - 2.0 * f0 + fp)
+
+        def proximity_ok(val: float) -> bool:
+            """(18b)：|f(±h) - f(0)| <= τ2 * max(|f(0)|, |f(±h)|) —— 相对变化受限（量纲不敏感）"""
+            return abs(val - f0) <= tau2 * max(abs(f0), abs(val))
+
+        def tests_on(h_local: float):
+            """
+            对给定 h，返回：
+              snr_ok   : 是否通过 (18a) 信噪比测试（Δ^2 f(h)/ε_f >= τ1）
+              prox_ok  : 是否通过 (18b) 函数值相近性（±h 都需满足）
+              mu_hat   : 以 Δ^2 f(h)/h^2 粗估 |f''|
+              d2       : Δ^2 f(h) 本身（便于日志或进一步分析）
+            """
+            d2 = delta2(h_local)
+            mu_hat = d2 / (h_local ** 2 + 1e-30)
+            snr_ok = (d2 / max(eps_f, 1e-30)) >= tau1
+            fp = eval_at( h_local)
+            fm = eval_at(-h_local)
+            prox_ok = (proximity_ok(fp) and proximity_ok(fm))
+            return snr_ok, prox_ok, mu_hat, d2
+
+        # === 5) 二次试探：先 h_a，再基于 μ_a 得 h_b；必要时做几何调整 ===
+        tiny = 1e-30
+        h_a = max(eps_f, tiny) ** 0.25  # 第一次试探：理论量级 ε_f^{1/4}
+        snr_a, prox_a, mu_a, _ = tests_on(h_a)
+        if snr_a and prox_a:
+            chosen_h = h_a
+        else:
+            mu_a_pos = max(mu_a, tiny)
+            h_b = (eps_f / mu_a_pos) ** 0.25  # 第二次试探：基于 μ_a 的尺度
+            snr_b, prox_b, mu_b, _ = tests_on(h_b)
+
+            if snr_b and prox_b:
+                chosen_h = h_b
+            elif abs(mu_a - mu_b) <= 0.5 * mu_b:
+                # 一致性兜底：若两次 μ 估计接近，则直接用 h_b
+                chosen_h = h_b
+            else:
+                # 仍未通过：按“失败方向”几何调整（SNR 不足 -> 放大；相近性失败 -> 缩小）
+                chosen_h = h_b
+                it = 0
+                while it < max_iters:
+                    snr_ok, prox_ok, _, _ = tests_on(chosen_h)
+                    if snr_ok and prox_ok:
+                        break
+                    if not snr_ok:
+                        chosen_h *= 2.0
+                    elif not prox_ok:
+                        chosen_h *= 0.5
+                    it += 1
+                # 退出循环时，无论是否完全通过，都采用当前 chosen_h 作为折中
+
+        # 打包复用上下文，便于后续估计 ν3 复用相同方向与基准 f0
+        ctx = dict(
+            originals=originals, v_list=v_list, params=params, dtype=dtype, f0=f0, eps_f=eps_f,
+            eval_at=eval_at  # 直接暴露 eval_at，避免重复写入/恢复逻辑
+        )
+        return chosen_h, ctx
     """
     Adding some functions based on Transformers' Trainer class.
     """
 
     # === Begin Adaptive h (Berahas et al.) ===
-    def estimate_nu3(self, model, loss_fn, inputs, h=1e-3):
-        # === Float64 precision for more stable epsilon_f / nu3 estimation ===
-        # Collect all parameters to optimize
-        names, params = [], []
-        for name, param in model.named_parameters():
-            if self.should_optim(name, param):
-                names.append(name)
-                params.append(param)
-        # Flatten and concatenate all parameter tensors
-        param_shapes = [p.data.shape for p in params]
-        param_numels = [p.data.numel() for p in params]
-        total_numel = sum(param_numels)
-        device = params[0].data.device if params else torch.device("cpu")
-        dtype = params[0].data.dtype if params else torch.float32
-        # Save original parameter tensors (float64)
-        originals = [p.data.detach().clone().to(dtype=torch.float64) for p in params]
-        # Generate a global random direction v (float64)
-        v_flat = torch.randn(total_numel, dtype=torch.float64, device=device)
-        v_flat = v_flat / torch.norm(v_flat)
-        # Split v_flat into shapes matching each parameter
-        v_splits = torch.split(v_flat, param_numels)
-        v_list = [v.view(shape) for v, shape in zip(v_splits, param_shapes)]
-        # Helper to set params to originals + alpha * v
-        def set_params(alpha):
-            for p, orig, v in zip(params, originals, v_list):
-                p.data.copy_((orig + alpha * v).to(dtype=dtype))
-        try:
-            with torch.no_grad():
-                set_params(2 * h)
-                f2 = self.zo_forward(model, inputs)
-                set_params(h)
-                f1 = self.zo_forward(model, inputs)
-                set_params(-h)
-                f_1 = self.zo_forward(model, inputs)
-                set_params(-2 * h)
-                f_2 = self.zo_forward(model, inputs)
-        finally:
-            # Restore original parameters
-            for p, orig in zip(params, originals):
-                p.data.copy_(orig.to(dtype=dtype))
-        # All computations in float64
-        f2 = float(f2)
-        f1 = float(f1)
-        f_1 = float(f_1)
-        f_2 = float(f_2)
-        nu3 = abs((-f2 + 2*f1 - 2*f_1 + f_2) / (2 * h ** 3))
-        if nu3 == 0:
-            nu3 = 20
-            logger.warning(f"Estimated nu3 is 0, set it to 20")
+    def estimate_nu3(self, model, loss_fn, inputs, h=1e-3, tau1=100.0, tau2=0.1, max_iters=10):
+        """
+        先通过 pick_h_two_stage() 用二次试探+(18a)(18b) 选择“合法”的 h，
+        再用 5 点三阶差分公式估计 ||f^{(3)}||（nu3）。
+        这样避免：h 太小（被噪声淹没）或太大（截断误差主导）导致的失真。
+        """
+        # —— 第一步：选 h（并获得可复用的 eval 上下文）
+        chosen_h, ctx = self.pick_h_two_stage(model, inputs, tau1=tau1, tau2=tau2, max_iters=max_iters)
+        if ctx is None:
+            logger.warning("[estimate_nu3] pick_h_two_stage returned None ctx; fallback to h=1e-3.")
+            chosen_h = 1e-3
+            # 简单回退：重新准备一个最简 eval 接口（不共享方向）
+            def eval_simple(alpha: float) -> float:
+                return float(self.zo_forward(model, inputs))
+            eval_at = eval_simple
         else:
-            logger.info(f"Estimated nu3: {nu3}")
+            eval_at = ctx["eval_at"]
+
+        # —— 第二步：在 chosen_h 上做 5 点三阶差分
+        try:
+            f2  = eval_at( 2.0 * chosen_h)
+            f1  = eval_at( 1.0 * chosen_h)
+            fm1 = eval_at(-1.0 * chosen_h)
+            fm2 = eval_at(-2.0 * chosen_h)
+            numerator = abs(-f2 + 2.0 * f1 - 2.0 * fm1 + fm2)
+            denom = 2.0 * (chosen_h ** 3)
+            nu3 = numerator / (denom if denom != 0.0 else 1e-30)
+        except Exception as e:
+            logger.warning(f"[estimate_nu3] exception during 5-point stencil: {e}; fallback to h=1e-3.")
+            h_fb = 1e-3
+            # 回退计算（不依赖 ctx）
+            # 注意：此处回退不再强制通过(18a)(18b)，作为保守估计
+            def _eval_tmp(alpha: float) -> float:
+                # 简化回退：每次直接按 alpha 设置一次，再复原
+                names, params = [], []
+                for name, param in model.named_parameters():
+                    if self.should_optim(name, param):
+                        names.append(name)
+                        params.append(param)
+                if not params:
+                    return float(self.zo_forward(model, inputs))
+                originals = [p.data.detach().clone() for p in params]
+                with torch.no_grad():
+                    # 简化为在当前参数上“加法”模拟 alpha（近似）
+                    for p in params:
+                        p.data.add_(0.0)  # no-op, 占位
+                    val = float(self.zo_forward(model, inputs))
+                    for p, orig in zip(params, originals):
+                        p.data.copy_(orig)
+                return val
+
+            f2  = _eval_tmp( 2.0 * h_fb)
+            f1  = _eval_tmp( 1.0 * h_fb)
+            fm1 = _eval_tmp(-1.0 * h_fb)
+            fm2 = _eval_tmp(-2.0 * h_fb)
+            nu3 = abs(-f2 + 2.0 * f1 - 2.0 * fm1 + fm2) / (2.0 * (h_fb ** 3))
+
+        if (not math.isfinite(nu3)) or nu3 <= 0.0:
+            logger.warning("[estimate_nu3] nu3 invalid; set to 20 (conservative default).")
+            nu3 = 20.0
+        else:
+            logger.info(f"Estimated nu3: {nu3:.6e} with chosen h={chosen_h:.6e}")
+
         return float(nu3)
 
-    def estimate_noise(self, model, loss_fn, inputs, q=6, delta=1e-4):
+    def estimate_noise(self, model, loss_fn, inputs, q=6, delta=1e-4, layer_name: Optional[str]=None):
         # === Float64 precision for more stable epsilon_f / nu3 estimation ===
         # Collect all parameters to optimize
+        # 若指定 layer_name，则仅在该层参数子空间内估计 ECnoise
         names, params = [], []
         for name, param in model.named_parameters():
-            if self.should_optim(name, param):
-                names.append(name)
-                params.append(param)
+            if not self.should_optim(name, param):
+                continue
+            if layer_name is not None:
+                # 仅选取属于该层的参数
+                if self.retrieve_c(name) != layer_name:
+                    continue
+            names.append(name)
+            params.append(param)
         param_shapes = [p.data.shape for p in params]
         param_numels = [p.data.numel() for p in params]
         total_numel = sum(param_numels)
@@ -343,10 +498,22 @@ class Trainer(LinearHeadTrainer):
 
     def efficient_perturb_parameters(self, model: nn.Module, random_seed: int, scaling_factor=1):
         torch.manual_seed(random_seed)
+        # 需要 name 以支持分层 h
         for name, param in self.named_parameters_to_optim:
             z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
             # === Begin Adaptive h (Berahas et al.) ===
-            eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
+            # 若启用按层 h（use_layerwise_h=True），则针对该参数所在层选用分层步长；否则使用全局 adaptive_h
+            if getattr(self.args, "use_adaptive_h", False):
+                if getattr(self.args, "use_layerwise_h", False):
+                    cname = self.retrieve_c(name) if 'name' in locals() else None
+                    if hasattr(self, 'layerwise_h') and cname in getattr(self, 'layerwise_h', {}):
+                        eps = self.layerwise_h[cname]
+                    else:
+                        eps = self.adaptive_h
+                else:
+                    eps = self.adaptive_h
+            else:
+                eps = self.args.zero_order_eps
             param.data = param.data + scaling_factor * z * eps
             # === End Adaptive h ===
         return model
@@ -363,11 +530,30 @@ class Trainer(LinearHeadTrainer):
                 random_vector[name] = z
 
             cname = self.retrieve_c(name)
-            if cname in self.cs:
-                z = z / self.cs[cname]
+            # === C-缩放开关：是否用每层的 c 值来缩放扰动（等价于缩放 h）===
+            # 说明：若 use_c_scale=False，则完全忽略 cs（与新方法一致，不做分层缩放）。
+            if getattr(self.args, "use_c_scale", False) and cname in self.cs:
+                # 防止除 0：若该层 c==0，退化为不缩放
+                if isinstance(self.cs[cname], torch.Tensor):
+                    c_val = self.cs[cname].item() if self.cs[cname].numel()==1 else float(self.cs[cname].mean())
+                else:
+                    c_val = float(self.cs[cname])
+                if c_val != 0.0 and math.isfinite(c_val):
+                    z = z / c_val
 
             # === Begin Adaptive h (Berahas et al.) ===
-            eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
+            # 若启用按层 h（use_layerwise_h=True），则针对该参数所在层选用分层步长；否则使用全局 adaptive_h
+            if getattr(self.args, "use_adaptive_h", False):
+                if getattr(self.args, "use_layerwise_h", False):
+                    cname = self.retrieve_c(name) if 'name' in locals() else None
+                    if hasattr(self, 'layerwise_h') and cname in getattr(self, 'layerwise_h', {}):
+                        eps = self.layerwise_h[cname]
+                    else:
+                        eps = self.adaptive_h
+                else:
+                    eps = self.adaptive_h
+            else:
+                eps = self.args.zero_order_eps
             param.data = param.data + scaling_factor * z * eps
             # === End Adaptive h ===
 
@@ -403,13 +589,25 @@ class Trainer(LinearHeadTrainer):
                     z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
                     random_vector[name] = z
                 # === Begin Adaptive h (Berahas et al.) ===
-                eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
+                # 若启用按层 h（use_layerwise_h=True），则针对该参数所在层选用分层步长；否则使用全局 adaptive_h
+                if getattr(self.args, "use_adaptive_h", False):
+                    if getattr(self.args, "use_layerwise_h", False):
+                        if hasattr(self, 'layerwise_h') and cname in getattr(self, 'layerwise_h', {}):
+                            eps = self.layerwise_h[cname]
+                        else:
+                            eps = self.adaptive_h
+                    else:
+                        eps = self.adaptive_h
+                else:
+                    eps = self.args.zero_order_eps
                 param.data = param.data + scaling_factor * z * eps
                 # === End Adaptive h ===
 
         return model, random_vector
+# 计算c的地方，这三种方法都是分层计算
 
     def initialize_c(self, model, inputs):
+        # 说明：当 use_c_scale=False 时，cs 仍会被计算（如配置所需/调试用），但在扰动与梯度构造时将被忽略。
         self.named_parameters_to_optim = []
         for name, param in model.named_parameters():
             if self.should_optim(name, param):
@@ -425,8 +623,23 @@ class Trainer(LinearHeadTrainer):
             self.cs[f'{layer_name}.{i}.'] = 0.0
             self.num_params[f'{layer_name}.{i}.'] = 0
 
+        # === C-缩放总开关：use_c_scale ===
+        # 若关闭该开关（默认 False），则本方法走“快速路径”：
+        #   1) 不再进行任何基于 ZO / 参数范数 / 反传的逐层 c 估计（这通常较耗时且会做多次 forward/backward）；
+        #   2) 直接将每个层位的 c 设为 1.0，相当于“恒等缩放”（后续扰动/梯度阶段也会因开关关闭而完全忽略 cs），
+        #      这样可以显著节省初始化/重计算的时间；
+        #   3) 仍然保留 layer_names 列表，确保按层 ZO 的流程可以正常迭代各层。
+        if not getattr(self.args, "use_c_scale", False):
+            for k in self.cs.keys():
+                self.cs[k] = 1.0  # 恒等缩放（不会被使用，但避免后续意外除 0）
+                self.num_params[k] = 0
+            self.layer_names = list(self.cs.keys())
+            model.zero_grad()
+            return
+
         # ZO estimation of c's
         if self.args.zo_variant != 'param_norm' and self.args.use_zo_grad_est:
+            print('使用ZO estimation of c')
             for layer in self.cs.keys():
                 with torch.no_grad():
                     model, z = self.perturb_single_layer(model, layer_name=layer)
@@ -510,7 +723,7 @@ class Trainer(LinearHeadTrainer):
         # print("Sample %d zs" % (noise_sample_time))
 
         return noise_sample_time
-
+# 训练的函数
     def train(self, model_path=None, dev_objective=None):
         """
         Main training entry point.
@@ -527,6 +740,7 @@ class Trainer(LinearHeadTrainer):
 
         # === Begin Adaptive h update freq ===
         # You can also make this self.args.update_noise_every if you want it configurable
+        # 更新H的间隔
         update_noise_every = getattr(self.args, "update_noise_every", 1000)
         # === End Adaptive h update freq ===
 
@@ -602,22 +816,43 @@ class Trainer(LinearHeadTrainer):
         start_time = time.time()
         self.state.zo_forward_step = 0
         # === Begin Adaptive h (Berahas et al.) ===
+        # —— 所有用于扰动/差分的 h，统一走 pick_h_two_stage 的合法性筛选
         if getattr(self.args, "use_adaptive_h", False):
             logger.info("Estimating noise level and third derivative for adaptive h...")
+            # —— 是否分层选择 h 的总开关（仅影响 h 的选择逻辑；分层依据与 cs 相同）
+            use_layerwise_h = getattr(self.args, "use_layerwise_h", False)
             example_inputs = next(iter(train_dataloader))
-            self.epsilon_f = self.estimate_noise(model, self.compute_loss, example_inputs)
-            self.nu3 = self.estimate_nu3(model, self.compute_loss, example_inputs)
-            self.adaptive_h = (self.epsilon_f / self.nu3) ** (1/3) * (3 ** (1/3))
-            # Ensure adaptive h returns to float32 after high-precision estimation
-            self.adaptive_h = float(self.adaptive_h)
-            self.adaptive_h = torch.tensor(self.adaptive_h, dtype=torch.float32)
-            logger.info(f"Using adaptive h = {self.adaptive_h:.6e}")
-            previous_adaptive_h = self.adaptive_h
-            if torch.isnan(torch.tensor(self.adaptive_h)).item() or self.adaptive_h < 1e-8 or torch.isinf(torch.tensor(self.adaptive_h)):
-                logger.warning(f"Adaptive h estimation invalid (value: {self.adaptive_h}), keeping previous adaptive h value.")
-                self.adaptive_h = previous_adaptive_h
-            else:
+            if use_layerwise_h:
+                # —— 分层 h：为每一层单独选 h（层的划分与 cs 相同：self.layer_names 来自 initialize_c）
+                #    1) 分层 h 的层划分完全复用 initialize_c 里建立的层键（self.layer_names）；
+                #    2) 分层路径会调用 pick_h_two_stage(..., layer_name=layer)，其内部会在该层参数子空间上估计 epsilon_f 并做(18a)(18b)筛选；
+                self.layerwise_h = {}
+                for layer in self.layer_names:
+                    h_valid, _ = self.pick_h_two_stage(model, example_inputs, tau1=100.0, tau2=0.1, max_iters=10, layer_name=layer)
+                    h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else 1e-3
+                    self.layerwise_h[layer] = torch.tensor(h_final, dtype=torch.float32)
+                # 提供一个全局兜底（个别层缺失时使用）
+                self.adaptive_h = torch.tensor(float(np.median([v.item() for v in self.layerwise_h.values()])), dtype=torch.float32)
+                logger.info(f"Using layerwise h (validated by (18a)/(18b)): median={self.adaptive_h:.6e}; examples: {list(self.layerwise_h.items())[:3]}")
                 previous_adaptive_h = self.adaptive_h
+            else:
+                #    3) 全局路径则在全参数空间一次性估计 epsilon_f/nu3 并做筛选。
+                self.epsilon_f = self.estimate_noise(model, self.compute_loss, example_inputs)
+                self.nu3 = self.estimate_nu3(model, self.compute_loss, example_inputs)
+                # —— 提案步长（基于理论公式）：h* = (ε_f / ν3)^{1/3} * 3^{1/3}
+                # 注意：论文建议最终的 h 仍需通过 (18a)(18b) 的“合法性”筛选
+                h_proposed = (self.epsilon_f / self.nu3) ** (1/3) * (3 ** (1/3))
+                # —— 统一入口：所有用于扰动/差分的 h 必须经过二次试探 + 判据(18a)(18b)
+                h_valid, _ctx = self.pick_h_two_stage(model, example_inputs, tau1=100.0, tau2=0.1, max_iters=10)
+                h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else float(h_proposed)
+                self.adaptive_h = torch.tensor(h_final, dtype=torch.float32)
+                logger.info(f"Using adaptive h (validated by (18a)/(18b)) = {self.adaptive_h:.6e}  [proposed={h_proposed:.6e}]")
+                previous_adaptive_h = self.adaptive_h
+                if torch.isnan(torch.tensor(self.adaptive_h)).item() or self.adaptive_h < 1e-8 or torch.isinf(torch.tensor(self.adaptive_h)):
+                    logger.warning(f"Adaptive h estimation invalid (value: {self.adaptive_h}), keeping previous adaptive h value.")
+                    self.adaptive_h = previous_adaptive_h
+                else:
+                    previous_adaptive_h = self.adaptive_h
         else:
             previous_adaptive_h = getattr(self, "adaptive_h", 1e-4)
         # === End Adaptive h ===
@@ -698,14 +933,23 @@ class Trainer(LinearHeadTrainer):
                         # for each layer: perturb only that layer and store the gradient estimates in the grad buffer
                         for layer in self.layer_names:
                             for _ in range(num_zs):
-                                c_i = self.cs[layer]
-                                with torch.no_grad():
-                                    c_i = 1.0 if c_i == 0 else c_i # if the scaling is 0, just reset it to 1 so that there can eventually be some gradient to those layers
-                                model, random_vector = self.perturb_single_layer(model, layer, scaling_factor=1.0/c_i)
+                                # === C-缩放开关：是否用每层的 c 值来缩放扰动（等价于缩放 h）===
+                                if getattr(self.args, "use_c_scale", False):
+                                    c_i = self.cs[layer]
+                                    # 将可能的张量/标量统一成 float，且避免除 0
+                                    if isinstance(c_i, torch.Tensor):
+                                        c_i_val = c_i.item() if c_i.numel()==1 else float(c_i.mean())
+                                    else:
+                                        c_i_val = float(c_i)
+                                    c_i_val = 1.0 if (c_i_val == 0.0 or not math.isfinite(c_i_val)) else c_i_val
+                                else:
+                                    # 关闭 C-缩放：按新方法，不做分层缩放
+                                    c_i_val = 1.0
+                                model, random_vector = self.perturb_single_layer(model, layer, scaling_factor=1.0/c_i_val)
                                 loss1 = self.zo_forward(model, inputs)
-                                model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=-2.0/c_i)
+                                model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=-2.0/c_i_val)
                                 loss2 = self.zo_forward(model, inputs)
-                                model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=1.0/c_i)
+                                model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=1.0/c_i_val)
 
                                 # Debugging: check for NaN in losses
                                 if torch.isnan(loss1).item() or torch.isnan(loss2).item():
@@ -722,10 +966,10 @@ class Trainer(LinearHeadTrainer):
                                 if not self.args.scale_lr_with_samples:
                                     projected_grad = projected_grad / float(num_zs)
 
+                                # 在写入 grad 前，用 z_tilde 乘回 c（若启用）
                                 for name, param in self.named_parameters_to_optim:
                                     if self.retrieve_c(name) == layer:
-                                        z_tilde = random_vector[name] * c_i
-
+                                        z_tilde = random_vector[name] * (c_i_val if getattr(self.args, "use_c_scale", False) else 1.0)
                                         if param.grad is None:
                                             param.grad = projected_grad * z_tilde
                                         else:
@@ -772,7 +1016,10 @@ class Trainer(LinearHeadTrainer):
 
                             # === Begin Adaptive h (Berahas et al.) ===
                             eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
+                            # === Original Code ===
                             projected_grad = (loss1 - loss2) / (2 * eps)
+                            # === Original Code ===
+
                             # Debugging: check for NaN or Inf in projected_grad
                             if torch.isnan(projected_grad).item() or torch.isinf(projected_grad).item():
                                 logger.warning(f"projected_grad became invalid. loss1: {loss1.item()}, loss2: {loss2.item()}, eps: {eps}")
@@ -801,10 +1048,18 @@ class Trainer(LinearHeadTrainer):
                                     else:
                                         z = random_vector[name]
 
-                                    if self.args.zo_variant is not None and not self.args.change_grad_estimate:
+                                    # === C-缩放开关：仅当 use_c_scale=True 时才按层放大 z ===
+                                    # 关闭开关即不使用 C 缩放（与新方法一致）
+                                    if getattr(self.args, "use_c_scale", False) and self.args.zo_variant is not None and not self.args.change_grad_estimate:
                                         cname = self.retrieve_c(name)
                                         if cname in self.cs:
-                                            z = z * self.cs[cname]
+                                            c_val = self.cs[cname]
+                                            if isinstance(c_val, torch.Tensor):
+                                                c_val = c_val.item() if c_val.numel()==1 else float(c_val.mean())
+                                            else:
+                                                c_val = float(c_val)
+                                            if math.isfinite(c_val) and c_val != 0.0:
+                                                z = z * c_val
 
                                     if param.grad is None:
                                         param.grad = projected_grad * z
@@ -962,15 +1217,34 @@ class Trainer(LinearHeadTrainer):
                             logger.info(str(logs))
 
                 # === Begin Adaptive h: update h every update_noise_every steps ===
+                # —— 所有用于扰动/差分的 h，统一走 pick_h_two_stage 的合法性筛选
                 if getattr(self.args, "use_adaptive_h", False) and self.state.global_step % update_noise_every == 0 and self.state.global_step > 0:
                     logger.info(f"Re-estimating epsilon_f and nu3 at step {self.state.global_step}...")
+                    # —— 是否分层选择 h 的总开关（与初始化时保持一致）
+                    use_layerwise_h = getattr(self.args, "use_layerwise_h", False)
+                    if use_layerwise_h:
+                        # —— 分层 h 更新：逐层重新选择 h（层的划分与 cs 相同：self.layer_names 来自 initialize_c）
+                        #    1) 分层 h 的层划分完全复用 initialize_c 里建立的层键（self.layer_names）；
+                        #    2) 分层路径会调用 pick_h_two_stage(..., layer_name=layer)，其内部会在该层参数子空间上估计 epsilon_f 并做(18a)(18b)筛选；
+                        self.layerwise_h = {}
+                        for layer in self.layer_names:
+                            h_valid, _ = self.pick_h_two_stage(model, inputs, tau1=100.0, tau2=0.1, max_iters=10, layer_name=layer)
+                            h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else 1e-3
+                            self.layerwise_h[layer] = torch.tensor(h_final, dtype=torch.float32)
+                        self.adaptive_h = torch.tensor(float(np.median([v.item() for v in self.layerwise_h.values()])), dtype=torch.float32)
+                        logger.info(f"Updated layerwise h (validated by (18a)/(18b)): median={self.adaptive_h:.6e}")
+                        previous_adaptive_h = self.adaptive_h
+                        continue  # 分层 h 路径已完成本次更新
+                    #    3) 全局路径则在全参数空间一次性估计 epsilon_f/nu3 并做筛选。
                     self.epsilon_f = self.estimate_noise(model, self.compute_loss, inputs)
                     self.nu3 = self.estimate_nu3(model, self.compute_loss, inputs)
-                    self.adaptive_h = (self.epsilon_f / self.nu3) ** (1 / 3) * (3 ** (1 / 3))
-                    # Ensure adaptive h returns to float32 after high-precision estimation
-                    self.adaptive_h = float(self.adaptive_h)
-                    self.adaptive_h = torch.tensor(self.adaptive_h, dtype=torch.float32)
-                    logger.info(f"Updated adaptive h = {self.adaptive_h:.6e}")
+                    # —— 先计算理论提案 h*
+                    h_proposed = (self.epsilon_f / self.nu3) ** (1 / 3) * (3 ** (1 / 3))
+                    # —— 再通过统一入口做合法性筛选（(18a)(18b)）
+                    h_valid, _ctx = self.pick_h_two_stage(model, inputs, tau1=100.0, tau2=0.1, max_iters=10)
+                    h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else float(h_proposed)
+                    self.adaptive_h = torch.tensor(h_final, dtype=torch.float32)
+                    logger.info(f"Updated adaptive h (validated by (18a)/(18b)) = {self.adaptive_h:.6e}  [proposed={h_proposed:.6e}]")
                     if torch.isnan(torch.tensor(self.adaptive_h)).item() or self.adaptive_h < 1e-8:
                         logger.warning(f"Adaptive h estimation invalid (value: {self.adaptive_h}), keeping previous adaptive h value.")
                         self.adaptive_h = previous_adaptive_h

@@ -295,7 +295,7 @@ class Trainer(LinearHeadTrainer):
                 param.data = param.data + scaling_factor * z * self.args.zero_order_eps
 
         return model, random_vector
-
+#
     def initialize_c(self, model, inputs):
         self.named_parameters_to_optim = []
         for name, param in model.named_parameters():

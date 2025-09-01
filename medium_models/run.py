@@ -441,7 +441,7 @@ class DynamicTrainingArguments(TrainingArguments):
         default=False,
         metadata={"help": "Clip the norm of the gradient for zero order (only when using trainer optimizer)"}
     )
-     
+
     # MeZO variants
     zo_by_layer: bool = field(
         default=False,
@@ -498,7 +498,7 @@ class DynamicTrainingArguments(TrainingArguments):
         default=0,
         metadata={'help': 'Stop at this number of ZO forward steps. The trainer will take whichever is reached first, max_steps or max_zo_forward_steps.'}
     )
-    
+
     untie_emb: bool = field(
         default=False,
         metadata={"help": "Untie embeddings from lm head. Only work for OPT!!"}
@@ -507,7 +507,7 @@ class DynamicTrainingArguments(TrainingArguments):
         default=False,
         metadata={"help": "Tie embeddings from lm head. Only work for RoBERTa!!"}
     )
-    
+
     optimize_acc: bool = field(
         default=False,
         metadata={"help": "Maximize accuracy instead of minimizing loss"}
@@ -535,6 +535,22 @@ class DynamicTrainingArguments(TrainingArguments):
     update_noise_every: int = field(
         default=1000,
         metadata={"help": "Number of steps between re-estimating epsilon_f and nu3 during training"}
+    )
+
+    # 是否使用每层的 c 值（cs）对差分步长 h / 扰动进行缩放；
+    # 说明：我们的新方法默认不需要分层缩放，因此默认 False。
+    # 当设为 True 时，会在 Trainer 内启用按层缩放逻辑（见 use_c_scale 开关）。
+    use_c_scale: bool = field(
+        default=False,
+        metadata={"help": "Whether to use per-layer c (cs) to scale the finite-difference step h / perturbations; default False to match the new method"}
+    )
+    # 是否“按层”选择有限差分步长 h（层划分与 cs 相同：embed / lm_head / layer(s).i.）
+    # 说明：默认 False，表示使用“全局 h”（在全参数空间上估计）；
+    #       当设为 True 时，训练时会对每一层分别调用二次试探+(18a)(18b)来选择该层的 h，
+    #       并将各层 h 的中位数作为全局兜底 self.adaptive_h（防止个别层缺值/异常）。
+    use_layerwise_h: bool = field(
+        default=False,
+        metadata={"help": "Whether to choose finite-difference step h per-layer (same grouping as cs). Default False = use a single global h."}
     )
 
 
@@ -600,7 +616,7 @@ class MyDataCollatorWithPadding:
         if "label_ids" in batch:
             batch["labels"] = batch["label_ids"]
             del batch["label_ids"]
-        
+
         if features[0].sfc_input_ids is not None:
             batch["sfc_input_ids"] = sfc_batch["input_ids"]
             batch["sfc_attention_mask"] = sfc_batch["attention_mask"]
@@ -890,16 +906,16 @@ def main():
     if training_args.tie_emb:
         logger.warn("Tie embeddings. Only work for RoBERTa (in our code by default they are not tied)")
         model.tie_emb()
-    
+
     if training_args.head_tuning:
         if model.config.model_type == "roberta":
             head_name = "lm_head"
 
         for n, p in model.named_parameters():
             if head_name not in n:
-                p.requires_grad = False 
+                p.requires_grad = False
             else:
-                logger.info(f"Only tuning {n}")        
+                logger.info(f"Only tuning {n}")
 
     tokenizer.model_type = model.config.model_type
 
@@ -1036,7 +1052,7 @@ def main():
                 tokenizer.save_pretrained(training_args.output_dir)
                 torch.save(model_args, os.path.join(training_args.output_dir, "model_args.bin"))
                 torch.save(data_args, os.path.join(training_args.output_dir, "data_args.bin"))
-            
+
             if training_args.evaluate_during_training:
                 # Reload the best checkpoint (for eval)
                 # model.load_state_dict(trainer.best_model_ckpt)
@@ -1047,9 +1063,9 @@ def main():
                 #     model = model_fn.from_pretrained(training_args.output_dir)
                 # if training_args.exclude_first_layers != -1:
                 #     model = convert_opt_model(model, config, training_args.exclude_first_layers)
-                
+
                 # model = model.to(training_args.device)
-                
+
                 # Now we just reload this from memory instead of disk <-- much faster
                 trainer.model.load_state_dict(trainer.best_model_ckpt)
 
