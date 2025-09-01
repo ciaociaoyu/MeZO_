@@ -42,7 +42,7 @@ import time
 
 import transformers
 from transformers.file_utils import is_datasets_available, is_in_notebook
-from transformers.utils.import_utils import is_torch_tpu_available
+from transformers.utils import is_torch_tpu_available
 from transformers.integrations import (
     is_comet_available,
     is_optuna_available,
