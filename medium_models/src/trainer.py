@@ -59,7 +59,13 @@ from transformers.integrations import (
     is_tensorboard_available,
     is_wandb_available,
 )
-from transformers.optimization import AdamW, get_linear_schedule_with_warmup, get_scheduler
+# 兼容性处理：新版本 Transformers 可能移除了 transformers.optimization.AdamW
+from transformers.optimization import get_linear_schedule_with_warmup, get_scheduler
+try:
+    from transformers.optimization import AdamW as HF_AdamW  # 旧版本存在
+    AdamW = HF_AdamW
+except Exception:
+    from torch.optim import AdamW  # 新版本请直接使用 PyTorch 自带的 AdamW
 
 from transformers.trainer_callback import (
     DefaultFlowCallback,
