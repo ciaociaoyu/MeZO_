@@ -15,6 +15,8 @@ EVAL_STEP=${EVAL_STEP:-10000}
 # EVAL_STEP=${EVAL_STEP:-10}
 MODEL=${MODEL:-roberta-large}
 USE_H=${USE_H:-"True"}
+USE_C=${USE_C:-"False"}
+USE_LH=${USE_LH:-"True"}
 
 LOGITS=$(jq -n '{"SNLI": 3, "MNLI": 3, "trec": 6, "sst-5": 5}["'$TASK'"] // 2')
 
