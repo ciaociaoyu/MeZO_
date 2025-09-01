@@ -6,6 +6,20 @@ import os
 import sys
 from dataclasses import dataclass, field
 from typing import Callable, Dict, Optional, Union, List
+# ---- HF 兼容性补丁 ----
+# 某些版本的 Transformers 在 TrainingArguments 的类型注解里引用了 ParallelismConfig，
+# 但该类型不一定总能在本环境中导入，导致 HfArgumentParser 在 Python 3.12 下解析失败。
+# 这里做一个“最好努力”的导入；若失败则定义一个空壳以便类型解析通过。
+try:
+    from transformers.training_args_parallel import ParallelismConfig  # 新版本位置
+except Exception:
+    try:
+        # 备用位置（少数版本可能在别处暴露）
+        from transformers.utils import ParallelismConfig  # type: ignore
+    except Exception:
+        class ParallelismConfig:  # 最小占位定义，仅用于类型解析
+            pass
+# ---- 结束补丁 ----
 import torch
 import torch.nn.functional as F
 
