@@ -42,7 +42,16 @@ import time
 
 import transformers
 from transformers.file_utils import is_datasets_available, is_in_notebook
-from transformers.utils import is_torch_tpu_available
+# 兼容性处理：新版本 Transformers 可能已移除 utils.is_torch_tpu_available
+try:
+    from transformers.utils import is_torch_tpu_available  # 旧版本存在
+except Exception:
+    def is_torch_tpu_available() -> bool:  # 回退：默认不使用 TPU
+        return False
+    # 若顶层 transformers 模块也缺少该符号，则注入一个同名函数，
+    # 以兼容代码中 later 的 `transformers.is_torch_tpu_available()` 调用
+    if not hasattr(transformers, "is_torch_tpu_available"):
+        transformers.is_torch_tpu_available = is_torch_tpu_available  # type: ignore
 from transformers.integrations import (
     is_comet_available,
     is_optuna_available,
