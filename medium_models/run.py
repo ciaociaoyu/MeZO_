@@ -186,7 +186,7 @@ class DynamicDataTrainingArguments(DataTrainingArguments):
 
     demo_filter_rate: float = field(
         default=0.5,
-        metadata={"help": "Only use top-x\% similar instances in demonstrations"}
+        metadata={"help": "Only use top-x% similar instances in demonstrations"}
     )
 
     demo_filter_model: str = field(
