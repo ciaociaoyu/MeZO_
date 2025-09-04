@@ -186,7 +186,7 @@ class Trainer(LinearHeadTrainer):
                 continue
             if layer_name is not None:
                 # 仅挑选属于该层的参数（层的划分复用 cs 的检索规则）
-                if self.retrieve_c(name) != layer_name:
+                if layer_name not in name:
                     continue
             names.append(name)
             params.append(param)
@@ -385,8 +385,8 @@ class Trainer(LinearHeadTrainer):
             if not self.should_optim(name, param):
                 continue
             if layer_name is not None:
-                # 仅选取属于该层的参数
-                if self.retrieve_c(name) != layer_name:
+                # 仅选取属于该层的参数；不要依赖 self.cs / retrieve_c
+                if layer_name not in name:
                     continue
             names.append(name)
             params.append(param)
