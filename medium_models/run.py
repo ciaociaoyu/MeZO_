@@ -7,8 +7,6 @@ import sys
 from dataclasses import dataclass, field
 from typing import Callable, Dict, Optional, Union, List
 
-from transformers.training_args_parallel import ParallelismConfig  # 新版本位置
-
 import torch
 import torch.nn.functional as F
 
