@@ -719,12 +719,33 @@ class Trainer(LinearHeadTrainer):
         self.layer_names = list(self.cs.keys())
         model.zero_grad()
 
-    def retrieve_c(self, param_name):
-        for c_name in self.cs.keys():
-            if c_name in param_name:
-                return c_name
+    def retrieve_c(self, param_name: str) -> str:
+        """
+        将参数名映射到“层键”（用于分层 c / 分层 h）。
+        兼容性：在某些配置下（如 zo_variant=None 或 use_c_scale=False），initialize_c()
+        可能尚未被调用，此时 self.cs 尚不存在。为避免 AttributeError，
+        这里按以下优先级匹配：
+          1) 若存在 self.cs：按 self.cs 的键做子串匹配；
+          2) 否则，若存在 self.layer_names：按 layer_names 做子串匹配；
+          3) 否则，做最小启发式匹配（embed / lm_head / layer(s).i.）；
+          匹配失败则返回空串 ""（表示不归属于任何已知层）。
+        """
+        # 1) 优先使用 self.cs 的键（若已初始化）
+        cs = getattr(self, "cs", None)
+        if isinstance(cs, dict) and cs:
+            for c_name in cs.keys():
+                if c_name and c_name in param_name:
+                    return c_name
 
-        return '' # these parameters are likely not being used in the forward pass
+        # 2) 其次使用已构造的 layer_names（train() 中在 use_layerwise_h=True 时会构造）
+        layer_names = getattr(self, "layer_names", None)
+        if isinstance(layer_names, (list, tuple)):
+            for key in layer_names:
+                if key and key in param_name:
+                        return key
+
+
+        return ""
 
     def get_num_samples(self):
         if self.args.zero_order_sample_scheduler is None:
