@@ -6,7 +6,7 @@ import os
 import sys
 from dataclasses import dataclass, field
 from typing import Callable, Dict, Optional, Union, List
-# 11
+
 from accelerate.utils import ParallelismConfig
 
 import torch
@@ -633,10 +633,10 @@ def main():
     # get_type_hints() resolves this in the *current module* globals where our
     # DynamicTrainingArguments is defined (i.e., __main__). Even if we imported it
     # at top-level, make it explicit here to avoid any scope/order surprises.
-    import accelerate  # ensure same-env import
-    globals()['ParallelismConfig'] = getattr(
-        accelerate.utils, 'ParallelismConfig', type('ParallelismConfig', (), {})
-    )
+    #import accelerate  # ensure same-env import
+    #globals()['ParallelismConfig'] = getattr(
+    #    accelerate.utils, 'ParallelismConfig', type('ParallelismConfig', (), {})
+    #)
     # -------------------------------------------------------------------------
     parser = HfArgumentParser((ModelArguments, DynamicDataTrainingArguments, DynamicTrainingArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):

@@ -838,6 +838,12 @@ class Trainer(LinearHeadTrainer):
             use_layerwise_h = getattr(self.args, "use_layerwise_h", False)
             example_inputs = next(iter(train_dataloader))
             if use_layerwise_h:
+                # 构造 layer_names（必须与 retrieve_c/initialize_c 的层命名保持一致）
+                # OPT 系模型参数名包含 "layers.{i}."；其他如 BERT/RoBERTa 通常是 "layer.{i}."
+                prefix = "layers" if self.model.config.model_type == "opt" else "layer"
+                self.layer_names = [f"{prefix}.{i}." for i in range(self.model.config.num_hidden_layers)]
+                # 同时包含嵌入与输出头的键（若模型参数名中包含这些子串，则 retrieve_c 会匹配到）
+                self.layer_names = ["embed", "lm_head"] + self.layer_names
                 # —— 分层 h：为每一层单独选 h（层的划分与 cs 相同：self.layer_names 来自 initialize_c）
                 #    1) 分层 h 的层划分完全复用 initialize_c 里建立的层键（self.layer_names）；
                 #    2) 分层路径会调用 pick_h_two_stage(..., layer_name=layer)，其内部会在该层参数子空间上估计 epsilon_f 并做(18a)(18b)筛选；
