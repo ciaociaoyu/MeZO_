@@ -905,6 +905,8 @@ class Trainer(LinearHeadTrainer):
         logger.info("  Total optimization steps = %d", t_total)
 
         self.state = TrainerState()
+        # 仅打印一次分层 h 的日志
+        self._logged_layerwise_h = False
         # 初始化 CSV 日志文件
         self._setup_metrics_csv()
         _csv_pending = None  # 暂存本 step 的训练度量，待是否有 eval 再一起写入
@@ -932,10 +934,19 @@ class Trainer(LinearHeadTrainer):
                 for layer in self.layer_names:
                     h_valid, _ = self.pick_h_two_stage(model, example_inputs, tau1=100.0, tau2=0.1, max_iters=10, layer_name=layer)
                     h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else 1e-3
+                    # 统一约束 h 的范围：[1e-5, 0.5]
+                    h_final = min(0.5, max(1e-5, h_final))
                     self.layerwise_h[layer] = torch.tensor(h_final, dtype=torch.float32)
-                # 提供一个全局兜底（个别层缺失时使用）
-                self.adaptive_h = torch.tensor(float(np.median([v.item() for v in self.layerwise_h.values()])), dtype=torch.float32)
-                logger.info(f"Using layerwise h (validated by (18a)/(18b)): median={self.adaptive_h:.6e}; examples: {list(self.layerwise_h.items())[:3]}")
+                # 提供一个全局兜底（个别层缺失时使用），并进行相同的范围约束
+                median_h = float(np.median([v.item() for v in self.layerwise_h.values()])) if len(self.layerwise_h) > 0 else 1e-3
+                median_h = min(0.5, max(1e-5, median_h))
+                self.adaptive_h = torch.tensor(median_h, dtype=torch.float32)
+                logger.info(f"Using layerwise h (validated by (18a)/(18b)): median={self.adaptive_h:.6e}")
+                # 仅首次打印每一层的 h 值
+                if not self._logged_layerwise_h:
+                    for k in sorted(self.layerwise_h.keys()):
+                        logger.info(f"[layerwise h] {k}: {self.layerwise_h[k].item():.6e}")
+                    self._logged_layerwise_h = True
                 previous_adaptive_h = self.adaptive_h
             else:
                 #    3) 全局路径则在全参数空间一次性估计 epsilon_f/nu3 并做筛选。
@@ -947,6 +958,8 @@ class Trainer(LinearHeadTrainer):
                 # —— 统一入口：所有用于扰动/差分的 h 必须经过二次试探 + 判据(18a)(18b)
                 h_valid, _ctx = self.pick_h_two_stage(model, example_inputs, tau1=100.0, tau2=0.1, max_iters=10)
                 h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else float(h_proposed)
+                # 统一约束 h 的范围：[1e-5, 0.5]
+                h_final = min(0.5, max(1e-5, h_final))
                 self.adaptive_h = torch.tensor(h_final, dtype=torch.float32)
                 logger.info(f"Using adaptive h (validated by (18a)/(18b)) = {self.adaptive_h:.6e}  [proposed={h_proposed:.6e}]")
                 previous_adaptive_h = self.adaptive_h
@@ -1350,15 +1363,20 @@ class Trainer(LinearHeadTrainer):
                     use_layerwise_h = getattr(self.args, "use_layerwise_h", False)
                     if use_layerwise_h:
                         # —— 分层 h 更新：逐层重新选择 h（层的划分与 cs 相同：self.layer_names 来自 initialize_c）
-                        #    1) 分层 h 的层划分完全复用 initialize_c 里建立的层键（self.layer_names）；
-                        #    2) 分层路径会调用 pick_h_two_stage(..., layer_name=layer)，其内部会在该层参数子空间上估计 epsilon_f 并做(18a)(18b)筛选；
                         self.layerwise_h = {}
                         for layer in self.layer_names:
                             h_valid, _ = self.pick_h_two_stage(model, inputs, tau1=100.0, tau2=0.1, max_iters=10, layer_name=layer)
                             h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else 1e-3
+                            # 统一约束 h 的范围：[1e-5, 0.5]
+                            h_final = min(0.5, max(1e-5, h_final))
                             self.layerwise_h[layer] = torch.tensor(h_final, dtype=torch.float32)
-                        self.adaptive_h = torch.tensor(float(np.median([v.item() for v in self.layerwise_h.values()])), dtype=torch.float32)
+                        median_h = float(np.median([v.item() for v in self.layerwise_h.values()])) if len(self.layerwise_h) > 0 else 1e-3
+                        median_h = min(0.5, max(1e-5, median_h))
+                        self.adaptive_h = torch.tensor(median_h, dtype=torch.float32)
                         logger.info(f"Updated layerwise h (validated by (18a)/(18b)): median={self.adaptive_h:.6e}")
+                        # 每次分层 h 更新后，打印所有层的 h（不仅初始化时打印）
+                        for k in sorted(self.layerwise_h.keys()):
+                            logger.info(f"[layerwise h] {k}: {self.layerwise_h[k].item():.6e}")
                         previous_adaptive_h = self.adaptive_h
                         continue  # 分层 h 路径已完成本次更新
                     #    3) 全局路径则在全参数空间一次性估计 epsilon_f/nu3 并做筛选。
@@ -1369,6 +1387,8 @@ class Trainer(LinearHeadTrainer):
                     # —— 再通过统一入口做合法性筛选（(18a)(18b)）
                     h_valid, _ctx = self.pick_h_two_stage(model, inputs, tau1=100.0, tau2=0.1, max_iters=10)
                     h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else float(h_proposed)
+                    # 统一约束 h 的范围：[1e-5, 0.5]
+                    h_final = min(0.5, max(1e-5, h_final))
                     self.adaptive_h = torch.tensor(h_final, dtype=torch.float32)
                     logger.info(f"Updated adaptive h (validated by (18a)/(18b)) = {self.adaptive_h:.6e}  [proposed={h_proposed:.6e}]")
                     if torch.isnan(torch.tensor(self.adaptive_h)).item() or self.adaptive_h < 1e-8:

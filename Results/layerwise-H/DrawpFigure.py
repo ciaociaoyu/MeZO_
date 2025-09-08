@@ -2,15 +2,13 @@
 """
 DrawpFigure.py
 
-Usage:
-  python DrawpFigure.py /path/to/metrics.csv [--xcol STEP_COL] [--out /path/to/output.png] [--title "Figure Title"]
+This script provides a programmatic API to plot training loss from a CSV file.
 
-This script reads a CSV file, finds a column named 'train_loss' (case-insensitive),
-chooses a sensible x-axis (given via --xcol or guessed from common step/epoch names or the row index),
-and saves a line chart next to the CSV by default: <basename>_train_loss.png
+Run this file directly; configuration is set in MAIN_CFG below.
+
+You can configure a maximum y-axis limit (ymax) if needed.
 """
 
-import argparse
 import sys
 from pathlib import Path
 from typing import Optional, Union
@@ -69,6 +67,9 @@ def plot_train_loss(
     xcol: Optional[str],
     out_path: Optional[Union[str, Path]],
     title: Optional[str],
+    ma_window: Optional[int],
+    ymax: Optional[float],
+    ymin: Optional[float],
 ):
     csv_path = Path(csv_path)
     if not csv_path.exists():
@@ -89,6 +90,10 @@ def plot_train_loss(
         raise ValueError("Could not find 'train_loss' (case-insensitive) in the CSV columns: "
                          f"{list(df.columns)}")
 
+    y = df[ycol]
+    if ma_window is not None and isinstance(ma_window, int) and ma_window > 1:
+        y = y.rolling(window=ma_window, min_periods=1).mean()
+
     # Decide x axis
     real_xcol = guess_x_column(df, xcol)
 
@@ -102,16 +107,22 @@ def plot_train_loss(
     plt.figure()
     if real_xcol is not None:
         x = df[real_xcol]
-        plt.plot(x, df[ycol])
+        plt.plot(x, y)
         plt.xlabel(real_xcol)
     else:
-        plt.plot(df.index, df[ycol])
+        plt.plot(df.index, y)
         plt.xlabel("index")
 
     plt.ylabel(ycol)
-    plt.title(title if title else f"Train Loss from {csv_path.name}")
+    final_title = title if title else f"Train Loss from {csv_path.name}"
+    if ma_window is not None and isinstance(ma_window, int) and ma_window > 1:
+        final_title += f" (MA window={ma_window})"
+    plt.title(final_title)
     plt.grid(True, linewidth=0.5, alpha=0.6)
     plt.tight_layout()
+
+    if ymax is not None or ymin is not None:
+        plt.ylim(bottom=ymin, top=ymax)
 
     # Save
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -121,37 +132,41 @@ def plot_train_loss(
     return out_path
 
 
-def generate_train_loss_figure(
-    csv: Union[str, Path],
-    xcol: Optional[str] = None,
-    out: Optional[Union[str, Path]] = None,
-    title: Optional[str] = None,
-) -> Path:
-    """Programmatic API: generate the train_loss figure and return the saved Path.
-
-    Examples
-    --------
-    >>> from DrawpFigure import generate_train_loss_figure
-    >>> p = generate_train_loss_figure("/path/to/metrics.csv", xcol="step")
-    >>> print(p)
-    """
-    return plot_train_loss(csv, xcol, out, title)
-
-
-def parse_args(argv):
-    p = argparse.ArgumentParser(description="Plot train_loss line chart from a CSV.")
-    p.add_argument("csv", type=str, help="Path to the metrics CSV file.")
-    p.add_argument("--xcol", type=str, default=None, help="Column to use as x-axis (optional).")
-    p.add_argument("--out", type=str, default=None, help="Output image path (optional).")
-    p.add_argument("--title", type=str, default=None, help="Custom chart title (optional).")
-    return p.parse_args(argv)
+# ---- Simple in-file configuration (no CLI) ----
+MAIN_CFG = {
+    # Set your CSV path here. Example defaults to the file beside this script or to your known dataset path.
+    "csv": Path("metrics_adaptiveH-1_cscale-0_layerwiseH-0.csv"),  # change if needed
+    # Optional x-axis column; set to None to auto-guess
+    "xcol": None,  # e.g., "step" or "epoch"
+    # Optional custom output path; set to None to save next to CSV as *_train_loss.png
+    "out": None,
+    # Optional chart title; set to None to auto-generate
+    "title": None,
+    # Moving-average window; use 1 or None to disable smoothing
+    "ma_window": 100,
+    # Optional maximum y-axis limit
+    "ymax": 1,
+    # Optional minimum y-axis limit
+    "ymin": 0,
+}
 
 
-if __name__ == "__main__":
-    args = parse_args(sys.argv[1:])
+def main():
     try:
-        saved = plot_train_loss(args.csv, args.xcol, args.out, args.title)
+        saved = plot_train_loss(
+            MAIN_CFG["csv"],
+            MAIN_CFG.get("xcol"),
+            MAIN_CFG.get("out"),
+            MAIN_CFG.get("title"),
+            MAIN_CFG.get("ma_window"),
+            MAIN_CFG.get("ymax"),
+            MAIN_CFG.get("ymin"),
+        )
         print(f"Saved train_loss figure to: {saved}")
     except Exception as e:
         print(f"[ERROR] {e}")
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
