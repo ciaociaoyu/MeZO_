@@ -11,7 +11,7 @@ WD=${WD:-0}
 #STEP=${STEP:-100000}
 EVAL_STEP=${EVAL_STEP:-10000}
 # This is for testing
-STEP=${STEP:-50000}
+STEP=${STEP:-5000}
 # EVAL_STEP=${EVAL_STEP:-10}
 MODEL=${MODEL:-roberta-large}
 USE_H=${USE_H:-"True"}
