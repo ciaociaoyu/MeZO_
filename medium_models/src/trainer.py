@@ -344,6 +344,15 @@ class Trainer(LinearHeadTrainer):
                 chosen_h = h_b
             else:
                 # 仍未通过：按“失败方向”几何调整（SNR 不足 -> 放大；相近性失败 -> 缩小）
+                # 打印调试信息：两次试探的 μ、步长与判据结果（便于定位“离谱 h”的成因）
+                try:
+                    logger.info(
+                        f"[pick_h_two_stage][fallback] layer={layer_name or 'ALL'} "
+                        f"h_a={h_a:.6e}, h_b={h_b:.6e}, mu_a={mu_a:.6e}, mu_b={mu_b:.6e}, "
+                        f"SNR(a)={snr_a}, Prox(a)={prox_a}, SNR(b)={snr_b}, Prox(b)={prox_b}"
+                    )
+                except Exception:
+                    pass
                 chosen_h = 0.001
                 # it = 0
                 # while it < max_iters:
