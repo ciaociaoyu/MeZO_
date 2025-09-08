@@ -344,17 +344,17 @@ class Trainer(LinearHeadTrainer):
                 chosen_h = h_b
             else:
                 # 仍未通过：按“失败方向”几何调整（SNR 不足 -> 放大；相近性失败 -> 缩小）
-                chosen_h = h_b
-                it = 0
-                while it < max_iters:
-                    snr_ok, prox_ok, _, _ = tests_on(chosen_h)
-                    if snr_ok and prox_ok:
-                        break
-                    if not snr_ok:
-                        chosen_h *= 2.0
-                    elif not prox_ok:
-                        chosen_h *= 0.5
-                    it += 1
+                chosen_h = 0.001
+                # it = 0
+                # while it < max_iters:
+                #     snr_ok, prox_ok, _, _ = tests_on(chosen_h)
+                #     if snr_ok and prox_ok:
+                #         break
+                #     if not snr_ok:
+                #         chosen_h *= 2.0
+                #     elif not prox_ok:
+                #         chosen_h *= 0.5
+                #     it += 1
                 # 退出循环时，无论是否完全通过，都采用当前 chosen_h 作为折中
 
         # 打包复用上下文，便于后续估计 ν3 复用相同方向与基准 f0
