@@ -30,6 +30,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
+import csv
 from packaging import version
 from torch import nn
 from torch.utils.data.dataloader import DataLoader
@@ -169,6 +170,62 @@ def default_dev_objective(metrics):
     raise Exception("No metric founded for {}".format(metrics))
 
 class Trainer(LinearHeadTrainer):
+
+    # ================= CSV 训练日志（每步）=================
+    def _setup_metrics_csv(self):
+        """创建日志文件夹与 CSV 文件；根据是否使用自适应 h / c 缩放 / 分层 h 命名文件。"""
+        base_dir = getattr(self.args, "output_dir", "./outputs") or "./outputs"
+        log_dir = os.path.join(base_dir, "metrics_logs")
+        os.makedirs(log_dir, exist_ok=True)
+        # 根据开关构造文件名
+        use_ah = int(getattr(self.args, "use_adaptive_h", False))
+        use_cs = int(getattr(self.args, "use_c_scale", False))
+        use_lh = int(getattr(self.args, "use_layerwise_h", False))
+        filename = f"metrics_adaptiveH-{use_ah}_cscale-{use_cs}_layerwiseH-{use_lh}.csv"
+        self._metrics_csv_path = os.path.join(log_dir, filename)
+        # 若文件不存在则写入表头
+        if not os.path.exists(self._metrics_csv_path):
+            with open(self._metrics_csv_path, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["epoch", "global_step", "train_loss", "train_acc", "eval_ran", "eval_loss", "eval_acc"])
+
+    def _compute_train_acc(self, model, inputs) -> Optional[float]:
+        """计算当前 batch 的训练准确率（不影响梯度）。若任务非分类或缺少 labels，返回 None。"""
+        try:
+            if "labels" not in inputs:
+                return None
+            model.eval()
+            _in = self._prepare_inputs(inputs)
+            with torch.no_grad():
+                out = model(**_in)
+                # 兼容 (loss, logits) 或 只返回 logits 的情况
+                if isinstance(out, (tuple, list)):
+                    logits = out[1] if len(out) > 1 else out[0]
+                elif hasattr(out, "logits"):
+                    logits = out.logits
+                else:
+                    return None
+                preds = torch.argmax(logits, dim=-1)
+                labels = _in["labels"]
+                acc = (preds == labels).float().mean().item()
+                return float(acc)
+        except Exception:
+            return None
+
+    def _extract_eval_acc(self, metrics: Dict[str, float]) -> Optional[float]:
+        """从 evaluate() 的 metrics 字典里尽量找出准确率字段。常见键：eval_accuracy / eval_acc / eval_mnli/acc 等。"""
+        if not isinstance(metrics, dict):
+            return None
+        # 优先常见命名
+        for k in ["eval_accuracy", "eval_acc", "accuracy", "acc"]:
+            if k in metrics and isinstance(metrics[k], (int, float)):
+                return float(metrics[k])
+        # 次优：包含 acc 的键（如 eval_mnli/acc）
+        for k, v in metrics.items():
+            if isinstance(k, str) and "acc" in k and isinstance(v, (int, float)):
+                return float(v)
+        return None
+    # =====================================================
 
     def pick_h_two_stage(self, model, inputs, tau1=100.0, tau2=0.1, max_iters=10, layer_name: Optional[str]=None):
         """
@@ -848,6 +905,9 @@ class Trainer(LinearHeadTrainer):
         logger.info("  Total optimization steps = %d", t_total)
 
         self.state = TrainerState()
+        # 初始化 CSV 日志文件
+        self._setup_metrics_csv()
+        _csv_pending = None  # 暂存本 step 的训练度量，待是否有 eval 再一起写入
         self.state.global_step = 0
         start_time = time.time()
         self.state.zo_forward_step = 0
@@ -1160,6 +1220,14 @@ class Trainer(LinearHeadTrainer):
                                 logs["eps"] = eps if isinstance(eps, float) else eps.item()
                                 self.log(logs)
                                 logger.info(str(logs))
+                                # === CSV：记录本 step 的训练度量，评估结果稍后补充 ===
+                                train_acc_csv = self._compute_train_acc(model, inputs)
+                                _csv_pending = {
+                                    "epoch": float(self.epoch),
+                                    "global_step": int(self.state.global_step),
+                                    "train_loss": float(logs.get("loss", float("nan"))),
+                                    "train_acc": (None if train_acc_csv is None else float(train_acc_csv)),
+                                }
 
                             model.zero_grad()
                             self.state.global_step += 1
@@ -1196,6 +1264,14 @@ class Trainer(LinearHeadTrainer):
                                 logs["eps"] = eps if isinstance(eps, float) else eps.item()
                                 self.log(logs)
                                 logger.info(str(logs))
+                                # === CSV：记录本 step 的训练度量，评估结果稍后补充 ===
+                                train_acc_csv = self._compute_train_acc(model, inputs)
+                                _csv_pending = {
+                                    "epoch": float(self.epoch),
+                                    "global_step": int(self.state.global_step),
+                                    "train_loss": float(logs.get("loss", float("nan"))),
+                                    "train_acc": (None if train_acc_csv is None else float(train_acc_csv)),
+                                }
 
 
                         self.state.global_step += 1
@@ -1257,6 +1333,14 @@ class Trainer(LinearHeadTrainer):
 
                             self.log(logs)
                             logger.info(str(logs))
+                            # === CSV：记录本 step 的训练度量，评估结果稍后补充 ===
+                            train_acc_csv = self._compute_train_acc(model, inputs)
+                            _csv_pending = {
+                                "epoch": float(self.epoch),
+                                "global_step": int(self.state.global_step),
+                                "train_loss": float(logs.get("loss", float("nan"))),
+                                "train_acc": (None if train_acc_csv is None else float(train_acc_csv)),
+                            }
 
                 # === Begin Adaptive h: update h every update_noise_every steps ===
                 # —— 所有用于扰动/差分的 h，统一走 pick_h_two_stage 的合法性筛选
@@ -1302,6 +1386,24 @@ class Trainer(LinearHeadTrainer):
                     output = self.evaluate()
                     metrics = output.metrics
                     objective = self.dev_objective(metrics)
+                    # === CSV：本步触发了评估，把评估度量与训练度量一并写入 ===
+                    try:
+                        eval_loss = float(metrics.get("eval_loss", float("nan"))) if isinstance(metrics, dict) else float("nan")
+                        eval_acc = self._extract_eval_acc(metrics)
+                        with open(self._metrics_csv_path, "a", newline="") as f:
+                            writer = csv.writer(f)
+                            row = [
+                                _csv_pending.get("epoch") if _csv_pending else float(self.epoch),
+                                _csv_pending.get("global_step") if _csv_pending else int(self.state.global_step),
+                                _csv_pending.get("train_loss") if _csv_pending else float("nan"),
+                                _csv_pending.get("train_acc") if _csv_pending else None,
+                                "YES",
+                                eval_loss,
+                                (None if eval_acc is None else float(eval_acc)),
+                            ]
+                            writer.writerow(row)
+                    except Exception as e:
+                        logger.warning(f"[CSV] failed to write eval row: {e}")
                     if objective > self.objective:
                         logger.info("Best dev result: {}".format(objective))
                         self.objective = objective
@@ -1309,6 +1411,23 @@ class Trainer(LinearHeadTrainer):
 
                         # Now we save this to (CPU) memory instead of disk <-- much faster
                         self.best_model_ckpt = {k: v.detach().cpu() for k, v in model.state_dict().items()}
+                else:
+                    # === CSV：本步未触发评估，立即写入一行并标注未评估 ===
+                    try:
+                        with open(self._metrics_csv_path, "a", newline="") as f:
+                            writer = csv.writer(f)
+                            row = [
+                                _csv_pending.get("epoch") if _csv_pending else float(self.epoch),
+                                _csv_pending.get("global_step") if _csv_pending else int(self.state.global_step),
+                                _csv_pending.get("train_loss") if _csv_pending else float("nan"),
+                                _csv_pending.get("train_acc") if _csv_pending else None,
+                                "NO",
+                                None,
+                                None,
+                            ]
+                            writer.writerow(row)
+                    except Exception as e:
+                        logger.warning(f"[CSV] failed to write non-eval row: {e}")
 
             if self.args.max_steps > 0 and self.state.global_step > self.args.max_steps or (self.args.max_zo_forward_steps > 0 and self.state.zo_forward_step > self.args.max_zo_forward_steps):
                 # train_iterator.close()
