@@ -121,4 +121,4 @@ else
         $ALL_ARGS_TOGETHER
 fi
 
-rm -rf result/$TASK-$MODEL-$TYPE-$TRAINER-$TAG$GRID_TAG/$K-$SEED
+rm -rf result/$TASK-$MODEL-$TYPE-$TRAINER-$TAG$GRID_TAG/$K-$SEED/checkpoint-*
