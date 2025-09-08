@@ -300,48 +300,60 @@ class Trainer(LinearHeadTrainer):
                     p.data.copy_(orig.to(dtype=dtype))
             return val
 
-        def delta2(h_local: float) -> float:
-            """二阶中心差分幅度：|f(-h) - 2 f(0) + f(h)|。用于 (18a) 与 μ 的粗估。"""
-            fp = eval_at( h_local)
-            fm = eval_at(-h_local)
-            return abs(fm - 2.0 * f0 + fp)
-
-        def proximity_ok(val: float) -> bool:
-            """(18b)：|f(±h) - f(0)| <= τ2 * max(|f(0)|, |f(±h)|) —— 相对变化受限（量纲不敏感）"""
-            return abs(val - f0) <= tau2 * max(abs(f0), abs(val))
-
         def tests_on(h_local: float):
             """
             对给定 h，返回：
-              snr_ok   : 是否通过 (18a) 信噪比测试（Δ^2 f(h)/ε_f >= τ1）
-              prox_ok  : 是否通过 (18b) 函数值相近性（±h 都需满足）
-              mu_hat   : 以 Δ^2 f(h)/h^2 粗估 |f''|
-              d2       : Δ^2 f(h) 本身（便于日志或进一步分析）
+              snr_ok     : 是否通过 (18a) 信噪比测试（Δ^2 f(h)/ε_f >= τ1）
+              prox_ok    : 是否通过 (18b) 函数值相近性（±h 都需满足）
+              mu_hat     : 以 Δ^2 f(h)/h^2 粗估 |f''|
+              d2         : Δ^2 f(h) 本身
+              snr_value  : 数值化的信噪比（Δ^2 f(h)/ε_f）
+              prox_vals  : (prox_plus, prox_minus) 两个方向的相对偏移值
             """
-            d2 = delta2(h_local)
-            mu_hat = d2 / (h_local ** 2 + 1e-30)
-            snr_ok = (d2 / max(eps_f, 1e-30)) >= tau1
+            # 在 ±h 处各算一次函数值
             fp = eval_at( h_local)
             fm = eval_at(-h_local)
-            prox_ok = (proximity_ok(fp) and proximity_ok(fm))
-            return snr_ok, prox_ok, mu_hat, d2
+            # 二阶中心差分幅度 Δ^2 f(h)
+            d2 = abs(fm - 2.0 * f0 + fp)
+            # μ ≈ Δ^2 f(h) / h^2
+            mu_hat = d2 / (h_local ** 2 + 1e-30)
+            # (18a) 的数值：SNR = Δ^2 f / ε_f
+            snr_value = d2 / max(eps_f, 1e-30)
+            snr_ok = snr_value >= tau1
+            # (18b) 的数值：两个方向的相对偏移（越小越“相近”）
+            prox_plus = abs(fp - f0) / max(abs(f0), abs(fp), 1e-30)
+            prox_minus = abs(fm - f0) / max(abs(f0), abs(fm), 1e-30)
+            prox_ok = (prox_plus <= tau2) and (prox_minus <= tau2)
+            return snr_ok, prox_ok, mu_hat, d2, snr_value, (prox_plus, prox_minus)
 
         # === 5) 二次试探：先 h_a，再基于 μ_a 得 h_b；必要时做几何调整 ===
         tiny = 1e-30
         h_a = max(eps_f, tiny) ** 0.25  # 第一次试探：理论量级 ε_f^{1/4}
-        snr_a, prox_a, mu_a, _ = tests_on(h_a)
+        snr_a, prox_a, mu_a, d2_a, snr_val_a, (prox_plus_a, prox_minus_a) = tests_on(h_a)
+        # —— 第一次试探（h_a）调试信息 ——
+        try:
+            logger.info(
+                f"[pick_h_two_stage][trial-a] layer={layer_name or 'ALL'} "
+                f"h_a={h_a:.6e}, mu_a={mu_a:.6e}, d2_a={d2_a:.6e}, "
+                f"SNR(a)={snr_val_a:.6e} (>= {tau1}? {snr_a}), "
+                f"prox+(a)={prox_plus_a:.6e}, prox-(a)={prox_minus_a:.6e} (<= {tau2}? {prox_a})"
+            )
+        except Exception:
+            pass
 
         if snr_a and prox_a:
             chosen_h = h_a
         else:
             mu_a_pos = max(mu_a, tiny)
             h_b = (eps_f / mu_a_pos) ** 0.25  # 第二次试探：基于 μ_a 的尺度
-            snr_b, prox_b, mu_b, _ = tests_on(h_b)
+            snr_b, prox_b, mu_b, d2_b, snr_val_b, (prox_plus_b, prox_minus_b) = tests_on(h_b)
+            # —— 第二次试探（h_b）调试信息 ——
             try:
                 logger.info(
-                    f"[pick_h_two_stage][fallback] layer={layer_name or 'ALL'} "
-                    f"h_a={h_a:.6e}, h_b={h_b:.6e}, mu_a={mu_a:.6e}, mu_b={mu_b:.6e}, "
-                    f"SNR(a)={snr_a}, Prox(a)={prox_a}, SNR(b)={snr_b}, Prox(b)={prox_b}"
+                    f"[pick_h_two_stage][trial-b] layer={layer_name or 'ALL'} "
+                    f"h_b={h_b:.6e}, mu_b={mu_b:.6e}, d2_b={d2_b:.6e}, "
+                    f"SNR(b)={snr_val_b:.6e} (>= {tau1}? {snr_b}), "
+                    f"prox+(b)={prox_plus_b:.6e}, prox-(b)={prox_minus_b:.6e} (<= {tau2}? {prox_b})"
                 )
             except Exception:
                 pass
