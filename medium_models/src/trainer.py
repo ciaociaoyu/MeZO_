@@ -330,12 +330,21 @@ class Trainer(LinearHeadTrainer):
         tiny = 1e-30
         h_a = max(eps_f, tiny) ** 0.25  # 第一次试探：理论量级 ε_f^{1/4}
         snr_a, prox_a, mu_a, _ = tests_on(h_a)
+
         if snr_a and prox_a:
             chosen_h = h_a
         else:
             mu_a_pos = max(mu_a, tiny)
             h_b = (eps_f / mu_a_pos) ** 0.25  # 第二次试探：基于 μ_a 的尺度
             snr_b, prox_b, mu_b, _ = tests_on(h_b)
+            try:
+                logger.info(
+                    f"[pick_h_two_stage][fallback] layer={layer_name or 'ALL'} "
+                    f"h_a={h_a:.6e}, h_b={h_b:.6e}, mu_a={mu_a:.6e}, mu_b={mu_b:.6e}, "
+                    f"SNR(a)={snr_a}, Prox(a)={prox_a}, SNR(b)={snr_b}, Prox(b)={prox_b}"
+                )
+            except Exception:
+                pass
 
             if snr_b and prox_b:
                 chosen_h = h_b
@@ -345,14 +354,7 @@ class Trainer(LinearHeadTrainer):
             else:
                 # 仍未通过：按“失败方向”几何调整（SNR 不足 -> 放大；相近性失败 -> 缩小）
                 # 打印调试信息：两次试探的 μ、步长与判据结果（便于定位“离谱 h”的成因）
-                try:
-                    logger.info(
-                        f"[pick_h_two_stage][fallback] layer={layer_name or 'ALL'} "
-                        f"h_a={h_a:.6e}, h_b={h_b:.6e}, mu_a={mu_a:.6e}, mu_b={mu_b:.6e}, "
-                        f"SNR(a)={snr_a}, Prox(a)={prox_a}, SNR(b)={snr_b}, Prox(b)={prox_b}"
-                    )
-                except Exception:
-                    pass
+
                 chosen_h = 0.001
                 # it = 0
                 # while it < max_iters:
