@@ -135,7 +135,7 @@ def plot_train_loss(
 # ---- Simple in-file configuration (no CLI) ----
 MAIN_CFG = {
     # Set your CSV path here. Example defaults to the file beside this script or to your known dataset path.
-    "csv": Path("metrics_adaptiveH-1_cscale-0_layerwiseH-0.csv"),  # change if needed
+    "csv": Path("metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv"),  # change if needed
     # Optional x-axis column; set to None to auto-guess
     "xcol": None,  # e.g., "step" or "epoch"
     # Optional custom output path; set to None to save next to CSV as *_train_loss.png
@@ -143,9 +143,9 @@ MAIN_CFG = {
     # Optional chart title; set to None to auto-generate
     "title": None,
     # Moving-average window; use 1 or None to disable smoothing
-    "ma_window": 100,
+    "ma_window": 50,
     # Optional maximum y-axis limit
-    "ymax": 1,
+    "ymax": 0.7,
     # Optional minimum y-axis limit
     "ymin": 0,
 }
