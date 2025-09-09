@@ -227,27 +227,29 @@ class Trainer(LinearHeadTrainer):
         return None
     # =====================================================
 
-    def pick_h_two_stage(self, model, inputs, tau1=100.0, tau2=0.1, max_iters=10, layer_name: Optional[str]=None):
+    def pick_h_two_stage(self, model, inputs, tau1=10.0, tau2=0.1, max_iters=10, layer_name: Optional[str]=None):
         """
-        按论文使用【二次试探 (h_a/h_b) + 判据 (18a)(18b)】为“沿随机方向的一维探测”选择一个合适的 h。
-        返回值：
-          - chosen_h: 通过两条判据筛选/调整后的步长
-          - ctx: 用于后续复用的一些上下文（避免重复构造随机方向/恢复参数），包含：
-              { originals, v_list, params, dtype, f0, eps_f }
-        参数 layer_name：若指定，则仅在该层参数子空间内做一维探测（用于“分层 h”）。
+        依据论文 Algorithm 5.1：
+        1) 用两次试探 (h_a/h_b) 与判据 (18a)(18b) 来 **估计曲率量级 μ ≈ |f''(t_0)|**；
+        2) 再由 μ 反推出步长：h = (ε_f / μ)^{1/4}；
+        3) 最后对得到的 h 进行统一的数值约束（[1e-5, 0.5]）。
+
+        这样实现与论文语义一致：试探的目标是得到稳定的 μ，而不是直接“挑 h”。
+        返回：
+          - chosen_h: 由 μ 反推得到的 h（并做了上下限裁剪）。
+          - ctx: 复用上下文（保存了随机方向等），便于后续差分/估噪使用：
+                  { originals, v_list, params, dtype, f0, eps_f, eval_at, mu }
+        参数 layer_name：若设置，则仅在该层参数子空间内进行一维探测（用于分层 h）。
         """
-        # === 1) 收集可训练参数并保存原值（用 float64 提升数值稳定性）===
+        # === 1) 收集可训练参数（可按层过滤），并保存原值（float64 降低舍入误差）===
         names, params = [], []
         for name, param in model.named_parameters():
             if not self.should_optim(name, param):
                 continue
-            if layer_name is not None:
-                # 仅挑选属于该层的参数（层的划分复用 cs 的检索规则）
-                if layer_name not in name:
-                    continue
+            if layer_name is not None and (layer_name not in name):
+                continue
             names.append(name)
             params.append(param)
-        # 若该层无参数，则 fallback
         if not params:
             logger.warning("[pick_h_two_stage] No trainable params; fallback h = 1e-3.")
             return 1e-3, None
@@ -257,80 +259,67 @@ class Trainer(LinearHeadTrainer):
         total_numel = sum(param_numels)
         device = params[0].data.device
         dtype = params[0].data.dtype
-
-        # 保存原参数（float64 以减少舍入误差放大）
         originals = [p.data.detach().clone().to(dtype=torch.float64) for p in params]
 
-        # === 2) 生成“全局随机方向” v，并单位化 ===
+        # === 2) 构造随机单位方向 v（float64），用于在参数空间做一维探测 ===
         v_flat = torch.randn(total_numel, dtype=torch.float64, device=device)
         v_flat = v_flat / torch.norm(v_flat)
         v_splits = torch.split(v_flat, param_numels)
         v_list = [v.view(shape) for v, shape in zip(v_splits, param_shapes)]
 
         def set_params(alpha: float):
-            """将参数设置为 θ(alpha) = θ0 + alpha * v；完成后需恢复原值。"""
+            """设置参数为 θ(alpha) = θ0 + alpha * v；用后需恢复。"""
             for p, orig, v in zip(params, originals, v_list):
                 p.data.copy_((orig + alpha * v).to(dtype=dtype))
 
-        # === 3) 准备噪声水平 ε_f；若尚未估计，则现场估一次 ===
+        # === 3) 噪声水平 ε_f（若未有则现场估一遍；分层时在该子空间估计）===
         try:
             eps_f = float(getattr(self, "epsilon_f", None))
             if not math.isfinite(eps_f) or eps_f <= 0:
                 raise ValueError("invalid epsilon_f")
         except Exception:
-            # 若为分层 h，则只在该层参数子空间上估计噪声
             eps_f = float(self.estimate_noise(model, self.compute_loss, inputs, layer_name=layer_name))
             logger.info(f"[pick_h_two_stage] on-the-fly epsilon_f = {eps_f:.3e}")
 
-        # === 4) 计算 f(0) 作为 (18b) 参考基点 ===
+        # === 4) 计算 f(0)（用于 (18b) 的相近性判据）===
         with torch.no_grad():
             for p, orig in zip(params, originals):
                 p.data.copy_(orig.to(dtype=dtype))
             f0 = float(self.zo_forward(model, inputs))
 
         def eval_at(alpha: float) -> float:
-            """在 θ(alpha) 处计算一次 f，结束后恢复参数。"""
+            """在 θ(alpha) 处评估一次 f（完毕后恢复原值）。"""
             try:
                 with torch.no_grad():
                     set_params(alpha)
                     val = float(self.zo_forward(model, inputs))
             finally:
-                # 恢复到原参数
                 for p, orig in zip(params, originals):
                     p.data.copy_(orig.to(dtype=dtype))
             return val
 
+        # === 5) 判据计算：对给定 h，返回 (18a)(18b)、μ 估计及其数值指标 ===
         def tests_on(h_local: float):
-            """
-            对给定 h，返回：
-              snr_ok     : 是否通过 (18a) 信噪比测试（Δ^2 f(h)/ε_f >= τ1）
-              prox_ok    : 是否通过 (18b) 函数值相近性（±h 都需满足）
-              mu_hat     : 以 Δ^2 f(h)/h^2 粗估 |f''|
-              d2         : Δ^2 f(h) 本身
-              snr_value  : 数值化的信噪比（Δ^2 f(h)/ε_f）
-              prox_vals  : (prox_plus, prox_minus) 两个方向的相对偏移值
-            """
-            # 在 ±h 处各算一次函数值
+            # 在 ±h 处各算一次 f
             fp = eval_at( h_local)
             fm = eval_at(-h_local)
-            # 二阶中心差分幅度 Δ^2 f(h)
+            # Δ^2 f(h) 与 μ 估计
             d2 = abs(fm - 2.0 * f0 + fp)
-            # μ ≈ Δ^2 f(h) / h^2
             mu_hat = d2 / (h_local ** 2 + 1e-30)
-            # (18a) 的数值：SNR = Δ^2 f / ε_f
+            # (18a) 信噪比：Δ^2 f / ε_f
             snr_value = d2 / max(eps_f, 1e-30)
             snr_ok = snr_value >= tau1
-            # (18b) 的数值：两个方向的相对偏移（越小越“相近”）
+            # (18b) 相近性：两个方向的相对偏移
             prox_plus = abs(fp - f0) / max(abs(f0), abs(fp), 1e-30)
             prox_minus = abs(fm - f0) / max(abs(f0), abs(fm), 1e-30)
             prox_ok = (prox_plus <= tau2) and (prox_minus <= tau2)
             return snr_ok, prox_ok, mu_hat, d2, snr_value, (prox_plus, prox_minus)
 
-        # === 5) 二次试探：先 h_a，再基于 μ_a 得 h_b；必要时做几何调整 ===
+        # === 6) Two-stage 估计 μ：先试 h_a，再用 μ_a 推出 h_b；任何一次通过即接受对应 μ ===
         tiny = 1e-30
-        h_a = max(eps_f, tiny) ** 0.25  # 第一次试探：理论量级 ε_f^{1/4}
+        h_a = max(eps_f, tiny) ** 0.25  # h_a = ε_f^{1/4}
         snr_a, prox_a, mu_a, d2_a, snr_val_a, (prox_plus_a, prox_minus_a) = tests_on(h_a)
-        # —— 第一次试探（h_a）调试信息 ——
+        # — 调试输出：第一次试探（h_a）—
         try:
             logger.info(
                 f"[pick_h_two_stage][trial-a] layer={layer_name or 'ALL'} "
@@ -341,13 +330,15 @@ class Trainer(LinearHeadTrainer):
         except Exception:
             pass
 
+        mu_accept: Optional[float] = None
         if snr_a and prox_a:
-            chosen_h = h_a
+            mu_accept = mu_a  # 直接接受 μ_a
         else:
+            # 第二次试探：h_b = (ε_f / μ_a)^{1/4}
             mu_a_pos = max(mu_a, tiny)
-            h_b = (eps_f / mu_a_pos) ** 0.25  # 第二次试探：基于 μ_a 的尺度
+            h_b = (eps_f / mu_a_pos) ** 0.25
             snr_b, prox_b, mu_b, d2_b, snr_val_b, (prox_plus_b, prox_minus_b) = tests_on(h_b)
-            # —— 第二次试探（h_b）调试信息 ——
+            # — 调试输出：第二次试探（h_b）—
             try:
                 logger.info(
                     f"[pick_h_two_stage][trial-b] layer={layer_name or 'ALL'} "
@@ -359,31 +350,43 @@ class Trainer(LinearHeadTrainer):
                 pass
 
             if snr_b and prox_b:
-                chosen_h = h_b
+                mu_accept = mu_b
             elif abs(mu_a - mu_b) <= 0.5 * mu_b:
-                # 一致性兜底：若两次 μ 估计接近，则直接用 h_b
-                chosen_h = h_b
+                # 一致性兜底：若两次 μ 估计接近，则接受 μ_b（论文 Algorithm 5.1 的最后一条）
+                mu_accept = mu_b
             else:
-                # 仍未通过：按“失败方向”几何调整（SNR 不足 -> 放大；相近性失败 -> 缩小）
-                # 打印调试信息：两次试探的 μ、步长与判据结果（便于定位“离谱 h”的成因）
+                # 仍未通过：保守兜底，取两者中的较大者以避免 μ→0 导致 h 爆大
+                mu_accept = max(mu_a, mu_b, tiny)
+                try:
+                    logger.info(
+                        f"[pick_h_two_stage][fallback] layer={layer_name or 'ALL'} "
+                        f"use max(mu_a, mu_b) to avoid tiny μ. mu_a={mu_a:.6e}, mu_b={mu_b:.6e}"
+                    )
+                except Exception:
+                    pass
 
-                chosen_h = 0.001
-                # it = 0
-                # while it < max_iters:
-                #     snr_ok, prox_ok, _, _ = tests_on(chosen_h)
-                #     if snr_ok and prox_ok:
-                #         break
-                #     if not snr_ok:
-                #         chosen_h *= 2.0
-                #     elif not prox_ok:
-                #         chosen_h *= 0.5
-                #     it += 1
-                # 退出循环时，无论是否完全通过，都采用当前 chosen_h 作为折中
+        # === 7) 由 μ 反推 h，并做数值约束与日志 ===
+        # 理论量级：h = (ε_f / μ)^{1/4}
+        h_from_mu = (eps_f / max(mu_accept, tiny)) ** 0.25
+        # 与全局策略保持一致：裁剪到 [1e-5, 0.5]
+        chosen_h = float(min(0.5, max(1e-5, h_from_mu)))
+        try:
+            logger.info(
+                f"[pick_h_two_stage] derive h from μ: mu={mu_accept:.6e} -> h={chosen_h:.6e}  (eps_f={eps_f:.6e})"
+            )
+        except Exception:
+            pass
 
-        # 打包复用上下文，便于后续估计 ν3 复用相同方向与基准 f0
+        # === 8) 打包上下文，供后续复用（例如估计 ν3 时重用 eval_at / 随机方向）===
         ctx = dict(
-            originals=originals, v_list=v_list, params=params, dtype=dtype, f0=f0, eps_f=eps_f,
-            eval_at=eval_at  # 直接暴露 eval_at，避免重复写入/恢复逻辑
+            originals=originals,
+            v_list=v_list,
+            params=params,
+            dtype=dtype,
+            f0=f0,
+            eps_f=eps_f,
+            eval_at=eval_at,
+            mu=float(mu_accept),
         )
         return chosen_h, ctx
     """
@@ -391,7 +394,7 @@ class Trainer(LinearHeadTrainer):
     """
 
     # === Begin Adaptive h (Berahas et al.) ===
-    def estimate_nu3(self, model, loss_fn, inputs, h=1e-3, tau1=100.0, tau2=0.1, max_iters=10):
+    def estimate_nu3(self, model, loss_fn, inputs, h=1e-3, tau1=10.0, tau2=0.1, max_iters=2):
         """
         先通过 pick_h_two_stage() 用二次试探+(18a)(18b) 选择“合法”的 h，
         再用 5 点三阶差分公式估计 ||f^{(3)}||（nu3）。
@@ -955,7 +958,7 @@ class Trainer(LinearHeadTrainer):
                 #    2) 分层路径会调用 pick_h_two_stage(..., layer_name=layer)，其内部会在该层参数子空间上估计 epsilon_f 并做(18a)(18b)筛选；
                 self.layerwise_h = {}
                 for layer in self.layer_names:
-                    h_valid, _ = self.pick_h_two_stage(model, example_inputs, tau1=100.0, tau2=0.1, max_iters=10, layer_name=layer)
+                    h_valid, _ = self.pick_h_two_stage(model, example_inputs, tau1=5.0, tau2=0.1, max_iters=10, layer_name=layer)
                     h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else 1e-3
                     # 统一约束 h 的范围：[1e-5, 0.5]
                     h_final = min(0.5, max(1e-5, h_final))
@@ -979,7 +982,7 @@ class Trainer(LinearHeadTrainer):
                 # 注意：论文建议最终的 h 仍需通过 (18a)(18b) 的“合法性”筛选
                 h_proposed = (self.epsilon_f / self.nu3) ** (1/3) * (3 ** (1/3))
                 # —— 统一入口：所有用于扰动/差分的 h 必须经过二次试探 + 判据(18a)(18b)
-                h_valid, _ctx = self.pick_h_two_stage(model, example_inputs, tau1=100.0, tau2=0.1, max_iters=10)
+                h_valid, _ctx = self.pick_h_two_stage(model, example_inputs, tau1=5.0, tau2=0.1, max_iters=10)
                 h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else float(h_proposed)
                 # 统一约束 h 的范围：[1e-5, 0.5]
                 h_final = min(0.5, max(1e-5, h_final))
@@ -1388,7 +1391,7 @@ class Trainer(LinearHeadTrainer):
                         # —— 分层 h 更新：逐层重新选择 h（层的划分与 cs 相同：self.layer_names 来自 initialize_c）
                         self.layerwise_h = {}
                         for layer in self.layer_names:
-                            h_valid, _ = self.pick_h_two_stage(model, inputs, tau1=100.0, tau2=0.1, max_iters=10, layer_name=layer)
+                            h_valid, _ = self.pick_h_two_stage(model, inputs, tau1=5.0, tau2=0.1, max_iters=10, layer_name=layer)
                             h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else 1e-3
                             # 统一约束 h 的范围：[1e-5, 0.5]
                             h_final = min(0.5, max(1e-5, h_final))
@@ -1408,7 +1411,7 @@ class Trainer(LinearHeadTrainer):
                     # —— 先计算理论提案 h*
                     h_proposed = (self.epsilon_f / self.nu3) ** (1 / 3) * (3 ** (1 / 3))
                     # —— 再通过统一入口做合法性筛选（(18a)(18b)）
-                    h_valid, _ctx = self.pick_h_two_stage(model, inputs, tau1=100.0, tau2=0.1, max_iters=10)
+                    h_valid, _ctx = self.pick_h_two_stage(model, inputs, tau1=5.0, tau2=0.1, max_iters=10)
                     h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else float(h_proposed)
                     # 统一约束 h 的范围：[1e-5, 0.5]
                     h_final = min(0.5, max(1e-5, h_final))
