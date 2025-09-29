@@ -338,7 +338,7 @@ class Trainer(LinearHeadTrainer):
             tried_nu3 = []
             accepted = False
 
-            for i in range(1, 6):  # i = 1..5 attempts
+            for i in range(1, 6):  # 最多 5 次试探
                 nu3_prev_pos = max(nu3_prev, tiny)
                 h_i = (eps_f / nu3_prev_pos) ** 0.2  # (ε_f / ν3_prev)^{1/5}
                 snr_i, prox_i, nu3_i, delta3_i, snr_val_i, (prox_plus_i, prox_minus_i) = nu3_tests_on(h_i)
@@ -353,22 +353,22 @@ class Trainer(LinearHeadTrainer):
                     pass
 
                 if snr_i and prox_i and math.isfinite(nu3_i) and nu3_i > 0:
-                    # Accept first passing candidate and stop
+                    # 满足两个判据，接受并停止
                     nu3_accept = nu3_i
                     chosen_h = h_i
                     accepted = True
                     break
                 else:
-                    if i == 1:
-                        # b 实验失败：立刻停止，选前一个 h（即 h_a / nu3_a）
+                    # 如果相似度检测失败，立即早停并回退到上一个 h（初始为 h_a）
+                    if not prox_i:
                         nu3_accept = nu3_prev if (math.isfinite(nu3_prev) and nu3_prev > 0) else 20.0
                         chosen_h = h_prev
                         logger.info(
-                            f"[estimate_nu3][early-stop at trial-b] layer={layer_name or 'ALL'} choose previous h={chosen_h:.6e}, ν3={nu3_accept:.6e}"
+                            f"[estimate_nu3][early-stop: proximity failed] layer={layer_name or 'ALL'} choose previous h={chosen_h:.6e}, ν3={nu3_accept:.6e}"
                         )
                         accepted = True
                         break
-                    # update and continue to next attempt
+                    # 否则（SNR 未过但相似度通过），更新并继续下一次提案
                     nu3_prev, h_prev = nu3_i, h_i
 
             if not accepted:
