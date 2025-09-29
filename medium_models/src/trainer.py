@@ -227,68 +227,57 @@ class Trainer(LinearHeadTrainer):
         return None
     # =====================================================
 
-    def pick_h_two_stage(self, model, inputs, tau1=10.0, tau2=0.1, max_iters=10, layer_name: Optional[str]=None):
+    """
+    Adding some functions based on Transformers' Trainer class.
+    """
+
+    # === Begin Adaptive h (Berahas et al.) ===
+    def estimate_nu3(self, model, loss_fn, inputs, tau1=10.0, tau2=0.1, max_iters=2, layer_name: Optional[str]=None):
         """
-        依据论文 Algorithm 5.1：
-        1) 用两次试探 (h_a/h_b) 与判据 (18a)(18b) 来 **估计曲率量级 μ ≈ |f''(t_0)|**；
-        2) 再由 μ 反推出步长：h = (ε_f / μ)^{1/4}；
-        3) 最后对得到的 h 进行统一的数值约束（[1e-5, 0.5]）。
-
-        这样实现与论文语义一致：试探的目标是得到稳定的 μ，而不是直接“挑 h”。
-        返回：
-          - chosen_h: 由 μ 反推得到的 h（并做了上下限裁剪）。
-          - ctx: 复用上下文（保存了随机方向等），便于后续差分/估噪使用：
-                  { originals, v_list, params, dtype, f0, eps_f, eval_at, mu }
-        参数 layer_name：若设置，则仅在该层参数子空间内进行一维探测（用于分层 h）。
+        Robustly estimate the third derivative magnitude ν3 using a two-stage process with (18a)(18b) tests.
+        Uses third-order central finite difference (Δ^{(3)}(h)), selecting h adaptively:
+          1. Try h_a = ε_f^{1/5}; if SNR and proximity tests pass, accept ν3_a.
+          2. Else, try h_b = (ε_f / ν3_a)^{1/5} and accept if passes tests.
+          3. If both fail, fallback to a conservative ν3.
+        Returns the accepted ν3.
         """
-        # === 1) 收集可训练参数（可按层过滤），并保存原值（float64 降低舍入误差）===
-        names, params = [], []
-        for name, param in model.named_parameters():
-            if not self.should_optim(name, param):
-                continue
-            if layer_name is not None and (layer_name not in name):
-                continue
-            names.append(name)
-            params.append(param)
-        if not params:
-            logger.warning("[pick_h_two_stage] No trainable params; fallback h = 1e-3.")
-            return 1e-3, None
-
-        param_shapes = [p.data.shape for p in params]
-        param_numels = [p.data.numel() for p in params]
-        total_numel = sum(param_numels)
-        device = params[0].data.device
-        dtype = params[0].data.dtype
-        originals = [p.data.detach().clone().to(dtype=torch.float64) for p in params]
-
-        # === 2) 构造随机单位方向 v（float64），用于在参数空间做一维探测 ===
-        v_flat = torch.randn(total_numel, dtype=torch.float64, device=device)
-        v_flat = v_flat / torch.norm(v_flat)
-        v_splits = torch.split(v_flat, param_numels)
-        v_list = [v.view(shape) for v, shape in zip(v_splits, param_shapes)]
-
-        def set_params(alpha: float):
-            """设置参数为 θ(alpha) = θ0 + alpha * v；用后需恢复。"""
-            for p, orig, v in zip(params, originals, v_list):
-                p.data.copy_((orig + alpha * v).to(dtype=dtype))
-
-        # === 3) 噪声水平 ε_f（若未有则现场估一遍；分层时在该子空间估计）===
+        # Estimate ε_f for this context
         try:
             eps_f = float(getattr(self, "epsilon_f", None))
             if not math.isfinite(eps_f) or eps_f <= 0:
                 raise ValueError("invalid epsilon_f")
         except Exception:
             eps_f = float(self.estimate_noise(model, self.compute_loss, inputs, layer_name=layer_name))
-            logger.info(f"[pick_h_two_stage] on-the-fly epsilon_f = {eps_f:.3e}")
+            logger.info(f"[estimate_nu3] on-the-fly epsilon_f = {eps_f:.3e}")
 
-        # === 4) 计算 f(0)（用于 (18b) 的相近性判据）===
+        # Helper: get parameter context for perturbation
+        names, params = [], []
+        for name, param in model.named_parameters():
+            if self.should_optim(name, param):
+                if layer_name is not None and (layer_name not in name):
+                    continue
+                names.append(name)
+                params.append(param)
+        param_shapes = [p.data.shape for p in params]
+        param_numels = [p.data.numel() for p in params]
+        total_numel = sum(param_numels)
+        device = params[0].data.device if params else torch.device("cpu")
+        dtype = params[0].data.dtype if params else torch.float32
+        originals = [p.data.detach().clone().to(dtype=torch.float64) for p in params]
+        # Random direction v (float64)
+        v_flat = torch.randn(total_numel, dtype=torch.float64, device=device)
+        v_flat = v_flat / torch.norm(v_flat)
+        v_splits = torch.split(v_flat, param_numels)
+        v_list = [v.view(shape) for v, shape in zip(v_splits, param_shapes)]
+        def set_params(alpha: float):
+            for p, orig, v in zip(params, originals, v_list):
+                p.data.copy_((orig + alpha * v).to(dtype=dtype))
+        # f0 at base
         with torch.no_grad():
             for p, orig in zip(params, originals):
                 p.data.copy_(orig.to(dtype=dtype))
             f0 = float(self.zo_forward(model, inputs))
-
         def eval_at(alpha: float) -> float:
-            """在 θ(alpha) 处评估一次 f（完毕后恢复原值）。"""
             try:
                 with torch.no_grad():
                     set_params(alpha)
@@ -298,166 +287,81 @@ class Trainer(LinearHeadTrainer):
                     p.data.copy_(orig.to(dtype=dtype))
             return val
 
-        # === 5) 判据计算：对给定 h，返回 (18a)(18b)、μ 估计及其数值指标 ===
-        def tests_on(h_local: float):
-            # 在 ±h 处各算一次 f
-            fp = eval_at( h_local)
-            fm = eval_at(-h_local)
-            # Δ^2 f(h) 与 μ 估计
-            d2 = abs(fm - 2.0 * f0 + fp)
-            mu_hat = d2 / (h_local ** 2 + 1e-30)
-            # (18a) 信噪比：Δ^2 f / ε_f
-            snr_value = d2 / max(eps_f, 1e-30)
-            snr_ok = snr_value >= tau1
-            # (18b) 相近性：两个方向的相对偏移
+        # SNR and proximity tests for third-order difference
+        def nu3_tests_on(h_local: float):
+            f2  = eval_at( 2.0 * h_local)
+            f1  = eval_at( 1.0 * h_local)
+            fm1 = eval_at(-1.0 * h_local)
+            fm2 = eval_at(-2.0 * h_local)
+            delta3 = abs(-f2 + 2.0 * f1 - 2.0 * fm1 + fm2)
+            nu3_hat = delta3 / (2.0 * (h_local ** 3 + 1e-30))
+            # SNR: Δ^{(3)}(h) / ε_f ≥ τ1
+            snr_val = delta3 / max(eps_f, 1e-30)
+            snr_ok = snr_val >= tau1
+            # Proximity: |f(t0±h)-f(t0)| ≤ τ2 * max{|f(t0)|, |f(t0±h)|}
+            fp = f1
+            fm = fm1
             prox_plus = abs(fp - f0) / max(abs(f0), abs(fp), 1e-30)
             prox_minus = abs(fm - f0) / max(abs(f0), abs(fm), 1e-30)
             prox_ok = (prox_plus <= tau2) and (prox_minus <= tau2)
-            return snr_ok, prox_ok, mu_hat, d2, snr_value, (prox_plus, prox_minus)
+            return snr_ok, prox_ok, nu3_hat, delta3, snr_val, (prox_plus, prox_minus)
 
-        # === 6) Two-stage 估计 μ：先试 h_a，再用 μ_a 推出 h_b；任何一次通过即接受对应 μ ===
         tiny = 1e-30
-        h_a = max(eps_f, tiny) ** 0.25  # h_a = ε_f^{1/4}
-        snr_a, prox_a, mu_a, d2_a, snr_val_a, (prox_plus_a, prox_minus_a) = tests_on(h_a)
-        # — 调试输出：第一次试探（h_a）—
+        h_a = max(eps_f, tiny) ** 0.2  # h_a = ε_f^{1/5}
+        snr_a, prox_a, nu3_a, delta3_a, snr_val_a, (prox_plus_a, prox_minus_a) = nu3_tests_on(h_a)
         try:
             logger.info(
-                f"[pick_h_two_stage][trial-a] layer={layer_name or 'ALL'} "
-                f"h_a={h_a:.6e}, mu_a={mu_a:.6e}, d2_a={d2_a:.6e}, "
+                f"[estimate_nu3][trial-a] layer={layer_name or 'ALL'} h_a={h_a:.6e}, nu3_a={nu3_a:.6e}, Δ3_a={delta3_a:.6e}, "
                 f"SNR(a)={snr_val_a:.6e} (>= {tau1}? {snr_a}), "
                 f"prox+(a)={prox_plus_a:.6e}, prox-(a)={prox_minus_a:.6e} (<= {tau2}? {prox_a})"
             )
         except Exception:
             pass
-
-        mu_accept: Optional[float] = None
-        if snr_a and prox_a:
-            mu_accept = mu_a  # 直接接受 μ_a
+        if snr_a and prox_a and math.isfinite(nu3_a) and nu3_a > 0:
+            nu3_accept = nu3_a
+            chosen_h = h_a
         else:
-            # 第二次试探：h_b = (ε_f / μ_a)^{1/4}
-            mu_a_pos = max(mu_a, tiny)
-            h_b = (eps_f / mu_a_pos) ** 0.25
-            snr_b, prox_b, mu_b, d2_b, snr_val_b, (prox_plus_b, prox_minus_b) = tests_on(h_b)
-            # — 调试输出：第二次试探（h_b）—
+            # Second trial: h_b = (ε_f / nu3_a)^{1/5}
+            nu3_a_pos = max(nu3_a, tiny)
+            h_b = (eps_f / nu3_a_pos) ** 0.2
+            snr_b, prox_b, nu3_b, delta3_b, snr_val_b, (prox_plus_b, prox_minus_b) = nu3_tests_on(h_b)
             try:
                 logger.info(
-                    f"[pick_h_two_stage][trial-b] layer={layer_name or 'ALL'} "
-                    f"h_b={h_b:.6e}, mu_b={mu_b:.6e}, d2_b={d2_b:.6e}, "
+                    f"[estimate_nu3][trial-b] layer={layer_name or 'ALL'} h_b={h_b:.6e}, nu3_b={nu3_b:.6e}, Δ3_b={delta3_b:.6e}, "
                     f"SNR(b)={snr_val_b:.6e} (>= {tau1}? {snr_b}), "
                     f"prox+(b)={prox_plus_b:.6e}, prox-(b)={prox_minus_b:.6e} (<= {tau2}? {prox_b})"
                 )
             except Exception:
                 pass
-
-            if snr_b and prox_b:
-                mu_accept = mu_b
-            elif abs(mu_a - mu_b) <= 0.5 * mu_b:
-                # 一致性兜底：若两次 μ 估计接近，则接受 μ_b（论文 Algorithm 5.1 的最后一条）
-                mu_accept = mu_b
+            if snr_b and prox_b and math.isfinite(nu3_b) and nu3_b > 0:
+                nu3_accept = nu3_b
+                chosen_h = h_b
+            elif abs(nu3_a - nu3_b) <= 0.5 * nu3_b and math.isfinite(nu3_b) and nu3_b > 0:
+                # Consistency fallback: accept nu3_b if close to nu3_a
+                nu3_accept = nu3_b
+                chosen_h = h_b
             else:
-                # 仍未通过：保守兜底，取两者中的较大者以避免 μ→0 导致 h 爆大
-                mu_accept = max(mu_a, mu_b, tiny)
+                # Conservative fallback: use max(nu3_a, nu3_b, 20.0)
+                # nu3_accept = max(nu3_a, nu3_b, 20.0)
+                if nu3_b > 0.8:
+                    nu3_accept = nu3_b
+                else:
+                    nu3_accept = 20
+
+                chosen_h = h_b
                 try:
                     logger.info(
-                        f"[pick_h_two_stage][fallback] layer={layer_name or 'ALL'} "
-                        f"use max(mu_a, mu_b) to avoid tiny μ. mu_a={mu_a:.6e}, mu_b={mu_b:.6e}"
+                        f"[estimate_nu3][fallback] layer={layer_name or 'ALL'} use nu3_b if nu3_b > 0.8, else use 20. nu3_a={nu3_a:.6e}, nu3_b={nu3_b:.6e}"
                     )
                 except Exception:
                     pass
 
-        # === 7) 由 μ 反推 h，并做数值约束与日志 ===
-        # 理论量级：h = (ε_f / μ)^{1/4}
-        h_from_mu = (eps_f / max(mu_accept, tiny)) ** 0.25
-        # 与全局策略保持一致：裁剪到 [1e-5, 0.5]
-        chosen_h = float(min(0.5, max(1e-5, h_from_mu)))
-        try:
-            logger.info(
-                f"[pick_h_two_stage] derive h from μ: mu={mu_accept:.6e} -> h={chosen_h:.6e}  (eps_f={eps_f:.6e})"
-            )
-        except Exception:
-            pass
-
-        # === 8) 打包上下文，供后续复用（例如估计 ν3 时重用 eval_at / 随机方向）===
-        ctx = dict(
-            originals=originals,
-            v_list=v_list,
-            params=params,
-            dtype=dtype,
-            f0=f0,
-            eps_f=eps_f,
-            eval_at=eval_at,
-            mu=float(mu_accept),
-        )
-        return chosen_h, ctx
-    """
-    Adding some functions based on Transformers' Trainer class.
-    """
-
-    # === Begin Adaptive h (Berahas et al.) ===
-    def estimate_nu3(self, model, loss_fn, inputs, h=1e-3, tau1=10.0, tau2=0.1, max_iters=2):
-        """
-        先通过 pick_h_two_stage() 用二次试探+(18a)(18b) 选择“合法”的 h，
-        再用 5 点三阶差分公式估计 ||f^{(3)}||（nu3）。
-        这样避免：h 太小（被噪声淹没）或太大（截断误差主导）导致的失真。
-        """
-        # —— 第一步：选 h（并获得可复用的 eval 上下文）
-        chosen_h, ctx = self.pick_h_two_stage(model, inputs, tau1=tau1, tau2=tau2, max_iters=max_iters)
-        if ctx is None:
-            logger.warning("[estimate_nu3] pick_h_two_stage returned None ctx; fallback to h=1e-3.")
-            chosen_h = 1e-3
-            # 简单回退：重新准备一个最简 eval 接口（不共享方向）
-            def eval_simple(alpha: float) -> float:
-                return float(self.zo_forward(model, inputs))
-            eval_at = eval_simple
-        else:
-            eval_at = ctx["eval_at"]
-
-        # —— 第二步：在 chosen_h 上做 5 点三阶差分
-        try:
-            f2  = eval_at( 2.0 * chosen_h)
-            f1  = eval_at( 1.0 * chosen_h)
-            fm1 = eval_at(-1.0 * chosen_h)
-            fm2 = eval_at(-2.0 * chosen_h)
-            numerator = abs(-f2 + 2.0 * f1 - 2.0 * fm1 + fm2)
-            denom = 2.0 * (chosen_h ** 3)
-            nu3 = numerator / (denom if denom != 0.0 else 1e-30)
-        except Exception as e:
-            logger.warning(f"[estimate_nu3] exception during 5-point stencil: {e}; fallback to h=1e-3.")
-            h_fb = 1e-3
-            # 回退计算（不依赖 ctx）
-            # 注意：此处回退不再强制通过(18a)(18b)，作为保守估计
-            def _eval_tmp(alpha: float) -> float:
-                # 简化回退：每次直接按 alpha 设置一次，再复原
-                names, params = [], []
-                for name, param in model.named_parameters():
-                    if self.should_optim(name, param):
-                        names.append(name)
-                        params.append(param)
-                if not params:
-                    return float(self.zo_forward(model, inputs))
-                originals = [p.data.detach().clone() for p in params]
-                with torch.no_grad():
-                    # 简化为在当前参数上“加法”模拟 alpha（近似）
-                    for p in params:
-                        p.data.add_(0.0)  # no-op, 占位
-                    val = float(self.zo_forward(model, inputs))
-                    for p, orig in zip(params, originals):
-                        p.data.copy_(orig)
-                return val
-
-            f2  = _eval_tmp( 2.0 * h_fb)
-            f1  = _eval_tmp( 1.0 * h_fb)
-            fm1 = _eval_tmp(-1.0 * h_fb)
-            fm2 = _eval_tmp(-2.0 * h_fb)
-            nu3 = abs(-f2 + 2.0 * f1 - 2.0 * fm1 + fm2) / (2.0 * (h_fb ** 3))
-
-        if (not math.isfinite(nu3)) or nu3 <= 0.0:
+        if (not math.isfinite(nu3_accept)) or nu3_accept <= 0.0:
             logger.warning("[estimate_nu3] nu3 invalid; set to 20 (conservative default).")
-            nu3 = 20.0
+            nu3_accept = 20.0
         else:
-            logger.info(f"Estimated nu3: {nu3:.6e} with chosen h={chosen_h:.6e}")
-
-        return float(nu3)
+            logger.info(f"Estimated nu3: {nu3_accept:.6e} with chosen h={chosen_h:.6e}")
+        return float(nu3_accept)
 
     def estimate_noise(self, model, loss_fn, inputs, q=6, delta=1e-4, layer_name: Optional[str]=None):
         # === Float64 precision for more stable epsilon_f / nu3 estimation ===
@@ -955,45 +859,33 @@ class Trainer(LinearHeadTrainer):
                 self.layer_names = ["embed", "lm_head"] + self.layer_names
                 # —— 分层 h：为每一层单独选 h（层的划分与 cs 相同：self.layer_names 来自 initialize_c）
                 #    1) 分层 h 的层划分完全复用 initialize_c 里建立的层键（self.layer_names）；
-                #    2) 分层路径会调用 pick_h_two_stage(..., layer_name=layer)，其内部会在该层参数子空间上估计 epsilon_f 并做(18a)(18b)筛选；
+                #    2) 分层路径直接用 ν3 估计和 ε_f 计算 h（h = γ₅ (ε_f/ν3)^{1/3}, γ₅=3^{1/3}），
+                #       ν3 估计已在 estimate_nu3 内部用 (18a)(18b) 两阶段判据做了鲁棒性筛选
                 self.layerwise_h = {}
                 for layer in self.layer_names:
-                    h_valid, _ = self.pick_h_two_stage(model, example_inputs, tau1=5.0, tau2=0.1, max_iters=10, layer_name=layer)
-                    h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else 1e-3
-                    # 统一约束 h 的范围：[1e-5, 0.5]
-                    h_final = min(0.5, max(1e-5, h_final))
+                    eps_l = self.estimate_noise(model, self.compute_loss, example_inputs, layer_name=layer)
+                    nu3_l = self.estimate_nu3(model, self.compute_loss, example_inputs, layer_name=layer)
+                    h_final = (eps_l / nu3_l) ** (1/3) * (3 ** (1/3))
+                    h_final = float(min(0.1, max(1e-5, h_final)))
                     self.layerwise_h[layer] = torch.tensor(h_final, dtype=torch.float32)
+                    logger.info(f"[layerwise h] {layer}: eps_f={eps_l:.6e}, nu3={nu3_l:.6e}, h={h_final:.6e}")
                 # 提供一个全局兜底（个别层缺失时使用），并进行相同的范围约束
                 median_h = float(np.median([v.item() for v in self.layerwise_h.values()])) if len(self.layerwise_h) > 0 else 1e-3
                 median_h = min(0.5, max(1e-5, median_h))
                 self.adaptive_h = torch.tensor(median_h, dtype=torch.float32)
-                logger.info(f"Using layerwise h (validated by (18a)/(18b)): median={self.adaptive_h:.6e}")
-                # 仅首次打印每一层的 h 值
-                if not self._logged_layerwise_h:
-                    for k in sorted(self.layerwise_h.keys()):
-                        logger.info(f"[layerwise h] {k}: {self.layerwise_h[k].item():.6e}")
-                    self._logged_layerwise_h = True
+                logger.info(f"Using layerwise h (from ν3): median={self.adaptive_h:.6e}")
+                self._logged_layerwise_h = True
                 previous_adaptive_h = self.adaptive_h
             else:
-                #    3) 全局路径则在全参数空间一次性估计 epsilon_f/nu3 并做筛选。
+                #    3) 全局路径：直接用 ν3 估计和 ε_f 计算 h（h = γ₅ (ε_f/ν3)^{1/3}, γ₅=3^{1/3}）
+                #    ν3 估计已在 estimate_nu3 内部用 (18a)(18b) 两阶段判据做了鲁棒性筛选
                 self.epsilon_f = self.estimate_noise(model, self.compute_loss, example_inputs)
                 self.nu3 = self.estimate_nu3(model, self.compute_loss, example_inputs)
-                # —— 提案步长（基于理论公式）：h* = (ε_f / ν3)^{1/3} * 3^{1/3}
-                # 注意：论文建议最终的 h 仍需通过 (18a)(18b) 的“合法性”筛选
-                h_proposed = (self.epsilon_f / self.nu3) ** (1/3) * (3 ** (1/3))
-                # —— 统一入口：所有用于扰动/差分的 h 必须经过二次试探 + 判据(18a)(18b)
-                h_valid, _ctx = self.pick_h_two_stage(model, example_inputs, tau1=5.0, tau2=0.1, max_iters=10)
-                h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else float(h_proposed)
-                # 统一约束 h 的范围：[1e-5, 0.5]
-                h_final = min(0.5, max(1e-5, h_final))
+                h_final = (self.epsilon_f / self.nu3) ** (1/3) * (3 ** (1/3))
+                h_final = float(min(0.1, max(1e-5, h_final)))
                 self.adaptive_h = torch.tensor(h_final, dtype=torch.float32)
-                logger.info(f"Using adaptive h (validated by (18a)/(18b)) = {self.adaptive_h:.6e}  [proposed={h_proposed:.6e}]")
+                logger.info(f"Using adaptive h from ν3: epsilon_f={self.epsilon_f:.6e}, nu3={self.nu3:.6e}, h={self.adaptive_h:.6e}")
                 previous_adaptive_h = self.adaptive_h
-                if torch.isnan(torch.tensor(self.adaptive_h)).item() or self.adaptive_h < 1e-8 or torch.isinf(torch.tensor(self.adaptive_h)):
-                    logger.warning(f"Adaptive h estimation invalid (value: {self.adaptive_h}), keeping previous adaptive h value.")
-                    self.adaptive_h = previous_adaptive_h
-                else:
-                    previous_adaptive_h = self.adaptive_h
         else:
             previous_adaptive_h = getattr(self, "adaptive_h", 1e-4)
         # === End Adaptive h ===
@@ -1387,36 +1279,30 @@ class Trainer(LinearHeadTrainer):
                     logger.info(f"Re-estimating epsilon_f and nu3 at step {self.state.global_step}...")
                     # —— 是否分层选择 h 的总开关（与初始化时保持一致）
                     use_layerwise_h = getattr(self.args, "use_layerwise_h", False)
-                    if use_layerwise_h:
-                        # —— 分层 h 更新：逐层重新选择 h（层的划分与 cs 相同：self.layer_names 来自 initialize_c）
-                        self.layerwise_h = {}
-                        for layer in self.layer_names:
-                            h_valid, _ = self.pick_h_two_stage(model, inputs, tau1=5.0, tau2=0.1, max_iters=10, layer_name=layer)
-                            h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else 1e-3
-                            # 统一约束 h 的范围：[1e-5, 0.5]
-                            h_final = min(0.5, max(1e-5, h_final))
-                            self.layerwise_h[layer] = torch.tensor(h_final, dtype=torch.float32)
-                        median_h = float(np.median([v.item() for v in self.layerwise_h.values()])) if len(self.layerwise_h) > 0 else 1e-3
-                        median_h = min(0.5, max(1e-5, median_h))
-                        self.adaptive_h = torch.tensor(median_h, dtype=torch.float32)
-                        logger.info(f"Updated layerwise h (validated by (18a)/(18b)): median={self.adaptive_h:.6e}")
-                        # 每次分层 h 更新后，打印所有层的 h（不仅初始化时打印）
-                        for k in sorted(self.layerwise_h.keys()):
-                            logger.info(f"[layerwise h] {k}: {self.layerwise_h[k].item():.6e}")
-                        previous_adaptive_h = self.adaptive_h
-                        continue  # 分层 h 路径已完成本次更新
-                    #    3) 全局路径则在全参数空间一次性估计 epsilon_f/nu3 并做筛选。
+                if use_layerwise_h:
+                    # —— 分层 h 更新：逐层重新选择 h（层的划分与 cs 相同：self.layer_names 来自 initialize_c）
+                    self.layerwise_h = {}
+                    for layer in self.layer_names:
+                        eps_l = self.estimate_noise(model, self.compute_loss, inputs, layer_name=layer)
+                        nu3_l = self.estimate_nu3(model, self.compute_loss, inputs, layer_name=layer)
+                        h_final = (eps_l / nu3_l) ** (1/3) * (3 ** (1/3))
+                        h_final = float(min(0.5, max(1e-5, h_final)))
+                        self.layerwise_h[layer] = torch.tensor(h_final, dtype=torch.float32)
+                        logger.info(f"[layerwise h] {layer}: eps_f={eps_l:.6e}, nu3={nu3_l:.6e}, h={h_final:.6e}")
+                    median_h = float(np.median([v.item() for v in self.layerwise_h.values()])) if len(self.layerwise_h) > 0 else 1e-3
+                    median_h = min(0.5, max(1e-5, median_h))
+                    self.adaptive_h = torch.tensor(median_h, dtype=torch.float32)
+                    logger.info(f"Updated layerwise h (from ν3): median={self.adaptive_h:.6e}")
+                    previous_adaptive_h = self.adaptive_h
+                    continue  # 分层 h 路径已完成本次更新
+                    #    3) 全局路径：直接用 ν3 估计和 ε_f 计算 h（h = γ₅ (ε_f/ν3)^{1/3}, γ₅=3^{1/3}）
+                    #    ν3 估计已在 estimate_nu3 内部用 (18a)(18b) 两阶段判据做了鲁棒性筛选
                     self.epsilon_f = self.estimate_noise(model, self.compute_loss, inputs)
                     self.nu3 = self.estimate_nu3(model, self.compute_loss, inputs)
-                    # —— 先计算理论提案 h*
-                    h_proposed = (self.epsilon_f / self.nu3) ** (1 / 3) * (3 ** (1 / 3))
-                    # —— 再通过统一入口做合法性筛选（(18a)(18b)）
-                    h_valid, _ctx = self.pick_h_two_stage(model, inputs, tau1=5.0, tau2=0.1, max_iters=10)
-                    h_final = float(h_valid) if math.isfinite(h_valid) and h_valid > 0 else float(h_proposed)
-                    # 统一约束 h 的范围：[1e-5, 0.5]
-                    h_final = min(0.5, max(1e-5, h_final))
+                    h_final = (self.epsilon_f / self.nu3) ** (1/3) * (3 ** (1/3))
+                    h_final = float(min(0.5, max(1e-5, h_final)))
                     self.adaptive_h = torch.tensor(h_final, dtype=torch.float32)
-                    logger.info(f"Updated adaptive h (validated by (18a)/(18b)) = {self.adaptive_h:.6e}  [proposed={h_proposed:.6e}]")
+                    logger.info(f"Updated adaptive h from ν3: epsilon_f={self.epsilon_f:.6e}, nu3={self.nu3:.6e}, h={self.adaptive_h:.6e}")
                     if torch.isnan(torch.tensor(self.adaptive_h)).item() or self.adaptive_h < 1e-8:
                         logger.warning(f"Adaptive h estimation invalid (value: {self.adaptive_h}), keeping previous adaptive h value.")
                         self.adaptive_h = previous_adaptive_h
