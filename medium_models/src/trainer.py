@@ -326,7 +326,7 @@ class Trainer(LinearHeadTrainer):
             chosen_h = h_a
         else:
             # =====================
-            # Iterative proposals (up to 5), using h_i = (eps_f / nu3_a)^{1/5} (fixed denominator)
+            # Iterative proposals (up to 5), using geometrically increasing h_i based on fixed denominator (nu3_a)
             # Special rule: if the very first proposal (trial-b) fails, stop immediately
             # and choose the previous h (i.e., h_a) with its ν3 (i.e., nu3_a).
             # If all 5 proposals fail (i > 1), pick the largest h among them.
@@ -338,9 +338,19 @@ class Trainer(LinearHeadTrainer):
             tried_nu3 = []
             accepted = False
 
-            # Fixed nu3_a as denominator for all h_i
+            # Fixed-denominator base step and geometric growth so h_i changes across attempts
+            h_base = (eps_f / max(nu3_a, tiny)) ** 0.2
+            growth = getattr(self.args, "nu3_h_growth", 1.5)  # >1.0, e.g., 1.5
+            h_min, h_max = 1e-6, 0.5
+            try:
+                logger.info(f"[estimate_nu3] fixed-denominator h_base={h_base:.6e}, growth={growth}")
+            except Exception:
+                pass
+
             for i in range(1, 6):  # 最多 5 次试探
-                h_i = (eps_f / max(nu3_a, tiny)) ** 0.2  # 固定用最初 nu3_a
+                h_i = h_base * (growth ** (i - 1))
+                # clamp to safe search bounds
+                h_i = float(min(h_max, max(h_min, h_i)))
                 snr_i, prox_i, nu3_i, delta3_i, snr_val_i, (prox_plus_i, prox_minus_i) = nu3_tests_on(h_i)
                 tried_h.append(h_i)
                 tried_nu3.append(nu3_i)
