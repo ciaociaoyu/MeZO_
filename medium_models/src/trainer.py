@@ -232,7 +232,7 @@ class Trainer(LinearHeadTrainer):
     """
 
     # === Begin Adaptive h (Berahas et al.) ===
-    def estimate_nu3(self, model, loss_fn, inputs, tau1=2.0, tau2=0.1, layer_name: Optional[str]=None):
+    def estimate_nu3(self, model, loss_fn, inputs, tau1=10.0, tau2=0.1, layer_name: Optional[str]=None):
         """
         Robustly estimate the third derivative magnitude ν3 using a two-stage process with (18a)(18b) tests.
         Uses third-order central finite difference (Δ^{(3)}(h)), selecting h adaptively:
@@ -343,12 +343,12 @@ class Trainer(LinearHeadTrainer):
             else:
                 # Conservative fallback: use max(nu3_a, nu3_b, 20.0)
                 # nu3_accept = max(nu3_a, nu3_b, 20.0)
-                nu3_accept = nu3_a
+                nu3_accept = nu3_b
 
-                chosen_h = h_a
+                chosen_h = h_b
                 try:
                     logger.info(
-                        f"[estimate_nu3][fallback] layer={layer_name or 'ALL'} use nu3_a. nu3_a={nu3_a:.6e}, nu3_b={nu3_b:.6e}"
+                        f"[estimate_nu3][fallback] layer={layer_name or 'ALL'} use nu3_b. nu3_a={nu3_a:.6e}, nu3_b={nu3_b:.6e}"
                     )
                 except Exception:
                     pass
@@ -646,7 +646,8 @@ class Trainer(LinearHeadTrainer):
                     model, z = self.perturb_single_layer(model, layer_name=layer, random_vector=z, scaling_factor=-2)
                     loss2 = self.zo_forward(model, inputs)
 
-                projected_grad = (loss1 - loss2) / (2 * self.args.zero_order_eps)
+                eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
+                projected_grad = (loss1 - loss2) / (2 * eps)
                 self.cs[layer] = torch.abs(projected_grad)
 
                 model, z = self.perturb_single_layer(model, layer_name=layer, random_vector=z)
