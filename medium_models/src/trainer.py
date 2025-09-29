@@ -306,8 +306,12 @@ class Trainer(LinearHeadTrainer):
             prox_ok = (prox_plus <= tau2) and (prox_minus <= tau2)
             return snr_ok, prox_ok, nu3_hat, delta3, snr_val, (prox_plus, prox_minus)
 
+        # Ensure defaults to avoid UnboundLocalError if all branches skip assignment
+        nu3_accept: float = float('nan')
+        chosen_h: float = 0.0
         tiny = 1e-30
         h_a = max(eps_f, tiny) ** 0.2  # h_a = ε_f^{1/5}
+        chosen_h = h_a
         snr_a, prox_a, nu3_a, delta3_a, snr_val_a, (prox_plus_a, prox_minus_a) = nu3_tests_on(h_a)
         try:
             logger.info(
@@ -321,38 +325,64 @@ class Trainer(LinearHeadTrainer):
             nu3_accept = nu3_a
             chosen_h = h_a
         else:
-            # Second trial: h_b = (ε_f / nu3_a)^{1/5}
-            nu3_a_pos = max(nu3_a, tiny)
-            h_b = (eps_f / nu3_a_pos) ** 0.2
-            snr_b, prox_b, nu3_b, delta3_b, snr_val_b, (prox_plus_b, prox_minus_b) = nu3_tests_on(h_b)
-            try:
-                logger.info(
-                    f"[estimate_nu3][trial-b] layer={layer_name or 'ALL'} h_b={h_b:.6e}, nu3_b={nu3_b:.6e}, Δ3_b={delta3_b:.6e}, "
-                    f"SNR(b)={snr_val_b:.6e} (>= {tau1}? {snr_b}), "
-                    f"prox+(b)={prox_plus_b:.6e}, prox-(b)={prox_minus_b:.6e} (<= {tau2}? {prox_b})"
-                )
-            except Exception:
-                pass
-            if snr_b and prox_b and math.isfinite(nu3_b) and nu3_b > 0:
-                nu3_accept = nu3_b
-                chosen_h = h_b
-            elif abs(nu3_a - nu3_b) <= 0.5 * nu3_b and math.isfinite(nu3_b) and nu3_b > 0:
-                # Consistency fallback: accept nu3_b if close to nu3_a
-                nu3_accept = nu3_b
-                chosen_h = h_b
-            else:
-                # Conservative fallback: use max(nu3_a, nu3_b, 20.0)
-                # nu3_accept = max(nu3_a, nu3_b, 20.0)
+            # =====================
+            # Iterative proposals (up to 5), using h_next = (eps_f / nu3_prev)^{1/5}
+            # Special rule: if the very first proposal (trial-b) fails, stop immediately
+            # and choose the previous h (i.e., h_a) with its ν3 (i.e., nu3_a).
+            # If all 5 proposals fail (i > 1), pick the largest h among them.
+            # =====================
+            tiny = 1e-30
+            nu3_prev = nu3_a
+            h_prev = h_a
+            tried_h = []
+            tried_nu3 = []
+            accepted = False
 
-
-
-                chosen_h = h_b
+            for i in range(1, 6):  # i = 1..5 attempts
+                nu3_prev_pos = max(nu3_prev, tiny)
+                h_i = (eps_f / nu3_prev_pos) ** 0.2  # (ε_f / ν3_prev)^{1/5}
+                snr_i, prox_i, nu3_i, delta3_i, snr_val_i, (prox_plus_i, prox_minus_i) = nu3_tests_on(h_i)
+                tried_h.append(h_i)
+                tried_nu3.append(nu3_i)
                 try:
                     logger.info(
-                        f"[estimate_nu3][fallback] layer={layer_name or 'ALL'} use nu3_c. nu3_a={nu3_a:.6e}, nu3_b={nu3_b:.6e}, nu3_c={nu3_c:.6e}"
+                        f"[estimate_nu3][trial-{chr(ord('a')+i)}] layer={layer_name or 'ALL'} h_i={h_i:.6e}, nu3_i={nu3_i:.6e}, Δ3_i={delta3_i:.6e}, "
+                        f"SNR(i)={snr_val_i:.6e} (>= {tau1}? {snr_i}), prox+(i)={prox_plus_i:.6e}, prox-(i)={prox_minus_i:.6e} (<= {tau2}? {prox_i})"
                     )
                 except Exception:
                     pass
+
+                if snr_i and prox_i and math.isfinite(nu3_i) and nu3_i > 0:
+                    # Accept first passing candidate and stop
+                    nu3_accept = nu3_i
+                    chosen_h = h_i
+                    accepted = True
+                    break
+                else:
+                    if i == 1:
+                        # b 实验失败：立刻停止，选前一个 h（即 h_a / nu3_a）
+                        nu3_accept = nu3_prev if (math.isfinite(nu3_prev) and nu3_prev > 0) else 20.0
+                        chosen_h = h_prev
+                        logger.info(
+                            f"[estimate_nu3][early-stop at trial-b] layer={layer_name or 'ALL'} choose previous h={chosen_h:.6e}, ν3={nu3_accept:.6e}"
+                        )
+                        accepted = True
+                        break
+                    # update and continue to next attempt
+                    nu3_prev, h_prev = nu3_i, h_i
+
+            if not accepted:
+                # 五次都失败：选五次中最大的 h 对应的 ν3（若其无效则取保守值）
+                idx = int(np.argmax(np.asarray(tried_h))) if len(tried_h) > 0 else -1
+                if idx >= 0 and math.isfinite(tried_nu3[idx]) and tried_nu3[idx] > 0:
+                    nu3_accept = tried_nu3[idx]
+                    chosen_h = tried_h[idx]
+                else:
+                    nu3_accept = 20.0
+                    chosen_h = max(tried_h) if len(tried_h) > 0 else h_a
+                logger.info(
+                    f"[estimate_nu3][all-failed] layer={layer_name or 'ALL'} pick max-h: h={chosen_h:.6e}, ν3={nu3_accept:.6e}"
+                )
 
         if (not math.isfinite(nu3_accept)) or nu3_accept <= 0.0:
             logger.warning("[estimate_nu3] nu3 invalid; set to 20 (conservative default).")
