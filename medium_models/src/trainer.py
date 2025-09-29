@@ -326,7 +326,7 @@ class Trainer(LinearHeadTrainer):
             chosen_h = h_a
         else:
             # =====================
-            # Iterative proposals (up to 5), using h_next = (eps_f / nu3_prev)^{1/5}
+            # Iterative proposals (up to 5), using h_i = (eps_f / nu3_a)^{1/5} (fixed denominator)
             # Special rule: if the very first proposal (trial-b) fails, stop immediately
             # and choose the previous h (i.e., h_a) with its ν3 (i.e., nu3_a).
             # If all 5 proposals fail (i > 1), pick the largest h among them.
@@ -338,9 +338,9 @@ class Trainer(LinearHeadTrainer):
             tried_nu3 = []
             accepted = False
 
+            # Fixed nu3_a as denominator for all h_i
             for i in range(1, 6):  # 最多 5 次试探
-                nu3_prev_pos = max(nu3_prev, tiny)
-                h_i = (eps_f / nu3_prev_pos) ** 0.2  # (ε_f / ν3_prev)^{1/5}
+                h_i = (eps_f / max(nu3_a, tiny)) ** 0.2  # 固定用最初 nu3_a
                 snr_i, prox_i, nu3_i, delta3_i, snr_val_i, (prox_plus_i, prox_minus_i) = nu3_tests_on(h_i)
                 tried_h.append(h_i)
                 tried_nu3.append(nu3_i)
