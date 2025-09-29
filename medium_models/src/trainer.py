@@ -344,15 +344,7 @@ class Trainer(LinearHeadTrainer):
                 # Conservative fallback: use max(nu3_a, nu3_b, 20.0)
                 # nu3_accept = max(nu3_a, nu3_b, 20.0)
 
-                nu3_a_pos = max(nu3_a, tiny)
-                h_c = (eps_f * nu3_a_pos) ** 0.2
-                snr_c, prox_c, nu3_c, delta3_c, snr_val_c, (prox_plus_c, prox_minus_c) = nu3_tests_on(h_c)
-                logger.info(
-                    f"[estimate_nu3][trial-c] layer={layer_name or 'ALL'} h_c={h_c:.6e}, nu3_c={nu3_c:.6e}, Δ3_c={delta3_c:.6e}, "
-                    f"SNR(c)={snr_val_c:.6e} (>= {tau1}? {snr_c}), "
-                    f"prox+(c)={prox_plus_c:.6e}, prox-(c)={prox_minus_c:.6e} (<= {tau2}? {prox_c})"
-                )
-                nu3_accept = nu3_c
+
 
                 chosen_h = h_b
                 try:
