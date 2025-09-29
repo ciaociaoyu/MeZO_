@@ -369,7 +369,7 @@ class Trainer(LinearHeadTrainer):
             logger.info(f"Estimated nu3: {nu3_accept:.6e} with chosen h={chosen_h:.6e}")
         return float(nu3_accept)
 
-    def estimate_noise(self, model, loss_fn, inputs, q=6, delta=1e-5, layer_name: Optional[str]=None):
+    def estimate_noise(self, model, loss_fn, inputs, q=8, delta=1e-6, layer_name: Optional[str]=None):
         # === Float64 precision for more stable epsilon_f / nu3 estimation ===
         # Collect all parameters to optimize
         # 若指定 layer_name，则仅在该层参数子空间内估计 ECnoise
