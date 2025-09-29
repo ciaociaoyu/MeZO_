@@ -399,7 +399,14 @@ class Trainer(LinearHeadTrainer):
             nu3_accept = 20.0
         else:
             logger.info(f"Estimated nu3: {nu3_accept:.6e} with chosen h={chosen_h:.6e}")
-        return float(nu3_accept)
+
+        h_test = float(1e-3)
+        snr_test, prox_test, nu3_test, delta3_test, snr_val_test, (prox_plus_test, prox_minus_test) = nu3_tests_on(h_test)
+        logger.info(
+            f"[estimate_nu3][**TEST**] layer={layer_name or 'ALL'} h_test={h_test:.6e}, nu3_i={nu3_test:.6e}, "
+            )
+        return float(nu3_test)
+        # return float(nu3_accept)
 
     def estimate_noise(self, model, loss_fn, inputs, q=8, delta=1e-6, layer_name: Optional[str]=None):
         # === Float64 precision for more stable epsilon_f / nu3 estimation ===
