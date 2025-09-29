@@ -1271,40 +1271,46 @@ class Trainer(LinearHeadTrainer):
                             }
 
                 # === Begin Adaptive h: update h every update_noise_every steps ===
-
-                if getattr(self.args, "use_adaptive_h", False) and self.state.global_step % update_noise_every == 0 and self.state.global_step > 0:
+                if (
+                    getattr(self.args, "use_adaptive_h", False)
+                    and self.state.global_step > 0
+                    and (self.state.global_step % update_noise_every == 0)
+                ):
                     logger.info(f"Re-estimating epsilon_f and nu3 at step {self.state.global_step}...")
-                    # —— 是否分层选择 h 的总开关（与初始化时保持一致）
                     use_layerwise_h = getattr(self.args, "use_layerwise_h", False)
-                if use_layerwise_h:
-                    # —— 分层 h 更新：逐层重新选择 h（层的划分与 cs 相同：self.layer_names 来自 initialize_c）
-                    self.layerwise_h = {}
-                    for layer in self.layer_names:
-                        eps_l = self.estimate_noise(model, self.compute_loss, inputs, layer_name=layer)
-                        nu3_l = self.estimate_nu3(model, self.compute_loss, inputs, layer_name=layer)
-                        h_final = (eps_l / nu3_l) ** (1/3) * (3 ** (1/3))
-                        h_final = float(min(0.5, max(1e-5, h_final)))
-                        self.layerwise_h[layer] = torch.tensor(h_final, dtype=torch.float32)
-                        logger.info(f"[layerwise h] {layer}: eps_f={eps_l:.6e}, nu3={nu3_l:.6e}, h={h_final:.6e}")
-                    median_h = float(np.median([v.item() for v in self.layerwise_h.values()])) if len(self.layerwise_h) > 0 else 1e-3
-                    median_h = min(0.5, max(1e-5, median_h))
-                    self.adaptive_h = torch.tensor(median_h, dtype=torch.float32)
-                    logger.info(f"Updated layerwise h (from ν3): median={self.adaptive_h:.6e}")
-                    previous_adaptive_h = self.adaptive_h
-                else:  # 分层 h 路径已完成本次更新
-                    #    3) 全局路径：直接用 ν3 估计和 ε_f 计算 h（h = γ₅ (ε_f/ν3)^{1/3}, γ₅=3^{1/3}）
-                    #    ν3 估计已在 estimate_nu3 内部用 (18a)(18b) 两阶段判据做了鲁棒性筛选
-                    self.epsilon_f = self.estimate_noise(model, self.compute_loss, inputs)
-                    self.nu3 = self.estimate_nu3(model, self.compute_loss, inputs)
-                    h_final = (self.epsilon_f / self.nu3) ** (1/3) * (3 ** (1/3))
-                    h_final = float(min(0.5, max(1e-5, h_final)))
-                    self.adaptive_h = torch.tensor(h_final, dtype=torch.float32)
-                    logger.info(f"Updated adaptive h from ν3: epsilon_f={self.epsilon_f:.6e}, nu3={self.nu3:.6e}, h={self.adaptive_h:.6e}")
-                    if torch.isnan(torch.tensor(self.adaptive_h)).item() or self.adaptive_h < 1e-8:
-                        logger.warning(f"Adaptive h estimation invalid (value: {self.adaptive_h}), keeping previous adaptive h value.")
-                        self.adaptive_h = previous_adaptive_h
-                    else:
+
+                    if use_layerwise_h:
+                        # —— 分层 h 更新：逐层重新选择 h（层的划分与 cs 相同：self.layer_names 来自 initialize_c）
+                        self.layerwise_h = {}
+                        for layer in self.layer_names:
+                            eps_l = self.estimate_noise(model, self.compute_loss, inputs, layer_name=layer)
+                            nu3_l = self.estimate_nu3(model, self.compute_loss, inputs, layer_name=layer)
+                            h_final = (eps_l / nu3_l) ** (1/3) * (3 ** (1/3))
+                            h_final = float(min(0.5, max(1e-5, h_final)))
+                            self.layerwise_h[layer] = torch.tensor(h_final, dtype=torch.float32)
+                            logger.info(f"[layerwise h] {layer}: eps_f={eps_l:.6e}, nu3={nu3_l:.6e}, h={h_final:.6e}")
+                        median_h = float(np.median([v.item() for v in self.layerwise_h.values()])) if len(self.layerwise_h) > 0 else 1e-3
+                        median_h = min(0.5, max(1e-5, median_h))
+                        self.adaptive_h = torch.tensor(median_h, dtype=torch.float32)  # fixed typo
+                        logger.info(f"Updated layerwise h (from ν3): median={self.adaptive_h:.6e}")
                         previous_adaptive_h = self.adaptive_h
+                    else:
+                        # —— 全局路径：直接用 ν3 估计和 ε_f 计算 h（h = γ₅ (ε_f/ν3)^{1/3}, γ₅=3^{1/3}）
+                        self.epsilon_f = self.estimate_noise(model, self.compute_loss, inputs)
+                        self.nu3 = self.estimate_nu3(model, self.compute_loss, inputs)
+                        h_final = (self.epsilon_f / self.nu3) ** (1/3) * (3 ** (1/3))
+                        h_final = float(min(0.5, max(1e-5, h_final)))
+                        self.adaptive_h = torch.tensor(h_final, dtype=torch.float32)
+                        logger.info(
+                            f"Updated adaptive h from ν3: epsilon_f={self.epsilon_f:.6e}, nu3={self.nu3:.6e}, h={self.adaptive_h:.6e}"
+                        )
+                        if torch.isnan(self.adaptive_h).item() or self.adaptive_h < 1e-8:
+                            logger.warning(
+                                f"Adaptive h estimation invalid (value: {self.adaptive_h}), keeping previous adaptive h value."
+                            )
+                            self.adaptive_h = previous_adaptive_h
+                        else:
+                            previous_adaptive_h = self.adaptive_h
                 # === End Adaptive h update ===
 
                 if self.args.max_steps > 0 and self.state.global_step > self.args.max_steps or (self.args.max_zo_forward_steps > 0 and self.state.zo_forward_step > self.args.max_zo_forward_steps):
