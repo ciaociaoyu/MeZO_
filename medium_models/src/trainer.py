@@ -232,7 +232,7 @@ class Trainer(LinearHeadTrainer):
     """
 
     # === Begin Adaptive h (Berahas et al.) ===
-    def estimate_nu3(self, model, loss_fn, inputs, tau1=10.0, tau2=0.1, max_iters=2, layer_name: Optional[str]=None):
+    def estimate_nu3(self, model, loss_fn, inputs, tau1=2.0, tau2=0.1, layer_name: Optional[str]=None):
         """
         Robustly estimate the third derivative magnitude ν3 using a two-stage process with (18a)(18b) tests.
         Uses third-order central finite difference (Δ^{(3)}(h)), selecting h adaptively:
@@ -343,15 +343,12 @@ class Trainer(LinearHeadTrainer):
             else:
                 # Conservative fallback: use max(nu3_a, nu3_b, 20.0)
                 # nu3_accept = max(nu3_a, nu3_b, 20.0)
-                if nu3_b > 0.8:
-                    nu3_accept = nu3_b
-                else:
-                    nu3_accept = 20
+                nu3_accept = nu3_a
 
-                chosen_h = h_b
+                chosen_h = h_a
                 try:
                     logger.info(
-                        f"[estimate_nu3][fallback] layer={layer_name or 'ALL'} use nu3_b if nu3_b > 0.8, else use 20. nu3_a={nu3_a:.6e}, nu3_b={nu3_b:.6e}"
+                        f"[estimate_nu3][fallback] layer={layer_name or 'ALL'} use nu3_a. nu3_a={nu3_a:.6e}, nu3_b={nu3_b:.6e}"
                     )
                 except Exception:
                     pass
@@ -363,7 +360,7 @@ class Trainer(LinearHeadTrainer):
             logger.info(f"Estimated nu3: {nu3_accept:.6e} with chosen h={chosen_h:.6e}")
         return float(nu3_accept)
 
-    def estimate_noise(self, model, loss_fn, inputs, q=6, delta=1e-4, layer_name: Optional[str]=None):
+    def estimate_noise(self, model, loss_fn, inputs, q=6, delta=1e-5, layer_name: Optional[str]=None):
         # === Float64 precision for more stable epsilon_f / nu3 estimation ===
         # Collect all parameters to optimize
         # 若指定 layer_name，则仅在该层参数子空间内估计 ECnoise
@@ -1274,7 +1271,7 @@ class Trainer(LinearHeadTrainer):
                             }
 
                 # === Begin Adaptive h: update h every update_noise_every steps ===
-                # —— 所有用于扰动/差分的 h，统一走 pick_h_two_stage 的合法性筛选
+
                 if getattr(self.args, "use_adaptive_h", False) and self.state.global_step % update_noise_every == 0 and self.state.global_step > 0:
                     logger.info(f"Re-estimating epsilon_f and nu3 at step {self.state.global_step}...")
                     # —— 是否分层选择 h 的总开关（与初始化时保持一致）
@@ -1294,7 +1291,7 @@ class Trainer(LinearHeadTrainer):
                     self.adaptive_h = torch.tensor(median_h, dtype=torch.float32)
                     logger.info(f"Updated layerwise h (from ν3): median={self.adaptive_h:.6e}")
                     previous_adaptive_h = self.adaptive_h
-                    continue  # 分层 h 路径已完成本次更新
+                else:  # 分层 h 路径已完成本次更新
                     #    3) 全局路径：直接用 ν3 估计和 ε_f 计算 h（h = γ₅ (ε_f/ν3)^{1/3}, γ₅=3^{1/3}）
                     #    ν3 估计已在 estimate_nu3 内部用 (18a)(18b) 两阶段判据做了鲁棒性筛选
                     self.epsilon_f = self.estimate_noise(model, self.compute_loss, inputs)
