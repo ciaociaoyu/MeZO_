@@ -9,10 +9,10 @@ EPS=${EPS:-1e-3}
 WD=${WD:-0}
 # This is true seting
 #STEP=${STEP:-100000}
-EVAL_STEP=${EVAL_STEP:-10000}
+#EVAL_STEP=${EVAL_STEP:-10000}
 # This is for testing
-STEP=${STEP:-40000}
-# EVAL_STEP=${EVAL_STEP:-10}
+STEP=${STEP:-200}
+EVAL_STEP=${EVAL_STEP:-100}
 MODEL=${MODEL:-roberta-large}
 USE_H=${USE_H:-"True"}
 USE_C=${USE_C:-"False"}
