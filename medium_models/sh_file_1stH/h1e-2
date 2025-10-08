@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=sst-2_fixH1e-2_1005	# Job name (testBowtie2)
+#SBATCH --job-name=sst-2_fixH1e-2_fullyFinetuning_1008	# Job name (testBowtie2)
 #SBATCH --partition=gpu_p		# Partition name (batch, highmem_p, or gpu_p)
 #SBATCH --ntasks=1			# 1 task (process) for below commands
 #SBATCH --cpus-per-task=2	 	# CPU core count per task, by default 1 CPU core per task
-#SBATCH --mem=50G			# Memory per node (4GB); by default using M as unit
+#SBATCH --mem=120G			# Memory per node (4GB); by default using M as unit
 #SBATCH --gres=gpu:H100:1
 #SBATCH --time=8:00:00              	# Time limit hrs:min:sec or days-hours:minutes:seconds
 #SBATCH --output=jobs/%x_%j_1.out		# Standard output log, e.g., testBowtie2_12345.out
@@ -19,4 +19,4 @@ conda activate ciao
 cd /home/jy03364/MeZO/medium_models
 
 # original without c
-TASK=SST-2 K=16 SEED=42 BS=64 LR=1e-6 EPS=1e-2 MODEL=roberta-large USE_H=False USE_LH=False USE_C=False bash mezo.sh
+TASK=SST-2 K=16 SEED=16 BS=64 LR=1e-6 EPS=1e-2 MODEL=roberta-large USE_H=False USE_LH=False USE_C=False bash mezo.sh
