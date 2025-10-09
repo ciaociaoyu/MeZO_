@@ -22,7 +22,7 @@ from typing import Optional
 # ---------- 可按需调整 ----------
 ROOT = os.getcwd()    # 扫描当前目录
 SUBDIR_PATTERN = r".*eps(?P<eps>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?).*"  # 捕获 eps 后面的数字（含科学计数法）
-LOG_SUBPATH = os.path.join("16-42", "metrics_logs")
+LOG_SUBPATH = os.path.join("16-16", "metrics_logs")
 OUTPUT_DIR = "plots_eps"
 SUMMARY_CSV = os.path.join(OUTPUT_DIR, "summary.csv")
 # 识别训练步数字段的候选列名（按优先级）
