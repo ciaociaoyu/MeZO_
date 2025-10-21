@@ -465,8 +465,15 @@ def main():
 
     set_seed(args.seed)
     task = get_task(args.task_name)
-    train_sets = task.sample_train_sets(num_train=args.num_train, num_dev=args.num_dev, num_eval=args.num_eval, num_train_sets=args.num_train_sets, seed=args.train_set_seed)
+    # train_sets = task.sample_train_sets(num_train=args.num_train, num_dev=args.num_dev, num_eval=args.num_eval, num_train_sets=args.num_train_sets, seed=args.train_set_seed)
 
+    train_sets = task.sample_train_sets(
+        num_train=len(task.train_samples["train"]),
+        num_dev=args.num_dev,
+        num_eval=args.num_eval,
+        num_train_sets=args.num_train_sets,
+        seed=args.train_set_seed,
+    )
     # Initialize trainer and load model
     framework = Framework(args, task)
 
@@ -476,18 +483,21 @@ def main():
             train_set_seed = train_set_id if args.train_set_seed is None else args.train_set_seed
 
             # Sample eval samples
-            if args.num_eval is not None:
-                eval_samples = task.sample_subset(data_split="valid", seed=train_set_seed, num=args.num_eval)
-            else:
-                eval_samples = task.valid_samples
+            # if args.num_eval is not None:
+            #     eval_samples = task.sample_subset(data_split="valid", seed=train_set_seed, num=args.num_eval)
+            # else:
+            #     eval_samples = task.valid_samples
+            eval_samples = task.valid_samples
 
             if args.trainer != "none":
-                if args.num_dev is not None:
-                    # Dev samples
-                    dev_samples = train_samples[-args.num_dev:] 
-                    train_samples = train_samples[:-args.num_dev]
-                else:
-                    dev_samples = None
+                # if args.num_dev is not None:
+                #     # Dev samples
+                #     dev_samples = train_samples[-args.num_dev:]
+                #     train_samples = train_samples[:-args.num_dev]
+                # else:
+                #     dev_samples = None
+                dev_samples = train_samples[-1 / 4 * len(train_samples):]
+                train_samples = train_samples[:1 / 4 * len(train_samples)]
 
                 # Training
                 framework.train(train_samples, dev_samples if dev_samples is not None else eval_samples)
