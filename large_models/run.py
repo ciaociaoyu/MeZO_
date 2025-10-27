@@ -7,7 +7,7 @@ logger.setLevel(logging.INFO)
 import argparse
 import time
 import tasks
-from transformers import AutoConfig, AutoTokenizer, AutoModelForCausalLM, Trainer, HfArgumentParser, Trainer, TrainingArguments, DataCollatorWithPadding, DataCollatorForTokenClassification
+from transformers import AutoConfig, AutoTokenizer, AutoModelForCausalLM, Trainer, HfArgumentParser, Trainer, TrainingArguments, DataCollatorWithPadding, DataCollatorForTokenClassification, TrainerCallback
 from typing import Union, Optional
 import torch
 from torch.nn.parameter import Parameter
@@ -50,13 +50,13 @@ class OurArguments(TrainingArguments):
     icl_sfc: bool = False # whether to use SFC calibration for ICL samples
 
     # Training
-    trainer: str = "none" 
+    trainer: str = "none"
     ## options
     ## - none: no training -- for zero-shot or in-context learning (ICL)
     ## - regular: regular huggingface trainer -- for fine-tuning
     ## - zo: zeroth-order (MeZO) training
     only_train_option: bool = True # whether to only train the option part of the input
-    train_as_classification: bool = False # take the log likelihood of all options and train as classification 
+    train_as_classification: bool = False # take the log likelihood of all options and train as classification
 
     # MeZO
     zo_eps: float = 1e-3 # eps in MeZO
@@ -174,7 +174,7 @@ class Framework:
         # HF tokenizer bug fix
         if "opt" in self.args.model_name:
             tokenizer.bos_token_id = 0
-        
+
         if "llama" in self.args.model_name:
             # LLaMA padding token
             tokenizer.pad_token_id = 0 # technically <unk>
@@ -213,8 +213,8 @@ class Framework:
             args = self.args
             # Autoregressive generation
             outputs = self.model.generate(
-                input_ids, do_sample=args.sampling, temperature=args.temperature, 
-                num_beams=args.num_beams, top_p=args.top_p, top_k=args.top_k, max_new_tokens=min(args.max_new_tokens, args.max_length - input_ids.size(1)), 
+                input_ids, do_sample=args.sampling, temperature=args.temperature,
+                num_beams=args.num_beams, top_p=args.top_p, top_k=args.top_k, max_new_tokens=min(args.max_new_tokens, args.max_length - input_ids.size(1)),
                 num_return_sequences=1, eos_token_id=[self.tokenizer.encode(args.eos_token, add_special_tokens=False)[-1], self.tokenizer.eos_token_id],
             )
             # For generation, directly return the text output
@@ -225,7 +225,7 @@ class Framework:
                 self.model.eval()
                 logits = self.model(input_ids=input_ids).logits
             labels = input_ids[0, 1:]
-            logits = logits[0, :-1] 
+            logits = logits[0, :-1]
             log_probs = F.log_softmax(logits, dim=-1)
 
             selected_log_probs = log_probs[torch.arange(len(labels)).to(labels.device), labels]
@@ -247,15 +247,15 @@ class Framework:
 
         # Encode (add prompt and tokenize) the sample; if multiple-choice/classification, encode all candidates (options)
         encoded_candidates, option_lens = encode_prompt(
-            self.task, self.task.get_template(), train_samples, eval_sample, self.tokenizer, max_length=self.args.max_length, 
+            self.task, self.task.get_template(), train_samples, eval_sample, self.tokenizer, max_length=self.args.max_length,
             generation=self.task.generation, max_new_tokens=self.args.max_new_tokens
         )
 
         # Calibration
         if self.args.sfc or self.args.icl_sfc:
-            sfc_encoded_candidates, sfc_option_lens = encode_prompt(self.task, self.task.get_template(), 
+            sfc_encoded_candidates, sfc_option_lens = encode_prompt(self.task, self.task.get_template(),
                 train_samples, eval_sample, self.tokenizer, max_length=self.args.max_length,
-                sfc=self.args.sfc, icl_sfc=self.args.icl_sfc, generation=self.task.generation, 
+                sfc=self.args.sfc, icl_sfc=self.args.icl_sfc, generation=self.task.generation,
                 max_new_tokens=self.args.max_new_tokens
             )
 
@@ -266,7 +266,7 @@ class Framework:
             if verbose:
                 logger.info("=== Prompt ===")
                 logger.info(self.tokenizer.decode(encoded_candidates[0]))
-                logger.info(f"Output: {output_text}") 
+                logger.info(f"Output: {output_text}")
             return Prediction(correct_candidate=eval_sample.correct_candidate, predicted_candidate=output_text)
         else:
             # For classification/multiple-choice, calculate the probabilities of all candidates
@@ -321,13 +321,13 @@ class Framework:
             logger.info(f"There are {len(train_samples)} training samples and {len(eval_samples)} validation samples")
 
         # Prediction loop
-        predictions = []  
+        predictions = []
         for eval_id, eval_sample in enumerate(tqdm(eval_samples)):
             predictions.append(
                 self.one_step_pred(train_samples[eval_id] if one_train_set_per_eval_sample else train_samples, eval_sample, verbose=(eval_id < 3))
             )
 
-        # Calculate metrics 
+        # Calculate metrics
         metric_name = getattr(self.task, "metric_name", "accuracy")
         metrics = {metric_name: calculate_metric(predictions, metric_name)}
         return metrics
@@ -359,8 +359,8 @@ class Framework:
             data = []
             for sample in samples:
                 encoded_candidates, option_lens = encode_prompt(
-                    self.task, self.task.get_template(), [], sample, self.tokenizer, 
-                    max_length=self.args.max_length, generation=self.task.generation, generation_with_gold=True, 
+                    self.task, self.task.get_template(), [], sample, self.tokenizer,
+                    max_length=self.args.max_length, generation=self.task.generation, generation_with_gold=True,
                     max_new_tokens=self.args.max_new_tokens
                 )
                 if self.task.generation:
@@ -369,9 +369,9 @@ class Framework:
                     correct_candidate_id = sample.candidates.index(sample.correct_candidate[0])
                 else:
                     correct_candidate_id = sample.candidates.index(sample.correct_candidate)
-                
+
                 if self.args.non_diff:
-                    # For non-differentiable objective, there is no teacher forcing thus the 
+                    # For non-differentiable objective, there is no teacher forcing thus the
                     # current answer part is removed
                     encoded_candidates[correct_candidate_id] = encoded_candidates[correct_candidate_id][:-option_lens[correct_candidate_id]]
 
@@ -392,7 +392,7 @@ class Framework:
         with count_time("Tokenizing training samples"):
             train_dataset = HFDataset(_convert(train_samples))
             eval_dataset = HFDataset(_convert(eval_samples))
-        
+
         if self.args.only_train_option and not self.args.non_diff:
             # If --only_train_option and not with a non-differentiable objective, we wrap the forward function
             self.model.original_forward = self.model.forward
@@ -403,14 +403,82 @@ class Framework:
         else:
             collator = DataCollatorForTokenClassification
 
+        # ---- Metrics logging callback: save train loss and eval/train accuracy over time ----
+        import os
+        import json
+        import time
+        import random
+        class _HistoryWriter:
+            def __init__(self, out_dir):
+                self.dir = out_dir
+                os.makedirs(self.dir, exist_ok=True)
+                self.jsonl_path = os.path.join(self.dir, "metrics_history.jsonl")
+                self.csv_path = os.path.join(self.dir, "metrics_history.csv")
+                # header for CSV
+                if not os.path.exists(self.csv_path):
+                    with open(self.csv_path, "w") as f:
+                        f.write("time,step,epoch,phase,metric,value\n")
+            def append_jsonl(self, obj):
+                with open(self.jsonl_path, "a") as f:
+                    f.write(json.dumps(obj, ensure_ascii=False) + "\n")
+            def append_csv_row(self, time_s:str, step:int, epoch:float, phase:str, metric:str, value:float):
+                with open(self.csv_path, "a") as f:
+                    f.write(f"{time_s},{step},{epoch},{phase},{metric},{value}\n")
+
+        class MetricsRecorder(TrainerCallback):
+            """Record training loss (on_log) and eval/train accuracy (on_evaluate) to files."""
+            def __init__(self, framework, train_samples, eval_samples, out_dir, train_probe_size: int = 256):
+                self.framework = framework
+                self.train_samples_full = train_samples
+                self.eval_samples = eval_samples
+                self.writer = _HistoryWriter(out_dir)
+                self.train_probe_size = train_probe_size
+
+            def on_log(self, args, state, control, logs=None, **kwargs):
+                if not logs:
+                    return
+                ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                payload = {"time": ts, "step": int(state.global_step), "epoch": float(state.epoch) if state.epoch is not None else None, "phase": "train"}
+                # capture common keys like 'loss', 'learning_rate'
+                for k, v in logs.items():
+                    if isinstance(v, (int, float)) and k not in ("total_flos",):
+                        rec = dict(payload)
+                        rec["metric"] = k
+                        rec["value"] = float(v)
+                        self.writer.append_jsonl(rec)
+                        self.writer.append_csv_row(ts, payload["step"], payload["epoch"] or -1, "train", k, float(v))
+
+            def on_evaluate(self, args, state, control, metrics=None, **kwargs):
+                # compute eval accuracy via framework.evaluate (classification/generation aware)
+                ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                step = int(state.global_step)
+                epoch_val = float(state.epoch) if state.epoch is not None else None
+
+                # Eval accuracy
+                eval_metrics = self.framework.evaluate([], self.eval_samples)
+                for mk, mv in eval_metrics.items():
+                    self.writer.append_jsonl({"time": ts, "step": step, "epoch": epoch_val, "phase": "eval", "metric": mk, "value": float(mv)})
+                    self.writer.append_csv_row(ts, step, epoch_val or -1, "eval", mk, float(mv))
+
+                # Train accuracy on a probe subset to save time
+                n = min(self.train_probe_size, len(self.train_samples_full))
+                if n > 0:
+                    subset = random.sample(self.train_samples_full, n) if len(self.train_samples_full) > n else list(self.train_samples_full)
+                    train_metrics = self.framework.evaluate([], subset)
+                    for mk, mv in train_metrics.items():
+                        self.writer.append_jsonl({"time": ts, "step": step, "epoch": epoch_val, "phase": "train_probe", "metric": mk, "value": float(mv)})
+                        self.writer.append_csv_row(ts, step, epoch_val or -1, "train_probe", mk, float(mv))
+        # ---- end metrics logging callback ----
+
         trainer = OurTrainer(
-            model=self.model, 
+            model=self.model,
             args=self.args,
-            train_dataset=train_dataset, 
+            train_dataset=train_dataset,
             eval_dataset=eval_dataset,
             tokenizer=self.tokenizer,
             data_collator=DataCollatorWithPaddingAndNesting(self.tokenizer, pad_to_multiple_of=8) if self.args.train_as_classification else collator(self.tokenizer, pad_to_multiple_of=8),
         )
+        trainer.add_callback(MetricsRecorder(self, train_samples, eval_samples, self.args.output_dir))
         if self.args.save_on_interrupt:
             trainer.add_callback(SIGUSR1Callback())
 
@@ -457,7 +525,8 @@ def result_file_tag(args):
     sample_train_tag = "-ntrain%d" % args.num_train if args.num_train > 0 else ""
     sample_dev_tag = "-ndev%d" % args.num_dev if args.num_dev is not None else ""
     customized_tag = f"-{args.tag}" if len(args.tag) > 0 else ""
-    return f"{args.task_name}-{save_model_name}" + sfc_tag + icl_sfc_tag + sample_eval_tag + sample_train_tag + sample_dev_tag + customized_tag
+    eps_tag = f"-eps{args.zo_eps:g}"
+    return f"{args.task_name}-{save_model_name}" + sfc_tag + icl_sfc_tag + sample_eval_tag + sample_train_tag + sample_dev_tag + eps_tag + customized_tag
 
 
 def main():
