@@ -6,10 +6,14 @@ EPOCH=${EPOCH:-5}
 BS=${BS:-8}
 LR=${LR:-1e-5}
 SEED=${SEED:-0}
-# Use full dataset by default: TRAIN<=0 and EVAL<=0 mean "all", DEV=0 means "no dev split"
+# Dataset defaults:
+#   TRAIN<=0 / EVAL<=0 → use all
+#   DEV=-1 → auto split 1/4 from train as dev; DEV<=0 → no dev split; DEV>0 → take that many
 TRAIN=${TRAIN:--1}
-DEV=${DEV:-1}
+DEV=${DEV:--1}
 EVAL=${EVAL:--1}
+# MeZO epsilon (finite-diff step size)
+ZO_EPS=${ZO_EPS:-1e-3}
 
 MODE=${MODE:-ft}
 EXTRA_ARGS=""
@@ -64,6 +68,7 @@ python run.py \
     --task_name $TASK \
     --output_dir result/$TASK-${MODEL_NAME}-$TAG --tag $TAG --train_set_seed $SEED --logging_steps 10 \
     --trainer regular --fp16 \
+    --zo_eps $ZO_EPS \
     --learning_rate $LR --num_train_epochs $EPOCH --per_device_train_batch_size $BS \
     --load_best_model_at_end --evaluation_strategy epoch --save_strategy epoch --save_total_limit 1 \
     --train_as_classification \
