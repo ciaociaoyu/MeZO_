@@ -6,9 +6,10 @@ EPOCH=${EPOCH:-5}
 BS=${BS:-8}
 LR=${LR:-1e-5}
 SEED=${SEED:-0}
-TRAIN=${TRAIN:-1000}
-DEV=${DEV:-500}
-EVAL=${EVAL:-1000}
+# Use full dataset by default: TRAIN<=0 and EVAL<=0 mean "all", DEV=0 means "no dev split"
+TRAIN=${TRAIN:--1}
+DEV=${DEV:-1}
+EVAL=${EVAL:--1}
 
 MODE=${MODE:-ft}
 EXTRA_ARGS=""
@@ -22,11 +23,9 @@ TAG=$MODE-$EPOCH-$BS-$LR-$SEED
 TASK_ARGS=""
 case $TASK in
     # For Copa, ReCoRD, SQuAD, DROP, we set --train_as_classification False; for others, set this flag to True
-    CB) # It has <1000 training examples. Only use 100 for dev
-        DEV=100
+    CB) # It has <1000 training examples. Previously used DEV=100; for full-data training we do not split dev by default.
         ;;
-    Copa) # It has <1000 training examples. Only use 100 for dev
-        DEV=100
+    Copa) # It has <1000 training examples. Previously used DEV=100; for full-data training we do not split dev by default.
         TASK_ARGS="--train_as_classification False"
         ;;
     MultiRC) # Can only fit real bsz = 2 on 80G A100
@@ -63,7 +62,7 @@ echo "Extra args: $EXTRA_ARGS $TASK_ARGS"
 python run.py \
     --model_name $MODEL \
     --task_name $TASK \
-    --output_dir result/$TASK-${MODEL_NAME}-$TAG --tag $TAG --train_set_seed $SEED --num_train $TRAIN --num_dev $DEV --num_eval $EVAL --logging_steps 10 \
+    --output_dir result/$TASK-${MODEL_NAME}-$TAG --tag $TAG --train_set_seed $SEED --logging_steps 10 \
     --trainer regular --fp16 \
     --learning_rate $LR --num_train_epochs $EPOCH --per_device_train_batch_size $BS \
     --load_best_model_at_end --evaluation_strategy epoch --save_strategy epoch --save_total_limit 1 \

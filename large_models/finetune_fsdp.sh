@@ -6,6 +6,7 @@ EPOCH=${EPOCH:-5}
 BS=${BS:-8}
 LR=${LR:-1e-5}
 SEED=${SEED:-0}
+ZO_EPS=${ZO_EPS:-1e-3}
 TRAIN=${TRAIN:-1000}
 DEV=${DEV:-500}
 EVAL=${EVAL:-1000}
@@ -29,10 +30,10 @@ case $TASK in
         DEV=100
         TASK_ARGS="--train_as_classification False"
         ;;
-    ReCoRD) 
+    ReCoRD)
         TASK_ARGS="--train_as_classification False"
         ;;
-    DROP) 
+    DROP)
         TASK_ARGS="--train_as_classification False"
         ;;
     SQuAD)
@@ -53,6 +54,7 @@ OMP_NUM_THREADS=10 torchrun --nproc_per_node=$NUM_GPU --master_port=$(( RANDOM +
     --task_name $TASK \
     --output_dir result/$TASK-${MODEL_NAME}-$TAG --tag $TAG --train_set_seed $SEED --num_train $TRAIN --num_dev $DEV --num_eval $EVAL --logging_steps 10 \
     --trainer regular --fp16 --no_auto_device \
+    --zo_eps $ZO_EPS \
     --learning_rate $LR --num_train_epochs $EPOCH --per_device_train_batch_size 1 --gradient_accumulation_steps $BS \
     --load_best_model_at_end --evaluation_strategy epoch --save_strategy epoch --save_total_limit 1 \
     --train_as_classification \

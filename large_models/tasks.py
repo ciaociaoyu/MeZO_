@@ -59,44 +59,67 @@ class Dataset:
      
     def sample_train_sets(self, num_train=32, num_dev=None, num_eval=None, num_train_sets=None, seed=None):
         if seed is not None:
-            # one train/demo set using the designated seed
             seeds = [seed]
         elif num_train_sets is not None:
-            # num_train_sets train/demo sets
             seeds = list(range(num_train_sets))
-        else: 
+        else:
             # one train/demo set per evaluation sample
-            assert num_dev is None # not supported
-            len_valid_samples = len(self.samples["valid"]) if num_eval is None else num_eval
+            # (len of valid to evaluate on). If num_eval is None or <=0, use all valid.
+            total_valid = len(self.samples["valid"])
+            eff_num_eval = total_valid if (num_eval is None or (isinstance(num_eval, int) and num_eval <= 0)) else min(num_eval, total_valid)
             with temp_seed(0):
-                seeds = np.random.randint(0, 10000, len_valid_samples)
+                seeds = np.random.randint(0, 10000, eff_num_eval)
 
-        train_samples = [] 
+        # Normalize "use all" semantics for train/dev/eval sizes
+        total_train = len(self.samples["train"])
+        total_valid = len(self.samples["valid"])
+
+        if (num_train is None) or (isinstance(num_train, int) and num_train <= 0):
+            eff_num_train = total_train
+        else:
+            eff_num_train = min(num_train, total_train)
+
+        if (num_eval is None) or (isinstance(num_eval, int) and num_eval <= 0):
+            eff_num_eval = total_valid
+        else:
+            eff_num_eval = min(num_eval, total_valid)
+
+        if (num_dev is not None) and (isinstance(num_dev, int) and num_dev > 0):
+            eff_num_dev = min(num_dev, total_train)
+        else:
+            eff_num_dev = None
+
+        train_samples = []
         for i, set_seed in enumerate(seeds):
             if self.mixed_set:
                 raise NotImplementedError
-                train_samples.append(self.sample_subset(data_split="valid", seed=set_seed, num=num_train, exclude=i))
             else:
-                if num_dev is not None:
-                    train_samples.append(self.sample_subset(data_split="train", seed=set_seed, num=num_train+num_dev)) # dev set is included at the end of train set
-                    if num_train + num_dev > len(self.samples["train"]):
+                if eff_num_dev is not None:
+                    # dev set is included at the end of train set
+                    num_take = min(eff_num_train + eff_num_dev, total_train)
+                    train_samples.append(self.sample_subset(data_split="train", seed=set_seed, num=num_take))
+                    if eff_num_train + eff_num_dev > total_train:
                         logger.warn("num_train + num_dev > available training examples")
                 else:
-                    train_samples.append(self.sample_subset(data_split="train", seed=set_seed, num=num_train))
-                if num_dev is not None:
+                    num_take = min(eff_num_train, total_train)
+                    train_samples.append(self.sample_subset(data_split="train", seed=set_seed, num=num_take))
+
+                if eff_num_dev is not None:
                     logger.info(f"Sample train set {len(train_samples[-1])}/{len(self.samples['train'])}")
-                    logger.info(f"... including dev set {num_dev} samples")
+                    logger.info(f"... including dev set {eff_num_dev} samples")
         return train_samples
 
     def sample_subset(self, data_split="train", seed=0, num=100, exclude=None):
         with temp_seed(seed):
-            samples = self.samples[data_split] 
+            samples = self.samples[data_split]
             lens = len(samples)
-            index = np.random.permutation(lens).tolist()[:num if exclude is None else num+1]
-            if exclude is not None and exclude in index:
-                index.remove(exclude)
-            else:
-                index = index[:num]
+            take = min(num, lens if exclude is None else lens - 1)
+            index = np.random.permutation(lens).tolist()
+            if exclude is not None and 0 <= exclude < lens:
+                # Remove the excluded index if present
+                if exclude in index:
+                    index.remove(exclude)
+            index = index[:take]
             return [samples[i] for i in index]
     
     @property
