@@ -6,9 +6,14 @@ BS=${BS:-16}
 LR=${LR:-1e-5}
 EPS=${EPS:-1e-3}
 SEED=${SEED:-0}
-TRAIN=${TRAIN:-1000}
-DEV=${DEV:-500}
-EVAL=${EVAL:-1000}
+#TRAIN=${TRAIN:-1000}
+#DEV=${DEV:-500}
+#EVAL=${EVAL:-1000}
+TRAIN=${TRAIN:--1}
+DEV=${DEV:--1}
+EVAL=${EVAL:--1}
+# 改一下训练集什么的数量，现在使用完整的这些来训练
+
 STEPS=${STEPS:-20000}
 EVAL_STEPS=${EVAL_STEPS:-4000}
 

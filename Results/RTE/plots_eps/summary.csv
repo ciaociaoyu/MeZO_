@@ -1,0 +1,8 @@
+dir,csv,eps,eps_exponent,best_eval_loss,best_train_loss
+RTE-roberta-large-prompt-standard-k16-roberta-large-mezo-ftseed16-bs8-lr1e-6-eps1e-8-wd0-step50000-evalstep5000,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,1e-08,-8,0.644851565361023,0.359099268913269
+RTE-roberta-large-prompt-standard-k16-roberta-large-mezo-ftseed16-bs8-lr1e-6-eps1e-7-wd0-step50000-evalstep5000,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,1e-07,-7,0.5959612131118774,0.2789516448974609
+RTE-roberta-large-prompt-standard-k16-roberta-large-mezo-ftseed16-bs8-lr1e-6-eps1e-6-wd0-step50000-evalstep5000,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,1e-06,-6,0.5647302269935608,0.2573324739933014
+RTE-roberta-large-prompt-standard-k16-roberta-large-mezo-ftseed16-bs8-lr1e-6-eps1e-5-wd0-step50000-evalstep5000,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,1e-05,-5,0.5464804768562317,0.2565149366855621
+RTE-roberta-large-prompt-standard-k16-roberta-large-mezo-ftseed16-bs8-lr1e-6-eps1e-4-wd0-step50000-evalstep5000,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,0.0001,-4,0.5419102907180786,0.2161262482404709
+RTE-roberta-large-prompt-standard-k16-roberta-large-mezo-ftseed16-bs8-lr1e-6-eps1e-3-wd0-step50000-evalstep5000,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,0.001,-3,0.5446547269821167,0.2204031199216842
+RTE-roberta-large-prompt-standard-k16-roberta-large-mezo-ftseed16-bs8-lr1e-6-eps1e-2-wd0-step50000-evalstep5000,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,0.01,-2,0.6891356110572815,0.0967341735959053

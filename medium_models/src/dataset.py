@@ -346,33 +346,42 @@ class FewShotDataset(torch.utils.data.Dataset):
         logger.info(f"Creating/loading examples from dataset file at {args.data_dir}")
 
         lock_path = cached_features_file + ".lock"
-        with FileLock(lock_path):
+        # For large datasets like MNLI, avoid caching full example lists during training
+        if self.mode == "train":
+            logger.info("[FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).")
+            logger.info(f"Creating features from dataset file at {args.data_dir}")
 
-            if os.path.exists(cached_features_file) and not args.overwrite_cache:
-                start = time.time()
-                self.support_examples, self.query_examples = torch.load(cached_features_file)
-                logger.info(
-                    f"Loading features from cached file {cached_features_file} [took %.3f s]", time.time() - start
-                )
-            else:
-                logger.info(f"Creating features from dataset file at {args.data_dir}")
-
-                # The support examples are sourced from the training set.
-                self.support_examples = self.processor.get_train_examples(args.data_dir)
-
-                if mode == "dev":
-                    self.query_examples = self.processor.get_dev_examples(args.data_dir)
-                elif mode == "test":
-                    self.query_examples = self.processor.get_test_examples(args.data_dir)
+            # The support examples are sourced from the training set.
+            self.support_examples = self.processor.get_train_examples(args.data_dir)
+            # In training, query == support
+            self.query_examples = self.support_examples
+        else:
+            with FileLock(lock_path):
+                if os.path.exists(cached_features_file) and not args.overwrite_cache:
+                    start = time.time()
+                    # NOTE: loading the full cached list may be large but acceptable for dev/test only
+                    self.support_examples, self.query_examples = torch.load(cached_features_file)
+                    logger.info(
+                        f"Loading features from cached file {cached_features_file} [took %.3f s]", time.time() - start
+                    )
                 else:
-                    self.query_examples = self.support_examples
+                    logger.info(f"Creating features from dataset file at {args.data_dir}")
 
-                start = time.time()
-                torch.save([self.support_examples, self.query_examples], cached_features_file)
-                # ^ This seems to take a lot of time so I want to investigate why and how we can improve.
-                logger.info(
-                    "Saving features into cached file %s [took %.3f s]", cached_features_file, time.time() - start
-                )
+                    # The support examples are sourced from the training set.
+                    self.support_examples = self.processor.get_train_examples(args.data_dir)
+
+                    if mode == "dev":
+                        self.query_examples = self.processor.get_dev_examples(args.data_dir)
+                    elif mode == "test":
+                        self.query_examples = self.processor.get_test_examples(args.data_dir)
+                    else:
+                        self.query_examples = self.support_examples
+
+                    start = time.time()
+                    torch.save([self.support_examples, self.query_examples], cached_features_file)
+                    logger.info(
+                        "Saving features into cached file %s [took %.3f s]", cached_features_file, time.time() - start
+                    )
 
         # For filtering in using demonstrations, load pre-calculated embeddings
         if self.use_demo and args.demo_filter:
