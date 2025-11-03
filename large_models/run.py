@@ -403,72 +403,124 @@ class Framework:
         else:
             collator = DataCollatorForTokenClassification
 
-        # ---- Metrics logging callback: save train loss and eval/train accuracy over time ----
+        # ---- 训练过程指标日志回调（中文注释）--------------------------------------
+        # 目标：在每一次**优化步**（global_step）记录训练 loss，并在评估时记录验证/训练探针集的准确率。
+        # 日志输出到 result 目录下，文件名包含 任务名+模型名+eps 等关键信息，方便多组实验对比。
+        # 注意：HuggingFace 的 Trainer 在设置了 logging_strategy="steps" 且 logging_steps=1 时，
+        # 会在每个优化步触发 on_log 回调（若使用梯度累积，则每累计完成一次为一个优化步）。
         import os
         import json
         import time
         import random
+
+        # 生成当前运行的标签（包含任务名/模型名/样本数/eps 等），用于区分不同实验
+        run_tag = result_file_tag(self.args)  # 例如：SST2-opt-125m-eps0.001-...
+        logs_dir = os.path.join("result")  # 统一把迭代日志放在 result 目录
+        os.makedirs(logs_dir, exist_ok=True)
+
         class _HistoryWriter:
-            def __init__(self, out_dir):
+            """
+            简单的历史日志写入器：
+            - JSONL：`result/metrics_{run_tag}.jsonl`
+            - CSV：  `result/metrics_{run_tag}.csv`
+            每一行都会额外带上 task/model/eps 字段，便于后期聚合分析。
+            """
+            def __init__(self, out_dir: str, run_tag: str, task_name: str, model_name: str, eps: float):
                 self.dir = out_dir
-                os.makedirs(self.dir, exist_ok=True)
-                self.jsonl_path = os.path.join(self.dir, "metrics_history.jsonl")
-                self.csv_path = os.path.join(self.dir, "metrics_history.csv")
-                # header for CSV
+                self.run_tag = run_tag
+                self.task_name = task_name
+                self.model_name = model_name
+                self.eps = eps
+                self.jsonl_path = os.path.join(self.dir, f"metrics_{self.run_tag}.jsonl")
+                self.csv_path = os.path.join(self.dir, f"metrics_{self.run_tag}.csv")
+                # 初始化 CSV 表头（包含任务信息）
                 if not os.path.exists(self.csv_path):
-                    with open(self.csv_path, "w") as f:
-                        f.write("time,step,epoch,phase,metric,value\n")
-            def append_jsonl(self, obj):
-                with open(self.jsonl_path, "a") as f:
+                    with open(self.csv_path, "w", encoding="utf-8") as f:
+                        f.write("time,step,epoch,phase,metric,value,task,model,eps\n")
+
+            def append_jsonl(self, obj: dict):
+                # JSONL 中也冗余写入任务信息，方便独立解析
+                obj = dict(obj)
+                obj.update({
+                    "task": self.task_name,
+                    "model": self.model_name,
+                    "eps": self.eps,
+                })
+                with open(self.jsonl_path, "a", encoding="utf-8") as f:
                     f.write(json.dumps(obj, ensure_ascii=False) + "\n")
-            def append_csv_row(self, time_s:str, step:int, epoch:float, phase:str, metric:str, value:float):
-                with open(self.csv_path, "a") as f:
-                    f.write(f"{time_s},{step},{epoch},{phase},{metric},{value}\n")
+
+            def append_csv_row(self, time_s: str, step: int, epoch: float, phase: str, metric: str, value: float):
+                with open(self.csv_path, "a", encoding="utf-8") as f:
+                    f.write(f"{time_s},{step},{epoch},{phase},{metric},{value},{self.task_name},{self.model_name},{self.eps}\n")
 
         class MetricsRecorder(TrainerCallback):
-            """Record training loss (on_log) and eval/train accuracy (on_evaluate) to files."""
-            def __init__(self, framework, train_samples, eval_samples, out_dir, train_probe_size: int = 256):
+            """记录训练 loss（on_log）以及在评估阶段计算并记录指标（on_evaluate）。
+            说明：
+            - 训练步的 loss 等由 Trainer 传入 logs（需要 logging_strategy=steps 且 logging_steps=1）。
+            - on_evaluate 中，调用 framework.evaluate 以得到 eval 的准确率；另外对训练集抽样一小部分做探针评估（避免太慢）。
+            """
+            def __init__(self, framework, train_samples, eval_samples, out_dir, run_tag: str, train_probe_size: int = 256):
                 self.framework = framework
                 self.train_samples_full = train_samples
                 self.eval_samples = eval_samples
-                self.writer = _HistoryWriter(out_dir)
+                self.writer = _HistoryWriter(
+                    out_dir,
+                    run_tag,
+                    task_name=self.framework.args.task_name,
+                    model_name=self.framework.args.model_name.split("/")[-1],
+                    eps=self.framework.args.zo_eps,
+                )
                 self.train_probe_size = train_probe_size
 
             def on_log(self, args, state, control, logs=None, **kwargs):
                 if not logs:
                     return
                 ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-                payload = {"time": ts, "step": int(state.global_step), "epoch": float(state.epoch) if state.epoch is not None else None, "phase": "train"}
-                # capture common keys like 'loss', 'learning_rate'
+                step = int(state.global_step)
+                epoch_val = float(state.epoch) if state.epoch is not None else -1
+                # 逐项把 logs 内的标量（如 loss、learning_rate）写入
                 for k, v in logs.items():
                     if isinstance(v, (int, float)) and k not in ("total_flos",):
-                        rec = dict(payload)
-                        rec["metric"] = k
-                        rec["value"] = float(v)
-                        self.writer.append_jsonl(rec)
-                        self.writer.append_csv_row(ts, payload["step"], payload["epoch"] or -1, "train", k, float(v))
+                        self.writer.append_jsonl({
+                            "time": ts, "step": step, "epoch": epoch_val,
+                            "phase": "train", "metric": k, "value": float(v)
+                        })
+                        self.writer.append_csv_row(ts, step, epoch_val, "train", k, float(v))
 
             def on_evaluate(self, args, state, control, metrics=None, **kwargs):
-                # compute eval accuracy via framework.evaluate (classification/generation aware)
                 ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
                 step = int(state.global_step)
-                epoch_val = float(state.epoch) if state.epoch is not None else None
+                epoch_val = float(state.epoch) if state.epoch is not None else -1
 
-                # Eval accuracy
+                # 计算验证集指标（例如 accuracy）
                 eval_metrics = self.framework.evaluate([], self.eval_samples)
                 for mk, mv in eval_metrics.items():
-                    self.writer.append_jsonl({"time": ts, "step": step, "epoch": epoch_val, "phase": "eval", "metric": mk, "value": float(mv)})
-                    self.writer.append_csv_row(ts, step, epoch_val or -1, "eval", mk, float(mv))
+                    self.writer.append_jsonl({
+                        "time": ts, "step": step, "epoch": epoch_val,
+                        "phase": "eval", "metric": mk, "value": float(mv)
+                    })
+                    self.writer.append_csv_row(ts, step, epoch_val, "eval", mk, float(mv))
 
-                # Train accuracy on a probe subset to save time
-                n = min(self.train_probe_size, len(self.train_samples_full))
+                # 训练集抽样做探针评估，减少耗时
+                n = min(self.train_probe_size, len(self.train_samples_full) if self.train_samples_full is not None else 0)
                 if n > 0:
                     subset = random.sample(self.train_samples_full, n) if len(self.train_samples_full) > n else list(self.train_samples_full)
                     train_metrics = self.framework.evaluate([], subset)
                     for mk, mv in train_metrics.items():
-                        self.writer.append_jsonl({"time": ts, "step": step, "epoch": epoch_val, "phase": "train_probe", "metric": mk, "value": float(mv)})
-                        self.writer.append_csv_row(ts, step, epoch_val or -1, "train_probe", mk, float(mv))
-        # ---- end metrics logging callback ----
+                        self.writer.append_jsonl({
+                            "time": ts, "step": step, "epoch": epoch_val,
+                            "phase": "train_probe", "metric": mk, "value": float(mv)
+                        })
+                        self.writer.append_csv_row(ts, step, epoch_val, "train_probe", mk, float(mv))
+        # ---- end metrics logging callback -------------------------------------------
+
+        # 确保按“每步”记录日志：
+        # 如果使用了梯度累积，"步" 指完成一次累积后的优化步。
+        self.args.logging_strategy = "steps"
+        self.args.logging_steps = 1
+        # 可选：不将日志上报到外部平台（如 wandb），只写本地文件
+        if getattr(self.args, "report_to", None) is not None:
+            self.args.report_to = []
 
         trainer = OurTrainer(
             model=self.model,
@@ -478,7 +530,7 @@ class Framework:
             tokenizer=self.tokenizer,
             data_collator=DataCollatorWithPaddingAndNesting(self.tokenizer, pad_to_multiple_of=8) if self.args.train_as_classification else collator(self.tokenizer, pad_to_multiple_of=8),
         )
-        trainer.add_callback(MetricsRecorder(self, train_samples, eval_samples, self.args.output_dir))
+        trainer.add_callback(MetricsRecorder(self, train_samples, eval_samples, logs_dir, run_tag))
         if self.args.save_on_interrupt:
             trainer.add_callback(SIGUSR1Callback())
 
