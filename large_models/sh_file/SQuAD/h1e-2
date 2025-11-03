@@ -1,0 +1,19 @@
+#!/bin/bash
+#SBATCH --job-name=SQuAD_optH1e-2_1031	# Job name (testBowtie2)
+#SBATCH --partition=gpu_p		# Partition name (batch, highmem_p, or gpu_p)
+#SBATCH --ntasks=1			# 1 task (process) for below commands
+#SBATCH --cpus-per-task=2	 	# CPU core count per task, by default 1 CPU core per task
+#SBATCH --mem=120G			# Memory per node (4GB); by default using M as unit
+#SBATCH --gres=gpu:L4:1
+#SBATCH --time=12:00:00              	# Time limit hrs:min:sec or days-hours:minutes:seconds
+#SBATCH --output=jobs/%x_%j_1.out	# Standard output log, e.g., testBowtie2_12345.out
+#SBATCH --mail-user=jichao.yu@uga.edu    # Where to send mail
+#SBATCH --mail-type=ALL          	# Mail events (BEGIN, END, FAIL, ALL)
+
+ml jq
+
+source ~/.bashrc
+conda activate mezo-env
+cd /home/jy03364/MeZO/large_models
+
+BS=8 MODEL=facebook/opt-1.3b TASK=SQuAD LR=5e-5 EPS=1e-2 bash mezo.sh
