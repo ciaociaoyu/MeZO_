@@ -15,7 +15,7 @@ EVAL=${EVAL:--1}
 # 改一下训练集什么的数量，现在使用完整的这些来训练
 
 STEPS=${STEPS:-20000}
-EVAL_STEPS=${EVAL_STEPS:-4000}
+EVAL_STEPS=${EVAL_STEPS:-1000}
 
 MODE=${MODE:-ft}
 EXTRA_ARGS=""
