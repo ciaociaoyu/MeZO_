@@ -520,9 +520,22 @@ class OurTrainer(Trainer):
                 elif steps_trained_progress_bar is not None:
                     steps_trained_progress_bar.close()
                     steps_trained_progress_bar = None
-
                 if step % args.gradient_accumulation_steps == 0:
                     self.control = self.callback_handler.on_step_begin(args, self.state, self.control)
+
+                # ===== DEBUG 2025-11-08: 记录本 step batch size 开始 =====
+                try:
+                    debug_batch_size = None
+                    for _v in inputs.values():
+                        if isinstance(_v, torch.Tensor):
+                            debug_batch_size = _v.size(0)
+                            break
+                    if debug_batch_size is not None and self.is_world_process_zero():
+                        logger.info(f"[DEBUG] step={step}, global_step={self.state.global_step}, batch_size={debug_batch_size}")
+                except Exception as e:
+                    if self.is_world_process_zero():
+                        logger.warning(f"[DEBUG] 计算 batch size 失败: step={step}, err={e}")
+                # ===== DEBUG 2025-11-08: 记录本 step batch size 结束 =====
 
                 # MeZO added: estimate gradient
                 if args.trainer == "zo":
@@ -538,6 +551,18 @@ class OurTrainer(Trainer):
                             tr_loss_step = self.training_step(model, inputs)
                     else:
                         tr_loss_step = self.training_step(model, inputs)
+
+                # ===== DEBUG 2025-11-08: 记录本 step loss 开始 =====
+                if self.is_world_process_zero():
+                    try:
+                        if isinstance(tr_loss_step, torch.Tensor):
+                            debug_loss_value = tr_loss_step.detach().item()
+                        else:
+                            debug_loss_value = float(tr_loss_step)
+                        logger.info(f"[DEBUG] step={step}, global_step={self.state.global_step}, step_loss={debug_loss_value}")
+                    except Exception as e:
+                        logger.warning(f"[DEBUG] 记录 step loss 失败: step={step}, err={e}")
+                # ===== DEBUG 2025-11-08: 记录本 step loss 结束 =====
 
                 if (
                     args.logging_nan_inf_filter
@@ -618,6 +643,15 @@ class OurTrainer(Trainer):
                     self.state.epoch = epoch + (step + 1) / steps_in_epoch
                     self.control = self.callback_handler.on_step_end(args, self.state, self.control)
 
+                    # ===== DEBUG 2025-11-08: 调用 _maybe_log_save_evaluate 前记录样本数(按 step 粗略估计) 开始 =====
+                    if self.is_world_process_zero():
+                        try:
+                            debug_seen_samples = self.state.global_step * total_train_batch_size
+                            logger.info(f"[DEBUG] 调用 _maybe_log_save_evaluate(step) 时 global_step={self.state.global_step}, approx_seen_samples={debug_seen_samples}")
+                        except Exception as e:
+                            logger.warning(f"[DEBUG] 计算 approx_seen_samples 失败(step): err={e}")
+                    # ===== DEBUG 2025-11-08: 调用 _maybe_log_save_evaluate 前记录样本数(按 step 粗略估计) 结束 =====
+
                     self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
                 else:
                     self.control = self.callback_handler.on_substep_end(args, self.state, self.control)
@@ -633,6 +667,16 @@ class OurTrainer(Trainer):
                 self.control.should_training_stop = True
 
             self.control = self.callback_handler.on_epoch_end(args, self.state, self.control)
+
+            # ===== DEBUG 2025-11-08: 调用 _maybe_log_save_evaluate 前记录样本数(按 epoch 粗略估计) 开始 =====
+            if self.is_world_process_zero():
+                try:
+                    debug_seen_samples = self.state.global_step * total_train_batch_size
+                    logger.info(f"[DEBUG] 调用 _maybe_log_save_evaluate(epoch_end) 时 global_step={self.state.global_step}, approx_seen_samples={debug_seen_samples}")
+                except Exception as e:
+                    logger.warning(f"[DEBUG] 计算 approx_seen_samples 失败(epoch_end): err={e}")
+            # ===== DEBUG 2025-11-08: 调用 _maybe_log_save_evaluate 前记录样本数(按 epoch 粗略估计) 结束 =====
+
             self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
 
             if DebugOption.TPU_METRICS_DEBUG in self.args.debug:
@@ -699,14 +743,14 @@ class OurTrainer(Trainer):
     def zo_perturb_parameters(self, random_seed=None, scaling_factor=1):
         """
         Perturb the parameters with random vector z.
-        Input: 
+        Input:
         - random_seed: random seed for MeZO in-place perturbation (if it's None, we will use self.zo_random_seed)
         - scaling_factor: theta = theta + scaling_factor * z * eps
         """
 
         # Set the random seed to ensure that we sample the same z for perturbation/update
         torch.manual_seed(random_seed if random_seed is not None else self.zo_random_seed)
-        
+
         for name, param in self.named_parameters_to_optim:
             z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
             param.data = param.data + scaling_factor * z * self.args.zo_eps
@@ -728,6 +772,15 @@ class OurTrainer(Trainer):
             if self.args.n_gpu > 1:
                 # Warning: this is copied from the original Huggingface Trainer. Untested.
                 loss = loss.mean()  # mean() to average on multi-gpu parallel training
+
+        # ===== DEBUG 2025-11-08: 记录 zo_forward loss 开始 =====
+        if self.is_world_process_zero():
+            try:
+                logger.info(f"[DEBUG] zo_forward loss={loss.detach().item()}")
+            except Exception as e:
+                logger.warning(f"[DEBUG] 记录 zo_forward loss 失败: err={e}")
+        # ===== DEBUG 2025-11-08: 记录 zo_forward loss 结束 =====
+
         return loss.detach()
 
 
@@ -742,16 +795,25 @@ class OurTrainer(Trainer):
             inputs = self._prepare_inputs(inputs)
             args = self.args
             outputs = self.model.generate(
-                inputs["input_ids"], do_sample=args.sampling, temperature=args.temperature, 
-                num_beams=args.num_beams, top_p=args.top_p, top_k=args.top_k, max_new_tokens=min(args.max_new_tokens, args.max_length - inputs["input_ids"].size(1)), 
+                inputs["input_ids"], do_sample=args.sampling, temperature=args.temperature,
+                num_beams=args.num_beams, top_p=args.top_p, top_k=args.top_k, max_new_tokens=min(args.max_new_tokens, args.max_length - inputs["input_ids"].size(1)),
                 num_return_sequences=1, eos_token_id=[self.tokenizer.encode(args.eos_token, add_special_tokens=False)[-1], self.tokenizer.eos_token_id],
             )
             output_text = []
             for i in range(len(outputs)):
                 output_text.append(self.tokenizer.decode(outputs[i][inputs["input_ids"].size(1):], skip_special_tokens=True).strip())
             f1s = [f1(output_text[i], inputs['gold'][i]) for i in range(len(output_text))]
-        
-        return -torch.tensor(np.mean(f1s), dtype=torch.float32)
+
+        # ===== DEBUG 2025-11-08: 记录 zo_forward_nondiff mean F1 开始 =====
+        debug_mean_f1 = np.mean(f1s)
+        if self.is_world_process_zero():
+            try:
+                logger.info(f"[DEBUG] zo_forward_nondiff mean_F1={debug_mean_f1}")
+            except Exception as e:
+                logger.warning(f"[DEBUG] 记录 zo_forward_nondiff mean F1 失败: err={e}")
+        # ===== DEBUG 2025-11-08: 记录 zo_forward_nondiff mean F1 结束 =====
+
+        return -torch.tensor(debug_mean_f1, dtype=torch.float32)
 
 
     def zo_step(self, model, inputs):
@@ -760,7 +822,7 @@ class OurTrainer(Trainer):
         """
         args = self.args
 
-        # What parameters to optimize 
+        # What parameters to optimize
         self.named_parameters_to_optim = []
         for name, param in model.named_parameters():
             if param.requires_grad:
@@ -778,6 +840,16 @@ class OurTrainer(Trainer):
         loss2 = self.zo_forward(model, inputs)
 
         self.projected_grad = ((loss1 - loss2) / (2 * self.args.zo_eps)).item()
+
+        # ===== DEBUG 2025-11-08: 记录 MeZO 两次 loss 和 projected_grad 开始 =====
+        if self.is_world_process_zero():
+            try:
+                l1 = loss1.item() if isinstance(loss1, torch.Tensor) else float(loss1)
+                l2 = loss2.item() if isinstance(loss2, torch.Tensor) else float(loss2)
+                logger.info(f"[DEBUG] zo_step loss1={l1}, loss2={l2}, projected_grad={self.projected_grad}, zo_eps={self.args.zo_eps}")
+            except Exception as e:
+                logger.warning(f"[DEBUG] 记录 zo_step 信息失败: err={e}")
+        # ===== DEBUG 2025-11-08: 记录 MeZO 两次 loss 和 projected_grad 结束 =====
 
         # No gradient accumulation support
         assert self.args.gradient_accumulation_steps == 1
