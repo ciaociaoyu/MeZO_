@@ -15,7 +15,11 @@ EVAL=${EVAL:--1}
 # 改一下训练集什么的数量，现在使用完整的这些来训练
 
 STEPS=${STEPS:-20000}
-EVAL_STEPS=${EVAL_STEPS:-1000}
+
+# 临时测试一下eval_loss输出是否正确
+# emmm 好像完全可以参数传递啊
+EVAL_STEPS=${EVAL_STEPS:-2000}
+#EVAL_STEPS=${EVAL_STEPS:-30}
 
 MODE=${MODE:-ft}
 EXTRA_ARGS=""
