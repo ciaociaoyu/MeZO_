@@ -492,7 +492,18 @@ class Framework:
                 step = int(state.global_step)
                 epoch_val = float(state.epoch) if state.epoch is not None else -1
 
-                # 计算验证集指标（例如 accuracy）
+                # 1) 先记录 Trainer 自身传入的 metrics（通常包含 eval_loss、eval_runtime 等）
+                #    统一标记为 phase="eval"，便于和自定义指标一起分析。
+                if metrics:
+                    for mk, mv in metrics.items():
+                        if isinstance(mv, (int, float)):
+                            self.writer.append_jsonl({
+                                "time": ts, "step": step, "epoch": epoch_val,
+                                "phase": "eval", "metric": mk, "value": float(mv)
+                            })
+                            self.writer.append_csv_row(ts, step, epoch_val, "eval", mk, float(mv))
+
+                # 2) 使用自定义的 framework.evaluate 计算任务指标（如 accuracy / F1），也标记为 phase="eval"
                 eval_metrics = self.framework.evaluate([], self.eval_samples)
                 for mk, mv in eval_metrics.items():
                     self.writer.append_jsonl({
@@ -501,7 +512,7 @@ class Framework:
                     })
                     self.writer.append_csv_row(ts, step, epoch_val, "eval", mk, float(mv))
 
-                # 训练集抽样做探针评估，减少耗时
+                # 3) 训练集抽样做探针评估（train_probe），减少耗时
                 n = min(self.train_probe_size, len(self.train_samples_full) if self.train_samples_full is not None else 0)
                 if n > 0:
                     subset = random.sample(self.train_samples_full, n) if len(self.train_samples_full) > n else list(self.train_samples_full)
