@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=SQuAD_optH1e-8_1031	# Job name (testBowtie2)
+#SBATCH --job-name=SQuAD_optH3e-3_1109	# Job name (testBowtie2)
 #SBATCH --partition=gpu_p		# Partition name (batch, highmem_p, or gpu_p)
 #SBATCH --ntasks=1			# 1 task (process) for below commands
 #SBATCH --cpus-per-task=2	 	# CPU core count per task, by default 1 CPU core per task
@@ -16,4 +16,4 @@ source ~/.bashrc
 conda activate mezo-env
 cd /home/jy03364/MeZO/large_models
 
-BS=8 MODEL=facebook/opt-1.3b TASK=SQuAD LR=5e-5 EPS=1e-8 bash mezo.sh
+BS=16 MODEL=facebook/opt-1.3b TASK=SQuAD LR=1e-7 EPS=3e-3 bash mezo.sh
