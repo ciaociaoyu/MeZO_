@@ -18,7 +18,7 @@ STEPS=${STEPS:-20000}
 
 # 临时测试一下eval_loss输出是否正确
 # emmm 好像完全可以参数传递啊
-EVAL_STEPS=${EVAL_STEPS:-2000}
+EVAL_STEPS=${EVAL_STEPS:-1000}
 #EVAL_STEPS=${EVAL_STEPS:-30}
 
 MODE=${MODE:-ft}
