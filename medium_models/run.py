@@ -646,6 +646,20 @@ def main():
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
+    # Append MeZO-related switches into the log filename so that runs are easier to identify.
+    # USE_H  -> training_args.use_adaptive_h
+    # USE_LH -> training_args.use_layerwise_h
+    # USE_C  -> training_args.use_c_scale
+    # 更改了result文件的命名规则
+    if getattr(training_args, "log_file", None):
+        base, ext = os.path.splitext(training_args.log_file)
+        suffix = (
+            f"-USE_H{int(getattr(training_args, 'use_adaptive_h', False))}"
+            f"-USE_LH{int(getattr(training_args, 'use_layerwise_h', False))}"
+            f"-USE_C{int(getattr(training_args, 'use_c_scale', False))}"
+        )
+        training_args.log_file = base + suffix + ext
+
     if training_args.sweep:
         now = datetime.now()
         dt_str = now.strftime('%m_%d_%H_%M_%S')
