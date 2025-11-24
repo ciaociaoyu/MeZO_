@@ -17,13 +17,15 @@
 - 每个作业文件只放 2 个 EPS，对应 2 行运行命令。
 """
 
+import argparse
+import re
 import numpy as np
 from pathlib import Path
 from typing import List
 from datetime import datetime
 
 
-def generate_eps_values(num_per_interval: int = 14, tol: float = 1e-12) -> list:
+def generate_eps_values(exp_start: float = -2.5, exp_end: float = -4.0, num_per_interval: int = 14, tol: float = 1e-12) -> list:
     """
     在 1e-2.5 到 1e-4 的范围内生成 EPS 取值，并且在 log 空间上均匀。
 
@@ -38,7 +40,7 @@ def generate_eps_values(num_per_interval: int = 14, tol: float = 1e-12) -> list:
     返回：
         eps_list: 一个按从大到小（从 1e-2.5 到 1e-4）排序的 EPS 浮点数列表。
     """
-    exponents = np.linspace(-2.5, -4.0, num_per_interval)
+    exponents = np.linspace(exp_start, exp_end, num_per_interval)
     values = 10.0 ** exponents
     eps_list: List[float] = [float(v) for v in values]
     return eps_list
@@ -51,7 +53,13 @@ def format_eps_for_name(eps: float) -> str:
     这里采用三位有效数字的科学计数法，比如：
         0.00158 -> '1.58e-03'
     """
-    return f"{eps:.3g}"
+    # 强制科学计数法，例如 1.47e-04
+    s = f"{eps:.3e}"  # 如 '1.470e-04'
+    # 去掉多余的 0：1.470e-04 -> 1.47e-04
+    s = re.sub(r"0+e", "e", s)
+    # 去掉 + 号：1.47e+04 -> 1.47e4
+    s = s.replace("e+", "e")
+    return s
 
 
 def format_eps_for_cmd(eps: float) -> str:
@@ -61,7 +69,13 @@ def format_eps_for_cmd(eps: float) -> str:
     这里也采用三位有效数字的科学计数法，例如：
         0.00158 -> '1.58e-03'
     """
-    return f"{eps:.3g}"
+    # 强制科学计数法，例如 1.47e-04
+    s = f"{eps:.3e}"  # 如 '1.470e-04'
+    # 去掉多余的 0：1.470e-04 -> 1.47e-04
+    s = re.sub(r"0+e", "e", s)
+    # 去掉 + 号：1.47e+04 -> 1.47e4
+    s = s.replace("e+", "e")
+    return s
 
 
 def load_template(template_path: Path) -> str:
@@ -80,7 +94,23 @@ def load_template(template_path: Path) -> str:
     return template_path.read_text(encoding="utf-8")
 
 
-def build_job_text(template_text: str, eps_group: List[float]) -> str:
+def replace_key_value(line: str, key: str, new_value: str) -> str:
+    """Replace a KEY=xxx token in a shell command line with KEY=new_value."""
+    parts = line.split()
+    for i, p in enumerate(parts):
+        if p.startswith(key + "="):
+            parts[i] = f"{key}={new_value}"
+    return " ".join(parts)
+
+
+def build_job_text(
+    template_text: str,
+    eps_group: List[float],
+    date_str: str = "1124",
+    steps_fixed: int = 26750,
+    sbatch_time: str = "120:00:00",
+    sbatch_mem: str = "80G",
+) -> str:
     """
     根据一组 EPS 值，构造一个新的作业 txt 文件内容。
 
@@ -114,7 +144,6 @@ def build_job_text(template_text: str, eps_group: List[float]) -> str:
     # 构造 job-name 使用的标识
     first_eps_name = format_eps_for_name(eps_group[0])
     second_eps_name = format_eps_for_name(eps_group[1])
-    date_str = datetime.now().strftime("%m%d")
     new_job_name = f"SQuAD_optH{first_eps_name}AND{second_eps_name}_{date_str}"
 
     # 1. 修改 job-name：直接替换整段 SQuAD_* 名称
@@ -135,6 +164,16 @@ def build_job_text(template_text: str, eps_group: List[float]) -> str:
             new_line = line.replace(original_name, new_job_name)
             lines[i] = new_line
             break
+    new_text = "\n".join(lines)
+
+    # ===== Update SBATCH resources (time/mem) =====
+    lines = new_text.splitlines()
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("#SBATCH --time="):
+            lines[i] = f"#SBATCH --time={sbatch_time}"
+        if stripped.startswith("#SBATCH --mem="):
+            lines[i] = f"#SBATCH --mem={sbatch_mem}"
     new_text = "\n".join(lines)
 
     # 2. 处理 TASK 行：删除原有的 SQuAD+EPS 行，然后用模板行生成新的多行
@@ -160,8 +199,10 @@ def build_job_text(template_text: str, eps_group: List[float]) -> str:
     task_lines = []
     for eps in eps_group:
         eps_str = format_eps_for_cmd(eps)
-        # 假设模板行中原本包含 `EPS=1.58e-3`，这里进行替换
-        new_task = task_template_line.replace("EPS=1.58e-3", f"EPS={eps_str}")
+        new_task = task_template_line
+        # Replace EPS=... and STEPS=... no matter what the old value is
+        new_task = replace_key_value(new_task, "EPS", eps_str)
+        new_task = replace_key_value(new_task, "STEPS", str(steps_fixed))
         task_lines.append(new_task)
 
     # 将新的任务行插回原来的位置
@@ -175,67 +216,71 @@ def build_job_text(template_text: str, eps_group: List[float]) -> str:
 
 
 def main():
-    """
-    主函数：
-    1. 生成 EPS 取值列表；
-    2. 按每 2 个一组进行分组；
-    3. 对每一组调用 build_job_text 生成新的作业文本；
-    4. 将结果写入到当前目录下的 `jobs_eps` 子目录中。
-    """
-    # 当前脚本所在目录
+    """Generate grouped SQuAD+OPT job txt files from a template."""
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--template", type=str, default="1.58e-3AND1e-3.txt", help="模板作业文件名")
+    ap.add_argument("--out_dir", type=str, default="jobs_eps", help="输出目录")
+
+    ap.add_argument("--exp_start", type=float, default=-2.5, help="EPS 指数起点（10^exp_start）")
+    ap.add_argument("--exp_end", type=float, default=-4.0, help="EPS 指数终点（10^exp_end）")
+    ap.add_argument("--num_eps", type=int, default=10, help="采样 EPS 数量（log 均匀）")
+    ap.add_argument("--group_size", type=int, default=2, help="每个作业文件包含的 EPS 行数")
+
+    # New adjustable knobs requested by user
+    ap.add_argument("--date_str", type=str, default="1124", help="job-name/文件名日期后缀（MMDD）")
+    ap.add_argument("--steps_fixed", type=int, default=26750, help="强制写入命令行的 STEPS 值")
+    ap.add_argument("--sbatch_time", type=str, default="120:00:00", help="SBATCH --time= 值")
+    ap.add_argument("--sbatch_mem", type=str, default="80G", help="SBATCH --mem= 值")
+
+    args = ap.parse_args()
+
     base_dir = Path(__file__).resolve().parent
-
-    # 模板文件路径，假定与本脚本在同一目录下，并且文件名为 h1e-3.txt
-    template_path = base_dir / "1.58e-3AND1e-3.txt"
-
-    # 输出目录：用于存放自动生成的作业 txt 文件
-    output_dir = base_dir / "jobs_eps"
+    template_path = base_dir / args.template
+    output_dir = base_dir / args.out_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. 生成所有 EPS 取值
-    eps_list = generate_eps_values(num_per_interval=10)
+    eps_list = generate_eps_values(
+        exp_start=args.exp_start,
+        exp_end=args.exp_end,
+        num_per_interval=args.num_eps,
+    )
 
-    # 为了方便调试，可以打印一下总数量：
     print(f"总共生成的去重后 EPS 数量: {len(eps_list)}")
 
-    # 2. 按每 2 个一组进行切分
-    group_size = 2
+    group_size = args.group_size
     total_full_groups = len(eps_list) // group_size
-
     if total_full_groups == 0:
         raise RuntimeError("有效的 EPS 组数为 0，请检查采样参数。")
 
-    # 如果不能整除，最后多出来的一部分会被丢弃，这里给出提示
     leftover = len(eps_list) - total_full_groups * group_size
     if leftover > 0:
-        print(f"注意：共有 {len(eps_list)} 个 EPS 值，按每 {group_size} 个一组只会使用前 "
-              f"{total_full_groups * group_size} 个，剩余 {leftover} 个将被丢弃。")
+        print(
+            f"注意：共有 {len(eps_list)} 个 EPS 值，按每 {group_size} 个一组只会使用前 "
+            f"{total_full_groups * group_size} 个，剩余 {leftover} 个将被丢弃。"
+        )
 
-    # 3. 读取模板文本
     template_text = load_template(template_path)
 
-    # 4. 遍历每一组 EPS，生成对应的作业文件
     for group_idx in range(total_full_groups):
         start = group_idx * group_size
         end = start + group_size
         eps_group = eps_list[start:end]
 
-        # 生成该组对应的作业文本
-        job_text = build_job_text(template_text, eps_group)
+        job_text = build_job_text(
+            template_text,
+            eps_group,
+            date_str=args.date_str,
+            steps_fixed=args.steps_fixed,
+            sbatch_time=args.sbatch_time,
+            sbatch_mem=args.sbatch_mem,
+        )
 
-        # 构造该组对应的名字：包含两个 EPS 值，并带上当天日期
         first_eps_name = format_eps_for_name(eps_group[0])
-        second_eps_name = format_eps_for_name(eps_group[1])
-        date_str = datetime.now().strftime("%m%d")
-        job_tag = f"SQuAD_optH{first_eps_name}AND{second_eps_name}_{date_str}"
+        second_eps_name = format_eps_for_name(eps_group[1]) if len(eps_group) > 1 else first_eps_name
+        job_tag = f"SQuAD_optH{first_eps_name}AND{second_eps_name}_{args.date_str}"
 
-        # 输出文件名，例如：SQuAD_optH1.58e-3AND1e-3_1120.txt
-        job_filename = f"{job_tag}.txt"
-        job_path = output_dir / job_filename
-
-        # 将文本写入文件
+        job_path = output_dir / f"{job_tag}.txt"
         job_path.write_text(job_text, encoding="utf-8")
-
         print(f"生成作业文件: {job_path}")
 
 
