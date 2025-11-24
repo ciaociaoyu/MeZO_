@@ -927,7 +927,15 @@ class Trainer(LinearHeadTrainer):
                 #    ν3 估计已在 estimate_nu3 内部用 (18a)(18b) 两阶段判据做了鲁棒性筛选
                 self.epsilon_f = self.estimate_noise(model, self.compute_loss, example_inputs)
                 self.nu3 = self.estimate_nu3(model, self.compute_loss, example_inputs)
-                h_final = (self.epsilon_f / self.nu3) ** (1/3) * (3 ** (1/3))
+                # ===== SAFETY FIX: 防止 nu3 为 0 或非有限值导致除零崩溃 =====
+                nu3_safe = float(self.nu3)
+                if (not math.isfinite(nu3_safe)) or abs(nu3_safe) < 1e-12:
+                    logger.warning(
+                        f"[adaptive h] nu3 非法（nu3={nu3_safe:.6e}），将其钳制为极小值 1e-12 以避免除以 0。"
+                    )
+                    nu3_safe = 1e-12
+                # ===== END SAFETY FIX ======================================================
+                h_final = (self.epsilon_f / nu3_safe) ** (1/3) * (3 ** (1/3))
                 h_final = float(min(0.1, max(1e-5, h_final)))
                 self.adaptive_h = torch.tensor(h_final, dtype=torch.float32)
                 logger.info(f"Using adaptive h from ν3: epsilon_f={self.epsilon_f:.6e}, nu3={self.nu3:.6e}, h={self.adaptive_h:.6e}")
@@ -1347,7 +1355,15 @@ class Trainer(LinearHeadTrainer):
                         # —— 全局路径：直接用 ν3 估计和 ε_f 计算 h（h = γ₅ (ε_f/ν3)^{1/3}, γ₅=3^{1/3}）
                         self.epsilon_f = self.estimate_noise(model, self.compute_loss, inputs)
                         self.nu3 = self.estimate_nu3(model, self.compute_loss, inputs)
-                        h_final = (self.epsilon_f / self.nu3) ** (1/3) * (3 ** (1/3))
+                        # ===== SAFETY FIX: 防止 nu3 为 0 或非有限值导致除零崩溃 =====
+                        nu3_safe = float(self.nu3)
+                        if (not math.isfinite(nu3_safe)) or abs(nu3_safe) < 1e-12:
+                            logger.warning(
+                                f"[adaptive h update] nu3 非法（nu3={nu3_safe:.6e}），将其钳制为极小值 1e-12 以避免除以 0。"
+                            )
+                            nu3_safe = 1e-12
+                        # ===== END SAFETY FIX ======================================================
+                        h_final = (self.epsilon_f / nu3_safe) ** (1/3) * (3 ** (1/3))
                         h_final = float(min(0.5, max(1e-5, h_final)))
                         self.adaptive_h = torch.tensor(h_final, dtype=torch.float32)
                         logger.info(
