@@ -505,7 +505,7 @@ class FewShotDataset(torch.utils.data.Dataset):
     # --------------------------
     # Indexed mode for SNLI/MNLI
     # --------------------------
-    def _init_indexed_mode(self, spec: TSVSpec):
+    def _init_indexed_mode(self, spec):
         """
         Memory-safe indexed datasets for large TSV tasks (SNLI/MNLI/MNLI-MM).
 
