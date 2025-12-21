@@ -461,13 +461,13 @@ class FewShotDataset(torch.utils.data.Dataset):
                                 if args.debug_mode:
                                     print("    %.4f %s | %s" % (score, self.support_examples[support_idx].label, self.support_examples[support_idx].text_a)) # debug
                 else:
-                # Using demonstrations without filtering
-                if self.use_demo:
-                    context_indices = [support_idx for support_idx in support_indices
-                                       if support_idx != query_idx or mode != "train"]
-                else:
-                    # No demos: keep it empty to save memory (avoid O(N^2))
-                    context_indices = []
+                    # Using demonstrations without filtering
+                    if self.use_demo:
+                        context_indices = [support_idx for support_idx in support_indices
+                                           if support_idx != query_idx or mode != "train"]
+                    else:
+                        # No demos: keep it empty to save memory (avoid O(N^2))
+                        context_indices = []
 
                 # We'll subsample context_indices further later.
                 self.example_idx.append((query_idx, context_indices, sample_idx))
