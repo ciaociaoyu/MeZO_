@@ -756,13 +756,19 @@ class FewShotDataset(torch.utils.data.Dataset):
             label_map = {'0': 0, '1': 1}
 
         # Get example's label id (for training/inference)
+        # NOTE: On some test splits, `example.label` can be missing or even contain a non-label string.
         if example.label is None:
             example_label = None
         elif len(label_list) == 1:
-            # Regerssion
-            example_label = float(example.label)
+            # Regression task
+            try:
+                example_label = float(example.label)
+            except Exception:
+                # Malformed label on test split
+                example_label = None
         else:
-            example_label = label_map[example.label]
+            # Classification task
+            example_label = label_map.get(example.label, None)
 
         # Prepare other features
         if not use_demo:
