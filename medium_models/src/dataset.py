@@ -479,8 +479,11 @@ class FewShotDataset(torch.utils.data.Dataset):
             for query_idx, context_indices, bootstrap_idx in self.example_idx:
                 # The input (query) example
                 example = self.query_examples[query_idx]
-                # The demonstrations
-                supports = self.select_context([self.support_examples[i] for i in context_indices])
+                # The demonstrations (only when use_demo=True)
+                if self.use_demo:
+                    supports = self.select_context([self.support_examples[i] for i in context_indices])
+                else:
+                    supports = []
 
                 if args.template_list is not None:
                     template = args.template_list[bootstrap_idx % len(args.template_list)]   # Use template in order
@@ -698,8 +701,11 @@ class FewShotDataset(torch.utils.data.Dataset):
             query_idx, context_indices, bootstrap_idx = self.example_idx[i]
             # The input (query) example
             example = self.query_examples[query_idx]
-            # The demonstrations
-            supports = self.select_context([self.support_examples[i] for i in context_indices])
+            # The demonstrations (only when use_demo=True)
+            if self.use_demo:
+                supports = self.select_context([self.support_examples[i] for i in context_indices])
+            else:
+                supports = []
 
             if self.args.template_list is not None:
                 template = self.args.template_list[bootstrap_idx % len(self.args.template_list)]
