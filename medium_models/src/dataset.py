@@ -461,9 +461,13 @@ class FewShotDataset(torch.utils.data.Dataset):
                                 if args.debug_mode:
                                     print("    %.4f %s | %s" % (score, self.support_examples[support_idx].label, self.support_examples[support_idx].text_a)) # debug
                 else:
-                    # Using demonstrations without filtering
+                # Using demonstrations without filtering
+                if self.use_demo:
                     context_indices = [support_idx for support_idx in support_indices
-                               if support_idx != query_idx or mode != "train"]
+                                       if support_idx != query_idx or mode != "train"]
+                else:
+                    # No demos: keep it empty to save memory (avoid O(N^2))
+                    context_indices = []
 
                 # We'll subsample context_indices further later.
                 self.example_idx.append((query_idx, context_indices, sample_idx))
@@ -479,7 +483,7 @@ class FewShotDataset(torch.utils.data.Dataset):
                 supports = self.select_context([self.support_examples[i] for i in context_indices])
 
                 if args.template_list is not None:
-                    template = args.template_list[sample_idx % len(args.template_list)] # Use template in order
+                    template = args.template_list[bootstrap_idx % len(args.template_list)]   # Use template in order
                 else:
                     template = args.template
                 self.features.append(self.convert_fn(
@@ -497,6 +501,133 @@ class FewShotDataset(torch.utils.data.Dataset):
                 _ += 1
         else:
             self.features = None
+
+    # --------------------------
+    # Indexed mode for SNLI/MNLI
+    # --------------------------
+    def _init_indexed_mode(self, spec: TSVSpec):
+        """
+        Memory-safe indexed datasets for large TSV tasks (SNLI/MNLI/MNLI-MM).
+
+        - support set always comes from train.tsv (only built if use_demo=True)
+        - query set depends on mode (train/dev/test)
+        - no precomputed example_idx / no cached self.features (always tokenize online)
+        """
+        self._indexed_mode = True
+
+        support_path = os.path.join(self.args.data_dir, spec.train_file)
+
+        if self.mode == "train":
+            query_path = support_path
+        elif self.mode == "dev":
+            query_path = os.path.join(self.args.data_dir, spec.dev_file)
+        else:  # test
+            query_path = os.path.join(self.args.data_dir, spec.test_file)
+
+        # In GLUE-style test splits, labels may be missing ("-"), so do not filter them out.
+        query_label_list = self.label_list if self.mode != "test" else None
+
+        # Build support indexed dataset only if demonstrations are needed.
+        self._support_indexed = None
+        if self.use_demo:
+            # If GPT-3 in-context mode is used, we only need uniform sampling, label index is optional.
+            build_label_index = not (
+                getattr(self.args, "gpt3_in_context_head", False) or getattr(self.args, "gpt3_in_context_tail", False)
+            )
+            self._support_indexed = TSVIndexedDataset(
+                file_path=support_path,
+                spec=spec,
+                set_type="train",
+                label_list=self.label_list,
+                build_label_index=build_label_index,
+                skip_invalid_labels=True,
+            )
+
+        # Build query indexed dataset
+        self._query_indexed = TSVIndexedDataset(
+            file_path=query_path,
+            spec=spec,
+            set_type=_get_set_type(self.args.task_name, self.mode),
+            label_list=query_label_list,            # None for test => keep all lines
+            build_label_index=False,
+            skip_invalid_labels=(query_label_list is not None),  # only filter when labels are expected
+        )
+
+        self._query_len = len(self._query_indexed)
+        self.size = self._query_len * self.num_sample
+
+        # Disable old-path containers to avoid accidental huge allocations
+        self.features = None
+        self.example_idx = None
+        self.support_examples = None
+        self.query_examples = None
+
+        logger.info(
+            f"[FewShotDataset] Indexed mode enabled for task={self.args.task_name}, mode={self.mode}. "
+            f"support={len(self._support_indexed) if self._support_indexed is not None else 0}, "
+            f"query={len(self._query_indexed)}, num_sample={self.num_sample}"
+        )
+
+    def _sample_supports_indexed(self, query_idx: int, sample_idx: int):
+        """
+        Sample demonstrations from indexed support set without materializing huge candidate lists.
+        - For GPT-3 in-context: sample K random demos
+        - Otherwise: sample 1 per label (matching your select_context default)
+        """
+        if (not self.use_demo) or (self._support_indexed is None):
+            return []
+
+        support_ds = self._support_indexed
+
+        # Make eval sampling deterministic across workers (optional but recommended)
+        rng = np.random
+        if self.mode != "train":
+            seed = (query_idx * 1000003 + sample_idx * 9176 + 12345) % (2**32)
+            rng = np.random.RandomState(seed)
+
+        # GPT-3 in-context: K random demonstrations (no label balancing)
+        if getattr(self.args, "gpt3_in_context_head", False) or getattr(self.args, "gpt3_in_context_tail", False):
+            k = int(getattr(self.args, "gpt3_in_context_num", 0) or 0)
+            if k <= 0 or len(support_ds) == 0:
+                return []
+
+            n = len(support_ds)
+
+            # Avoid picking itself when train and query==support
+            if self.mode == "train" and n > 1:
+                k = min(k, n - 1)
+                base = rng.choice(n - 1, size=k, replace=False)
+                idxs = [int(x) + (1 if int(x) >= query_idx else 0) for x in base]
+            else:
+                k = min(k, n)
+                idxs = [int(x) for x in rng.choice(n, size=k, replace=False)]
+
+            return [support_ds[j] for j in idxs]
+
+        # Standard prompt-demo: 1 example per label
+        demos = []
+        label_to_indices = getattr(support_ds, "label_to_indices", None) or {}
+
+        for lab in self.label_list:
+            cand = label_to_indices.get(lab, [])
+            if not cand:
+                continue
+            # try a few times to avoid j==query_idx in train
+            for _ in range(10):
+                j = int(rng.choice(cand))
+                if self.mode == "train" and j == query_idx and len(cand) > 1:
+                    continue
+                demos.append(support_ds[j])
+                break
+
+        # Fallback: if something went wrong, pick one random
+        if len(demos) == 0 and len(support_ds) > 0:
+            j = int(rng.randint(0, len(support_ds)))
+            if self.mode == "train" and len(support_ds) > 1 and j == query_idx:
+                j = (j + 1) % len(support_ds)
+            demos = [support_ds[j]]
+
+        return demos
 
     def select_context(self, context_examples):
         """
@@ -537,6 +668,32 @@ class FewShotDataset(torch.utils.data.Dataset):
         return self.size
 
     def __getitem__(self, i):
+        # Indexed mode (SNLI/MNLI): do everything online, no huge lists.
+        if getattr(self, "_indexed_mode", False):
+            assert self._query_indexed is not None and self._query_len is not None
+            qlen = self._query_len
+            sample_idx = i // qlen
+            query_idx = i % qlen
+
+            example = self._query_indexed[query_idx]
+            supports = self._sample_supports_indexed(query_idx=query_idx, sample_idx=sample_idx) if self.use_demo else []
+
+            if self.args.template_list is not None:
+                template = self.args.template_list[sample_idx % len(self.args.template_list)]
+            else:
+                template = self.args.template
+
+            return self.convert_fn(
+                example=example,
+                supports=supports,
+                use_demo=self.use_demo,
+                label_list=self.label_list,
+                prompt=self.args.prompt,
+                template=template,
+                sfc_template=getattr(self.args, "icl_sfc_prompt", None),
+                label_word_list=self.label_word_list,
+                verbose=False,
+            )
         if self.features is None:
             query_idx, context_indices, bootstrap_idx = self.example_idx[i]
             # The input (query) example
@@ -545,7 +702,7 @@ class FewShotDataset(torch.utils.data.Dataset):
             supports = self.select_context([self.support_examples[i] for i in context_indices])
 
             if self.args.template_list is not None:
-                template = self.args.template_list[sample_idx % len(self.args.template_list)]
+                template = self.args.template_list[bootstrap_idx % len(self.args.template_list)]
             else:
                 template = self.args.template
 
