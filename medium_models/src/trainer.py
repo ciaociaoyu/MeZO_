@@ -227,12 +227,144 @@ class Trainer(LinearHeadTrainer):
         return None
     # =====================================================
 
+    # ================= Adaptive-h helpers (rolling probe buffer) =================
+    def _get_init_h(self) -> float:
+        h0 = getattr(self.args, "init_h", None)
+        if h0 is None:
+            h0 = getattr(self.args, "initial_h", None)
+        if h0 is None:
+            h0 = getattr(self.args, "zero_order_eps", 1e-4)
+        return float(h0)
+
+    def _smooth_h_log_ema(self, prev_h: float, new_h: float, beta: float, h_min: float, h_max: float) -> float:
+        if (not math.isfinite(prev_h)) or prev_h <= 0:
+            prev_h = h_min
+        if (not math.isfinite(new_h)) or new_h <= 0:
+            return float(min(h_max, max(h_min, prev_h)))
+        beta = float(min(1.0, max(0.0, beta)))
+        h = math.exp((1 - beta) * math.log(prev_h) + beta * math.log(new_h))
+        return float(min(h_max, max(h_min, h)))
+
+    def _update_h_probe_buffer(self, inputs):
+        """Maintain a rolling buffer of recent batches (CPU tensors) for stable h estimation."""
+        buf_size = int(getattr(self.args, "adaptive_h_probe_buffer_size", 64))
+        if buf_size <= 0:
+            return
+
+        buf = getattr(self, "_h_probe_buffer", None)
+        if not isinstance(buf, list):
+            buf = []
+
+        # Store a lightweight CPU copy to avoid holding GPU memory.
+        stored = inputs
+        try:
+            if isinstance(inputs, dict):
+                stored = {}
+                for k, v in inputs.items():
+                    if isinstance(v, torch.Tensor):
+                        stored[k] = v.detach().cpu()
+                    else:
+                        stored[k] = v
+        except Exception:
+            stored = inputs
+
+        buf.append(stored)
+        if len(buf) > buf_size:
+            buf = buf[-buf_size:]
+        self._h_probe_buffer = buf
+
+    def _get_h_estimation_inputs(self, train_dataloader, base_inputs=None, num_batches: int = 1):
+        """Return batches for h estimation: current batch + random sample from rolling probe buffer."""
+        num_batches = max(1, int(num_batches))
+        batches = []
+
+        # Always include current batch first (shallow copy to avoid in-place mutation)
+        if base_inputs is not None:
+            batches.append(dict(base_inputs) if isinstance(base_inputs, dict) else base_inputs)
+
+        buf = getattr(self, "_h_probe_buffer", None)
+        need = num_batches - len(batches)
+
+        # Prefer sampling from buffer excluding the most recent element (which is often base_inputs)
+        if need > 0 and isinstance(buf, list) and len(buf) > 0:
+            pool = buf
+            if base_inputs is not None and len(buf) > 1:
+                pool = buf[:-1]
+            if len(pool) > 0:
+                replace = len(pool) < need
+                idxs = np.random.choice(len(pool), size=need, replace=replace)
+                for idx in idxs:
+                    item = pool[int(idx)]
+                    batches.append(dict(item) if isinstance(item, dict) else item)
+
+        # Fallback: independent iterator over train_dataloader if buffer is empty
+        it = getattr(self, "_h_est_iter", None)
+        if it is None:
+            it = iter(train_dataloader)
+            self._h_est_iter = it
+        while len(batches) < num_batches:
+            try:
+                b = next(it)
+            except StopIteration:
+                it = iter(train_dataloader)
+                self._h_est_iter = it
+                b = next(it)
+            batches.append(dict(b) if isinstance(b, dict) else b)
+
+        return batches[:num_batches]
+
+    def estimate_adaptive_h_multi(
+        self,
+        model,
+        loss_fn,
+        inputs_list,
+        layer_name=None,
+        num_directions=1,
+        reduce="mean",
+        h_min=1e-5,
+        h_max=0.5,
+    ):
+        """Estimate h using multi-batch x multi-direction, then aggregate by mean/median."""
+        gamma = 3 ** (1 / 3)
+        h_vals, eps_vals, nu3_vals = [], [], []
+
+        for inputs in inputs_list:
+            for _ in range(max(1, int(num_directions))):
+                inp1 = dict(inputs) if isinstance(inputs, dict) else inputs
+                eps_i = float(self.estimate_noise(model, loss_fn, inp1, layer_name=layer_name))
+                if (not math.isfinite(eps_i)) or eps_i <= 0.0:
+                    continue
+
+                inp2 = dict(inputs) if isinstance(inputs, dict) else inputs
+                nu3_i = float(self.estimate_nu3(model, loss_fn, inp2, layer_name=layer_name, eps_f_override=eps_i))
+                if (not math.isfinite(nu3_i)) or nu3_i <= 1e-12:
+                    nu3_i = 1e-12
+
+                h_i = (eps_i / nu3_i) ** (1 / 3) * gamma
+                if (not math.isfinite(h_i)) or h_i <= 0.0:
+                    continue
+
+                h_i = float(min(h_max, max(h_min, h_i)))
+                h_vals.append(h_i)
+                eps_vals.append(eps_i)
+                nu3_vals.append(float(nu3_i))
+
+        if len(h_vals) == 0:
+            return float("nan"), float("nan"), float("nan")
+
+        arr = np.asarray(h_vals, dtype=np.float64)
+        reduce = str(reduce or "mean").lower()
+        h_est = float(np.median(arr)) if reduce == "median" else float(np.mean(arr))
+        eps_est = float(np.mean(eps_vals)) if len(eps_vals) > 0 else float("nan")
+        nu3_est = float(np.mean(nu3_vals)) if len(nu3_vals) > 0 else float("nan")
+        return h_est, eps_est, nu3_est
+    # =============================================================================
     """
     Adding some functions based on Transformers' Trainer class.
     """
 
     # === Begin Adaptive h (Berahas et al.) ===
-    def estimate_nu3(self, model, loss_fn, inputs, tau1=10.0, tau2=0.1, layer_name: Optional[str]=None):
+    def estimate_nu3(self, model, loss_fn, inputs, tau1=10.0, tau2=0.1, layer_name: Optional[str]=None, eps_f_override: Optional[float]=None):
         """
         Robustly estimate the third derivative magnitude ν3 using a two-stage process with (18a)(18b) tests.
         Uses third-order central finite difference (Δ^{(3)}(h)), selecting h adaptively:
@@ -241,16 +373,17 @@ class Trainer(LinearHeadTrainer):
           3. If both fail, fallback to a conservative ν3.
         Returns the accepted ν3.
         """
-        # Estimate ε_f for this context
-        try:
-            eps_f = float(getattr(self, "epsilon_f", None))
-            if not math.isfinite(eps_f) or eps_f <= 0:
-                raise ValueError("invalid epsilon_f")
-        except Exception:
-            eps_f = float(self.estimate_noise(model, self.compute_loss, inputs, layer_name=layer_name))
-            logger.info(f"[estimate_nu3] on-the-fly epsilon_f = {eps_f:.3e}")
-
-        # Helper: get parameter context for perturbation
+        # Estimate ε_f for this context (allow override for multi-batch / multi-direction averaging)
+        if eps_f_override is not None:
+            eps_f = float(eps_f_override)
+        else:
+            try:
+                eps_f = float(getattr(self, "epsilon_f", None))
+                if not math.isfinite(eps_f) or eps_f <= 0:
+                    raise ValueError("invalid epsilon_f")
+            except Exception:
+                eps_f = float(self.estimate_noise(model, self.compute_loss, inputs, layer_name=layer_name))
+                logger.info(f"[estimate_nu3] on-the-fly epsilon_f = {eps_f:.3e}")
         names, params = [], []
         for name, param in model.named_parameters():
             if self.should_optim(name, param):
@@ -400,13 +533,15 @@ class Trainer(LinearHeadTrainer):
         else:
             logger.info(f"Estimated nu3: {nu3_accept:.6e} with chosen h={chosen_h:.6e}")
 
+        # Optional sanity test log (does not affect the returned value)
         h_test = float(1e-3)
         snr_test, prox_test, nu3_test, delta3_test, snr_val_test, (prox_plus_test, prox_minus_test) = nu3_tests_on(h_test)
         logger.info(
-            f"[estimate_nu3][**TEST**] layer={layer_name or 'ALL'} h_test={h_test:.6e}, nu3_i={nu3_test:.6e}, "
-            )
-        return float(nu3_test)
-        # return float(nu3_accept)
+            f"[estimate_nu3][**TEST**] layer={layer_name or 'ALL'} h_test={h_test:.6e}, nu3_test={nu3_test:.6e}, "
+            f"Δ3_test={delta3_test:.6e}, SNR_test={snr_val_test:.6e}, prox+={prox_plus_test:.6e}, prox-={prox_minus_test:.6e}, "
+            f"snr_ok={snr_test}, prox_ok={prox_test}"
+        )
+        return float(nu3_accept)
 
     def estimate_noise(self, model, loss_fn, inputs, q=8, delta=1e-6, layer_name: Optional[str]=None):
         # === Float64 precision for more stable epsilon_f / nu3 estimation ===
@@ -815,6 +950,19 @@ class Trainer(LinearHeadTrainer):
 
         # Data loading.
         train_dataloader = self.get_train_dataloader()
+        # --- Inspect sampler type (RandomSampler / SequentialSampler / DistributedSampler) ---
+        try:
+            sampler = getattr(train_dataloader, "sampler", None)
+            batch_sampler = getattr(train_dataloader, "batch_sampler", None)
+            logger.info(f"[dataloader] sampler={type(sampler).__name__}, batch_sampler={type(batch_sampler).__name__}")
+            if isinstance(sampler, RandomSampler):
+                logger.info("[dataloader] training uses RandomSampler (shuffle).")
+            elif isinstance(sampler, SequentialSampler):
+                logger.info("[dataloader] training uses SequentialSampler (no shuffle).")
+            elif isinstance(sampler, DistributedSampler):
+                logger.info("[dataloader] training uses DistributedSampler (sharded).")
+        except Exception as e:
+            logger.warning(f"[dataloader] cannot inspect sampler: {e}")
         num_update_steps_per_epoch = len(train_dataloader) // self.args.gradient_accumulation_steps
         if num_update_steps_per_epoch == 0:
             num_update_steps_per_epoch = 1
@@ -890,56 +1038,19 @@ class Trainer(LinearHeadTrainer):
         start_time = time.time()
         self.state.zo_forward_step = 0
         # === Begin Adaptive h (Berahas et al.) ===
-        # —— 所有用于扰动/差分的 h，统一走 pick_h_two_stage 的合法性筛选
         if getattr(self.args, "use_adaptive_h", False):
-            logger.info("Estimating noise level and third derivative for adaptive h...")
-            # —— 是否分层选择 h 的总开关（仅影响 h 的选择逻辑；分层依据与 cs 相同）
-            use_layerwise_h = getattr(self.args, "use_layerwise_h", False)
-            example_inputs = next(iter(train_dataloader))
-            if use_layerwise_h:
-                # 构造 layer_names（必须与 retrieve_c/initialize_c 的层命名保持一致）
-                # OPT 系模型参数名包含 "layers.{i}."；其他如 BERT/RoBERTa 通常是 "layer.{i}."
-                prefix = "layers" if self.model.config.model_type == "opt" else "layer"
-                self.layer_names = [f"{prefix}.{i}." for i in range(self.model.config.num_hidden_layers)]
-                # 同时包含嵌入与输出头的键（若模型参数名中包含这些子串，则 retrieve_c 会匹配到）
-                self.layer_names = ["embed", "lm_head"] + self.layer_names
-                # —— 分层 h：为每一层单独选 h（层的划分与 cs 相同：self.layer_names 来自 initialize_c）
-                #    1) 分层 h 的层划分完全复用 initialize_c 里建立的层键（self.layer_names）；
-                #    2) 分层路径直接用 ν3 估计和 ε_f 计算 h（h = γ₅ (ε_f/ν3)^{1/3}, γ₅=3^{1/3}），
-                #       ν3 估计已在 estimate_nu3 内部用 (18a)(18b) 两阶段判据做了鲁棒性筛选
-                self.layerwise_h = {}
-                for layer in self.layer_names:
-                    eps_l = self.estimate_noise(model, self.compute_loss, example_inputs, layer_name=layer)
-                    nu3_l = self.estimate_nu3(model, self.compute_loss, example_inputs, layer_name=layer)
-                    h_final = (eps_l / nu3_l) ** (1/3) * (3 ** (1/3))
-                    h_final = float(min(0.1, max(1e-5, h_final)))
-                    self.layerwise_h[layer] = torch.tensor(h_final, dtype=torch.float32)
-                    logger.info(f"[layerwise h] {layer}: eps_f={eps_l:.6e}, nu3={nu3_l:.6e}, h={h_final:.6e}")
-                # 提供一个全局兜底（个别层缺失时使用），并进行相同的范围约束
-                median_h = float(np.median([v.item() for v in self.layerwise_h.values()])) if len(self.layerwise_h) > 0 else 1e-3
-                median_h = min(0.5, max(1e-5, median_h))
-                self.adaptive_h = torch.tensor(median_h, dtype=torch.float32)
-                logger.info(f"Using layerwise h (from ν3): median={self.adaptive_h:.6e}")
-                self._logged_layerwise_h = True
-                previous_adaptive_h = self.adaptive_h
-            else:
-                #    3) 全局路径：直接用 ν3 估计和 ε_f 计算 h（h = γ₅ (ε_f/ν3)^{1/3}, γ₅=3^{1/3}）
-                #    ν3 估计已在 estimate_nu3 内部用 (18a)(18b) 两阶段判据做了鲁棒性筛选
-                self.epsilon_f = self.estimate_noise(model, self.compute_loss, example_inputs)
-                self.nu3 = self.estimate_nu3(model, self.compute_loss, example_inputs)
-                # ===== SAFETY FIX: 防止 nu3 为 0 或非有限值导致除零崩溃 =====
-                nu3_safe = float(self.nu3)
-                if (not math.isfinite(nu3_safe)) or abs(nu3_safe) < 1e-12:
-                    logger.warning(
-                        f"[adaptive h] nu3 非法（nu3={nu3_safe:.6e}），将其钳制为极小值 1e-12 以避免除以 0。"
-                    )
-                    nu3_safe = 1e-12
-                # ===== END SAFETY FIX ======================================================
-                h_final = (self.epsilon_f / nu3_safe) ** (1/3) * (3 ** (1/3))
-                h_final = float(min(0.1, max(1e-5, h_final)))
-                self.adaptive_h = torch.tensor(h_final, dtype=torch.float32)
-                logger.info(f"Using adaptive h from ν3: epsilon_f={self.epsilon_f:.6e}, nu3={self.nu3:.6e}, h={self.adaptive_h:.6e}")
-                previous_adaptive_h = self.adaptive_h
+            beta = float(getattr(self.args, "adaptive_h_ema_beta", 0.1))
+            nb = int(getattr(self.args, "adaptive_h_estimate_num_batches", 1))
+            nd = int(getattr(self.args, "adaptive_h_estimate_num_directions", 3))
+            reduce = getattr(self.args, "adaptive_h_estimate_reduce", "mean")
+            h_min = float(getattr(self.args, "adaptive_h_min", 1e-5))
+            h_max = float(getattr(self.args, "adaptive_h_max", 0.5))
+
+            h0 = self._get_init_h()
+            h0 = float(min(h_max, max(h_min, h0)))
+            self.adaptive_h = torch.tensor(h0, dtype=torch.float32)
+            previous_adaptive_h = self.adaptive_h
+            logger.info(f"[adaptive h][init] h0={h0:.3e}, beta={beta}")
         else:
             previous_adaptive_h = getattr(self, "adaptive_h", 1e-4)
         # === End Adaptive h ===
@@ -1003,6 +1114,9 @@ class Trainer(LinearHeadTrainer):
                 if steps_trained_in_current_epoch > 0:
                     steps_trained_in_current_epoch -= 1
                     continue
+                # --- Rolling probe buffer for adaptive h estimation ---
+                if getattr(self.args, "use_adaptive_h", False):
+                    self._update_h_probe_buffer(inputs)
 
                 if self.args.zero_order_optim:
                     # Get parameters that should be optimized (for layer-wise optimization and prefix-tuning)
@@ -1333,49 +1447,30 @@ class Trainer(LinearHeadTrainer):
                     and self.state.global_step > 0
                     and (self.state.global_step % update_noise_every == 0)
                 ):
-                    logger.info(f"Re-estimating epsilon_f and nu3 at step {self.state.global_step}...")
-                    use_layerwise_h = getattr(self.args, "use_layerwise_h", False)
+                    beta = float(getattr(self.args, "adaptive_h_ema_beta", 0.1))
+                    nb = int(getattr(self.args, "adaptive_h_estimate_num_batches", 1))
+                    buf_size = int(getattr(self.args, "adaptive_h_probe_buffer_size", 64))
+                    nd = int(getattr(self.args, "adaptive_h_estimate_num_directions", 3))
+                    reduce = getattr(self.args, "adaptive_h_estimate_reduce", "mean")
+                    h_min = float(getattr(self.args, "adaptive_h_min", 1e-5))
+                    h_max = float(getattr(self.args, "adaptive_h_max", 0.5))
 
-                    if use_layerwise_h:
-                        # —— 分层 h 更新：逐层重新选择 h（层的划分与 cs 相同：self.layer_names 来自 initialize_c）
-                        self.layerwise_h = {}
-                        for layer in self.layer_names:
-                            eps_l = self.estimate_noise(model, self.compute_loss, inputs, layer_name=layer)
-                            nu3_l = self.estimate_nu3(model, self.compute_loss, inputs, layer_name=layer)
-                            h_final = (eps_l / nu3_l) ** (1/3) * (3 ** (1/3))
-                            h_final = float(min(0.5, max(1e-5, h_final)))
-                            self.layerwise_h[layer] = torch.tensor(h_final, dtype=torch.float32)
-                            logger.info(f"[layerwise h] {layer}: eps_f={eps_l:.6e}, nu3={nu3_l:.6e}, h={h_final:.6e}")
-                        median_h = float(np.median([v.item() for v in self.layerwise_h.values()])) if len(self.layerwise_h) > 0 else 1e-3
-                        median_h = min(0.5, max(1e-5, median_h))
-                        self.adaptive_h = torch.tensor(median_h, dtype=torch.float32)  # fixed typo
-                        logger.info(f"Updated layerwise h (from ν3): median={self.adaptive_h:.6e}")
-                        previous_adaptive_h = self.adaptive_h
-                    else:
-                        # —— 全局路径：直接用 ν3 估计和 ε_f 计算 h（h = γ₅ (ε_f/ν3)^{1/3}, γ₅=3^{1/3}）
-                        self.epsilon_f = self.estimate_noise(model, self.compute_loss, inputs)
-                        self.nu3 = self.estimate_nu3(model, self.compute_loss, inputs)
-                        # ===== SAFETY FIX: 防止 nu3 为 0 或非有限值导致除零崩溃 =====
-                        nu3_safe = float(self.nu3)
-                        if (not math.isfinite(nu3_safe)) or abs(nu3_safe) < 1e-12:
-                            logger.warning(
-                                f"[adaptive h update] nu3 非法（nu3={nu3_safe:.6e}），将其钳制为极小值 1e-12 以避免除以 0。"
-                            )
-                            nu3_safe = 1e-12
-                        # ===== END SAFETY FIX ======================================================
-                        h_final = (self.epsilon_f / nu3_safe) ** (1/3) * (3 ** (1/3))
-                        h_final = float(min(0.5, max(1e-5, h_final)))
-                        self.adaptive_h = torch.tensor(h_final, dtype=torch.float32)
-                        logger.info(
-                            f"Updated adaptive h from ν3: epsilon_f={self.epsilon_f:.6e}, nu3={self.nu3:.6e}, h={self.adaptive_h:.6e}"
-                        )
-                        if torch.isnan(self.adaptive_h).item() or self.adaptive_h < 1e-8:
-                            logger.warning(
-                                f"Adaptive h estimation invalid (value: {self.adaptive_h}), keeping previous adaptive h value."
-                            )
-                            self.adaptive_h = previous_adaptive_h
-                        else:
-                            previous_adaptive_h = self.adaptive_h
+                    inputs_list = self._get_h_estimation_inputs(train_dataloader, inputs, nb)
+                    h_raw, eps_est, nu3_est = self.estimate_adaptive_h_multi(
+                        model, self.compute_loss, inputs_list,
+                        layer_name=None, num_directions=nd,
+                        reduce=reduce, h_min=h_min, h_max=h_max
+                    )
+                    h_sm = self._smooth_h_log_ema(previous_adaptive_h.item(), h_raw, beta, h_min, h_max)
+                    self.adaptive_h = torch.tensor(h_sm, dtype=torch.float32)
+                    previous_adaptive_h = self.adaptive_h
+                    self.epsilon_f = eps_est
+                    self.nu3 = nu3_est
+                    logger.info(
+                        f"[adaptive h][update] step={self.state.global_step} "
+                        f"h_raw={h_raw:.3e} -> h_ema={h_sm:.3e} "
+                        f"(eps≈{eps_est:.2e}, nu3≈{nu3_est:.2e}, nb={nb}, buf={buf_size}, nd={nd}, reduce={reduce})"
+                    )
                 # === End Adaptive h update ===
 
                 if self.args.max_steps > 0 and self.state.global_step > self.args.max_steps or (self.args.max_zo_forward_steps > 0 and self.state.zo_forward_step > self.args.max_zo_forward_steps):
