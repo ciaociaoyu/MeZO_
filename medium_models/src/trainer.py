@@ -687,15 +687,16 @@ class Trainer(LinearHeadTrainer):
             # 若启用按层 h（use_layerwise_h=True），则针对该参数所在层选用分层步长；否则使用全局 adaptive_h
             if getattr(self.args, "use_adaptive_h", False):
                 if getattr(self.args, "use_layerwise_h", False):
-                    cname = self.retrieve_c(name) if 'name' in locals() else None
-                    if hasattr(self, 'layerwise_h') and cname in getattr(self, 'layerwise_h', {}):
-                        eps = self.layerwise_h[cname]
+                    cname = self.retrieve_c(name)
+                    if hasattr(self, "layerwise_h") and isinstance(self.layerwise_h, dict) and (cname in self.layerwise_h):
+                        _h = self.layerwise_h[cname]
+                        eps = float(_h.item()) if isinstance(_h, torch.Tensor) else float(_h)
                     else:
-                        eps = self.adaptive_h
+                        eps = float(self.adaptive_h)
                 else:
-                    eps = self.adaptive_h
+                    eps = float(self.adaptive_h)
             else:
-                eps = self.args.zero_order_eps
+                eps = float(self.args.zero_order_eps)
             param.data = param.data + scaling_factor * z * eps
             # === End Adaptive h ===
         return model
@@ -724,18 +725,18 @@ class Trainer(LinearHeadTrainer):
                     z = z / c_val
 
             # === Begin Adaptive h (Berahas et al.) ===
-            # 若启用按层 h（use_layerwise_h=True），则针对该参数所在层选用分层步长；否则使用全局 adaptive_h
             if getattr(self.args, "use_adaptive_h", False):
                 if getattr(self.args, "use_layerwise_h", False):
-                    cname = self.retrieve_c(name) if 'name' in locals() else None
-                    if hasattr(self, 'layerwise_h') and cname in getattr(self, 'layerwise_h', {}):
-                        eps = self.layerwise_h[cname]
+                    cname = self.retrieve_c(name)
+                    if hasattr(self, "layerwise_h") and isinstance(self.layerwise_h, dict) and (cname in self.layerwise_h):
+                        _h = self.layerwise_h[cname]
+                        eps = float(_h.item()) if isinstance(_h, torch.Tensor) else float(_h)
                     else:
-                        eps = self.adaptive_h
+                        eps = float(self.adaptive_h)
                 else:
-                    eps = self.adaptive_h
+                    eps = float(self.adaptive_h)
             else:
-                eps = self.args.zero_order_eps
+                eps = float(self.args.zero_order_eps)
             param.data = param.data + scaling_factor * z * eps
             # === End Adaptive h ===
 
@@ -752,7 +753,7 @@ class Trainer(LinearHeadTrainer):
                 z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
                 random_vector[name] = z
             # === Begin Adaptive h (Berahas et al.) ===
-            eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
+            eps = float(self.adaptive_h) if getattr(self.args, "use_adaptive_h", False) else float(self.args.zero_order_eps)
             param.data = param.data + scaling_factor * z * eps
             # === End Adaptive h ===
 
@@ -774,14 +775,15 @@ class Trainer(LinearHeadTrainer):
                 # 若启用按层 h（use_layerwise_h=True），则针对该参数所在层选用分层步长；否则使用全局 adaptive_h
                 if getattr(self.args, "use_adaptive_h", False):
                     if getattr(self.args, "use_layerwise_h", False):
-                        if hasattr(self, 'layerwise_h') and cname in getattr(self, 'layerwise_h', {}):
-                            eps = self.layerwise_h[cname]
+                        if hasattr(self, "layerwise_h") and isinstance(self.layerwise_h, dict) and (cname in self.layerwise_h):
+                            _h = self.layerwise_h[cname]
+                            eps = float(_h.item()) if isinstance(_h, torch.Tensor) else float(_h)
                         else:
-                            eps = self.adaptive_h
+                            eps = float(self.adaptive_h)
                     else:
-                        eps = self.adaptive_h
+                        eps = float(self.adaptive_h)
                 else:
-                    eps = self.args.zero_order_eps
+                    eps = float(self.args.zero_order_eps)
                 param.data = param.data + scaling_factor * z * eps
                 # === End Adaptive h ===
 
@@ -910,7 +912,7 @@ class Trainer(LinearHeadTrainer):
         if isinstance(layer_names, (list, tuple)):
             for key in layer_names:
                 if key and key in param_name:
-                        return key
+                    return key
 
 
         return ""
@@ -1048,8 +1050,8 @@ class Trainer(LinearHeadTrainer):
 
             h0 = self._get_init_h()
             h0 = float(min(h_max, max(h_min, h0)))
-            self.adaptive_h = torch.tensor(h0, dtype=torch.float32)
-            previous_adaptive_h = self.adaptive_h
+            self.adaptive_h = float(h0)
+            previous_adaptive_h = float(h0)
             logger.info(f"[adaptive h][init] h0={h0:.3e}, beta={beta}")
         else:
             previous_adaptive_h = getattr(self, "adaptive_h", 1e-4)
@@ -1461,9 +1463,9 @@ class Trainer(LinearHeadTrainer):
                         layer_name=None, num_directions=nd,
                         reduce=reduce, h_min=h_min, h_max=h_max
                     )
-                    h_sm = self._smooth_h_log_ema(previous_adaptive_h.item(), h_raw, beta, h_min, h_max)
-                    self.adaptive_h = torch.tensor(h_sm, dtype=torch.float32)
-                    previous_adaptive_h = self.adaptive_h
+                    h_sm = self._smooth_h_log_ema(previous_adaptive_h, h_raw, beta, h_min, h_max)
+                    self.adaptive_h = float(h_sm)
+                    previous_adaptive_h = float(h_sm)
                     self.epsilon_f = eps_est
                     self.nu3 = nu3_est
                     logger.info(
