@@ -397,14 +397,14 @@ class Trainer(LinearHeadTrainer):
         device = params[0].data.device if params else torch.device("cpu")
         dtype = params[0].data.dtype if params else torch.float32
         originals = [p.data.detach().clone().to(dtype=torch.float64) for p in params]
-        # Random direction v (float64)
-        v_flat = torch.randn(total_numel, dtype=torch.float64, device=device)
-        v_flat = v_flat / torch.norm(v_flat)
-        v_splits = torch.split(v_flat, param_numels)
-        v_list = [v.view(shape) for v, shape in zip(v_splits, param_shapes)]
+        # Random Gaussian direction z (float64), consistent with training perturbations (no normalization)
+        z_flat = torch.randn(total_numel, dtype=torch.float64, device=device)
+        z_splits = torch.split(z_flat, param_numels)
+        z_list = [z.view(shape) for z, shape in zip(z_splits, param_shapes)]
+
         def set_params(alpha: float):
-            for p, orig, v in zip(params, originals, v_list):
-                p.data.copy_((orig + alpha * v).to(dtype=dtype))
+            for p, orig, z in zip(params, originals, z_list):
+                p.data.copy_((orig + alpha * z).to(dtype=dtype))
         # f0 at base
         with torch.no_grad():
             for p, orig in zip(params, originals):
@@ -420,127 +420,126 @@ class Trainer(LinearHeadTrainer):
                     p.data.copy_(orig.to(dtype=dtype))
             return val
 
-        # SNR and proximity tests for third-order difference
-        def nu3_tests_on(h_local: float):
+        # --- Δ(h)-based scale detection (paper's second-order difference) ---
+        def dh_tests_on(h_local: float):
+            """Return (snr_ok, prox_ok, Delta(h), snr_val, (prox_plus, prox_minus), aux_Dh)."""
+            f1  = eval_at( 1.0 * h_local)
+            fm1 = eval_at(-1.0 * h_local)
+
+            # Paper (18a): second-order difference
+            # Δ(h) = | f(t0-h) - 2 f(t0) + f(t0+h) |
+            delta2 = abs(fm1 - 2.0 * f0 + f1)
+
+            # Optional auxiliary (not used for acceptance): D(h)=|f(+h)-f0|+|f(-h)-f0|
+            aux_dh = abs(f1 - f0) + abs(fm1 - f0)
+
+            # SNR test on Δ(h): Δ(h)/eps_f >= tau1
+            snr_val = delta2 / max(eps_f, 1e-30)
+            snr_ok = snr_val >= tau1
+
+            # Proximity: relative change at ±h should be small enough (locality)
+            prox_plus = abs(f1 - f0) / max(abs(f0), abs(f1), 1e-30)
+            prox_minus = abs(fm1 - f0) / max(abs(f0), abs(fm1), 1e-30)
+            prox_ok = (prox_plus <= tau2) and (prox_minus <= tau2)
+
+            return snr_ok, prox_ok, delta2, snr_val, (prox_plus, prox_minus), aux_dh
+
+        def nu3_hat_at(h_local: float):
+            """Compute ν3_hat at a chosen h using 3rd-order central finite difference."""
             f2  = eval_at( 2.0 * h_local)
             f1  = eval_at( 1.0 * h_local)
             fm1 = eval_at(-1.0 * h_local)
             fm2 = eval_at(-2.0 * h_local)
             delta3 = abs(-f2 + 2.0 * f1 - 2.0 * fm1 + fm2)
             nu3_hat = delta3 / (2.0 * (h_local ** 3 + 1e-30))
-            # SNR: Δ^{(3)}(h) / ε_f ≥ τ1
-            snr_val = delta3 / max(eps_f, 1e-30)
-            snr_ok = snr_val >= tau1
-            # Proximity: |f(t0±h)-f(t0)| ≤ τ2 * max{|f(t0)|, |f(t0±h)|}
-            fp = f1
-            fm = fm1
-            prox_plus = abs(fp - f0) / max(abs(f0), abs(fp), 1e-30)
-            prox_minus = abs(fm - f0) / max(abs(f0), abs(fm), 1e-30)
-            prox_ok = (prox_plus <= tau2) and (prox_minus <= tau2)
-            return snr_ok, prox_ok, nu3_hat, delta3, snr_val, (prox_plus, prox_minus)
+            return float(nu3_hat), float(delta3)
 
-        # Ensure defaults to avoid UnboundLocalError if all branches skip assignment
-        nu3_accept: float = float('nan')
-        chosen_h: float = 0.0
+        # === Choose h via D(h)-based scale detection, then estimate ν3 at that h ===
         tiny = 1e-30
-        h_a = max(eps_f, tiny) ** 0.2  # h_a = ε_f^{1/5}
-        chosen_h = h_a
-        snr_a, prox_a, nu3_a, delta3_a, snr_val_a, (prox_plus_a, prox_minus_a) = nu3_tests_on(h_a)
-        try:
-            logger.info(
-                f"[estimate_nu3][trial-a] layer={layer_name or 'ALL'} h_a={h_a:.6e}, nu3_a={nu3_a:.6e}, Δ3_a={delta3_a:.6e}, "
-                f"SNR(a)={snr_val_a:.6e} (>= {tau1}? {snr_a}), "
-                f"prox+(a)={prox_plus_a:.6e}, prox-(a)={prox_minus_a:.6e} (<= {tau2}? {prox_a})"
-            )
-        except Exception:
-            pass
-        if snr_a and prox_a and math.isfinite(nu3_a) and nu3_a > 0:
-            nu3_accept = nu3_a
-            chosen_h = h_a
-        else:
-            # =====================
-            # Iterative proposals (up to 5), using geometrically increasing h_i based on fixed denominator (nu3_a)
-            # Special rule: if the very first proposal (trial-b) fails, stop immediately
-            # and choose the previous h (i.e., h_a) with its ν3 (i.e., nu3_a).
-            # If all 5 proposals fail (i > 1), pick the largest h among them.
-            # =====================
-            tiny = 1e-30
-            nu3_prev = nu3_a
-            h_prev = h_a
-            tried_h = []
-            tried_nu3 = []
-            accepted = False
+        h_min, h_max = 1e-6, 0.5
 
-            # Fixed-denominator base step and geometric growth so h_i changes across attempts
-            h_base = (eps_f / max(nu3_a, tiny)) ** 0.2
-            growth = getattr(self.args, "nu3_h_growth", 1.5)  # >1.0, e.g., 1.5
-            h_min, h_max = 1e-6, 0.5
+        # Start from a conservative h scale (same as before), then grow geometrically
+        h_start = float(max(eps_f, tiny) ** 0.2)
+        growth = float(getattr(self.args, "dh_h_growth", 1.5))
+        max_trials = int(getattr(self.args, "dh_max_trials", 8))
+
+        tried = []  # list of dicts for logging/selection
+        chosen_h = None
+
+        for i in range(max_trials):
+            h_i = h_start * (growth ** i)
+            h_i = float(min(h_max, max(h_min, h_i)))
+
+            snr_ok, prox_ok, delta2, snr_val, (prox_p, prox_m), aux_dh = dh_tests_on(h_i)
+            tried.append({
+                "h": h_i,
+                "delta2": delta2,
+                "aux_dh": aux_dh,
+                "snr": snr_val,
+                "snr_ok": snr_ok,
+                "prox_ok": prox_ok,
+                "prox_p": prox_p,
+                "prox_m": prox_m,
+            })
             try:
-                logger.info(f"[estimate_nu3] fixed-denominator h_base={h_base:.6e}, growth={growth}")
+                logger.info(
+                    f"[estimate_nu3][dh-trial-{i}] layer={layer_name or 'ALL'} h={h_i:.6e}, "
+                    f"Delta(h)={delta2:.6e}, Delta/eps={snr_val:.6e}, D(h)={aux_dh:.6e} (>= {tau1}? {snr_ok}), "
+                    f"prox+={prox_p:.6e}, prox-={prox_m:.6e} (<= {tau2}? {prox_ok})"
+                )
             except Exception:
                 pass
 
-            for i in range(1, 6):  # 最多 5 次试探
-                h_i = h_base * (growth ** (i - 1))
-                # clamp to safe search bounds
-                h_i = float(min(h_max, max(h_min, h_i)))
-                snr_i, prox_i, nu3_i, delta3_i, snr_val_i, (prox_plus_i, prox_minus_i) = nu3_tests_on(h_i)
-                tried_h.append(h_i)
-                tried_nu3.append(nu3_i)
-                try:
-                    logger.info(
-                        f"[estimate_nu3][trial-{chr(ord('a')+i)}] layer={layer_name or 'ALL'} h_i={h_i:.6e}, nu3_i={nu3_i:.6e}, Δ3_i={delta3_i:.6e}, "
-                        f"SNR(i)={snr_val_i:.6e} (>= {tau1}? {snr_i}), prox+(i)={prox_plus_i:.6e}, prox-(i)={prox_minus_i:.6e} (<= {tau2}? {prox_i})"
-                    )
-                except Exception:
-                    pass
+            # Prefer the first h that passes both tests (smallest acceptable h)
+            if snr_ok and prox_ok:
+                chosen_h = h_i
+                break
 
-                if snr_i and prox_i and math.isfinite(nu3_i) and nu3_i > 0:
-                    # 满足两个判据，接受并停止
-                    nu3_accept = nu3_i
-                    chosen_h = h_i
-                    accepted = True
-                    break
-                else:
-                    # 如果相似度检测失败，立即早停并回退到上一个 h（初始为 h_a）
-                    if not prox_i:
-                        nu3_accept = nu3_prev if (math.isfinite(nu3_prev) and nu3_prev > 0) else 20.0
-                        chosen_h = h_prev
-                        logger.info(
-                            f"[estimate_nu3][early-stop: proximity failed] layer={layer_name or 'ALL'} choose previous h={chosen_h:.6e}, ν3={nu3_accept:.6e}"
-                        )
-                        accepted = True
-                        break
-                    # 否则（SNR 未过但相似度通过），更新并继续下一次提案
-                    nu3_prev, h_prev = nu3_i, h_i
-
-            if not accepted:
-                # 五次都失败：选五次中最大的 h 对应的 ν3（若其无效则取保守值）
-                idx = int(np.argmax(np.asarray(tried_h))) if len(tried_h) > 0 else -1
-                if idx >= 0 and math.isfinite(tried_nu3[idx]) and tried_nu3[idx] > 0:
-                    nu3_accept = tried_nu3[idx]
-                    chosen_h = tried_h[idx]
-                else:
-                    nu3_accept = 20.0
-                    chosen_h = max(tried_h) if len(tried_h) > 0 else h_a
+        # If nothing passes both, choose the best fallback:
+        # 1) among prox_ok candidates, pick the one with largest Delta/eps
+        # 2) otherwise pick the one with largest Delta/eps overall
+        if chosen_h is None:
+            prox_ok_candidates = [t for t in tried if t["prox_ok"]]
+            pool = prox_ok_candidates if len(prox_ok_candidates) > 0 else tried
+            if len(pool) == 0:
+                chosen_h = float(min(h_max, max(h_min, h_start)))
+            else:
+                best = max(pool, key=lambda x: float(x["snr"]))
+                chosen_h = float(best["h"])
+            try:
                 logger.info(
-                    f"[estimate_nu3][all-failed] layer={layer_name or 'ALL'} pick max-h: h={chosen_h:.6e}, ν3={nu3_accept:.6e}"
+                    f"[estimate_nu3][dh-fallback] layer={layer_name or 'ALL'} chosen_h={chosen_h:.6e} "
+                    f"(no h satisfied both; selected by max Delta/eps with locality preference)"
                 )
+            except Exception:
+                pass
 
+        # Now compute ν3 at the chosen_h (this avoids tiny-h numerical-floor explosions)
+        nu3_accept, delta3_accept = nu3_hat_at(chosen_h)
         if (not math.isfinite(nu3_accept)) or nu3_accept <= 0.0:
-            logger.warning("[estimate_nu3] nu3 invalid; set to 20 (conservative default).")
+            logger.warning("[estimate_nu3] nu3 invalid at chosen_h; set to 20 (conservative default).")
             nu3_accept = 20.0
-        else:
-            logger.info(f"Estimated nu3: {nu3_accept:.6e} with chosen h={chosen_h:.6e}")
+
+        try:
+            logger.info(
+                f"[estimate_nu3][final] layer={layer_name or 'ALL'} chosen_h={chosen_h:.6e}, "
+                f"nu3={nu3_accept:.6e}, Δ3={delta3_accept:.6e}"
+            )
+        except Exception:
+            pass
 
         # Optional sanity test log (does not affect the returned value)
-        h_test = float(1e-3)
-        snr_test, prox_test, nu3_test, delta3_test, snr_val_test, (prox_plus_test, prox_minus_test) = nu3_tests_on(h_test)
-        logger.info(
-            f"[estimate_nu3][**TEST**] layer={layer_name or 'ALL'} h_test={h_test:.6e}, nu3_test={nu3_test:.6e}, "
-            f"Δ3_test={delta3_test:.6e}, SNR_test={snr_val_test:.6e}, prox+={prox_plus_test:.6e}, prox-={prox_minus_test:.6e}, "
-            f"snr_ok={snr_test}, prox_ok={prox_test}"
-        )
+        h_test = float(getattr(self.args, "dh_test_h", 1e-2))
+        try:
+            snr_ok_t, prox_ok_t, delta2_t, snr_val_t, (prox_p_t, prox_m_t), aux_dh_t = dh_tests_on(h_test)
+            nu3_t, delta3_t = nu3_hat_at(h_test)
+            logger.info(
+                f"[estimate_nu3][**TEST**] layer={layer_name or 'ALL'} h_test={h_test:.6e}, "
+                f"Delta(h)={delta2_t:.6e}, Delta/eps={snr_val_t:.6e}, D(h)={aux_dh_t:.6e}, snr_ok={snr_ok_t}, prox_ok={prox_ok_t}, "
+                f"prox+={prox_p_t:.6e}, prox-={prox_m_t:.6e}, nu3_test={nu3_t:.6e}, Δ3_test={delta3_t:.6e}"
+            )
+        except Exception:
+            pass
         return float(nu3_accept)
 
     def estimate_noise(self, model, loss_fn, inputs, q=8, delta=1e-6, layer_name: Optional[str]=None):
@@ -563,15 +562,20 @@ class Trainer(LinearHeadTrainer):
         device = params[0].data.device if params else torch.device("cpu")
         dtype = params[0].data.dtype if params else torch.float32
         originals = [p.data.detach().clone().to(dtype=torch.float64) for p in params]
-        # Generate a global random direction v (float64)
-        v_flat = torch.randn(total_numel, dtype=torch.float64, device=device)
-        v_flat = v_flat / torch.norm(v_flat)
-        v_splits = torch.split(v_flat, param_numels)
-        v_list = [v.view(shape) for v, shape in zip(v_splits, param_shapes)]
-        # Helper to set params to originals + alpha * v
+        # Generate a global random Gaussian direction z (float64), consistent with training perturbations (no normalization)
+        z_flat = torch.randn(total_numel, dtype=torch.float64, device=device)
+        try:
+            z_norm = float(torch.norm(z_flat).item())
+            logger.info(f"[estimate_noise] ||z||={z_norm:.3e}, delta={delta:.1e}, q={q}")
+        except Exception:
+            pass
+        z_splits = torch.split(z_flat, param_numels)
+        z_list = [z.view(shape) for z, shape in zip(z_splits, param_shapes)]
+
+        # Helper to set params to originals + alpha * z
         def set_params(alpha):
-            for p, orig, v in zip(params, originals, v_list):
-                p.data.copy_((orig + alpha * v).to(dtype=dtype))
+            for p, orig, z in zip(params, originals, z_list):
+                p.data.copy_((orig + alpha * z).to(dtype=dtype))
         f_vals = []
         try:
             for i in range(q + 1):
