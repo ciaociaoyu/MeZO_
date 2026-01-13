@@ -337,8 +337,9 @@ class Trainer(LinearHeadTrainer):
 
                 inp2 = dict(inputs) if isinstance(inputs, dict) else inputs
                 nu3_i = float(self.estimate_nu3(model, loss_fn, inp2, layer_name=layer_name, eps_f_override=eps_i))
-                if (not math.isfinite(nu3_i)) or nu3_i <= 1e-12:
-                    nu3_i = 1e-12
+                # Drop invalid directions (do NOT clamp), otherwise h_raw can be spuriously inflated.
+                if (not math.isfinite(nu3_i)) or (nu3_i <= 0.0):
+                    continue
 
                 h_i = (eps_i / nu3_i) ** (1 / 3) * gamma
                 if (not math.isfinite(h_i)) or h_i <= 0.0:
@@ -471,66 +472,131 @@ class Trainer(LinearHeadTrainer):
         tried = []  # list of dicts for logging/selection
         chosen_h = None
 
-        for i in range(max_trials):
-            h_i = h_start / (growth ** i)
-            h_i = float(min(h_max, max(h_min, h_i)))
+        # First evaluate at h_start to decide search direction
+        snr0, prox0, delta20, snr_val0, (prox_p0, prox_m0), aux_dh0 = dh_tests_on(h_start)
+        tried.append({
+            "h": h_start,
+            "delta2": delta20,
+            "aux_dh": aux_dh0,
+            "snr": snr_val0,
+            "snr_ok": snr0,
+            "prox_ok": prox0,
+            "prox_p": prox_p0,
+            "prox_m": prox_m0,
+        })
+        try:
+            logger.info(
+                f"[estimate_nu3][dh-trial-0] layer={layer_name or 'ALL'} h={h_start:.6e}, "
+                f"Delta(h)={delta20:.6e}, Delta/eps={snr_val0:.6e}, D(h)={aux_dh0:.6e} (>= {tau1}? {snr0}), "
+                f"prox+={prox_p0:.6e}, prox-={prox_m0:.6e} (<= {tau2}? {prox0})"
+            )
+        except Exception:
+            pass
 
-            snr_ok, prox_ok, delta2, snr_val, (prox_p, prox_m), aux_dh = dh_tests_on(h_i)
-            tried.append({
-                "h": h_i,
-                "delta2": delta2,
-                "aux_dh": aux_dh,
-                "snr": snr_val,
-                "snr_ok": snr_ok,
-                "prox_ok": prox_ok,
-                "prox_p": prox_p,
-                "prox_m": prox_m,
-            })
-            try:
-                logger.info(
-                    f"[estimate_nu3][dh-trial-{i}] layer={layer_name or 'ALL'} h={h_i:.6e}, "
-                    f"Delta(h)={delta2:.6e}, Delta/eps={snr_val:.6e}, D(h)={aux_dh:.6e} (>= {tau1}? {snr_ok}), "
-                    f"prox+={prox_p:.6e}, prox-={prox_m:.6e} (<= {tau2}? {prox_ok})"
-                )
-            except Exception:
-                pass
-
-            # Prefer the first h that passes both tests (smallest acceptable h)
-            if snr_ok and prox_ok:
-                chosen_h = h_i
-                break
-
-        # If nothing passes both, fallback policy prioritizes locality:
-        # 1) if any prox_ok exists, pick the one with largest Delta/eps among them
-        # 2) otherwise pick the trial with the smallest max(prox_plus, prox_minus)
-        if chosen_h is None:
-            prox_ok_candidates = [t for t in tried if t["prox_ok"]]
-            if len(prox_ok_candidates) > 0:
-                best = max(prox_ok_candidates, key=lambda x: float(x["snr"]))
-                chosen_h = float(best["h"])
-                reason = "best Delta/eps among prox_ok"
+        if snr0 and prox0:
+            chosen_h = h_start
+        else:
+            # If prox fails -> h too large (non-local): scan downward
+            # If snr fails but prox OK -> h too small (noise-dominated): scan upward
+            if (not prox0):
+                mode = "down"
+            elif (not snr0) and prox0:
+                mode = "up"
             else:
-                if len(tried) == 0:
-                    chosen_h = float(min(h_max, max(h_min, h_start)))
-                    reason = "empty tried"
+                # both fail: prefer restoring locality first
+                mode = "down"
+
+            for i in range(1, max_trials):
+                if mode == "down":
+                    h_i = h_start / (growth ** i)
                 else:
-                    def _prox_score(x):
-                        return float(max(x.get("prox_p", 1e9), x.get("prox_m", 1e9)))
-                    best = min(tried, key=_prox_score)
-                    chosen_h = float(best["h"])
-                    reason = "min prox (most local)"
-            try:
-                logger.info(
-                    f"[estimate_nu3][dh-fallback] layer={layer_name or 'ALL'} chosen_h={chosen_h:.6e} ({reason})"
-                )
-            except Exception:
+                    h_i = h_start * (growth ** i)
+                h_i = float(min(h_max, max(h_min, h_i)))
+
+                snr_ok, prox_ok, delta2, snr_val, (prox_p, prox_m), aux_dh = dh_tests_on(h_i)
+                tried.append({
+                    "h": h_i,
+                    "delta2": delta2,
+                    "aux_dh": aux_dh,
+                    "snr": snr_val,
+                    "snr_ok": snr_ok,
+                    "prox_ok": prox_ok,
+                    "prox_p": prox_p,
+                    "prox_m": prox_m,
+                })
+                try:
+                    logger.info(
+                        f"[estimate_nu3][dh-trial-{i}] layer={layer_name or 'ALL'} h={h_i:.6e}, "
+                        f"Delta(h)={delta2:.6e}, Delta/eps={snr_val:.6e}, D(h)={aux_dh:.6e} (>= {tau1}? {snr_ok}), "
+                        f"prox+={prox_p:.6e}, prox-={prox_m:.6e} (<= {tau2}? {prox_ok})"
+                    )
+                except Exception:
+                    pass
+
+                if snr_ok and prox_ok:
+                    chosen_h = h_i
+                    break
+
+            if chosen_h is None and mode == "down":
+                # If we tried to restore locality but never got prox_ok, the step is likely still too large.
+                # Conversely, if we got prox_ok but SNR failed at the smallest h, h may be too small.
+                # (This information is used by the fallback policy below.)
                 pass
 
-        # Now compute ν3 at the chosen_h (this avoids tiny-h numerical-floor explosions)
+        # If nothing passes both tests, do NOT accept nu3 (paper-consistent).
+        if chosen_h is None:
+            if len(tried) > 0:
+                def _prox_score(x):
+                    return float(max(x.get("prox_p", 1e9), x.get("prox_m", 1e9)))
+                best_local = min(tried, key=_prox_score)
+                logger.warning(
+                    f"[estimate_nu3][dh-fail] layer={layer_name or 'ALL'} no h satisfied both tests; "
+                    f"best_local_h={best_local['h']:.6e} (prox_max={max(best_local.get('prox_p', 0.0), best_local.get('prox_m', 0.0)):.3e}, "
+                    f"Delta/eps={best_local.get('snr', float('nan')):.3e}). Return NaN."
+                )
+            else:
+                logger.warning(f"[estimate_nu3][dh-fail] layer={layer_name or 'ALL'} tried=0. Return NaN.")
+            return float("nan")
+
+        # Now compute ν3 at the chosen_h. If Δ3 collapses to 0 (finite-precision floor),
+        # retry with slightly larger h while still satisfying BOTH SNR and prox; otherwise return NaN to drop this direction.
         nu3_accept, delta3_accept = nu3_hat_at(chosen_h)
-        if (not math.isfinite(nu3_accept)) or nu3_accept <= 0.0:
-            logger.warning("[estimate_nu3] nu3 invalid at chosen_h; set to 20 (conservative default).")
-            nu3_accept = 20.0
+
+        if (not math.isfinite(nu3_accept)) or (nu3_accept <= 0.0) or (delta3_accept == 0.0):
+            max_retry = int(getattr(self.args, "nu3_retry", 3))
+            found = False
+            for k in range(1, max_retry + 1):
+                h_try = float(chosen_h * (2.0 ** k))
+                if h_try > h_max:
+                    break
+                # Keep locality: require BOTH snr_ok and prox_ok at h_try
+                try:
+                    snr_ok_t, prox_ok_t, _delta2_t, _snr_val_t, (prox_p_t, prox_m_t), _aux = dh_tests_on(h_try)
+                except Exception:
+                    snr_ok_t, prox_ok_t = False, False
+                if not (snr_ok_t and prox_ok_t):
+                    continue
+
+                nu3_t, d3_t = nu3_hat_at(h_try)
+                if math.isfinite(nu3_t) and (nu3_t > 0.0) and (d3_t != 0.0):
+                    chosen_h = h_try
+                    nu3_accept, delta3_accept = nu3_t, d3_t
+                    found = True
+                    try:
+                        logger.info(
+                            f"[estimate_nu3][retry] layer={layer_name or 'ALL'} use larger local h={h_try:.6e} "
+                            f"to avoid Δ3=0; nu3={nu3_accept:.6e}, Δ3={delta3_accept:.6e}"
+                        )
+                    except Exception:
+                        pass
+                    break
+
+            if not found:
+                logger.warning(
+                    f"[estimate_nu3] nu3/Δ3 invalid at chosen_h and retries; return NaN to drop direction. "
+                    f"(layer={layer_name or 'ALL'}, chosen_h={chosen_h:.6e}, Δ3={delta3_accept:.3e})"
+                )
+                return float("nan")
 
         try:
             logger.info(
@@ -866,7 +932,9 @@ class Trainer(LinearHeadTrainer):
             for ckey in self.cs:
                 self.cs[ckey] = torch.sqrt(self.cs[ckey])
                 if self.args.scale_norm_by_num_params:
-                    self.cs[ckey] /= torch.sqrt(self.cs[ckey])
+                    n = float(self.num_params.get(ckey, 0))
+                    denom = math.sqrt(n) if n > 0 else 1.0
+                    self.cs[ckey] = self.cs[ckey] / denom
 
             for ckey in self.cs:
                 if self.cs[ckey] != 0:
@@ -896,7 +964,9 @@ class Trainer(LinearHeadTrainer):
             for ckey in self.cs:
                 self.cs[ckey] = torch.sqrt(self.cs[ckey])
                 if self.args.scale_norm_by_num_params:
-                    self.cs[ckey] /= torch.sqrt(self.num_params[ckey])
+                    n = float(self.num_params.get(ckey, 0))
+                    denom = math.sqrt(n) if n > 0 else 1.0
+                    self.cs[ckey] = self.cs[ckey] / denom
 
             for ckey in self.cs:
                 if self.cs[ckey] != 0:
@@ -930,6 +1000,31 @@ class Trainer(LinearHeadTrainer):
                 if key and key in param_name:
                     return key
 
+        # 3) Minimal heuristic fallback
+        pn = param_name
+
+        # embeddings
+        if ("embeddings" in pn) or ("embed_tokens" in pn) or ("embed_positions" in pn):
+            return "embed"
+
+        # head
+        if ("lm_head" in pn) or ("classifier" in pn) or ("score" in pn):
+            return "lm_head"
+
+        # RoBERTa/BERT: encoder.layer.N.
+        m = re.search(r"encoder\.layer\.(\d+)\.", pn)
+        if m:
+            return f"layer.{m.group(1)}."
+
+        # OPT: layers.N.
+        m = re.search(r"(?:^|\.)layers\.(\d+)\.", pn)
+        if m:
+            return f"layers.{m.group(1)}."
+
+        # generic layer.N.
+        m = re.search(r"(?:^|\.)layer\.(\d+)\.", pn)
+        if m:
+            return f"layer.{m.group(1)}."
 
         return ""
 
@@ -1058,7 +1153,7 @@ class Trainer(LinearHeadTrainer):
         # === Begin Adaptive h (Berahas et al.) ===
         if getattr(self.args, "use_adaptive_h", False):
             beta = float(getattr(self.args, "adaptive_h_ema_beta", 0.1))
-            nb = int(getattr(self.args, "adaptive_h_estimate_num_batches", 1))
+            nb = int(getattr(self.args, "adaptive_h_estimate_num_batches", 4))
             nd = int(getattr(self.args, "adaptive_h_estimate_num_directions", 3))
             reduce = getattr(self.args, "adaptive_h_estimate_reduce", "mean")
             h_min = float(getattr(self.args, "adaptive_h_min", 1e-5))
@@ -1466,7 +1561,7 @@ class Trainer(LinearHeadTrainer):
                     and (self.state.global_step % update_noise_every == 0)
                 ):
                     beta = float(getattr(self.args, "adaptive_h_ema_beta", 0.1))
-                    nb = int(getattr(self.args, "adaptive_h_estimate_num_batches", 1))
+                    nb = int(getattr(self.args, "adaptive_h_estimate_num_batches", 4))
                     buf_size = int(getattr(self.args, "adaptive_h_probe_buffer_size", 64))
                     nd = int(getattr(self.args, "adaptive_h_estimate_num_directions", 3))
                     reduce = getattr(self.args, "adaptive_h_estimate_reduce", "mean")
@@ -1479,16 +1574,24 @@ class Trainer(LinearHeadTrainer):
                         layer_name=None, num_directions=nd,
                         reduce=reduce, h_min=h_min, h_max=h_max
                     )
-                    h_sm = self._smooth_h_log_ema(previous_adaptive_h, h_raw, beta, h_min, h_max)
-                    self.adaptive_h = float(h_sm)
-                    previous_adaptive_h = float(h_sm)
-                    self.epsilon_f = eps_est
-                    self.nu3 = nu3_est
-                    logger.info(
-                        f"[adaptive h][update] step={self.state.global_step} "
-                        f"h_raw={h_raw:.3e} -> h_ema={h_sm:.3e} "
-                        f"(eps≈{eps_est:.2e}, nu3≈{nu3_est:.2e}, nb={nb}, buf={buf_size}, nd={nd}, reduce={reduce})"
-                    )
+                    # If all directions were dropped (or estimate invalid), freeze h (do not update),
+                    # but do NOT skip the rest of the training loop.
+                    if (not math.isfinite(h_raw)) or (h_raw <= 0.0):
+                        logger.warning(
+                            f"[adaptive h][skip] step={self.state.global_step} h_raw invalid -> keep h_ema={float(self.adaptive_h):.3e} "
+                            f"(nb={nb}, nd={nd}, reduce={reduce})"
+                        )
+                    else:
+                        h_sm = self._smooth_h_log_ema(previous_adaptive_h, h_raw, beta, h_min, h_max)
+                        self.adaptive_h = float(h_sm)
+                        previous_adaptive_h = float(h_sm)
+                        self.epsilon_f = eps_est
+                        self.nu3 = nu3_est
+                        logger.info(
+                            f"[adaptive h][update] step={self.state.global_step} "
+                            f"h_raw={h_raw:.3e} -> h_ema={h_sm:.3e} "
+                            f"(eps≈{eps_est:.2e}, nu3≈{nu3_est:.2e}, nb={nb}, buf={buf_size}, nd={nd}, reduce={reduce})"
+                        )
                 # === End Adaptive h update ===
 
                 if self.args.max_steps > 0 and self.state.global_step > self.args.max_steps or (self.args.max_zo_forward_steps > 0 and self.state.zo_forward_step > self.args.max_zo_forward_steps):
