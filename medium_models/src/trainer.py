@@ -454,20 +454,25 @@ class Trainer(LinearHeadTrainer):
             nu3_hat = delta3 / (2.0 * (h_local ** 3 + 1e-30))
             return float(nu3_hat), float(delta3)
 
-        # === Choose h via D(h)-based scale detection, then estimate ν3 at that h ===
+        # === Choose h via Δ(h)-based scale detection, then estimate ν3 at that h ===
+        # In ZO training, the finite-difference radius (eps) is usually small (e.g., 1e-4~1e-2).
+        # We therefore start near the current training eps and scan *downward* to enforce locality.
         tiny = 1e-30
-        h_min, h_max = 1e-6, 0.5
+        h_min, h_max = 1e-8, 5e-2
 
-        # Start from a conservative h scale (same as before), then grow geometrically
-        h_start = float(max(eps_f, tiny) ** 0.2)
-        growth = float(getattr(self.args, "dh_h_growth", 1.5))
-        max_trials = int(getattr(self.args, "dh_max_trials", 8))
+        # Start from current training eps (adaptive_h if enabled, else zero_order_eps)
+        h_start = float(self.adaptive_h) if getattr(self.args, "use_adaptive_h", False) else float(getattr(self.args, "zero_order_eps", 1e-3))
+        h_start = float(min(h_max, max(h_min, h_start)))
+
+        # shrink factor (>1). We try h_start, h_start/growth, h_start/growth^2, ...
+        growth = float(getattr(self.args, "dh_h_growth", 2.0))
+        max_trials = int(getattr(self.args, "dh_max_trials", 10))
 
         tried = []  # list of dicts for logging/selection
         chosen_h = None
 
         for i in range(max_trials):
-            h_i = h_start * (growth ** i)
+            h_i = h_start / (growth ** i)
             h_i = float(min(h_max, max(h_min, h_i)))
 
             snr_ok, prox_ok, delta2, snr_val, (prox_p, prox_m), aux_dh = dh_tests_on(h_i)
@@ -495,21 +500,28 @@ class Trainer(LinearHeadTrainer):
                 chosen_h = h_i
                 break
 
-        # If nothing passes both, choose the best fallback:
-        # 1) among prox_ok candidates, pick the one with largest Delta/eps
-        # 2) otherwise pick the one with largest Delta/eps overall
+        # If nothing passes both, fallback policy prioritizes locality:
+        # 1) if any prox_ok exists, pick the one with largest Delta/eps among them
+        # 2) otherwise pick the trial with the smallest max(prox_plus, prox_minus)
         if chosen_h is None:
             prox_ok_candidates = [t for t in tried if t["prox_ok"]]
-            pool = prox_ok_candidates if len(prox_ok_candidates) > 0 else tried
-            if len(pool) == 0:
-                chosen_h = float(min(h_max, max(h_min, h_start)))
-            else:
-                best = max(pool, key=lambda x: float(x["snr"]))
+            if len(prox_ok_candidates) > 0:
+                best = max(prox_ok_candidates, key=lambda x: float(x["snr"]))
                 chosen_h = float(best["h"])
+                reason = "best Delta/eps among prox_ok"
+            else:
+                if len(tried) == 0:
+                    chosen_h = float(min(h_max, max(h_min, h_start)))
+                    reason = "empty tried"
+                else:
+                    def _prox_score(x):
+                        return float(max(x.get("prox_p", 1e9), x.get("prox_m", 1e9)))
+                    best = min(tried, key=_prox_score)
+                    chosen_h = float(best["h"])
+                    reason = "min prox (most local)"
             try:
                 logger.info(
-                    f"[estimate_nu3][dh-fallback] layer={layer_name or 'ALL'} chosen_h={chosen_h:.6e} "
-                    f"(no h satisfied both; selected by max Delta/eps with locality preference)"
+                    f"[estimate_nu3][dh-fallback] layer={layer_name or 'ALL'} chosen_h={chosen_h:.6e} ({reason})"
                 )
             except Exception:
                 pass
