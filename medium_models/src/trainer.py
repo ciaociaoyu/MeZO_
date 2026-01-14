@@ -1,6 +1,12 @@
 ########## The following part is copied from Transformers' trainer (3.4.0) and later ported to be compatible with v4.4.2 and to support initialization from linear head probing. ##########
 
 # coding=utf-8
+# 最后修改时间：2026-01-13
+# 修改摘要：
+# - Adaptive-h：rolling probe buffer、多batch(nb)与多方向(nd)估计，log-EMA 平滑更新
+# - estimate_nu3：Δ(h)=(18a) + proximity=(18b) 双测试选 h；无可接受 h 则返回 NaN 丢弃方向
+# - 数值稳健性：Δ3=0 时在满足(18a)(18b)前提下重试放大 h；仍失败则 NaN
+# - initialize_c：修复 scale_norm_by_num_params 归一化 bug；retrieve_c 增加启发式 fallback
 # Copyright 2020-present the HuggingFace Inc. team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -367,12 +373,27 @@ class Trainer(LinearHeadTrainer):
     # === Begin Adaptive h (Berahas et al.) ===
     def estimate_nu3(self, model, loss_fn, inputs, tau1=10.0, tau2=0.1, layer_name: Optional[str]=None, eps_f_override: Optional[float]=None):
         """
-        Robustly estimate the third derivative magnitude ν3 using a two-stage process with (18a)(18b) tests.
-        Uses third-order central finite difference (Δ^{(3)}(h)), selecting h adaptively:
-          1. Try h_a = ε_f^{1/5}; if SNR and proximity tests pass, accept ν3_a.
-          2. Else, try h_b = (ε_f / ν3_a)^{1/5} and accept if passes tests.
-          3. If both fail, fallback to a conservative ν3.
-        Returns the accepted ν3.
+        估计第三阶导数尺度 ν3（More & Wild / Berahas 风格的“尺度检测 + 接受测试”）。
+
+        核心思路：
+        1) 先估计该 batch/方向下的噪声幅度 ε_f（可用 eps_f_override 传入）。
+        2) 对扰动尺度 h 做“可接受性测试”（论文式 18a/18b）：
+           - (18a) 信号测试：Δ(h)/ε_f >= tau1
+                 其中 Δ(h) = |f(-h) - 2 f(0) + f(+h)|
+           - (18b) 局部性测试：prox(±h) <= tau2
+                 prox(+)=|f(+h)-f(0)|/max(|f(0)|,|f(+h)|)，同理 prox(-)
+        3) h 的搜索策略：
+           - 从 h_start（接近当前训练 eps）开始先测一次：
+             * 若 prox 失败：说明 h 太大（非局部）→ 向下扫描 h/growth^i
+             * 若 snr 失败但 prox 通过：说明 h 太小（噪声主导）→ 向上扫描 h*growth^i
+           - 找到第一个同时满足 (18a)(18b) 的 h 就接受；若找不到，返回 NaN（让上层丢弃该方向）。
+        4) 在接受的 h 上，用三阶中心差分估计：
+           Δ3(h) = |-f(2h) + 2f(h) - 2f(-h) + f(-2h)|
+           ν3_hat = Δ3(h) / (2 h^3)
+           若出现 Δ3=0（数值地板）或 ν3 无效，则在“仍满足 (18a)(18b)”前提下尝试放大 h 重试；
+           重试仍失败则返回 NaN（丢弃该方向）。
+
+        返回：float ν3（>0）或 NaN（表示该方向/该 batch 下 ν3 不可靠）。
         """
         # Estimate ε_f for this context (allow override for multi-batch / multi-direction averaging)
         if eps_f_override is not None:
@@ -621,6 +642,13 @@ class Trainer(LinearHeadTrainer):
         return float(nu3_accept)
 
     def estimate_noise(self, model, loss_fn, inputs, q=8, delta=1e-6, layer_name: Optional[str]=None):
+        # guard: q must be >= 3 because we use j=3 in the difference table
+        q = int(q)
+        if q < 3:
+            q = 3
+        delta = float(delta)
+        if (not math.isfinite(delta)) or (delta <= 0.0):
+            delta = 1e-6
         # === Float64 precision for more stable epsilon_f / nu3 estimation ===
         # Collect all parameters to optimize
         # 若指定 layer_name，则仅在该层参数子空间内估计 ECnoise
