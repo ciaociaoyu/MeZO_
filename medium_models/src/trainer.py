@@ -159,8 +159,9 @@ logger.setLevel(logging.INFO)
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 
-def get_train_dataloader(self):
+def _debug_get_train_dataloader_unused(self):
     """
+    UNUSED: this is a module-level function and does not override Trainer.get_train_dataloader.
     Override HF default to ensure dataloader_shuffle/data_seed take effect,
     and decouple data-order RNG from MeZO perturbation RNG.
     """
@@ -276,6 +277,54 @@ class Trainer(LinearHeadTrainer):
             if isinstance(k, str) and "acc" in k and isinstance(v, (int, float)):
                 return float(v)
         return None
+    def get_train_dataloader(self):
+        """Override to ensure dataloader_shuffle/data_seed actually take effect.
+
+        NOTE: We implement this here (inside the class) because module-level functions do not override Trainer methods.
+        """
+        if self.train_dataset is None:
+            raise ValueError("Trainer: training requires a train_dataset.")
+
+        # Resolve shuffle flag (robust to string 'True'/'False')
+        shuffle_flag = getattr(self.args, "dataloader_shuffle", True)
+        shuffle_flag_raw = shuffle_flag
+        if isinstance(shuffle_flag, str):
+            shuffle_flag = shuffle_flag.lower() in ("1", "true", "yes", "y")
+        shuffle_flag = bool(shuffle_flag)
+
+        # data_seed fallback
+        data_seed = getattr(self.args, "data_seed", None)
+        if data_seed is None:
+            data_seed = getattr(self.args, "seed", 42)
+
+        logger.info(
+            f"[dataloader][override] Trainer.get_train_dataloader active. "
+            f"shuffle_raw={shuffle_flag_raw} type={type(shuffle_flag_raw).__name__} -> shuffle={shuffle_flag}; "
+            f"data_seed={data_seed} seed={getattr(self.args,'seed','?')} local_rank={getattr(self.args,'local_rank','?')}"
+        )
+
+        # Choose sampler
+        if getattr(self.args, "local_rank", -1) != -1:
+            sampler = DistributedSampler(self.train_dataset, shuffle=shuffle_flag, seed=int(data_seed))
+        else:
+            if shuffle_flag:
+                g = torch.Generator()
+                g.manual_seed(int(data_seed))
+                sampler = RandomSampler(self.train_dataset, generator=g)
+            else:
+                sampler = SequentialSampler(self.train_dataset)
+
+        logger.info(f"[dataloader][override] selected sampler={type(sampler).__name__}")
+
+        return DataLoader(
+            self.train_dataset,
+            sampler=sampler,
+            batch_size=self.args.train_batch_size,
+            collate_fn=self.data_collator,
+            drop_last=self.args.dataloader_drop_last,
+            num_workers=self.args.dataloader_num_workers,
+            pin_memory=self.args.dataloader_pin_memory,
+        )
     # =====================================================
 
     # ================= Adaptive-h helpers (rolling probe buffer) =================
@@ -1138,6 +1187,10 @@ class Trainer(LinearHeadTrainer):
         # === End Adaptive h update freq ===
 
         # Data loading.
+        try:
+            logger.info(f"[dataloader][debug] self class={self.__class__.__name__}, get_train_dataloader={self.get_train_dataloader}")
+        except Exception:
+            pass
         train_dataloader = self.get_train_dataloader()
         # --- Inspect sampler type (RandomSampler / SequentialSampler / DistributedSampler) ---
         try:
