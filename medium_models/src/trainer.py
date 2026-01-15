@@ -155,6 +155,50 @@ if is_ray_available():
 logger = logging.get_logger(__name__)
 logger.setLevel(logging.INFO)
 
+
+from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
+from torch.utils.data.distributed import DistributedSampler
+
+def get_train_dataloader(self):
+    """
+    Override HF default to ensure dataloader_shuffle/data_seed take effect,
+    and decouple data-order RNG from MeZO perturbation RNG.
+    """
+    if self.train_dataset is None:
+        raise ValueError("Trainer: training requires a train_dataset.")
+
+    # Resolve shuffle flag (robust to string 'True'/'False')
+    shuffle_flag = getattr(self.args, "dataloader_shuffle", True)
+    if isinstance(shuffle_flag, str):
+        shuffle_flag = shuffle_flag.lower() in ("1", "true", "yes", "y")
+    shuffle_flag = bool(shuffle_flag)
+
+    # data_seed fallback
+    data_seed = getattr(self.args, "data_seed", None)
+    if data_seed is None:
+        data_seed = getattr(self.args, "seed", 42)
+
+    # Sampler
+    if self.args.local_rank != -1:
+        sampler = DistributedSampler(self.train_dataset, shuffle=shuffle_flag, seed=int(data_seed))
+    else:
+        if shuffle_flag:
+            g = torch.Generator()
+            g.manual_seed(int(data_seed))
+            sampler = RandomSampler(self.train_dataset, generator=g)
+        else:
+            sampler = SequentialSampler(self.train_dataset)
+
+    return DataLoader(
+        self.train_dataset,
+        sampler=sampler,
+        batch_size=self.args.train_batch_size,
+        collate_fn=self.data_collator,
+        drop_last=self.args.dataloader_drop_last,
+        num_workers=self.args.dataloader_num_workers,
+        pin_memory=self.args.dataloader_pin_memory,
+    )
+
 ########## The above part is copied from Transformers' trainer (3.4.0) ##########
 
 def default_dev_objective(metrics):
