@@ -1106,6 +1106,10 @@ class Trainer(LinearHeadTrainer):
                 logger.info("[dataloader] training uses SequentialSampler (no shuffle).")
             elif isinstance(sampler, DistributedSampler):
                 logger.info("[dataloader] training uses DistributedSampler (sharded).")
+
+            logger.info(f"[dataloader] args.dataloader_shuffle={getattr(self.args, 'dataloader_shuffle', 'MISSING')}")
+            logger.info(
+                f"[dataloader] args.data_seed={getattr(self.args, 'data_seed', 'MISSING')} args.seed={getattr(self.args, 'seed', 'MISSING')}")
         except Exception as e:
             logger.warning(f"[dataloader] cannot inspect sampler: {e}")
         num_update_steps_per_epoch = len(train_dataloader) // self.args.gradient_accumulation_steps
