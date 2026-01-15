@@ -3,6 +3,7 @@
 TASK=${TASK:-SST-2}
 K=${K:-16}
 SEED=${SEED:-42}
+DATA_SEED=${DATA_SEED:-16}
 BS=${BS:-64}
 LR=${LR:-1e-6}
 EPS=${EPS:-1e-3}
@@ -16,13 +17,13 @@ EVAL_STEP=${EVAL_STEP:-5000}
 MODEL=${MODEL:-roberta-large}
 USE_H=${USE_H:-"True"}
 USE_C=${USE_C:-"False"}
-USE_LH=${USE_LH:-"True"}
 
 LOGITS=$(jq -n '{"SNLI": 3, "MNLI": 3, "trec": 6, "sst-5": 5}["'$TASK'"] // 2')
 
 echo "TASK: $TASK"
 echo "K: $K"
 echo "Seed: $SEED"
+echo "Data seed: $DATA_SEED"
 echo "BS: $BS"
 echo "LR: $LR"
 echo "EPS: $EPS"
@@ -36,6 +37,6 @@ echo "Grid search tag: $GR_TAG"
 echo "Tag: $TAG"
 
 TYPE=prompt GRID_TAG=$GR_TAG TAG=$TAG STEPS=$STEP TASK=$TASK SEED=$SEED MODEL=$MODEL K=$K \
-    bash run_fewshot.sh --per_device_train_batch_size $BS --learning_rate $LR --eval_steps $EVAL_STEP --weight_decay $WD --zero_order_eps $EPS --use_adaptive_h $USE_H --use_c_scale $USE_C --use_layerwise_h $USE_LH\
+    bash run_fewshot.sh --per_device_train_batch_size $BS --learning_rate $LR --eval_steps $EVAL_STEP --weight_decay $WD --zero_order_eps $EPS --use_adaptive_h $USE_H --use_c_scale $USE_C --data_seed $DATA_SEED\
     --zero_order_optim --lr_scheduler_type "constant" --optimizer "sgd" --efficient_zero_order \
     $@

@@ -11,6 +11,9 @@ TAG=${TAG:-}                    # set a tag to distinguish and aggregate runs in
 NUM_GPU=${NUM_GPU:-1}           # by default use 1 GPU, set to 0 for CPU-only training
 OPT=${OPT:-"adam"}
 USE_H=${USE_H:-"True"}
+USE_C=${USE_C:-"False"}
+DATALOADER_SHUFFLE=${DATALOADER_SHUFFLE:-"True"}
+DATA_SEED=${DATA_SEED:-$SEED}
 STEPS=${STEPS:-1000}
 
 echo "GPU数量: $NUM_GPU"
@@ -93,6 +96,7 @@ ALL_ARGS_TOGETHER="
     --tag $TAG
     --max_seq_length 128
     --seed $SEED
+    --data_seed $DATA_SEED --dataloader_shuffle $DATALOADER_SHUFFLE
     --do_eval --do_predict --do_train
     --trainer $TRAINER
     --optimizer $OPT --max_steps $STEPS
@@ -101,7 +105,6 @@ ALL_ARGS_TOGETHER="
     --evaluate_during_training
     --use_adaptive_h $USE_H
     --use_c_scale $USE_C
-    --use_layerwise_h $USE_LH
     $TASK_EXTRA
     $LOAD_KERNELS
     $@

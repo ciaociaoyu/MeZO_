@@ -1,12 +1,4 @@
-########## The following part is copied from Transformers' trainer (3.4.0) and later ported to be compatible with v4.4.2 and to support initialization from linear head probing. ##########
-
 # coding=utf-8
-# 最后修改时间：2026-01-13
-# 修改摘要：
-# - Adaptive-h：rolling probe buffer、多batch(nb)与多方向(nd)估计，log-EMA 平滑更新
-# - estimate_nu3：Δ(h)=(18a) + proximity=(18b) 双测试选 h；无可接受 h 则返回 NaN 丢弃方向
-# - 数值稳健性：Δ3=0 时在满足(18a)(18b)前提下重试放大 h；仍失败则 NaN
-# - initialize_c：修复 scale_norm_by_num_params 归一化 bug；retrieve_c 增加启发式 fallback
 # Copyright 2020-present the HuggingFace Inc. team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,1703 +16,1337 @@
 The Trainer class, to easily train a 🤗 Transformers from scratch or finetune it on a new task.
 """
 
-import collections
+import contextlib
+import functools
+import glob
 import inspect
 import math
 import os
+import random
 import re
 import shutil
+import sys
+import time
 import warnings
+from collections.abc import Mapping
+from collections import deque
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+import copy
+from metrics import f1
+import numpy as np
+
+from tqdm.auto import tqdm
+from transformers import Trainer
+from sklearn.linear_model import LinearRegression, LogisticRegression, LogisticRegressionCV
+
+# Integrations must be imported before ML frameworks:
+from transformers.integrations import (  # isort: split
+    default_hp_search_backend,
+    get_reporting_integration_callbacks,
+    hp_params,
+    is_fairscale_available,
+    is_optuna_available,
+    is_ray_tune_available,
+    is_sigopt_available,
+    is_wandb_available,
+    run_hp_search_optuna,
+    run_hp_search_ray,
+    run_hp_search_sigopt,
+    run_hp_search_wandb,
+)
 
 import numpy as np
 import torch
-import csv
+import torch.distributed as dist
 from packaging import version
 from torch import nn
-from torch.utils.data.dataloader import DataLoader
-from torch.utils.data.dataset import Dataset
+from torch.utils.data import DataLoader, Dataset, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
-from torch.utils.data.sampler import RandomSampler, SequentialSampler
-from torch.optim.lr_scheduler import LambdaLR
-import math
-import time
 
-import transformers
-from transformers.file_utils import is_datasets_available, is_in_notebook
-# 兼容性处理：新版本 Transformers 可能已移除 utils.is_torch_tpu_available
-try:
-    from transformers.utils import is_torch_tpu_available  # 旧版本存在
-except Exception:
-    def is_torch_tpu_available() -> bool:  # 回退：默认不使用 TPU
-        return False
-    # 若顶层 transformers 模块也缺少该符号，则注入一个同名函数，
-    # 以兼容代码中 later 的 `transformers.is_torch_tpu_available()` 调用
-    if not hasattr(transformers, "is_torch_tpu_available"):
-        transformers.is_torch_tpu_available = is_torch_tpu_available  # type: ignore
-from transformers.integrations import (
-    is_comet_available,
-    is_optuna_available,
-    is_ray_available,
-    is_tensorboard_available,
-    is_wandb_available,
-)
-# 兼容性处理：新版本 Transformers 可能移除了 transformers.optimization.AdamW
-from transformers.optimization import get_linear_schedule_with_warmup, get_scheduler
-try:
-    from transformers.optimization import AdamW as HF_AdamW  # 旧版本存在
-    AdamW = HF_AdamW
-except Exception:
-    from torch.optim import AdamW  # 新版本请直接使用 PyTorch 自带的 AdamW
+from huggingface_hub import Repository
 
+from transformers import __version__
+from transformers.configuration_utils import PretrainedConfig
+from transformers.data.data_collator import DataCollator, DataCollatorWithPadding, default_data_collator
+from transformers.debug_utils import DebugOption, DebugUnderflowOverflow
+from transformers.deepspeed import deepspeed_init, is_deepspeed_zero3_enabled
+from transformers.dependency_versions_check import dep_version_check
+from transformers.modelcard import TrainingSummary
+from transformers.modeling_utils import PreTrainedModel, load_sharded_checkpoint, unwrap_model
+from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES, MODEL_MAPPING_NAMES
+from transformers.optimization import Adafactor, get_scheduler
+from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS, is_torch_greater_or_equal_than_1_10, \
+    is_torch_less_than_1_11
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer_callback import (
+    CallbackHandler,
     DefaultFlowCallback,
+    PrinterCallback,
     ProgressCallback,
+    TrainerCallback,
+    TrainerControl,
+    TrainerState,
+)
+from transformers.trainer_pt_utils import (
+    DistributedLengthGroupedSampler,
+    DistributedSamplerWithLoop,
+    DistributedTensorGatherer,
+    IterableDatasetShard,
+    LabelSmoother,
+    LengthGroupedSampler,
+    SequentialDistributedSampler,
+    ShardSampler,
+    distributed_broadcast_scalars,
+    distributed_concat,
+    find_batch_size,
+    get_module_class_from_name,
+    get_parameter_names,
+    nested_concat,
+    nested_detach,
+    nested_numpify,
+    nested_truncate,
+    nested_xla_mesh_reduce,
+    reissue_pt_warnings,
 )
 from transformers.trainer_utils import (
+    PREFIX_CHECKPOINT_DIR,
+    BestRun,
+    EvalLoopOutput,
+    EvalPrediction,
+    FSDPOption,
+    HPSearchBackend,
+    HubStrategy,
+    IntervalStrategy,
+    PredictionOutput,
+    RemoveColumnsCollator,
+    ShardedDDPOption,
+    TrainerMemoryTracker,
+    TrainOutput,
     default_compute_objective,
+    default_hp_space,
+    denumpify_detensorize,
+    enable_full_determinism,
+    find_executable_batch_size,
+    get_last_checkpoint,
+    has_length,
+    number_of_arguments,
+    seed_worker,
+    set_seed,
+    speed_metrics,
 )
-from transformers.training_args import TrainingArguments
-from transformers.utils import logging
-from transformers.trainer_utils import TrainOutput
+from transformers.training_args import OptimizerNames, ParallelMode, TrainingArguments
+from transformers.utils import (
+    CONFIG_NAME,
+    WEIGHTS_INDEX_NAME,
+    WEIGHTS_NAME,
+    find_labels,
+    get_full_repo_name,
+    is_apex_available,
+    is_datasets_available,
+    is_in_notebook,
+    is_ipex_available,
+    is_sagemaker_dp_enabled,
+    is_sagemaker_mp_enabled,
+    is_torch_tensorrt_fx_available,
+    is_torch_tpu_available,
+    is_torchdynamo_available,
+    logging,
+)
+from transformers.utils.generic import ContextManagers
 
-from tqdm import tqdm, trange
-from torch.optim import SGD
-import torch.nn.functional as F
-
-from src.linearhead_trainer import LinearHeadTrainer
-from transformers.trainer_callback import TrainerState
-
-import copy
-
-_use_native_amp = False
-_use_apex = False
+_is_native_cpu_amp_available = is_torch_greater_or_equal_than_1_10
 
 DEFAULT_CALLBACKS = [DefaultFlowCallback]
 DEFAULT_PROGRESS_CALLBACK = ProgressCallback
 
 if is_in_notebook():
-    from transformers.utils.notebook import NotebookProgressCallback
+    from .utils.notebook import NotebookProgressCallback
 
     DEFAULT_PROGRESS_CALLBACK = NotebookProgressCallback
 
-# Check if Pytorch version >= 1.6 to switch between Native AMP and Apex
-if version.parse(torch.__version__) < version.parse("1.6"):
-    from transformers.file_utils import is_apex_available
-
-    if is_apex_available():
-        from apex import amp
-    _use_apex = True
-else:
-    _use_native_amp = True
-    from torch.cuda.amp import autocast
-
-if version.parse(torch.__version__) < version.parse("1.2"):
-    _use_ddp_no_sync = False
-else:
-    _use_ddp_no_sync = True
+if is_apex_available():
+    from apex import amp
 
 if is_datasets_available():
     import datasets
 
-if is_torch_tpu_available():
+if is_torch_tpu_available(check_device=False):
     import torch_xla.core.xla_model as xm
     import torch_xla.debug.metrics as met
     import torch_xla.distributed.parallel_loader as pl
 
-if is_tensorboard_available():
-    from transformers.integrations import TensorBoardCallback
+if is_fairscale_available():
+    dep_version_check("fairscale")
+    import fairscale
+    from fairscale.nn.data_parallel import FullyShardedDataParallel as FullyShardedDDP
+    from fairscale.nn.data_parallel import ShardedDataParallel as ShardedDDP
+    from fairscale.nn.wrap import auto_wrap
+    from fairscale.optim import OSS
+    from fairscale.optim.grad_scaler import ShardedGradScaler
 
-    DEFAULT_CALLBACKS.append(TensorBoardCallback)
+if is_sagemaker_mp_enabled():
+    import smdistributed.modelparallel.torch as smp
+    from smdistributed.modelparallel import __version__ as SMP_VERSION
 
+    IS_SAGEMAKER_MP_POST_1_10 = version.parse(SMP_VERSION) >= version.parse("1.10")
 
-if is_wandb_available():
-    from transformers.integrations import WandbCallback
+    from .trainer_pt_utils import smp_forward_backward, smp_forward_only, smp_gather, smp_nested_concat
+else:
+    IS_SAGEMAKER_MP_POST_1_10 = False
 
-    DEFAULT_CALLBACKS.append(WandbCallback)
-
-if is_comet_available():
-    from transformers.integrations import CometCallback
-
-    DEFAULT_CALLBACKS.append(CometCallback)
-
-if is_optuna_available():
+if TYPE_CHECKING:
     import optuna
 
-if is_ray_available():
-    from ray import tune
-
 logger = logging.get_logger(__name__)
-logger.setLevel(logging.INFO)
 
-########## The above part is copied from Transformers' trainer (3.4.0) ##########
+# Name of the files used for checkpointing
+TRAINING_ARGS_NAME = "training_args.bin"
+TRAINER_STATE_NAME = "trainer_state.json"
+OPTIMIZER_NAME = "optimizer.pt"
+SCHEDULER_NAME = "scheduler.pt"
+SCALER_NAME = "scaler.pt"
 
-def default_dev_objective(metrics):
-    """
-    Objective used for picking the best model on development sets
-    """
-    if "eval_mnli/acc" in metrics:
-        return metrics["eval_mnli/acc"]
-    elif "eval_mnli-mm/acc" in metrics:
-        return metrics["eval_mnli-mm/acc"]
-    elif "eval_f1" in metrics:
-        return metrics["eval_f1"]
-    elif "eval_mcc" in metrics:
-        return metrics["eval_mcc"]
-    elif "eval_pearson" in metrics:
-        return metrics["eval_pearson"]
-    elif "eval_acc" in metrics:
-        return metrics["eval_acc"]
 
-    raise Exception("No metric founded for {}".format(metrics))
+class OurTrainer(Trainer):
+    from transformers.trainer_pt_utils import _get_learning_rate, log_metrics, metrics_format, save_metrics, save_state
 
-class Trainer(LinearHeadTrainer):
+    # ---------------------------------------------------------------------
+    # Sampler override ("sample" 相关):
+    #   - dataloader_shuffle=True  -> RandomSampler (shuffle)
+    #   - dataloader_shuffle=False -> SequentialSampler (no shuffle)
+    # 这样可以避免训练阶段一直使用 SequentialSampler 导致的分布漂移/不稳定。
+    # ---------------------------------------------------------------------
+    def _get_train_sampler(self) -> Optional[torch.utils.data.Sampler]:
+        """Override HF Trainer's train sampler selection.
 
-    # ================= CSV 训练日志（每步）=================
-    def _setup_metrics_csv(self):
-        """创建日志文件夹与 CSV 文件；根据是否使用自适应 h / c 缩放 / 分层 h 命名文件。"""
-        base_dir = getattr(self.args, "output_dir", "./outputs") or "./outputs"
-        log_dir = os.path.join(base_dir, "metrics_logs")
-        os.makedirs(log_dir, exist_ok=True)
-        # 根据开关构造文件名
-        use_ah = int(getattr(self.args, "use_adaptive_h", False))
-        use_cs = int(getattr(self.args, "use_c_scale", False))
-        use_lh = int(getattr(self.args, "use_layerwise_h", False))
-        filename = f"metrics_adaptiveH-{use_ah}_cscale-{use_cs}_layerwiseH-{use_lh}.csv"
-        self._metrics_csv_path = os.path.join(log_dir, filename)
-        # 若文件不存在则写入表头
-        if not os.path.exists(self._metrics_csv_path):
-            with open(self._metrics_csv_path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["epoch", "global_step", "train_loss", "train_acc", "eval_ran", "eval_loss", "eval_acc"])
-
-    def _compute_train_acc(self, model, inputs) -> Optional[float]:
-        """计算当前 batch 的训练准确率（不影响梯度）。若任务非分类或缺少 labels，返回 None。"""
-        try:
-            if "labels" not in inputs:
-                return None
-            model.eval()
-            _in = self._prepare_inputs(inputs)
-            with torch.no_grad():
-                out = model(**_in)
-                # 兼容 (loss, logits) 或 只返回 logits 的情况
-                if isinstance(out, (tuple, list)):
-                    logits = out[1] if len(out) > 1 else out[0]
-                elif hasattr(out, "logits"):
-                    logits = out.logits
-                else:
-                    return None
-                preds = torch.argmax(logits, dim=-1)
-                labels = _in["labels"]
-                acc = (preds == labels).float().mean().item()
-                return float(acc)
-        except Exception:
+        Notes
+        -----
+        - We keep HF's default behavior for group_by_length.
+        - For distributed training we use DistributedSampler with shuffle controlled by args.dataloader_shuffle.
+        """
+        if self.train_dataset is None or not has_length(self.train_dataset):
             return None
 
-    def _extract_eval_acc(self, metrics: Dict[str, float]) -> Optional[float]:
-        """从 evaluate() 的 metrics 字典里尽量找出准确率字段。常见键：eval_accuracy / eval_acc / eval_mnli/acc 等。"""
-        if not isinstance(metrics, dict):
-            return None
-        # 优先常见命名
-        for k in ["eval_accuracy", "eval_acc", "accuracy", "acc"]:
-            if k in metrics and isinstance(metrics[k], (int, float)):
-                return float(metrics[k])
-        # 次优：包含 acc 的键（如 eval_mnli/acc）
-        for k, v in metrics.items():
-            if isinstance(k, str) and "acc" in k and isinstance(v, (int, float)):
-                return float(v)
-        return None
-    # =====================================================
+        # Let HF handle special samplers (e.g., LengthGroupedSampler)
+        if getattr(self.args, "group_by_length", False):
+            return super()._get_train_sampler()
 
-    # ================= Adaptive-h helpers (rolling probe buffer) =================
-    def _get_init_h(self) -> float:
-        h0 = getattr(self.args, "init_h", None)
-        if h0 is None:
-            h0 = getattr(self.args, "initial_h", None)
-        if h0 is None:
-            h0 = getattr(self.args, "zero_order_eps", 1e-4)
-        return float(h0)
+        shuffle = bool(getattr(self.args, "dataloader_shuffle", True))
 
-    def _smooth_h_log_ema(self, prev_h: float, new_h: float, beta: float, h_min: float, h_max: float) -> float:
-        if (not math.isfinite(prev_h)) or prev_h <= 0:
-            prev_h = h_min
-        if (not math.isfinite(new_h)) or new_h <= 0:
-            return float(min(h_max, max(h_min, prev_h)))
-        beta = float(min(1.0, max(0.0, beta)))
-        h = math.exp((1 - beta) * math.log(prev_h) + beta * math.log(new_h))
-        return float(min(h_max, max(h_min, h)))
+        if self.args.local_rank != -1:
+            return DistributedSampler(self.train_dataset, shuffle=shuffle, seed=self.args.seed)
 
-    def _update_h_probe_buffer(self, inputs):
-        """Maintain a rolling buffer of recent batches (CPU tensors) for stable h estimation."""
-        buf_size = int(getattr(self.args, "adaptive_h_probe_buffer_size", 64))
-        if buf_size <= 0:
+        if shuffle:
+            # 用独立 generator 固定 DataLoader 的随机性，避免被 MeZO 里频繁 torch.manual_seed(...) 干扰
+            data_seed = getattr(self.args, "data_seed", None)
+            if data_seed is None:
+                data_seed = self.args.seed
+            g = torch.Generator()
+            g.manual_seed(int(data_seed))
+            return RandomSampler(self.train_dataset, generator=g)
+
+        return SequentialSampler(self.train_dataset)
+    # ---------------------------------------------------------------------
+    # Adaptive eps ("alpha" 相关):
+    # 在用 (eps_f, nu3) 计算训练 eps* 时，引入 alpha (<1) 来下调截断误差项的权重，
+    # 使 eps* 变大： eps* <- alpha^{-1/6} * eps*.
+    #
+    # 同时，为了避免 probe batch 绑定某个固定方向/固定 batch，我们使用滚动 buffer + 随机抽样。
+    # ---------------------------------------------------------------------
+
+    def _get_base_zo_eps(self) -> float:
+        """Return the *configured* (non-adaptive) eps.
+
+        We support both naming conventions:
+        - args.zo_eps (MeZO scripts)
+        - args.zero_order_eps (kernel/other scripts)
+        """
+        if hasattr(self.args, "zo_eps") and self.args.zo_eps is not None:
+            return float(self.args.zo_eps)
+        if hasattr(self.args, "zero_order_eps"):
+            return float(self.args.zero_order_eps)
+        # last-resort fallback
+        return 1e-3
+
+    def _get_current_zo_eps(self) -> float:
+        """Return the eps actually used for ZO gradient estimation."""
+        if getattr(self.args, "use_adaptive_h", False) and hasattr(self, "adaptive_h"):
+            return float(self.adaptive_h)
+        return self._get_base_zo_eps()
+
+    def _adaptive_h_init(self):
+        """Initialize adaptive-h state (called once at train start)."""
+        # EMA smoothing beta (externalizable; default 0.1)
+        self._h_beta = float(getattr(self.args, "h_beta", 0.1))
+        # truncation-error down-weight alpha (<1 => larger eps*)
+        self._h_trunc_alpha = float(getattr(self.args, "h_trunc_alpha", 1.0))
+
+        # rolling buffer of recent batches (randomly subsampled for probe)
+        buf_size = int(getattr(self.args, "h_probe_buffer", 64))
+        self._h_probe_buffer = deque(maxlen=max(buf_size, 1))
+
+        # (nb, nd) for averaging: nb batches, nd directions
+        self._h_nb = int(getattr(self.args, "h_nb", 1))
+        self._h_nd = int(getattr(self.args, "h_nd", 3))
+        self._h_reduce = str(getattr(self.args, "h_reduce", "mean"))
+
+        # thresholds for local-scale tests (SNR & proximity)
+        self._h_tau1 = float(getattr(self.args, "h_tau1", 5.0))
+        self._h_tau2 = float(getattr(self.args, "h_tau2", 0.2))
+
+        # internal guard
+        self._h_last_update_step = -1
+
+        # init value: start from configured eps
+        self.adaptive_h = self._get_base_zo_eps()
+
+        if self.is_world_process_zero():
+            logger.info(
+                f"[adaptive h][init] h0={self.adaptive_h:.3e} beta={self._h_beta} alpha={self._h_trunc_alpha} "
+                f"(nb={self._h_nb}, nd={self._h_nd}, buf={self._h_probe_buffer.maxlen}, reduce={self._h_reduce})"
+            )
+
+    def _adaptive_h_buffer_add(self, inputs: Dict[str, Any]):
+        """Add one batch into rolling probe buffer (CPU-cloned)."""
+        if not hasattr(self, "_h_probe_buffer"):
             return
-
-        buf = getattr(self, "_h_probe_buffer", None)
-        if not isinstance(buf, list):
-            buf = []
-
-        # Store a lightweight CPU copy to avoid holding GPU memory.
-        stored = inputs
         try:
-            if isinstance(inputs, dict):
-                stored = {}
-                for k, v in inputs.items():
-                    if isinstance(v, torch.Tensor):
-                        stored[k] = v.detach().cpu()
-                    else:
-                        stored[k] = v
-        except Exception:
-            stored = inputs
-
-        buf.append(stored)
-        if len(buf) > buf_size:
-            buf = buf[-buf_size:]
-        self._h_probe_buffer = buf
-
-    def _get_h_estimation_inputs(self, train_dataloader, base_inputs=None, num_batches: int = 1):
-        """Return batches for h estimation: current batch + random sample from rolling probe buffer."""
-        num_batches = max(1, int(num_batches))
-        batches = []
-
-        # Always include current batch first (shallow copy to avoid in-place mutation)
-        if base_inputs is not None:
-            batches.append(dict(base_inputs) if isinstance(base_inputs, dict) else base_inputs)
-
-        buf = getattr(self, "_h_probe_buffer", None)
-        need = num_batches - len(batches)
-
-        # Prefer sampling from buffer excluding the most recent element (which is often base_inputs)
-        if need > 0 and isinstance(buf, list) and len(buf) > 0:
-            pool = buf
-            if base_inputs is not None and len(buf) > 1:
-                pool = buf[:-1]
-            if len(pool) > 0:
-                replace = len(pool) < need
-                idxs = np.random.choice(len(pool), size=need, replace=replace)
-                for idx in idxs:
-                    item = pool[int(idx)]
-                    batches.append(dict(item) if isinstance(item, dict) else item)
-
-        # Fallback: independent iterator over train_dataloader if buffer is empty
-        it = getattr(self, "_h_est_iter", None)
-        if it is None:
-            it = iter(train_dataloader)
-            self._h_est_iter = it
-        while len(batches) < num_batches:
-            try:
-                b = next(it)
-            except StopIteration:
-                it = iter(train_dataloader)
-                self._h_est_iter = it
-                b = next(it)
-            batches.append(dict(b) if isinstance(b, dict) else b)
-
-        return batches[:num_batches]
-
-    def estimate_adaptive_h_multi(
-        self,
-        model,
-        loss_fn,
-        inputs_list,
-        layer_name=None,
-        num_directions=1,
-        reduce="mean",
-        h_min=1e-5,
-        h_max=0.5,
-    ):
-        """Estimate h using multi-batch x multi-direction, then aggregate by mean/median."""
-        gamma = 3 ** (1 / 3)
-        h_vals, eps_vals, nu3_vals = [], [], []
-
-        for inputs in inputs_list:
-            for _ in range(max(1, int(num_directions))):
-                inp1 = dict(inputs) if isinstance(inputs, dict) else inputs
-                eps_i = float(self.estimate_noise(model, loss_fn, inp1, layer_name=layer_name))
-                if (not math.isfinite(eps_i)) or eps_i <= 0.0:
-                    continue
-
-                inp2 = dict(inputs) if isinstance(inputs, dict) else inputs
-                nu3_i = float(self.estimate_nu3(model, loss_fn, inp2, layer_name=layer_name, eps_f_override=eps_i))
-                # Drop invalid directions (do NOT clamp), otherwise h_raw can be spuriously inflated.
-                if (not math.isfinite(nu3_i)) or (nu3_i <= 0.0):
-                    continue
-
-                h_i = (eps_i / nu3_i) ** (1 / 3) * gamma
-                if (not math.isfinite(h_i)) or h_i <= 0.0:
-                    continue
-
-                h_i = float(min(h_max, max(h_min, h_i)))
-                h_vals.append(h_i)
-                eps_vals.append(eps_i)
-                nu3_vals.append(float(nu3_i))
-
-        if len(h_vals) == 0:
-            return float("nan"), float("nan"), float("nan")
-
-        arr = np.asarray(h_vals, dtype=np.float64)
-        reduce = str(reduce or "mean").lower()
-        h_est = float(np.median(arr)) if reduce == "median" else float(np.mean(arr))
-        eps_est = float(np.mean(eps_vals)) if len(eps_vals) > 0 else float("nan")
-        nu3_est = float(np.mean(nu3_vals)) if len(nu3_vals) > 0 else float("nan")
-        return h_est, eps_est, nu3_est
-    # =============================================================================
-    """
-    Adding some functions based on Transformers' Trainer class.
-    """
-
-    # === Begin Adaptive h (Berahas et al.) ===
-    def estimate_nu3(self, model, loss_fn, inputs, tau1=10.0, tau2=0.1, layer_name: Optional[str]=None, eps_f_override: Optional[float]=None):
-        """
-        估计第三阶导数尺度 ν3（More & Wild / Berahas 风格的“尺度检测 + 接受测试”）。
-
-        核心思路：
-        1) 先估计该 batch/方向下的噪声幅度 ε_f（可用 eps_f_override 传入）。
-        2) 对扰动尺度 h 做“可接受性测试”（论文式 18a/18b）：
-           - (18a) 信号测试：Δ(h)/ε_f >= tau1
-                 其中 Δ(h) = |f(-h) - 2 f(0) + f(+h)|
-           - (18b) 局部性测试：prox(±h) <= tau2
-                 prox(+)=|f(+h)-f(0)|/max(|f(0)|,|f(+h)|)，同理 prox(-)
-        3) h 的搜索策略：
-           - 从 h_start（接近当前训练 eps）开始先测一次：
-             * 若 prox 失败：说明 h 太大（非局部）→ 向下扫描 h/growth^i
-             * 若 snr 失败但 prox 通过：说明 h 太小（噪声主导）→ 向上扫描 h*growth^i
-           - 找到第一个同时满足 (18a)(18b) 的 h 就接受；若找不到，返回 NaN（让上层丢弃该方向）。
-        4) 在接受的 h 上，用三阶中心差分估计：
-           Δ3(h) = |-f(2h) + 2f(h) - 2f(-h) + f(-2h)|
-           ν3_hat = Δ3(h) / (2 h^3)
-           若出现 Δ3=0（数值地板）或 ν3 无效，则在“仍满足 (18a)(18b)”前提下尝试放大 h 重试；
-           重试仍失败则返回 NaN（丢弃该方向）。
-
-        返回：float ν3（>0）或 NaN（表示该方向/该 batch 下 ν3 不可靠）。
-        """
-        # Estimate ε_f for this context (allow override for multi-batch / multi-direction averaging)
-        if eps_f_override is not None:
-            eps_f = float(eps_f_override)
-        else:
-            try:
-                eps_f = float(getattr(self, "epsilon_f", None))
-                if not math.isfinite(eps_f) or eps_f <= 0:
-                    raise ValueError("invalid epsilon_f")
-            except Exception:
-                eps_f = float(self.estimate_noise(model, self.compute_loss, inputs, layer_name=layer_name))
-                logger.info(f"[estimate_nu3] on-the-fly epsilon_f = {eps_f:.3e}")
-        names, params = [], []
-        for name, param in model.named_parameters():
-            if self.should_optim(name, param):
-                if layer_name is not None and (layer_name not in name):
-                    continue
-                names.append(name)
-                params.append(param)
-        param_shapes = [p.data.shape for p in params]
-        param_numels = [p.data.numel() for p in params]
-        total_numel = sum(param_numels)
-        device = params[0].data.device if params else torch.device("cpu")
-        dtype = params[0].data.dtype if params else torch.float32
-        originals = [p.data.detach().clone().to(dtype=torch.float64) for p in params]
-        # Random Gaussian direction z (float64), consistent with training perturbations (no normalization)
-        z_flat = torch.randn(total_numel, dtype=torch.float64, device=device)
-        z_splits = torch.split(z_flat, param_numels)
-        z_list = [z.view(shape) for z, shape in zip(z_splits, param_shapes)]
-
-        def set_params(alpha: float):
-            for p, orig, z in zip(params, originals, z_list):
-                p.data.copy_((orig + alpha * z).to(dtype=dtype))
-        # f0 at base
-        with torch.no_grad():
-            for p, orig in zip(params, originals):
-                p.data.copy_(orig.to(dtype=dtype))
-            f0 = float(self.zo_forward(model, inputs))
-        def eval_at(alpha: float) -> float:
-            try:
-                with torch.no_grad():
-                    set_params(alpha)
-                    val = float(self.zo_forward(model, inputs))
-            finally:
-                for p, orig in zip(params, originals):
-                    p.data.copy_(orig.to(dtype=dtype))
-            return val
-
-        # --- Δ(h)-based scale detection (paper's second-order difference) ---
-        def dh_tests_on(h_local: float):
-            """Return (snr_ok, prox_ok, Delta(h), snr_val, (prox_plus, prox_minus), aux_Dh)."""
-            f1  = eval_at( 1.0 * h_local)
-            fm1 = eval_at(-1.0 * h_local)
-
-            # Paper (18a): second-order difference
-            # Δ(h) = | f(t0-h) - 2 f(t0) + f(t0+h) |
-            delta2 = abs(fm1 - 2.0 * f0 + f1)
-
-            # Optional auxiliary (not used for acceptance): D(h)=|f(+h)-f0|+|f(-h)-f0|
-            aux_dh = abs(f1 - f0) + abs(fm1 - f0)
-
-            # SNR test on Δ(h): Δ(h)/eps_f >= tau1
-            snr_val = delta2 / max(eps_f, 1e-30)
-            snr_ok = snr_val >= tau1
-
-            # Proximity: relative change at ±h should be small enough (locality)
-            prox_plus = abs(f1 - f0) / max(abs(f0), abs(f1), 1e-30)
-            prox_minus = abs(fm1 - f0) / max(abs(f0), abs(fm1), 1e-30)
-            prox_ok = (prox_plus <= tau2) and (prox_minus <= tau2)
-
-            return snr_ok, prox_ok, delta2, snr_val, (prox_plus, prox_minus), aux_dh
-
-        def nu3_hat_at(h_local: float):
-            """Compute ν3_hat at a chosen h using 3rd-order central finite difference."""
-            f2  = eval_at( 2.0 * h_local)
-            f1  = eval_at( 1.0 * h_local)
-            fm1 = eval_at(-1.0 * h_local)
-            fm2 = eval_at(-2.0 * h_local)
-            delta3 = abs(-f2 + 2.0 * f1 - 2.0 * fm1 + fm2)
-            nu3_hat = delta3 / (2.0 * (h_local ** 3 + 1e-30))
-            return float(nu3_hat), float(delta3)
-
-        # === Choose h via Δ(h)-based scale detection, then estimate ν3 at that h ===
-        # In ZO training, the finite-difference radius (eps) is usually small (e.g., 1e-4~1e-2).
-        # We therefore start near the current training eps and scan *downward* to enforce locality.
-        tiny = 1e-30
-        h_min, h_max = 1e-8, 5e-2
-
-        # Start from current training eps (adaptive_h if enabled, else zero_order_eps)
-        h_start = float(self.adaptive_h) if getattr(self.args, "use_adaptive_h", False) else float(getattr(self.args, "zero_order_eps", 1e-3))
-        h_start = float(min(h_max, max(h_min, h_start)))
-
-        # shrink factor (>1). We try h_start, h_start/growth, h_start/growth^2, ...
-        growth = float(getattr(self.args, "dh_h_growth", 2.0))
-        max_trials = int(getattr(self.args, "dh_max_trials", 10))
-
-        tried = []  # list of dicts for logging/selection
-        chosen_h = None
-
-        # First evaluate at h_start to decide search direction
-        snr0, prox0, delta20, snr_val0, (prox_p0, prox_m0), aux_dh0 = dh_tests_on(h_start)
-        tried.append({
-            "h": h_start,
-            "delta2": delta20,
-            "aux_dh": aux_dh0,
-            "snr": snr_val0,
-            "snr_ok": snr0,
-            "prox_ok": prox0,
-            "prox_p": prox_p0,
-            "prox_m": prox_m0,
-        })
-        try:
-            logger.info(
-                f"[estimate_nu3][dh-trial-0] layer={layer_name or 'ALL'} h={h_start:.6e}, "
-                f"Delta(h)={delta20:.6e}, Delta/eps={snr_val0:.6e}, D(h)={aux_dh0:.6e} (>= {tau1}? {snr0}), "
-                f"prox+={prox_p0:.6e}, prox-={prox_m0:.6e} (<= {tau2}? {prox0})"
-            )
-        except Exception:
-            pass
-
-        if snr0 and prox0:
-            chosen_h = h_start
-        else:
-            # If prox fails -> h too large (non-local): scan downward
-            # If snr fails but prox OK -> h too small (noise-dominated): scan upward
-            if (not prox0):
-                mode = "down"
-            elif (not snr0) and prox0:
-                mode = "up"
-            else:
-                # both fail: prefer restoring locality first
-                mode = "down"
-
-            for i in range(1, max_trials):
-                if mode == "down":
-                    h_i = h_start / (growth ** i)
+            cloned: Dict[str, Any] = {}
+            for k, v in inputs.items():
+                if isinstance(v, torch.Tensor):
+                    # store on CPU to keep GPU memory stable
+                    cloned[k] = v.detach().cpu().clone()
                 else:
-                    h_i = h_start * (growth ** i)
-                h_i = float(min(h_max, max(h_min, h_i)))
+                    cloned[k] = copy.deepcopy(v)
+            self._h_probe_buffer.append(cloned)
+        except Exception as e:
+            if self.is_world_process_zero():
+                logger.warning(f"[adaptive h] failed to buffer a batch: {e}")
 
-                snr_ok, prox_ok, delta2, snr_val, (prox_p, prox_m), aux_dh = dh_tests_on(h_i)
-                tried.append({
-                    "h": h_i,
-                    "delta2": delta2,
-                    "aux_dh": aux_dh,
-                    "snr": snr_val,
-                    "snr_ok": snr_ok,
-                    "prox_ok": prox_ok,
-                    "prox_p": prox_p,
-                    "prox_m": prox_m,
-                })
-                try:
-                    logger.info(
-                        f"[estimate_nu3][dh-trial-{i}] layer={layer_name or 'ALL'} h={h_i:.6e}, "
-                        f"Delta(h)={delta2:.6e}, Delta/eps={snr_val:.6e}, D(h)={aux_dh:.6e} (>= {tau1}? {snr_ok}), "
-                        f"prox+={prox_p:.6e}, prox-={prox_m:.6e} (<= {tau2}? {prox_ok})"
-                    )
-                except Exception:
-                    pass
+    def _adaptive_h_eval_at(self, model, inputs: Dict[str, Any], h: float, seed: int, mult: int) -> float:
+        """Evaluate f(theta + mult * h * z) and restore theta back."""
+        # Make sure we have parameter list ready
+        if not hasattr(self, "named_parameters_to_optim") or not self.named_parameters_to_optim:
+            self.named_parameters_to_optim = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
 
-                if snr_ok and prox_ok:
-                    chosen_h = h_i
-                    break
+        self.zo_perturb_parameters(random_seed=seed, scaling_factor=mult, eps=h)
+        loss = self.zo_forward(model, inputs)
+        self.zo_perturb_parameters(random_seed=seed, scaling_factor=-mult, eps=h)
+        return float(loss.item() if isinstance(loss, torch.Tensor) else loss)
 
-            if chosen_h is None and mode == "down":
-                # If we tried to restore locality but never got prox_ok, the step is likely still too large.
-                # Conversely, if we got prox_ok but SNR failed at the smallest h, h may be too small.
-                # (This information is used by the fallback policy below.)
-                pass
+    def _adaptive_h_estimate_eps_f(self, model, batches: List[Dict[str, Any]], q: int = 8, delta: float = 1e-6, trials: int = 6) -> float:
+        """Estimate epsilon_f using a forward-difference table (More & Wild-style).
 
-        # If nothing passes both tests, do NOT accept nu3 (paper-consistent).
-        if chosen_h is None:
-            if len(tried) > 0:
-                def _prox_score(x):
-                    return float(max(x.get("prox_p", 1e9), x.get("prox_m", 1e9)))
-                best_local = min(tried, key=_prox_score)
-                logger.warning(
-                    f"[estimate_nu3][dh-fail] layer={layer_name or 'ALL'} no h satisfied both tests; "
-                    f"best_local_h={best_local['h']:.6e} (prox_max={max(best_local.get('prox_p', 0.0), best_local.get('prox_m', 0.0)):.3e}, "
-                    f"Delta/eps={best_local.get('snr', float('nan')):.3e}). Return NaN."
-                )
-            else:
-                logger.warning(f"[estimate_nu3][dh-fail] layer={layer_name or 'ALL'} tried=0. Return NaN.")
-            return float("nan")
+        We evaluate f(theta + i*delta*z) for i=0..q along a *fixed* Gaussian direction z (controlled by seed),
+        build a forward-difference table, and use a higher-order difference column to estimate the noise scale.
 
-        # Now compute ν3 at the chosen_h. If Δ3 collapses to 0 (finite-precision floor),
-        # retry with slightly larger h while still satisfying BOTH SNR and prox; otherwise return NaN to drop this direction.
-        nu3_accept, delta3_accept = nu3_hat_at(chosen_h)
+        Returns
+        -------
+        epsilon_f_hat : float
+            Estimated objective noise scale.
+        """
+        if len(batches) == 0:
+            return 0.0
 
-        if (not math.isfinite(nu3_accept)) or (nu3_accept <= 0.0) or (delta3_accept == 0.0):
-            max_retry = int(getattr(self.args, "nu3_retry", 3))
-            found = False
-            for k in range(1, max_retry + 1):
-                h_try = float(chosen_h * (2.0 ** k))
-                if h_try > h_max:
-                    break
-                # Keep locality: require BOTH snr_ok and prox_ok at h_try
-                try:
-                    snr_ok_t, prox_ok_t, _delta2_t, _snr_val_t, (prox_p_t, prox_m_t), _aux = dh_tests_on(h_try)
-                except Exception:
-                    snr_ok_t, prox_ok_t = False, False
-                if not (snr_ok_t and prox_ok_t):
-                    continue
-
-                nu3_t, d3_t = nu3_hat_at(h_try)
-                if math.isfinite(nu3_t) and (nu3_t > 0.0) and (d3_t != 0.0):
-                    chosen_h = h_try
-                    nu3_accept, delta3_accept = nu3_t, d3_t
-                    found = True
-                    try:
-                        logger.info(
-                            f"[estimate_nu3][retry] layer={layer_name or 'ALL'} use larger local h={h_try:.6e} "
-                            f"to avoid Δ3=0; nu3={nu3_accept:.6e}, Δ3={delta3_accept:.6e}"
-                        )
-                    except Exception:
-                        pass
-                    break
-
-            if not found:
-                logger.warning(
-                    f"[estimate_nu3] nu3/Δ3 invalid at chosen_h and retries; return NaN to drop direction. "
-                    f"(layer={layer_name or 'ALL'}, chosen_h={chosen_h:.6e}, Δ3={delta3_accept:.3e})"
-                )
-                return float("nan")
-
-        try:
-            logger.info(
-                f"[estimate_nu3][final] layer={layer_name or 'ALL'} chosen_h={chosen_h:.6e}, "
-                f"nu3={nu3_accept:.6e}, Δ3={delta3_accept:.6e}"
-            )
-        except Exception:
-            pass
-
-        # Optional sanity test log (does not affect the returned value)
-        h_test = float(getattr(self.args, "dh_test_h", 1e-2))
-        try:
-            snr_ok_t, prox_ok_t, delta2_t, snr_val_t, (prox_p_t, prox_m_t), aux_dh_t = dh_tests_on(h_test)
-            nu3_t, delta3_t = nu3_hat_at(h_test)
-            logger.info(
-                f"[estimate_nu3][**TEST**] layer={layer_name or 'ALL'} h_test={h_test:.6e}, "
-                f"Delta(h)={delta2_t:.6e}, Delta/eps={snr_val_t:.6e}, D(h)={aux_dh_t:.6e}, snr_ok={snr_ok_t}, prox_ok={prox_ok_t}, "
-                f"prox+={prox_p_t:.6e}, prox-={prox_m_t:.6e}, nu3_test={nu3_t:.6e}, Δ3_test={delta3_t:.6e}"
-            )
-        except Exception:
-            pass
-        return float(nu3_accept)
-
-    def estimate_noise(self, model, loss_fn, inputs, q=8, delta=1e-6, layer_name: Optional[str]=None):
-        # guard: q must be >= 3 because we use j=3 in the difference table
+        # guard: q must be >= 3 because we use j=3
         q = int(q)
         if q < 3:
             q = 3
         delta = float(delta)
         if (not math.isfinite(delta)) or (delta <= 0.0):
             delta = 1e-6
-        # === Float64 precision for more stable epsilon_f / nu3 estimation ===
-        # Collect all parameters to optimize
-        # 若指定 layer_name，则仅在该层参数子空间内估计 ECnoise
-        names, params = [], []
-        for name, param in model.named_parameters():
-            if not self.should_optim(name, param):
-                continue
-            if layer_name is not None:
-                # 仅选取属于该层的参数；不要依赖 self.cs / retrieve_c
-                if layer_name not in name:
-                    continue
-            names.append(name)
-            params.append(param)
-        param_shapes = [p.data.shape for p in params]
-        param_numels = [p.data.numel() for p in params]
-        total_numel = sum(param_numels)
-        device = params[0].data.device if params else torch.device("cpu")
-        dtype = params[0].data.dtype if params else torch.float32
-        originals = [p.data.detach().clone().to(dtype=torch.float64) for p in params]
-        # Generate a global random Gaussian direction z (float64), consistent with training perturbations (no normalization)
-        z_flat = torch.randn(total_numel, dtype=torch.float64, device=device)
-        try:
-            z_norm = float(torch.norm(z_flat).item())
-            logger.info(f"[estimate_noise] ||z||={z_norm:.3e}, delta={delta:.1e}, q={q}")
-        except Exception:
-            pass
-        z_splits = torch.split(z_flat, param_numels)
-        z_list = [z.view(shape) for z, shape in zip(z_splits, param_shapes)]
 
-        # Helper to set params to originals + alpha * z
-        def set_params(alpha):
-            for p, orig, z in zip(params, originals, z_list):
-                p.data.copy_((orig + alpha * z).to(dtype=dtype))
-        f_vals = []
-        try:
-            for i in range(q + 1):
-                set_params(i * delta)
-                with torch.no_grad():
-                    f_vals.append(float(self.zo_forward(model, inputs)))
-        finally:
-            # Restore original parameters
-            for p, orig in zip(params, originals):
-                p.data.copy_(orig.to(dtype=dtype))
-        T = [[0] * (q + 1) for _ in range(q + 1)]
-        for i in range(q + 1):
-            T[i][0] = f_vals[i]
-        for j in range(1, q + 1):
-            for i in range(q + 1 - j):
-                T[i][j] = T[i+1][j-1] - T[i][j-1]
+        # Parameters for noise estimator (paper uses j=3)
         j = 3
-        gamma = (math.factorial(j)**2) / math.factorial(2*j)
-        s_j_sq = gamma / (q + 1 - j) * sum(T[i][j]**2 for i in range(q + 1 - j))
-        epsilon_f = math.sqrt(s_j_sq)
-        logger.info(f"Estimated epsilon_f: {epsilon_f}")
-        return float(epsilon_f)
-    # === End Adaptive h ===
+        gamma = 1.0 / (2.0 * (2.0 * j + 1.0) * (j + 1.0) ** 2)
 
-    def create_optimizer_and_scheduler(self, num_training_steps: int):
-        """
-        Based on Transformers' default one, we add fixing layer option where the bottom n layers' parameters
-        are fixed and only the top layers are further fine-tuned.
-        """
-        if self.args.hf_inference_model:
+        vals: List[float] = []
+        trials = max(int(trials), 1)
+
+        for _ in range(trials):
+            inputs = random.choice(batches)
+            seed = int(np.random.randint(0, 1_000_000_000))
+
+            # Evaluate f(theta + i*delta*z) for i=0..q using incremental perturbations
+            f_vals: List[float] = []
+
+            # i=0
+            f0 = self.zo_forward(model, inputs)
+            f_vals.append(float(f0.item()) if isinstance(f0, torch.Tensor) else float(f0))
+
+            # i=1..q : theta <- theta + delta*z each step
+            for _i in range(1, q + 1):
+                self.zo_perturb_parameters(random_seed=seed, scaling_factor=1, eps=delta)
+                fi = self.zo_forward(model, inputs)
+                f_vals.append(float(fi.item()) if isinstance(fi, torch.Tensor) else float(fi))
+
+            # restore theta back to original
+            self.zo_perturb_parameters(random_seed=seed, scaling_factor=-q, eps=delta)
+
+            # Build forward difference table (only keep diagonal entries we need)
+            T = [f_vals]
+            for k in range(1, q + 1):
+                prev = T[k - 1]
+                cur = [prev[i + 1] - prev[i] for i in range(len(prev) - 1)]
+                T.append(cur)
+
+            # Use higher-order difference statistic for noise estimate
+            denom = float(q + 1 - j)
+            if denom <= 0:
+                continue
+
+            # sum_{i=0}^{q-j} (T_{i,j})^2  where T[j][i] is j-th forward difference at position i
+            try:
+                sj2 = gamma / denom * sum((T[j][i] ** 2) for i in range(q + 1 - j))
+            except Exception:
+                continue
+
+            if sj2 > 0 and math.isfinite(sj2):
+                vals.append(math.sqrt(sj2))
+
+        if not vals:
+            return 0.0
+        return float(np.median(np.asarray(vals, dtype=np.float64)))
+
+    def _adaptive_h_nu3_tests(self, model, inputs: Dict[str, Any], h: float, seed: int, eps_f: float):
+        """Run local-scale tests and estimate nu3 for a given probe h."""
+        f0 = float(self.zo_forward(model, inputs).item())
+        fp = self._adaptive_h_eval_at(model, inputs, h=h, seed=seed, mult=1)
+        fm = self._adaptive_h_eval_at(model, inputs, h=h, seed=seed, mult=-1)
+
+        # Paper-style SNR test uses Δ(h) = |f(-h) - 2 f0 + f(+h)|
+        delta2 = abs(fm - 2.0 * f0 + fp)
+        # Auxiliary (for debugging): D(h) = |f(+h)-f0| + |f(-h)-f0|
+        D = abs(fp - f0) + abs(fm - f0)
+
+        snr_val = delta2 / max(eps_f, 1e-30)
+        snr_ok = snr_val >= self._h_tau1
+
+        # Proximity: relative change should be small (local region)
+        prox_plus = abs(fp - f0) / max(abs(f0), abs(fp), 1e-30)
+        prox_minus = abs(fm - f0) / max(abs(f0), abs(fm), 1e-30)
+        prox_ok = (prox_plus <= self._h_tau2) and (prox_minus <= self._h_tau2)
+
+        # nu3 estimate via third difference
+        f2 = self._adaptive_h_eval_at(model, inputs, h=h, seed=seed, mult=2)
+        fm2 = self._adaptive_h_eval_at(model, inputs, h=h, seed=seed, mult=-2)
+        delta3 = abs(-f2 + 2.0 * fp - 2.0 * fm + fm2)
+        nu3_hat = delta3 / (2.0 * (h ** 3 + 1e-30))
+
+        return {
+            "snr_ok": snr_ok,
+            "prox_ok": prox_ok,
+            "nu3_hat": float(nu3_hat),
+            "delta3": float(delta3),
+            "snr_val": float(snr_val),
+            "delta2": float(delta2),
+            "D": float(D),
+            "prox": (float(prox_plus), float(prox_minus)),
+            "f0": float(f0),
+        }
+
+    def _adaptive_h_estimate_nu3(self, model, inputs: Dict[str, Any], eps_f: float, h_init: float, seed: int) -> \
+    Optional[float]:
+        """Estimate nu3 with simple scale-search driven by (snr, prox)."""
+        h = float(h_init)
+        h_min = float(getattr(self.args, "h_probe_min", 1e-6))
+        h_max = float(getattr(self.args, "h_probe_max", 5e-1))
+        max_tries = int(getattr(self.args, "h_probe_max_tries", 12))
+
+        best = None
+        for _ in range(max_tries):
+            h = float(min(max(h, h_min), h_max))
+            out = self._adaptive_h_nu3_tests(model, inputs, h=h, seed=seed, eps_f=eps_f)
+
+            # Prefer shrinking when prox fails (h too large).
+            if not out["prox_ok"]:
+                h *= 0.5
+                best = out
+                continue
+            if not out["snr_ok"]:
+                h *= 2.0
+                best = out
+                continue
+
+            best = out
+            break
+
+        if best is None:
+            return None
+
+        # IMPORTANT: 如果最终没有找到同时满足 (snr_ok & prox_ok) 的 h，丢弃该 direction
+        if (not bool(best.get("snr_ok", False))) or (not bool(best.get("prox_ok", False))):
+            return None
+
+        nu3_hat = float(best.get("nu3_hat", 0.0))
+        if not math.isfinite(nu3_hat) or nu3_hat <= 0.0:
+            return None
+        return nu3_hat
+
+    def _adaptive_h_update_if_needed(self, model):
+        """Periodically re-estimate (eps_f, nu3) and update adaptive_h."""
+        if not getattr(self.args, "use_adaptive_h", False):
             return
 
-        if self.optimizer is None:
-            params = {}
-            for n, p in self.model.named_parameters():
-                if self.args.fix_layers > 0:
-                    if 'encoder.layer' in n:
-                        try:
-                            layer_num = int(n[n.find('encoder.layer') + 14:].split('.')[0])
-                        except:
-                            print(n)
-                            raise Exception("")
-                        if layer_num >= self.args.fix_layers:
-                            print('yes', n)
-                            params[n] = p
-                        else:
-                            print('no ', n)
-                    elif 'embeddings' in n:
-                        print('no ', n)
-                    else:
-                        print('yes', n)
-                        params[n] = p
-                else:
-                    params[n] = p
-            no_decay = ["bias", "LayerNorm.weight"]
-            optimizer_grouped_parameters = [
-                {
-                    "params": [p for n, p in params.items() if not any(nd in n for nd in no_decay)],
-                    "weight_decay": self.args.weight_decay,
-                },
-                {
-                    "params": [p for n, p in params.items() if any(nd in n for nd in no_decay)],
-                    "weight_decay": 0.0,
-                },
-            ]
-            if self.args.optimizer == 'adam':
-                self.optimizer = AdamW(
-                    optimizer_grouped_parameters,
-                    lr=self.args.learning_rate,
-                    betas=(self.args.adam_beta1, self.args.adam_beta2),
-                    eps=self.args.adam_epsilon,
+        every = int(getattr(self.args, "update_noise_every", 0))
+        if every <= 0:
+            return
+
+        gs = int(getattr(self.state, "global_step", 0))
+        if gs <= 0 or (gs % every) != 0:
+            return
+
+        if getattr(self, "_h_last_update_step", -1) == gs:
+            return
+        self._h_last_update_step = gs
+
+        # Choose probe batches from rolling buffer (random sampling)
+        buf = list(getattr(self, "_h_probe_buffer", []))
+        if not buf:
+            return
+
+        nb = max(int(getattr(self, "_h_nb", 1)), 1)
+        nd = max(int(getattr(self, "_h_nd", 1)), 1)
+
+        # eps_f: noise scale
+        eps_f_hat = self._adaptive_h_estimate_eps_f(model, buf, q=8, delta=1e-6, trials=max(2 * nb, 6))
+
+        # nu3: curvature/third-derivative scale (average over batches & directions)
+        nu3_list: List[float] = []
+
+        # Probe h init: smaller-scale than training eps. Heuristic: min(eps_train, eps_f^{1/5}).
+        eps_train_now = self._get_current_zo_eps()
+        h_probe_init = min(eps_train_now, max(1e-6, eps_f_hat ** 0.2))
+
+        for _ in range(nb):
+            batch = random.choice(buf)
+            for _ in range(nd):
+                seed = int(np.random.randint(0, 1_000_000_000))
+                nu3_hat = self._adaptive_h_estimate_nu3(model, batch, eps_f=eps_f_hat, h_init=h_probe_init, seed=seed)
+                if nu3_hat is not None and math.isfinite(nu3_hat):
+                    nu3_list.append(float(nu3_hat))
+
+        if not nu3_list:
+            if self.is_world_process_zero():
+                logger.warning(f"[adaptive h][update] step={gs} nu3_list empty -> keep h={self.adaptive_h:.3e}")
+            return
+
+        if self._h_reduce == "median":
+            nu3_hat = float(np.median(np.asarray(nu3_list, dtype=np.float64)))
+        else:
+            nu3_hat = float(np.mean(np.asarray(nu3_list, dtype=np.float64)))
+
+        # Guard: tiny nu3 makes eps_star explode
+        if not math.isfinite(nu3_hat) or nu3_hat <= 1e-12:
+            if self.is_world_process_zero():
+                logger.warning(
+                    f"[adaptive h][update] step={gs} nu3_hat={nu3_hat:.3e} too small/invalid -> keep h={self.adaptive_h:.3e}"
                 )
-            elif self.args.optimizer == 'sgd':
-                self.optimizer = SGD(
-                    optimizer_grouped_parameters,
-                    lr=self.args.learning_rate
-                )
-            else:
-                raise NotImplementedError
-        if self.lr_scheduler is None:
-            self.lr_scheduler = get_scheduler(
-                self.args.lr_scheduler_type,
-                optimizer=self.optimizer,
-                num_warmup_steps=self.args.get_warmup_steps(num_training_steps),
-                num_training_steps=num_training_steps,
+            return
+
+        # Compute eps* for training (central difference 1st-derivative MSE optimum):
+        #   h* = alpha^{-1/6} * (3*eps_f/nu3)^{1/3}
+        alpha = max(float(self._h_trunc_alpha), 1e-12)
+        alpha_scale = alpha ** (-1.0 / 6.0)
+        h_raw = alpha_scale * ((3.0 * max(eps_f_hat, 1e-30) / nu3_hat) ** (1.0 / 3.0))
+
+        # Clamp (avoid runaway)
+        h_min = float(getattr(self.args, "h_train_min", 1e-6))
+        h_max = float(getattr(self.args, "h_train_max", 5e-2))
+        h_raw = float(min(max(h_raw, h_min), h_max))
+
+        # EMA smoothing
+        h_old = float(self.adaptive_h)
+        beta = float(self._h_beta)
+        self.adaptive_h = float((1.0 - beta) * h_old + beta * h_raw)
+
+        if self.is_world_process_zero():
+            logger.info(
+                f"[adaptive h][update] step={gs} h_raw={h_raw:.3e} -> h_ema={self.adaptive_h:.3e} "
+                f"(eps_f={eps_f_hat:.3e}, nu3={nu3_hat:.3e}, nb={nb}, nd={nd}, buf={len(buf)}, reduce={self._h_reduce}, alpha={alpha})"
             )
 
-    def should_optim(self, name, param):
-        return (not self.args.layer_wise_optim or f".{self.state.global_step % self.model.config.num_hidden_layers}." in name) and param.requires_grad
-
-    def zo_forward(self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]]) -> torch.Tensor:
-        model.eval()
-        inputs = self._prepare_inputs(inputs)
-        if self.args.optimize_acc:
-            loss, logits = model(**inputs)
-            preds = F.softmax(logits, dim=-1)
-            acc = torch.sum(torch.argmax(preds, 1) == inputs['labels']) / len(preds)
-            loss = -acc
-        else:
-            with self.compute_loss_context_manager():
-                loss = self.compute_loss(model, inputs)
-            if self.args.n_gpu > 1:
-                loss = loss.mean()  # mean() to average on multi-gpu parallel training
-        self.state.zo_forward_step += 1
-        return loss.detach()
-
-    def efficient_perturb_parameters(self, model: nn.Module, random_seed: int, scaling_factor=1):
-        torch.manual_seed(random_seed)
-        # 需要 name 以支持分层 h
-        for name, param in self.named_parameters_to_optim:
-            z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-            # === Begin Adaptive h (Berahas et al.) ===
-            # 若启用按层 h（use_layerwise_h=True），则针对该参数所在层选用分层步长；否则使用全局 adaptive_h
-            if getattr(self.args, "use_adaptive_h", False):
-                if getattr(self.args, "use_layerwise_h", False):
-                    cname = self.retrieve_c(name)
-                    if hasattr(self, "layerwise_h") and isinstance(self.layerwise_h, dict) and (cname in self.layerwise_h):
-                        _h = self.layerwise_h[cname]
-                        eps = float(_h.item()) if isinstance(_h, torch.Tensor) else float(_h)
-                    else:
-                        eps = float(self.adaptive_h)
-                else:
-                    eps = float(self.adaptive_h)
-            else:
-                eps = float(self.args.zero_order_eps)
-            param.data = param.data + scaling_factor * z * eps
-            # === End Adaptive h ===
-        return model
-
-    def norm_perturb_parameters(self, model: nn.Module, random_vector=None, scaling_factor=1):
-        if random_vector is None:
-            random_vector = {}
-
-        for name, param in self.named_parameters_to_optim:
-            if name in random_vector:
-                z = random_vector[name]
-            else:
-                z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                random_vector[name] = z
-
-            cname = self.retrieve_c(name)
-            # === C-缩放开关：是否用每层的 c 值来缩放扰动（等价于缩放 h）===
-            # 说明：若 use_c_scale=False，则完全忽略 cs（与新方法一致，不做分层缩放）。
-            if getattr(self.args, "use_c_scale", False) and cname in self.cs:
-                # 防止除 0：若该层 c==0，退化为不缩放
-                if isinstance(self.cs[cname], torch.Tensor):
-                    c_val = self.cs[cname].item() if self.cs[cname].numel()==1 else float(self.cs[cname].mean())
-                else:
-                    c_val = float(self.cs[cname])
-                if c_val != 0.0 and math.isfinite(c_val):
-                    z = z / c_val
-
-            # === Begin Adaptive h (Berahas et al.) ===
-            if getattr(self.args, "use_adaptive_h", False):
-                if getattr(self.args, "use_layerwise_h", False):
-                    cname = self.retrieve_c(name)
-                    if hasattr(self, "layerwise_h") and isinstance(self.layerwise_h, dict) and (cname in self.layerwise_h):
-                        _h = self.layerwise_h[cname]
-                        eps = float(_h.item()) if isinstance(_h, torch.Tensor) else float(_h)
-                    else:
-                        eps = float(self.adaptive_h)
-                else:
-                    eps = float(self.adaptive_h)
-            else:
-                eps = float(self.args.zero_order_eps)
-            param.data = param.data + scaling_factor * z * eps
-            # === End Adaptive h ===
-
-        return model, random_vector
-
-    def perturb_parameters(self, model: nn.Module, random_vector=None, scaling_factor=1):
-        if random_vector is None:
-            random_vector = {}
-
-        for name, param in self.named_parameters_to_optim:
-            if name in random_vector:
-                z = random_vector[name]
-            else:
-                z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                random_vector[name] = z
-            # === Begin Adaptive h (Berahas et al.) ===
-            eps = float(self.adaptive_h) if getattr(self.args, "use_adaptive_h", False) else float(self.args.zero_order_eps)
-            param.data = param.data + scaling_factor * z * eps
-            # === End Adaptive h ===
-
-        return model, random_vector
-
-    def perturb_single_layer(self, model, layer_name, random_vector=None, scaling_factor=1):
-        if random_vector is None:
-            random_vector = {}
-
-        for name, param in self.named_parameters_to_optim:
-            cname = self.retrieve_c(name)
-            if cname == layer_name:
-                if name in random_vector:
-                    z = random_vector[name]
-                else:
-                    z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                    random_vector[name] = z
-                # === Begin Adaptive h (Berahas et al.) ===
-                # 若启用按层 h（use_layerwise_h=True），则针对该参数所在层选用分层步长；否则使用全局 adaptive_h
-                if getattr(self.args, "use_adaptive_h", False):
-                    if getattr(self.args, "use_layerwise_h", False):
-                        if hasattr(self, "layerwise_h") and isinstance(self.layerwise_h, dict) and (cname in self.layerwise_h):
-                            _h = self.layerwise_h[cname]
-                            eps = float(_h.item()) if isinstance(_h, torch.Tensor) else float(_h)
-                        else:
-                            eps = float(self.adaptive_h)
-                    else:
-                        eps = float(self.adaptive_h)
-                else:
-                    eps = float(self.args.zero_order_eps)
-                param.data = param.data + scaling_factor * z * eps
-                # === End Adaptive h ===
-
-        return model, random_vector
-# 计算c的地方，这三种方法都是分层计算
-
-    def initialize_c(self, model, inputs):
-        # 说明：当 use_c_scale=False 时，cs 仍会被计算（如配置所需/调试用），但在扰动与梯度构造时将被忽略。
-        self.named_parameters_to_optim = []
-        for name, param in model.named_parameters():
-            if self.should_optim(name, param):
-                self.named_parameters_to_optim.append((name, param))
-
-        self.cs = {'embed': 0.0, 'lm_head': 0.0}
-        # OPT: embed_tokens; embed_positions
-        # RoBERTa: embeddings
-        self.num_params = copy.deepcopy(self.cs)
-        self.num_model_layers = model.config.num_hidden_layers
-        layer_name = "layers" if model.config.model_type == "opt" else "layer"
-        for i in range(self.num_model_layers):
-            self.cs[f'{layer_name}.{i}.'] = 0.0
-            self.num_params[f'{layer_name}.{i}.'] = 0
-
-        # === C-缩放总开关：use_c_scale ===
-        # 若关闭该开关（默认 False），则本方法走“快速路径”：
-        #   1) 不再进行任何基于 ZO / 参数范数 / 反传的逐层 c 估计（这通常较耗时且会做多次 forward/backward）；
-        #   2) 直接将每个层位的 c 设为 1.0，相当于“恒等缩放”（后续扰动/梯度阶段也会因开关关闭而完全忽略 cs），
-        #      这样可以显著节省初始化/重计算的时间；
-        #   3) 仍然保留 layer_names 列表，确保按层 ZO 的流程可以正常迭代各层。
-        if not getattr(self.args, "use_c_scale", False):
-            for k in self.cs.keys():
-                self.cs[k] = 1.0  # 恒等缩放（不会被使用，但避免后续意外除 0）
-                self.num_params[k] = 0
-            self.layer_names = list(self.cs.keys())
-            model.zero_grad()
-            return
-
-        # ZO estimation of c's
-        if self.args.zo_variant != 'param_norm' and self.args.use_zo_grad_est:
-            print('使用ZO estimation of c')
-            for layer in self.cs.keys():
-                with torch.no_grad():
-                    model, z = self.perturb_single_layer(model, layer_name=layer)
-                    loss1 = self.zo_forward(model, inputs)
-                    model, z = self.perturb_single_layer(model, layer_name=layer, random_vector=z, scaling_factor=-2)
-                    loss2 = self.zo_forward(model, inputs)
-
-                eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
-                projected_grad = (loss1 - loss2) / (2 * eps)
-                self.cs[layer] = torch.abs(projected_grad)
-
-                model, z = self.perturb_single_layer(model, layer_name=layer, random_vector=z)
-
-        # no need to run backprop if we are using parameter norm variant, can just measure them
-        elif self.args.zo_variant == 'param_norm':
-            for name, param in self.named_parameters_to_optim:
-                print(name)
-                ckey = self.retrieve_c(name)
-                if ckey in self.cs:
-                    self.cs[ckey] += torch.sum(param.data ** 2)
-                    self.num_params[ckey] += param.data.numel()
-
-            # take sqrt to get norm
-            for ckey in self.cs:
-                self.cs[ckey] = torch.sqrt(self.cs[ckey])
-                if self.args.scale_norm_by_num_params:
-                    n = float(self.num_params.get(ckey, 0))
-                    denom = math.sqrt(n) if n > 0 else 1.0
-                    self.cs[ckey] = self.cs[ckey] / denom
-
-            for ckey in self.cs:
-                if self.cs[ckey] != 0:
-                    self.cs[ckey] = self.cs[ckey].detach().item()
-
-        # backpropagation estimation fo ZO c's
-        #   this is mostly for debugging purposes to disentangle the variance from using ZO to estimate c
-        #   from the effectiveness of the preconditioners
-        else:
-            model.eval()
-            inputs = self._prepare_inputs(inputs)
-            with self.compute_loss_context_manager():
-                loss = self.compute_loss(model, inputs)
-            if self.args.n_gpu > 1:
-                loss = loss.mean()  # mean() to average on multi-gpu parallel training
-            loss.backward()
-            for name, param in self.named_parameters_to_optim:
-                if param.grad is None:
-                    print(name)
-                else:
-                    ckey = self.retrieve_c(name)
-                    if ckey in self.cs:
-                        self.cs[ckey] += torch.sum(param.grad ** 2)
-                        self.num_params[ckey] += param.grad.numel()
-
-            # take sqrt to get norm
-            for ckey in self.cs:
-                self.cs[ckey] = torch.sqrt(self.cs[ckey])
-                if self.args.scale_norm_by_num_params:
-                    n = float(self.num_params.get(ckey, 0))
-                    denom = math.sqrt(n) if n > 0 else 1.0
-                    self.cs[ckey] = self.cs[ckey] / denom
-
-            for ckey in self.cs:
-                if self.cs[ckey] != 0:
-                    self.cs[ckey] = self.cs[ckey].detach().item()
-
-        self.layer_names = list(self.cs.keys())
-        model.zero_grad()
-
-    def retrieve_c(self, param_name: str) -> str:
+    def _inner_training_loop(
+            self, batch_size=None, args=None, resume_from_checkpoint=None, trial=None, ignore_keys_for_eval=None
+    ):
         """
-        将参数名映射到“层键”（用于分层 c / 分层 h）。
-        兼容性：在某些配置下（如 zo_variant=None 或 use_c_scale=False），initialize_c()
-        可能尚未被调用，此时 self.cs 尚不存在。为避免 AttributeError，
-        这里按以下优先级匹配：
-          1) 若存在 self.cs：按 self.cs 的键做子串匹配；
-          2) 否则，若存在 self.layer_names：按 layer_names 做子串匹配；
-          3) 否则，做最小启发式匹配（embed / lm_head / layer(s).i.）；
-          匹配失败则返回空串 ""（表示不归属于任何已知层）。
+        We overload the original training loop to add linear probing and MeZO. Search key word "MeZO added"
+        for those updates.
         """
-        # 1) 优先使用 self.cs 的键（若已初始化）
-        cs = getattr(self, "cs", None)
-        if isinstance(cs, dict) and cs:
-            for c_name in cs.keys():
-                if c_name and c_name in param_name:
-                    return c_name
-
-        # 2) 其次使用已构造的 layer_names（train() 中在 use_layerwise_h=True 时会构造）
-        layer_names = getattr(self, "layer_names", None)
-        if isinstance(layer_names, (list, tuple)):
-            for key in layer_names:
-                if key and key in param_name:
-                    return key
-
-        # 3) Minimal heuristic fallback
-        pn = param_name
-
-        # embeddings
-        if ("embeddings" in pn) or ("embed_tokens" in pn) or ("embed_positions" in pn):
-            return "embed"
-
-        # head
-        if ("lm_head" in pn) or ("classifier" in pn) or ("score" in pn):
-            return "lm_head"
-
-        # RoBERTa/BERT: encoder.layer.N.
-        m = re.search(r"encoder\.layer\.(\d+)\.", pn)
-        if m:
-            return f"layer.{m.group(1)}."
-
-        # OPT: layers.N.
-        m = re.search(r"(?:^|\.)layers\.(\d+)\.", pn)
-        if m:
-            return f"layers.{m.group(1)}."
-
-        # generic layer.N.
-        m = re.search(r"(?:^|\.)layer\.(\d+)\.", pn)
-        if m:
-            return f"layer.{m.group(1)}."
-
-        return ""
-
-    def get_num_samples(self):
-        if self.args.zero_order_sample_scheduler is None:
-            noise_sample_time = 1
-        elif self.args.zero_order_sample_scheduler == "linear":
-            noise_sample_time = max(1, int(self.state.global_step / self.args.max_steps * self.args.zero_order_sample))
-        elif self.args.zero_order_sample_scheduler == "constant":
-            noise_sample_time = int(self.args.zero_order_sample)
-        else:
-            raise NotImplementedError
-        # print("Sample %d zs" % (noise_sample_time))
-
-        return noise_sample_time
-# 训练的函数
-    def train(self, model_path=None, dev_objective=None):
-        """
-        Main training entry point.
-
-        The training logic is directly borrowed from transformers.Trainer (version 3.0.2).
-        Add early stopping.
-        """
-        if self.args.from_linearhead and model_path is None:
-            super().train(model_path, dev_objective) # Train output layer using LinearHeadTrainer
-
-        self.best_dir = None
-        self.objective = -float("inf")
-        self.dev_objective = dev_objective if dev_objective is not None else default_dev_objective
-
-        # === Begin Adaptive h update freq ===
-        # You can also make this self.args.update_noise_every if you want it configurable
-        # 更新H的间隔
-        update_noise_every = getattr(self.args, "update_noise_every", 1000)
-        # === End Adaptive h update freq ===
-
-        # Data loading.
+        self._train_batch_size = batch_size
+        # Data loader and number of training steps
         train_dataloader = self.get_train_dataloader()
+
         # --- Inspect sampler type (RandomSampler / SequentialSampler / DistributedSampler) ---
         try:
             sampler = getattr(train_dataloader, "sampler", None)
             batch_sampler = getattr(train_dataloader, "batch_sampler", None)
             logger.info(f"[dataloader] sampler={type(sampler).__name__}, batch_sampler={type(batch_sampler).__name__}")
-            if isinstance(sampler, RandomSampler):
-                logger.info("[dataloader] training uses RandomSampler (shuffle).")
-            elif isinstance(sampler, SequentialSampler):
-                logger.info("[dataloader] training uses SequentialSampler (no shuffle).")
-            elif isinstance(sampler, DistributedSampler):
-                logger.info("[dataloader] training uses DistributedSampler (sharded).")
-        except Exception as e:
-            logger.warning(f"[dataloader] cannot inspect sampler: {e}")
-        num_update_steps_per_epoch = len(train_dataloader) // self.args.gradient_accumulation_steps
-        if num_update_steps_per_epoch == 0:
-            num_update_steps_per_epoch = 1
-        if self.args.max_steps > 0:
-            t_total = self.args.max_steps
-            num_train_epochs = self.args.max_steps // num_update_steps_per_epoch + int(
-                self.args.max_steps % num_update_steps_per_epoch > 0
-            )
+        except Exception:
+            pass
+
+        # --- Adaptive h init (only when running MeZO) ---
+        is_mezo = (getattr(self.args, "trainer", None) == "zo") or bool(getattr(self.args, "zero_order_optim", False))
+        if is_mezo and getattr(self.args, "use_adaptive_h", False):
+            self._adaptive_h_init()
+
+        # MeZO added: Linear probing
+        if self.args.linear_probing:
+
+            def _get_token_prediction_layer(model):
+                if model.config.model_type == "opt":
+                    return model.lm_head
+                else:
+                    raise NotImplementedError(model.config.model_type)
+
+            def _extract_features(model, *args, **kwargs):
+                """some magic for getting features pre last layer"""
+                features = {}
+
+                def __hook(model_, input_, output_):
+                    features["features"] = input_[0].detach()
+
+                _get_token_prediction_layer(model).register_forward_hook(__hook)
+                model.forward(*args, **kwargs)
+                return features["features"]
+
+            logger.info("Linear probing")
+            logger.info("Starting to get features for training dataset")
+            targets = []
+            features = []
+            with torch.inference_mode():
+                for step, inputs in enumerate(tqdm(train_dataloader)):
+                    for k, v in inputs.items():
+                        if isinstance(v, torch.Tensor):
+                            inputs[k] = v.to(self.model.device)
+
+                    feature = _extract_features(self.model, **inputs)
+                    target = inputs["labels"]
+
+                    # Shift the target (bc it's autoregressive LM) and add the corresponding part
+                    assert not self.args.train_as_classification and self.args.only_train_option
+                    feature, target = feature[:, :-1], target[:, 1:]
+                    for _i, _len in enumerate(inputs["option_len"]):
+                        features.append(feature[_i, -_len:])
+                        targets.append(target[_i, -_len:])
+
+            logger.info("Finished getting features for training dataset")
+
+            features = torch.cat(features, dim=0).cpu().numpy()
+            targets = torch.cat(targets, dim=0).cpu().numpy()
+            # Whether to use bias
+            if self.model.config.model_type in ["opt", "gpt2"]:
+                use_bias = False
+            else:
+                raise NotImplementedError
+            # Set early stopping
+            tol = 0.01 if self.args.lp_early_stopping else 1e-4  # 1e-4 is scipy default
+            max_iter = 1000 if self.args.lp_early_stopping else 5000
+
+            logger.info("Fitting logistic regression...")
+            reg = LogisticRegressionCV(max_iter=max_iter, fit_intercept=use_bias, multi_class="multinomial",
+                                       random_state=0, tol=tol, n_jobs=-1).fit(features, targets)
+            logger.info("Done")
+
+            logger.info("Assigning weights to model")
+            decoder = _get_token_prediction_layer(self.model)
+            coef_torch = torch.tensor(reg.coef_, device=decoder.weight.device, dtype=decoder.weight.dtype)
+            if use_bias:
+                bias_torch = torch.tensor(reg.intercept_, device=decoder.weight.device, dtype=decoder.weight.dtype)
+            if coef_torch.shape[0] == 1:  # The regressor only detects two classes
+                assert len(reg.classes_) == 2
+                coef_torch = torch.cat([-coef_torch / 2, coef_torch / 2], dim=0)
+                if use_bias:
+                    bias_torch = torch.cat([-bias_torch / 2, bias_torch / 2], dim=0)
+
+            for _i, token_id in enumerate(reg.classes_):
+                decoder.weight.data[token_id] = coef_torch[_i]
+                if use_bias:
+                    decoder.bias.data[token_id] = bias_torch[_i]
+
+            return None
+
+        # Setting up training control variables:
+        # number of training epochs: num_train_epochs
+        # number of training steps per epoch: num_update_steps_per_epoch
+        # total number of training steps to execute: max_steps
+        total_train_batch_size = args.train_batch_size * args.gradient_accumulation_steps * args.world_size
+
+        len_dataloader = None
+        if has_length(train_dataloader):
+            len_dataloader = len(train_dataloader)
+            num_update_steps_per_epoch = len_dataloader // args.gradient_accumulation_steps
+            num_update_steps_per_epoch = max(num_update_steps_per_epoch, 1)
+            num_examples = self.num_examples(train_dataloader)
+            if args.max_steps > 0:
+                max_steps = args.max_steps
+                num_train_epochs = args.max_steps // num_update_steps_per_epoch + int(
+                    args.max_steps % num_update_steps_per_epoch > 0
+                )
+                # May be slightly incorrect if the last batch in the training dataloader has a smaller size but it's
+                # the best we can do.
+                num_train_samples = args.max_steps * total_train_batch_size
+            else:
+                max_steps = math.ceil(args.num_train_epochs * num_update_steps_per_epoch)
+                num_train_epochs = math.ceil(args.num_train_epochs)
+                num_train_samples = self.num_examples(train_dataloader) * args.num_train_epochs
+        elif args.max_steps > 0:  # Rely on max_steps when dataloader does not have a working size
+            max_steps = args.max_steps
+            # Setting a very large number of epochs so we go as many times as necessary over the iterator.
+            num_train_epochs = sys.maxsize
+            num_update_steps_per_epoch = max_steps
+            num_examples = total_train_batch_size * args.max_steps
+            num_train_samples = args.max_steps * total_train_batch_size
         else:
-            t_total = int(len(train_dataloader) // self.args.gradient_accumulation_steps * self.args.num_train_epochs)
-            num_train_epochs = self.args.num_train_epochs
-
-        self.create_optimizer_and_scheduler(num_training_steps=t_total)
-        optimizer = self.optimizer
-        scheduler = self.lr_scheduler
-
-        # Check if saved optimizer or scheduler states exist
-        if (
-            model_path is not None
-            and os.path.isfile(os.path.join(model_path, "optimizer.pt"))
-            and os.path.isfile(os.path.join(model_path, "scheduler.pt"))
-        ):
-            # Load in optimizer and scheduler states
-            optimizer.load_state_dict(
-                torch.load(os.path.join(model_path, "optimizer.pt"), map_location=self.args.device)
-            )
-            scheduler.load_state_dict(torch.load(os.path.join(model_path, "scheduler.pt")))
-
-        model = self.model
-
-        if self.args.fp16 and _use_apex:
-            if not transformers.is_apex_available():
-                raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
-            model, optimizer = amp.initialize(model, optimizer, opt_level=self.args.fp16_opt_level)
-
-        # Multi-gpu training (should be after apex fp16 initialization)
-        if self.args.n_gpu > 1:
-            model = torch.nn.DataParallel(model)
-
-        # Distributed training (should be after apex fp16 initialization)
-        if self.args.local_rank != -1:
-            model = torch.nn.parallel.DistributedDataParallel(
-                model,
-                device_ids=[self.args.local_rank],
-                output_device=self.args.local_rank,
-                find_unused_parameters=True,
+            raise ValueError(
+                "args.max_steps must be set to a positive value if dataloader does not have a length, was"
+                f" {args.max_steps}"
             )
 
-        # Train
-        if transformers.is_torch_tpu_available():
-            total_train_batch_size = self.args.train_batch_size * xm.xrt_world_size()
-        else:
-            total_train_batch_size = (
-                self.args.train_batch_size
-                * self.args.gradient_accumulation_steps
-                * (torch.distributed.get_world_size() if self.args.local_rank != -1 else 1)
+        if DebugOption.UNDERFLOW_OVERFLOW in self.args.debug:
+            if self.args.n_gpu > 1:
+                # nn.DataParallel(model) replicates the model, creating new variables and module
+                # references registered here no longer work on other gpus, breaking the module
+                raise ValueError(
+                    "Currently --debug underflow_overflow is not supported under DP. Please use DDP"
+                    " (torch.distributed.launch)."
+                )
+            else:
+                debug_overflow = DebugUnderflowOverflow(self.model)  # noqa
+
+        delay_optimizer_creation = (
+                self.sharded_ddp is not None
+                and self.sharded_ddp != ShardedDDPOption.SIMPLE
+                or is_sagemaker_mp_enabled()
+                or self.fsdp is not None
+        )
+        if args.deepspeed:
+            deepspeed_engine, optimizer, lr_scheduler = deepspeed_init(
+                self, num_training_steps=max_steps, resume_from_checkpoint=resume_from_checkpoint
             )
-        logger.info("***** Running training *****")
-        logger.info("  Num examples = %d", self.num_examples(train_dataloader))
-        logger.info("  Num Epochs = %d", num_train_epochs)
-        logger.info("  Instantaneous batch size per device = %d", self.args.per_device_train_batch_size)
-        logger.info("  Total train batch size (w. parallel, distributed & accumulation) = %d", total_train_batch_size)
-        logger.info("  Gradient Accumulation steps = %d", self.args.gradient_accumulation_steps)
-        logger.info("  Total optimization steps = %d", t_total)
+            self.model = deepspeed_engine.module
+            self.model_wrapped = deepspeed_engine
+            self.deepspeed = deepspeed_engine
+            self.optimizer = optimizer
+            self.lr_scheduler = lr_scheduler
+        elif not delay_optimizer_creation:
+            self.create_optimizer_and_scheduler(num_training_steps=max_steps)
 
         self.state = TrainerState()
-        # 仅打印一次分层 h 的日志
-        self._logged_layerwise_h = False
-        # 初始化 CSV 日志文件
-        self._setup_metrics_csv()
-        _csv_pending = None  # 暂存本 step 的训练度量，待是否有 eval 再一起写入
-        self.state.global_step = 0
-        start_time = time.time()
-        self.state.zo_forward_step = 0
-        # === Begin Adaptive h (Berahas et al.) ===
-        if getattr(self.args, "use_adaptive_h", False):
-            beta = float(getattr(self.args, "adaptive_h_ema_beta", 0.1))
-            nb = int(getattr(self.args, "adaptive_h_estimate_num_batches", 4))
-            nd = int(getattr(self.args, "adaptive_h_estimate_num_directions", 3))
-            reduce = getattr(self.args, "adaptive_h_estimate_reduce", "mean")
-            h_min = float(getattr(self.args, "adaptive_h_min", 1e-5))
-            h_max = float(getattr(self.args, "adaptive_h_max", 0.5))
+        self.state.is_hyper_param_search = trial is not None
 
-            h0 = self._get_init_h()
-            h0 = float(min(h_max, max(h_min, h0)))
-            self.adaptive_h = float(h0)
-            previous_adaptive_h = float(h0)
-            logger.info(f"[adaptive h][init] h0={h0:.3e}, beta={beta}")
-        else:
-            previous_adaptive_h = getattr(self, "adaptive_h", 1e-4)
-        # === End Adaptive h ===
-        self.epoch = 0
+        # Activate gradient checkpointing if needed
+        if args.gradient_checkpointing:
+            self.model.gradient_checkpointing_enable()
+
+        model = self._wrap_model(self.model_wrapped)
+
+        if is_sagemaker_mp_enabled() and resume_from_checkpoint is not None:
+            self._load_from_checkpoint(resume_from_checkpoint, model)
+
+        # for the rest of this function `model` is the outside model, whether it was wrapped or not
+        if model is not self.model:
+            self.model_wrapped = model
+
+        if delay_optimizer_creation:
+            self.create_optimizer_and_scheduler(num_training_steps=max_steps)
+
+        # Check if saved optimizer or scheduler states exist
+        self._load_optimizer_and_scheduler(resume_from_checkpoint)
+
+        # important: at this point:
+        # self.model         is the Transformers Model
+        # self.model_wrapped is DDP(Transformers Model), Deepspeed(Transformers Model), etc.
+
+        # Train!
+        logger.info("***** Running training *****")
+        logger.info(f"  Num examples = {num_examples}")
+        logger.info(f"  Num Epochs = {num_train_epochs}")
+        logger.info(f"  Instantaneous batch size per device = {args.per_device_train_batch_size}")
+        logger.info(f"  Total train batch size (w. parallel, distributed & accumulation) = {total_train_batch_size}")
+        logger.info(f"  Gradient Accumulation steps = {args.gradient_accumulation_steps}")
+        logger.info(f"  Total optimization steps = {max_steps}")
+        logger.info(
+            f"  Number of trainable parameters = {sum(p.numel() for p in model.parameters() if p.requires_grad)}"
+        )
+
+        self.state.epoch = 0
+        start_time = time.time()
         epochs_trained = 0
         steps_trained_in_current_epoch = 0
-
-        if self.args.gradient_checkpointing:
-            model.gradient_checkpointing_enable()
+        steps_trained_progress_bar = None
 
         # Check if continuing training from a checkpoint
-        if model_path is not None:
-            # set global_step to global_step of last saved checkpoint from model path
-            try:
-                self.state.global_step = int(model_path.split("-")[-1].split("/")[0])
-                epochs_trained = self.state.global_step // (len(train_dataloader) // self.args.gradient_accumulation_steps)
-                steps_trained_in_current_epoch = self.state.global_step % (
-                    len(train_dataloader) // self.args.gradient_accumulation_steps
+        if resume_from_checkpoint is not None and os.path.isfile(
+                os.path.join(resume_from_checkpoint, TRAINER_STATE_NAME)
+        ):
+            self.state = TrainerState.load_from_json(os.path.join(resume_from_checkpoint, TRAINER_STATE_NAME))
+            epochs_trained = self.state.global_step // num_update_steps_per_epoch
+            if not args.ignore_data_skip:
+                steps_trained_in_current_epoch = self.state.global_step % (num_update_steps_per_epoch)
+                steps_trained_in_current_epoch *= args.gradient_accumulation_steps
+            else:
+                steps_trained_in_current_epoch = 0
+
+            logger.info("  Continuing training from checkpoint, will skip to saved global_step")
+            logger.info(f"  Continuing training from epoch {epochs_trained}")
+            logger.info(f"  Continuing training from global step {self.state.global_step}")
+            if not args.ignore_data_skip:
+                logger.info(
+                    f"  Will skip the first {epochs_trained} epochs then the first {steps_trained_in_current_epoch} "
+                    "batches in the first epoch. If this takes a lot of time, you can add the `--ignore_data_skip` "
+                    "flag to your launch command, but you will resume the training on data already seen by your model."
                 )
+                if self.is_local_process_zero() and not args.disable_tqdm:
+                    steps_trained_progress_bar = tqdm(total=steps_trained_in_current_epoch)
+                    steps_trained_progress_bar.set_description("Skipping the first batches")
 
-                logger.info("  Continuing training from checkpoint, will skip to saved global_step")
-                logger.info("  Continuing training from epoch %d", epochs_trained)
-                logger.info("  Continuing training from global step %d", self.state.global_step)
-                logger.info("  Will skip the first %d steps in the first epoch", steps_trained_in_current_epoch)
-            except ValueError:
-                self.state.global_step = 0
-                logger.info("  Starting fine-tuning.")
+        # Update the references
+        self.callback_handler.model = self.model
+        self.callback_handler.optimizer = self.optimizer
+        self.callback_handler.lr_scheduler = self.lr_scheduler
+        self.callback_handler.train_dataloader = train_dataloader
+        if self.hp_name is not None and self._trial is not None:
+            # use self._trial because the SigOpt/Optuna hpo only call `_hp_search_setup(trial)` instead of passing trial
+            # parameter to Train when using DDP.
+            self.state.trial_name = self.hp_name(self._trial)
+        if trial is not None:
+            assignments = trial.assignments if self.hp_search_backend == HPSearchBackend.SIGOPT else trial
+            self.state.trial_params = hp_params(assignments)
+        else:
+            self.state.trial_params = None
+        # This should be the same if the state has been saved but in case the training arguments changed, it's safer
+        # to set this after the load.
+        self.state.max_steps = max_steps
+        self.state.num_train_epochs = num_train_epochs
+        self.state.is_local_process_zero = self.is_local_process_zero()
+        self.state.is_world_process_zero = self.is_world_process_zero()
 
-        tr_loss = torch.tensor(0.0).to(self.args.device)
-        logging_loss_scalar = 0.0
+        # tr_loss is a tensor to avoid synchronization of TPUs through .item()
+        tr_loss = torch.tensor(0.0).to(args.device)
+        # _total_loss_scalar is updated everytime .item() has to be called on tr_loss and stores the sum of all losses
+        self._total_loss_scalar = 0.0
+        self._globalstep_last_logged = self.state.global_step
         model.zero_grad()
-        metrics = None
-        for epoch in range(epochs_trained, int(num_train_epochs)):
+
+        self.control = self.callback_handler.on_train_begin(args, self.state, self.control)
+
+        # Skip the first epochs_trained epochs to get the random state of the dataloader at the right point.
+        if not args.ignore_data_skip:
+            for epoch in range(epochs_trained):
+                is_random_sampler = hasattr(train_dataloader, "sampler") and isinstance(
+                    train_dataloader.sampler, RandomSampler
+                )
+                if is_torch_less_than_1_11 or not is_random_sampler:
+                    # We just need to begin an iteration to create the randomization of the sampler.
+                    # That was before PyTorch 1.11 however...
+                    for _ in train_dataloader:
+                        break
+                else:
+                    # Otherwise we need to call the whooooole sampler cause there is some random operation added
+                    # AT THE VERY END!
+                    _ = list(train_dataloader.sampler)
+
+        for epoch in range(epochs_trained, num_train_epochs):
             if isinstance(train_dataloader, DataLoader) and isinstance(train_dataloader.sampler, DistributedSampler):
                 train_dataloader.sampler.set_epoch(epoch)
+            elif hasattr(train_dataloader, "dataset") and isinstance(train_dataloader.dataset, IterableDatasetShard):
+                train_dataloader.dataset.set_epoch(epoch)
 
-            if transformers.is_torch_tpu_available():
-                parallel_loader = pl.ParallelLoader(train_dataloader, [self.args.device]).per_device_loader(
-                    self.args.device
-                )
-                epoch_iterator = tqdm(parallel_loader, desc="Iteration", disable=not self.is_local_process_zero())
+            if is_torch_tpu_available():
+                parallel_loader = pl.ParallelLoader(train_dataloader, [args.device]).per_device_loader(args.device)
+                epoch_iterator = parallel_loader
             else:
-                epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=True)
+                epoch_iterator = train_dataloader
 
             # Reset the past mems state at the beginning of each epoch if necessary.
-            if self.args.past_index >= 0:
+            if args.past_index >= 0:
                 self._past = None
 
-            for step, inputs in enumerate(epoch_iterator):
-                if self.args.sync_embedding_layers:
-                    assert model.module.model_type == 'opt', 'did not implement embedding layer synchronization for non-OPT models'
-                    model.module.model.decoder.embed_tokens.weight = model.module.lm_head.weight
+            steps_in_epoch = (
+                len(epoch_iterator)
+                if len_dataloader is not None
+                else args.max_steps * args.gradient_accumulation_steps
+            )
+            self.control = self.callback_handler.on_epoch_begin(args, self.state, self.control)
 
-                # estimate c's (param or grad norm) on epoch 0
-                if epoch == 0 and step == 0 and self.args.zo_variant is not None:
-                    self.initialize_c(model, inputs)
-                elif step == 0 and self.args.zo_variant is not None and self.args.recompute_norms:
-                    self.initialize_c(model, inputs)
+            if epoch == epochs_trained and resume_from_checkpoint is not None and steps_trained_in_current_epoch == 0:
+                self._load_rng_state(resume_from_checkpoint)
+
+            step = -1
+            for step, inputs in enumerate(epoch_iterator):
 
                 # Skip past any already trained steps if resuming training
                 if steps_trained_in_current_epoch > 0:
                     steps_trained_in_current_epoch -= 1
+                    if steps_trained_progress_bar is not None:
+                        steps_trained_progress_bar.update(1)
+                    if steps_trained_in_current_epoch == 0:
+                        self._load_rng_state(resume_from_checkpoint)
                     continue
-                # --- Rolling probe buffer for adaptive h estimation ---
-                if getattr(self.args, "use_adaptive_h", False):
-                    self._update_h_probe_buffer(inputs)
+                elif steps_trained_progress_bar is not None:
+                    steps_trained_progress_bar.close()
+                    steps_trained_progress_bar = None
+                if step % args.gradient_accumulation_steps == 0:
+                    self.control = self.callback_handler.on_step_begin(args, self.state, self.control)
 
-                if self.args.zero_order_optim:
-                    # Get parameters that should be optimized (for layer-wise optimization and prefix-tuning)
-                    self.named_parameters_to_optim = []
-                    for name, param in model.named_parameters():
-                        if self.should_optim(name, param):
-                            self.named_parameters_to_optim.append((name, param))
+                # # ===== DEBUG 2025-11-08: 记录本 step batch size 开始 =====
+                # try:
+                #     debug_batch_size = None
+                #     for _v in inputs.values():
+                #         if isinstance(_v, torch.Tensor):
+                #             debug_batch_size = _v.size(0)
+                #             break
+                #     if debug_batch_size is not None and self.is_world_process_zero():
+                #         logger.info(f"[DEBUG] step={step}, global_step={self.state.global_step}, batch_size={debug_batch_size}")
+                # except Exception as e:
+                #     if self.is_world_process_zero():
+                #         logger.warning(f"[DEBUG] 计算 batch size 失败: step={step}, err={e}")
+                # # ===== DEBUG 2025-11-08: 记录本 step batch size 结束 =====
 
-                    if self.args.zo_by_layer:
-                        assert not self.args.efficient_zero_order, 'did not implement preconditioned ZO for efficient ZO yet'
-                        assert self.args.zero_order_use_trainer_optim, 'preconditioned ZO requires using the trainer optimizer'
-                        num_zs = self.get_num_samples()
-                        layers = [np.random.choice(self.layer_names)] if self.args.pc_rnd_layer else self.layer_names
+                # --- Adaptive h: rolling buffer + periodic update (随机抽样) ---
+                if is_mezo and getattr(args, "use_adaptive_h", False):
+                    self._adaptive_h_buffer_add(inputs)
+                    self._adaptive_h_update_if_needed(model)
 
-                        # for each layer: perturb only that layer and store the gradient estimates in the grad buffer
-                        for layer in self.layer_names:
-                            for _ in range(num_zs):
-                                # === C-缩放开关：是否用每层的 c 值来缩放扰动（等价于缩放 h）===
-                                if getattr(self.args, "use_c_scale", False):
-                                    c_i = self.cs[layer]
-                                    # 将可能的张量/标量统一成 float，且避免除 0
-                                    if isinstance(c_i, torch.Tensor):
-                                        c_i_val = c_i.item() if c_i.numel()==1 else float(c_i.mean())
-                                    else:
-                                        c_i_val = float(c_i)
-                                    c_i_val = 1.0 if (c_i_val == 0.0 or not math.isfinite(c_i_val)) else c_i_val
-                                else:
-                                    # 关闭 C-缩放：按新方法，不做分层缩放
-                                    c_i_val = 1.0
-                                model, random_vector = self.perturb_single_layer(model, layer, scaling_factor=1.0/c_i_val)
-                                loss1 = self.zo_forward(model, inputs)
-                                model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=-2.0/c_i_val)
-                                loss2 = self.zo_forward(model, inputs)
-                                model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=1.0/c_i_val)
-
-                                # Debugging: check for NaN in losses
-                                if torch.isnan(loss1).item() or torch.isnan(loss2).item():
-                                    logger.warning("NaN encountered in loss during ZO forward step.")
-
-                                # === Begin Adaptive h (Berahas et al.) ===
-                                eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
-                                projected_grad = (loss1 - loss2) / (2 * eps)
-                                # Debugging: check for NaN or Inf in projected_grad
-                                if torch.isnan(projected_grad).item() or torch.isinf(projected_grad).item():
-                                    logger.warning(f"projected_grad became invalid. loss1: {loss1.item()}, loss2: {loss2.item()}, eps: {eps}")
-                                # === End Adaptive h ===
-                                # scale grad according to number of zs sampled
-                                if not self.args.scale_lr_with_samples:
-                                    projected_grad = projected_grad / float(num_zs)
-
-                                # 在写入 grad 前，用 z_tilde 乘回 c（若启用）
-                                for name, param in self.named_parameters_to_optim:
-                                    if self.retrieve_c(name) == layer:
-                                        z_tilde = random_vector[name] * (c_i_val if getattr(self.args, "use_c_scale", False) else 1.0)
-                                        if param.grad is None:
-                                            param.grad = projected_grad * z_tilde
-                                        else:
-                                            param.grad += projected_grad * z_tilde
-
-                                # note that  | E_z [ <z, grad of one layer > ] | is equal to norm of grad for that layer for gaussian z
-                                # leverages this fact to update the grad norms
-                                if self.args.zo_variant == 'grad_norm' and self.args.norm_running_update:
-                                    self.cs[layer] = torch.abs(projected_grad)
-                    else:
-                        # get number of zs to sample
-                        num_zs = self.get_num_samples()
-                        if num_zs > 1:
-                            assert self.args.zero_order_use_trainer_optim, 'cannot sample multiple zs without storing intermediate gradient. use trainer.'
-
-                        for _ in range(num_zs):
-                            # prepare for sampling new zs
-                            random_vector = None
-                            if self.args.efficient_zero_order:
-                                random_seed = np.random.randint(1000000000)
-
-                            with torch.no_grad():
-                                # first function evaluation
-                                if self.args.efficient_zero_order:
-                                    model = self.efficient_perturb_parameters(model, random_seed)
-                                elif self.args.zo_variant is not None:
-                                    model, random_vector = self.norm_perturb_parameters(model)
-                                else:
-                                    model, random_vector = self.perturb_parameters(model)
-                                loss1 = self.zo_forward(model, inputs)
-
-                                # second function evaluation
-                                if self.args.efficient_zero_order:
-                                    model = self.efficient_perturb_parameters(model, random_seed, scaling_factor=-2)
-                                elif self.args.zo_variant is not None:
-                                    model, random_vector = self.norm_perturb_parameters(model, random_vector, scaling_factor=-2)
-                                else:
-                                    model, random_vector = self.perturb_parameters(model, random_vector, scaling_factor=-2)
-                                loss2 = self.zo_forward(model, inputs)
-
-                            # Debugging: check for NaN in losses
-                            if torch.isnan(loss1).item() or torch.isnan(loss2).item():
-                                logger.warning("NaN encountered in loss during ZO forward step.")
-
-                            # === Begin Adaptive h (Berahas et al.) ===
-                            eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
-                            # === Original Code ===
-                            projected_grad = (loss1 - loss2) / (2 * eps)
-                            # === Original Code ===
-
-                            # Debugging: check for NaN or Inf in projected_grad
-                            if torch.isnan(projected_grad).item() or torch.isinf(projected_grad).item():
-                                logger.warning(f"projected_grad became invalid. loss1: {loss1.item()}, loss2: {loss2.item()}, eps: {eps}")
-                            # === End Adaptive h ===
-
-                            # scale grad according to accumulation
-                            if self.args.gradient_accumulation_steps > 1:
-                                assert self.args.zero_order_use_trainer_optim, 'grad accumulation not implemented for non-trainer ZO yet'
-                                projected_grad = projected_grad / self.args.gradient_accumulation_steps
-
-                            # scale grad according to number of zs sampled
-                            if not self.args.scale_lr_with_samples:
-                                projected_grad = projected_grad / float(num_zs)
-
-                            # store gradient in parameter buffer if using trainer
-                            # o/w, the loop will exit after one round and the update will be applied directly (see below)
-                            if self.args.zero_order_use_trainer_optim:
-                                if self.args.efficient_zero_order:
-                                    # print(random_seed)
-                                    torch.manual_seed(random_seed)
-
-                                for name, param in self.named_parameters_to_optim:
-                                    # recover noise used in perturbations
-                                    if self.args.efficient_zero_order:
-                                        z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                                    else:
-                                        z = random_vector[name]
-
-                                    # === C-缩放开关：仅当 use_c_scale=True 时才按层放大 z ===
-                                    # 关闭开关即不使用 C 缩放（与新方法一致）
-                                    if getattr(self.args, "use_c_scale", False) and self.args.zo_variant is not None and not self.args.change_grad_estimate:
-                                        cname = self.retrieve_c(name)
-                                        if cname in self.cs:
-                                            c_val = self.cs[cname]
-                                            if isinstance(c_val, torch.Tensor):
-                                                c_val = c_val.item() if c_val.numel()==1 else float(c_val.mean())
-                                            else:
-                                                c_val = float(c_val)
-                                            if math.isfinite(c_val) and c_val != 0.0:
-                                                z = z * c_val
-
-                                    if param.grad is None:
-                                        param.grad = projected_grad * z
-                                    else:
-                                        param.grad += projected_grad * z
-
-                            # reset model back to its parameters at start of step
-                            if self.args.efficient_zero_order:
-                                model = self.efficient_perturb_parameters(model, random_seed)
-                            elif self.args.zo_variant is not None:
-                                model, random_vector = self.norm_perturb_parameters(model, random_vector)
-                            else:
-                                model, random_vector = self.perturb_parameters(model, random_vector)
-
-                    # apply gradient updates
-                    # if using trainer, follow trainer logic to clip grad and check if parameters should be updated
-                    if self.args.zero_order_use_trainer_optim:
-                        if (step + 1) % self.args.gradient_accumulation_steps == 0 or (
-                            # last step in epoch but step is always smaller than gradient_accumulation_steps
-                            len(epoch_iterator) <= self.args.gradient_accumulation_steps
-                            and (step + 1) == len(epoch_iterator)
-                        ):
-                            # Gradient norm clipping
-                            if self.args.zero_order_clip_grad:
-                                norm = torch.nn.utils.clip_grad_norm_(model.parameters(), self.args.max_grad_norm)
-
-                            # Update the parameters and step scheduler
-                            optimizer.step()
-                            scheduler.step()
-
-                            # logging
-                            if (self.args.logging_steps > 0 and self.state.global_step % self.args.logging_steps == 0) or (
-                                self.state.global_step == 1 and self.args.logging_first_step
-                            ):
-                                logs = {}
-                                logs["loss"] = loss1.item()
-                                if not self.args.zero_order_clip_grad:
-                                    norm = 0.0
-                                    for _, p in model.named_parameters():
-                                        if p.grad is not None:
-                                            norm += torch.sum(p.grad ** 2)
-                                    norm = torch.sqrt(norm)
-                                logs["grad_norm"] = norm.item()
-                                logs["learning_rate"] = (
-                                    scheduler.get_last_lr()[0]
-                                    if version.parse(torch.__version__) >= version.parse("1.4")
-                                    else scheduler.get_lr()[0]
-                                )
-                                logs["num_zs"] = num_zs
-                                logs["global_step"] = self.state.global_step
-                                logs["zo_forward_step"] = self.state.zo_forward_step
-                                logs["max_steps"] = self.args.max_steps
-                                logs["max_zo_forward_steps"] = self.args.max_zo_forward_steps
-                                logs["time"] = int(time.time() - start_time)
-                                # Log current eps value as float
-                                logs["eps"] = eps if isinstance(eps, float) else eps.item()
-                                self.log(logs)
-                                logger.info(str(logs))
-                                # === CSV：记录本 step 的训练度量，评估结果稍后补充 ===
-                                train_acc_csv = self._compute_train_acc(model, inputs)
-                                _csv_pending = {
-                                    "epoch": float(self.epoch),
-                                    "global_step": int(self.state.global_step),
-                                    "train_loss": float(logs.get("loss", float("nan"))),
-                                    "train_acc": (None if train_acc_csv is None else float(train_acc_csv)),
-                                }
-
-                            model.zero_grad()
-                            self.state.global_step += 1
-                            self.epoch = epoch + (step + 1) / len(epoch_iterator)
-                    # if not using the trainer, the updates are resampled and directly applied to the parameters
-                    else:
-                        # Efficient mode
-                        # WARNING: no gradient accumulation when not storing the grad
-                        assert self.args.gradient_accumulation_steps == 1, 'gradient accumulation is not supported for zero-order optimization'
-                        assert self.args.zero_order_sample_scheduler is None
-                        assert not self.args.zero_order_clip_grad, 'gradient clipping not implemented yet for non-trainer ZO'
-
-                        if self.args.efficient_zero_order:
-                            torch.manual_seed(random_seed)
-                        for name, param in self.named_parameters_to_optim:
-                            if self.args.efficient_zero_order:
-                                z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                            else:
-                                z = random_vector[name]
-                            param.data = param.data - self.args.learning_rate * (projected_grad * z + self.args.weight_decay * param.data)
-
-                        if (self.args.logging_steps > 0 and self.state.global_step % self.args.logging_steps == 0) or (
-                                self.state.global_step == 1 and self.args.logging_first_step
-                            ):
-                                logs = {}
-                                logs["loss"] = loss1.item()
-                                logs["learning_rate"] = self.args.learning_rate
-                                logs["global_step"] = self.state.global_step
-                                logs["zo_forward_step"] = self.state.zo_forward_step
-                                logs["max_steps"] = self.args.max_steps
-                                logs["max_zo_forward_steps"] = self.args.max_zo_forward_steps
-                                logs["time"] = int(time.time() - start_time)
-                                # Log current eps value as float
-                                logs["eps"] = eps if isinstance(eps, float) else eps.item()
-                                self.log(logs)
-                                logger.info(str(logs))
-                                # === CSV：记录本 step 的训练度量，评估结果稍后补充 ===
-                                train_acc_csv = self._compute_train_acc(model, inputs)
-                                _csv_pending = {
-                                    "epoch": float(self.epoch),
-                                    "global_step": int(self.state.global_step),
-                                    "train_loss": float(logs.get("loss", float("nan"))),
-                                    "train_acc": (None if train_acc_csv is None else float(train_acc_csv)),
-                                }
-
-
-                        self.state.global_step += 1
-                        self.epoch = epoch + (step + 1) / len(epoch_iterator)
-
-                    # Debug information
-                    # print("%.5f, %.5f" % (loss1.item(), loss2.item()))
-                    # print("Loss: %.10f, projected_grad: %.5f" % (loss1, projected_grad))
-
-                # standard, non-ZO optimization
+                # MeZO added: estimate gradient
+                if is_mezo:
+                    tr_loss_step = self.zo_step(model, inputs)
                 else:
-                    tr_loss += self.training_step(model, inputs)
-
-                    if (step + 1) % self.args.gradient_accumulation_steps == 0 or (
-                        # last step in epoch but step is always smaller than gradient_accumulation_steps
-                        len(epoch_iterator) <= self.args.gradient_accumulation_steps
-                        and (step + 1) == len(epoch_iterator)
+                    if (
+                            ((step + 1) % args.gradient_accumulation_steps != 0)
+                            and args.local_rank != -1
+                            and args._no_sync_in_gradient_accumulation
                     ):
-                        if self.args.fp16 and _use_native_amp:
-                            self.scaler.unscale_(optimizer)
-                            norm = torch.nn.utils.clip_grad_norm_(model.parameters(), self.args.max_grad_norm)
-                        elif self.args.fp16:
-                            norm = torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), self.args.max_grad_norm)
-                        else:
-                            norm = torch.nn.utils.clip_grad_norm_(model.parameters(), self.args.max_grad_norm)
-
-                        if self.args.optimizer_variant == 'signgd':
-                            for n,p in model.named_parameters():
-                                if p.grad is not None:
-                                    p.grad = torch.sign(p.grad)
-
-                        if transformers.is_torch_tpu_available():
-                            xm.optimizer_step(optimizer)
-                        elif self.args.fp16 and _use_native_amp:
-                            self.scaler.step(optimizer)
-                            self.scaler.update()
-                        else:
-                            optimizer.step()
-
-                        scheduler.step()
-                        model.zero_grad()
-                        self.state.global_step += 1
-                        self.epoch = epoch + (step + 1) / len(epoch_iterator)
-
-                        if (self.args.logging_steps > 0 and self.state.global_step % self.args.logging_steps == 0) or (
-                            self.state.global_step == 1 and self.args.logging_first_step
-                        ):
-                            logs = {}
-                            tr_loss_scalar = tr_loss.item()
-                            logs["loss"] = (tr_loss_scalar - logging_loss_scalar) / self.args.logging_steps
-                            logs["norm"] = norm.item()
-                            # backward compatibility for pytorch schedulers
-                            logs["learning_rate"] = (
-                                scheduler.get_last_lr()[0]
-                                if version.parse(torch.__version__) >= version.parse("1.4")
-                                else scheduler.get_lr()[0]
-                            )
-                            logging_loss_scalar = tr_loss_scalar
-
-                            self.log(logs)
-                            logger.info(str(logs))
-                            # === CSV：记录本 step 的训练度量，评估结果稍后补充 ===
-                            train_acc_csv = self._compute_train_acc(model, inputs)
-                            _csv_pending = {
-                                "epoch": float(self.epoch),
-                                "global_step": int(self.state.global_step),
-                                "train_loss": float(logs.get("loss", float("nan"))),
-                                "train_acc": (None if train_acc_csv is None else float(train_acc_csv)),
-                            }
-
-                # === Begin Adaptive h: update h every update_noise_every steps ===
-                if (
-                    getattr(self.args, "use_adaptive_h", False)
-                    and self.state.global_step > 0
-                    and (self.state.global_step % update_noise_every == 0)
-                ):
-                    beta = float(getattr(self.args, "adaptive_h_ema_beta", 0.1))
-                    nb = int(getattr(self.args, "adaptive_h_estimate_num_batches", 4))
-                    buf_size = int(getattr(self.args, "adaptive_h_probe_buffer_size", 64))
-                    nd = int(getattr(self.args, "adaptive_h_estimate_num_directions", 3))
-                    reduce = getattr(self.args, "adaptive_h_estimate_reduce", "mean")
-                    h_min = float(getattr(self.args, "adaptive_h_min", 1e-5))
-                    h_max = float(getattr(self.args, "adaptive_h_max", 0.5))
-
-                    inputs_list = self._get_h_estimation_inputs(train_dataloader, inputs, nb)
-                    h_raw, eps_est, nu3_est = self.estimate_adaptive_h_multi(
-                        model, self.compute_loss, inputs_list,
-                        layer_name=None, num_directions=nd,
-                        reduce=reduce, h_min=h_min, h_max=h_max
-                    )
-                    # If all directions were dropped (or estimate invalid), freeze h (do not update),
-                    # but do NOT skip the rest of the training loop.
-                    if (not math.isfinite(h_raw)) or (h_raw <= 0.0):
-                        logger.warning(
-                            f"[adaptive h][skip] step={self.state.global_step} h_raw invalid -> keep h_ema={float(self.adaptive_h):.3e} "
-                            f"(nb={nb}, nd={nd}, reduce={reduce})"
-                        )
+                        # Avoid unnecessary DDP synchronization since there will be no backward pass on this example.
+                        with model.no_sync():
+                            tr_loss_step = self.training_step(model, inputs)
                     else:
-                        h_sm = self._smooth_h_log_ema(previous_adaptive_h, h_raw, beta, h_min, h_max)
-                        self.adaptive_h = float(h_sm)
-                        previous_adaptive_h = float(h_sm)
-                        self.epsilon_f = eps_est
-                        self.nu3 = nu3_est
-                        logger.info(
-                            f"[adaptive h][update] step={self.state.global_step} "
-                            f"h_raw={h_raw:.3e} -> h_ema={h_sm:.3e} "
-                            f"(eps≈{eps_est:.2e}, nu3≈{nu3_est:.2e}, nb={nb}, buf={buf_size}, nd={nd}, reduce={reduce})"
-                        )
-                # === End Adaptive h update ===
+                        tr_loss_step = self.training_step(model, inputs)
 
-                if self.args.max_steps > 0 and self.state.global_step > self.args.max_steps or (self.args.max_zo_forward_steps > 0 and self.state.zo_forward_step > self.args.max_zo_forward_steps):
-                    epoch_iterator.close()
-                    break
+                # # ===== DEBUG 2025-11-08: 记录本 step loss 开始 =====
+                # if self.is_world_process_zero():
+                #     try:
+                #         if isinstance(tr_loss_step, torch.Tensor):
+                #             debug_loss_value = tr_loss_step.detach().item()
+                #         else:
+                #             debug_loss_value = float(tr_loss_step)
+                #         logger.info(f"[DEBUG] step={step}, global_step={self.state.global_step}, step_loss={debug_loss_value}")
+                #     except Exception as e:
+                #         logger.warning(f"[DEBUG] 记录 step loss 失败: step={step}, err={e}")
+                # # ===== DEBUG 2025-11-08: 记录本 step loss 结束 =====
 
-                if self.args.evaluate_during_training and self.state.global_step % self.args.eval_steps == 0:
-                    output = self.evaluate()
-                    metrics = output.metrics
-                    objective = self.dev_objective(metrics)
-                    # === CSV：本步触发了评估，把评估度量与训练度量一并写入 ===
-                    try:
-                        eval_loss = float(metrics.get("eval_loss", float("nan"))) if isinstance(metrics, dict) else float("nan")
-                        eval_acc = self._extract_eval_acc(metrics)
-                        with open(self._metrics_csv_path, "a", newline="") as f:
-                            writer = csv.writer(f)
-                            row = [
-                                _csv_pending.get("epoch") if _csv_pending else float(self.epoch),
-                                _csv_pending.get("global_step") if _csv_pending else int(self.state.global_step),
-                                _csv_pending.get("train_loss") if _csv_pending else float("nan"),
-                                _csv_pending.get("train_acc") if _csv_pending else None,
-                                "YES",
-                                eval_loss,
-                                (None if eval_acc is None else float(eval_acc)),
-                            ]
-                            writer.writerow(row)
-                    except Exception as e:
-                        logger.warning(f"[CSV] failed to write eval row: {e}")
-                    if objective > self.objective:
-                        logger.info("Best dev result: {}".format(objective))
-                        self.objective = objective
-                        # self.save_model(self.args.output_dir)
-
-                        # Now we save this to (CPU) memory instead of disk <-- much faster
-                        self.best_model_ckpt = {k: v.detach().cpu() for k, v in model.state_dict().items()}
+                if (
+                        args.logging_nan_inf_filter
+                        and not is_torch_tpu_available()
+                        and (torch.isnan(tr_loss_step) or torch.isinf(tr_loss_step))
+                ):
+                    # if loss is nan or inf simply add the average of previous logged losses
+                    tr_loss += tr_loss / (1 + self.state.global_step - self._globalstep_last_logged)
                 else:
-                    # === CSV：本步未触发评估，立即写入一行并标注未评估 ===
-                    try:
-                        with open(self._metrics_csv_path, "a", newline="") as f:
-                            writer = csv.writer(f)
-                            row = [
-                                _csv_pending.get("epoch") if _csv_pending else float(self.epoch),
-                                _csv_pending.get("global_step") if _csv_pending else int(self.state.global_step),
-                                _csv_pending.get("train_loss") if _csv_pending else float("nan"),
-                                _csv_pending.get("train_acc") if _csv_pending else None,
-                                "NO",
-                                None,
-                                None,
-                            ]
-                            writer.writerow(row)
-                    except Exception as e:
-                        logger.warning(f"[CSV] failed to write non-eval row: {e}")
+                    tr_loss += tr_loss_step
 
-            if self.args.max_steps > 0 and self.state.global_step > self.args.max_steps or (self.args.max_zo_forward_steps > 0 and self.state.zo_forward_step > self.args.max_zo_forward_steps):
-                # train_iterator.close()
+                self.current_flos += float(self.floating_point_ops(inputs))
+
+                # Optimizer step for deepspeed must be called on every step regardless of the value of gradient_accumulation_steps
+                if self.deepspeed:
+                    self.deepspeed.step()
+
+                if (step + 1) % args.gradient_accumulation_steps == 0 or (
+                        # last step in epoch but step is always smaller than gradient_accumulation_steps
+                        steps_in_epoch <= args.gradient_accumulation_steps
+                        and (step + 1) == steps_in_epoch
+                ):
+                    # MeZO added: update model with the estimated gradient
+                    if is_mezo:
+                        self.zo_update(model)
+                    else:
+                        # Gradient clipping
+                        if args.max_grad_norm is not None and args.max_grad_norm > 0 and not self.deepspeed:
+                            # deepspeed does its own clipping
+
+                            if self.do_grad_scaling:
+                                # Reduce gradients first for XLA
+                                if is_torch_tpu_available():
+                                    gradients = xm._fetch_gradients(self.optimizer)
+                                    xm.all_reduce("sum", gradients, scale=1.0 / xm.xrt_world_size())
+                                # AMP: gradients need unscaling
+                                self.scaler.unscale_(self.optimizer)
+
+                            if is_sagemaker_mp_enabled() and args.fp16:
+                                self.optimizer.clip_master_grads(args.max_grad_norm)
+                            elif hasattr(self.optimizer, "clip_grad_norm"):
+                                # Some optimizers (like the sharded optimizer) have a specific way to do gradient clipping
+                                self.optimizer.clip_grad_norm(args.max_grad_norm)
+                            elif hasattr(model, "clip_grad_norm_"):
+                                # Some models (like FullyShardedDDP) have a specific way to do gradient clipping
+                                model.clip_grad_norm_(args.max_grad_norm)
+                            else:
+                                # Revert to normal clipping otherwise, handling Apex or full precision
+                                nn.utils.clip_grad_norm_(
+                                    amp.master_params(self.optimizer) if self.use_apex else model.parameters(),
+                                    args.max_grad_norm,
+                                )
+
+                        # Optimizer step
+                        optimizer_was_run = True
+                        if self.deepspeed:
+                            pass  # called outside the loop
+                        elif is_torch_tpu_available():
+                            if self.do_grad_scaling:
+                                self.scaler.step(self.optimizer)
+                                self.scaler.update()
+                            else:
+                                xm.optimizer_step(self.optimizer)
+                        elif self.do_grad_scaling:
+                            scale_before = self.scaler.get_scale()
+                            self.scaler.step(self.optimizer)
+                            self.scaler.update()
+                            scale_after = self.scaler.get_scale()
+                            optimizer_was_run = scale_before <= scale_after
+                        else:
+                            self.optimizer.step()
+
+                        if optimizer_was_run and not self.deepspeed:
+                            self.lr_scheduler.step()
+                        model.zero_grad()
+
+                    self.state.global_step += 1
+                    self.state.epoch = epoch + (step + 1) / steps_in_epoch
+                    self.control = self.callback_handler.on_step_end(args, self.state, self.control)
+
+                    # # ===== DEBUG 2025-11-08: 调用 _maybe_log_save_evaluate 前记录样本数(按 step 粗略估计) 开始 =====
+                    # if self.is_world_process_zero():
+                    #     try:
+                    #         debug_seen_samples = self.state.global_step * total_train_batch_size
+                    #         logger.info(f"[DEBUG] 调用 _maybe_log_save_evaluate(step) 时 global_step={self.state.global_step}, approx_seen_samples={debug_seen_samples}")
+                    #     except Exception as e:
+                    #         logger.warning(f"[DEBUG] 计算 approx_seen_samples 失败(step): err={e}")
+                    # # ===== DEBUG 2025-11-08: 调用 _maybe_log_save_evaluate 前记录样本数(按 step 粗略估计) 结束 =====
+
+                    self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
+                else:
+                    self.control = self.callback_handler.on_substep_end(args, self.state, self.control)
+
+                if self.control.should_epoch_stop or self.control.should_training_stop:
+                    break
+            if step < 0:
+                logger.warning(
+                    "There seems to be not a single sample in your epoch_iterator, stopping training at step"
+                    f" {self.state.global_step}! This is expected if you're using an IterableDataset and set"
+                    f" num_steps ({max_steps}) higher than the number of available samples."
+                )
+                self.control.should_training_stop = True
+
+            self.control = self.callback_handler.on_epoch_end(args, self.state, self.control)
+
+            # # ===== DEBUG 2025-11-08: 调用 _maybe_log_save_evaluate 前记录样本数(按 epoch 粗略估计) 开始 =====
+            # if self.is_world_process_zero():
+            #     try:
+            #         debug_seen_samples = self.state.global_step * total_train_batch_size
+            #         logger.info(f"[DEBUG] 调用 _maybe_log_save_evaluate(epoch_end) 时 global_step={self.state.global_step}, approx_seen_samples={debug_seen_samples}")
+            #     except Exception as e:
+            #         logger.warning(f"[DEBUG] 计算 approx_seen_samples 失败(epoch_end): err={e}")
+            # # ===== DEBUG 2025-11-08: 调用 _maybe_log_save_evaluate 前记录样本数(按 epoch 粗略估计) 结束 =====
+
+            self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
+
+            if DebugOption.TPU_METRICS_DEBUG in self.args.debug:
+                if is_torch_tpu_available():
+                    # tpu-comment: Logging debug metrics for PyTorch/XLA (compile, execute times, ops, etc.)
+                    xm.master_print(met.metrics_report())
+                else:
+                    logger.warning(
+                        "You enabled PyTorch/XLA debug metrics but you don't have a TPU "
+                        "configured. Check your training configuration if this is unexpected."
+                    )
+            if self.control.should_training_stop:
                 break
-            if self.args.tpu_metrics_debug or self.args.debug:
-                # tpu-comment: Logging debug metrics for PyTorch/XLA (compile, execute times, ops, etc.)
-                xm.master_print(met.metrics_report())
 
-        if self.args.past_index and hasattr(self, "_past"):
+        if args.past_index and hasattr(self, "_past"):
             # Clean the state at the end of training
             delattr(self, "_past")
 
         logger.info("\n\nTraining completed. Do not forget to share your model on huggingface.co/models =)\n\n")
-        return TrainOutput(self.state.global_step, tr_loss / self.state.global_step, metrics), self.objective
+        if args.load_best_model_at_end and self.state.best_model_checkpoint is not None:
+            # Wait for everyone to get here so we are sur the model has been saved by process 0.
+            if is_torch_tpu_available():
+                xm.rendezvous("load_best_model_at_end")
+            elif args.local_rank != -1:
+                dist.barrier()
+            elif is_sagemaker_mp_enabled():
+                smp.barrier()
 
+            self._load_best_model()
 
-    """
-    Difference compared to original implementation: return output instead of output.metrics (so there is also the logits)
-    """
-    def evaluate(self, eval_dataset: Optional[Dataset] = None) -> Dict[str, float]:
+        # add remaining tr_loss
+        self._total_loss_scalar += tr_loss.item()
+        train_loss = self._total_loss_scalar / self.state.global_step
+
+        metrics = speed_metrics("train", start_time, num_samples=num_train_samples, num_steps=self.state.max_steps)
+        self.store_flos()
+        metrics["total_flos"] = self.state.total_flos
+        metrics["train_loss"] = train_loss
+
+        self.is_in_train = False
+
+        self._memory_tracker.stop_and_update_metrics(metrics)
+
+        self.log(metrics)
+
+        run_dir = self._get_output_dir(trial)
+        checkpoints_sorted = self._sorted_checkpoints(use_mtime=False, output_dir=run_dir)
+
+        # Delete the last checkpoint when save_total_limit=1 if it's different from the best checkpoint.
+        if self.state.best_model_checkpoint is not None and self.args.save_total_limit == 1:
+            for checkpoint in checkpoints_sorted:
+                if checkpoint != self.state.best_model_checkpoint:
+                    logger.info(f"Deleting older checkpoint [{checkpoint}] due to args.save_total_limit")
+                    shutil.rmtree(checkpoint)
+
+        self.control = self.callback_handler.on_train_end(args, self.state, self.control)
+
+        return TrainOutput(self.state.global_step, train_loss, metrics)
+
+    ############## MeZO ##############
+
+    def zo_perturb_parameters(self, random_seed=None, scaling_factor=1, eps: Optional[float] = None):
         """
-        Run evaluation and returns metrics.
-
-        The calling script will be responsible for providing a method to compute metrics, as they are
-        task-dependent (pass it to the init :obj:`compute_metrics` argument).
-
-        You can also subclass and override this method to inject custom behavior.
-
-        Args:
-            eval_dataset (:obj:`Dataset`, `optional`):
-                Pass a dataset if you wish to override :obj:`self.eval_dataset`. If it is an :obj:`datasets.Dataset`,
-                columns not accepted by the ``model.forward()`` method are automatically removed. It must implement
-                the :obj:`__len__` method.
-
-        Returns:
-            A dictionary containing the evaluation loss and the potential metrics computed from the predictions.
+        Perturb the parameters with random vector z.
+        Input:
+        - random_seed: random seed for MeZO in-place perturbation (if it's None, we will use self.zo_random_seed)
+        - scaling_factor: theta = theta + scaling_factor * z * eps
         """
-        if eval_dataset is not None and not isinstance(eval_dataset, collections.abc.Sized):
-            raise ValueError("eval_dataset must implement __len__")
 
-        eval_dataloader = self.get_eval_dataloader(eval_dataset)
+        # Set the random seed to ensure that we sample the same z for perturbation/update
+        torch.manual_seed(random_seed if random_seed is not None else self.zo_random_seed)
 
-        output = self.prediction_loop(eval_dataloader, description="Evaluation")
+        # eps may be dynamically adjusted (adaptive h)
+        if eps is None:
+            eps = self._get_current_zo_eps()
+        eps = float(eps)
 
-        self.log(output.metrics)
-        logger.info(output.metrics)
+        for name, param in self.named_parameters_to_optim:
+            z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+            param.data = param.data + scaling_factor * z * eps
 
-        if self.args.tpu_metrics_debug or self.args.debug:
-            # tpu-comment: Logging debug metrics for PyTorch/XLA (compile, execute times, ops, etc.)
-            xm.master_print(met.metrics_report())
+    def zo_forward(self, model, inputs):
+        """
+        Get (no gradient) loss from the model. Dropout is turned off too.
+        """
+        model.eval()
+        if self.args.non_diff:
+            # Non-differentiable objective (may require autoregressive generation)
+            return self.zo_forward_nondiff(model, inputs)
 
-        return output
+        with torch.inference_mode():
+            inputs = self._prepare_inputs(inputs)
+            with self.compute_loss_context_manager():
+                loss = self.compute_loss(model, inputs)
+            if self.args.n_gpu > 1:
+                # Warning: this is copied from the original Huggingface Trainer. Untested.
+                loss = loss.mean()  # mean() to average on multi-gpu parallel training
+
+        # # ===== DEBUG 2025-11-08: 记录 zo_forward loss 开始 =====
+        # if self.is_world_process_zero():
+        #     try:
+        #         logger.info(f"[DEBUG] zo_forward loss={loss.detach().item()}")
+        #     except Exception as e:
+        #         logger.warning(f"[DEBUG] 记录 zo_forward loss 失败: err={e}")
+        # # ===== DEBUG 2025-11-08: 记录 zo_forward loss 结束 =====
+
+        return loss.detach()
+
+    def zo_forward_nondiff(self, model, inputs):
+        """
+        Get (no gradient) non-diffiable loss from the model.
+        """
+        model.eval()
+        assert self.args.task_name == "SQuAD", "Non differentiable objective only supports SQuAD for now."
+
+        with torch.inference_mode():
+            inputs = self._prepare_inputs(inputs)
+            args = self.args
+            outputs = self.model.generate(
+                inputs["input_ids"], do_sample=args.sampling, temperature=args.temperature,
+                num_beams=args.num_beams, top_p=args.top_p, top_k=args.top_k,
+                max_new_tokens=min(args.max_new_tokens, args.max_length - inputs["input_ids"].size(1)),
+                num_return_sequences=1,
+                eos_token_id=[self.tokenizer.encode(args.eos_token, add_special_tokens=False)[-1],
+                              self.tokenizer.eos_token_id],
+            )
+            output_text = []
+            for i in range(len(outputs)):
+                output_text.append(
+                    self.tokenizer.decode(outputs[i][inputs["input_ids"].size(1):], skip_special_tokens=True).strip())
+            f1s = [f1(output_text[i], inputs['gold'][i]) for i in range(len(output_text))]
+
+        # # ===== DEBUG 2025-11-08: 记录 zo_forward_nondiff mean F1 开始 =====
+        # debug_mean_f1 = np.mean(f1s)
+        # if self.is_world_process_zero():
+        #     try:
+        #         logger.info(f"[DEBUG] zo_forward_nondiff mean_F1={debug_mean_f1}")
+        #     except Exception as e:
+        #         logger.warning(f"[DEBUG] 记录 zo_forward_nondiff mean F1 失败: err={e}")
+        # # ===== DEBUG 2025-11-08: 记录 zo_forward_nondiff mean F1 结束 =====
+
+        # 计算 mean F1（之前 debug_mean_f1 被注释掉会导致 NameError）
+        mean_f1 = float(np.mean(f1s)) if len(f1s) > 0 else 0.0
+        device = self.model.device if hasattr(self.model, "device") else torch.device("cpu")
+        return -torch.tensor(mean_f1, dtype=torch.float32, device=device)
+
+    def zo_step(self, model, inputs):
+        """
+        Estimate gradient by MeZO. Return the loss from f(theta + z)
+        """
+        args = self.args
+
+        # What parameters to optimize
+        self.named_parameters_to_optim = []
+        for name, param in model.named_parameters():
+            if param.requires_grad:
+                self.named_parameters_to_optim.append((name, param))
+
+        # Sample the random seed for sampling z
+        self.zo_random_seed = np.random.randint(1000000000)
+
+        # eps can be dynamically adjusted (adaptive h)
+        eps = self._get_current_zo_eps()
+        self._last_zo_eps = float(eps)
+
+        # First function evaluation
+        self.zo_perturb_parameters(scaling_factor=1, eps=eps)
+        loss1 = self.zo_forward(model, inputs)
+
+        # Second function evaluation
+        self.zo_perturb_parameters(scaling_factor=-2, eps=eps)
+        loss2 = self.zo_forward(model, inputs)
+
+        self.projected_grad = ((loss1 - loss2) / (2 * eps)).item()
+
+        # # ===== DEBUG 2025-11-08: 记录 MeZO 两次 loss 和 projected_grad 开始 =====
+        # if self.is_world_process_zero():
+        #     try:
+        #         l1 = loss1.item() if isinstance(loss1, torch.Tensor) else float(loss1)
+        #         l2 = loss2.item() if isinstance(loss2, torch.Tensor) else float(loss2)
+        #         logger.info(f"[DEBUG] zo_step loss1={l1}, loss2={l2}, projected_grad={self.projected_grad}, zo_eps={self.args.zo_eps}")
+        #     except Exception as e:
+        #         logger.warning(f"[DEBUG] 记录 zo_step 信息失败: err={e}")
+        # # ===== DEBUG 2025-11-08: 记录 MeZO 两次 loss 和 projected_grad 结束 =====
+
+        # No gradient accumulation support
+        assert self.args.gradient_accumulation_steps == 1
+
+        # Reset model back to its parameters at start of step
+        self.zo_perturb_parameters(scaling_factor=1, eps=eps)
+
+        return loss1
+
+    def zo_update(self, model):
+        """
+        Update the parameters with the estimated gradients.
+        """
+        args = self.args
+
+        # Reset the random seed for sampling zs
+        torch.manual_seed(self.zo_random_seed)
+
+        for name, param in self.named_parameters_to_optim:
+            # Resample z
+            z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+            if "bias" not in name and "layer_norm" not in name and "layernorm" not in name:
+                param.data = param.data - self._get_learning_rate() * (
+                            self.projected_grad * z + args.weight_decay * param.data)
+            else:
+                param.data = param.data - self._get_learning_rate() * (self.projected_grad * z)
+
+        self.lr_scheduler.step()
+
+    ############## Misc overload functions ##############
+
+    def _set_signature_columns_if_needed(self):
+        """
+        We overload this function for non-differentiable objective training to pass "gold" -- the gold text for the task
+        """
+        if self._signature_columns is None:
+            # Inspect model forward signature to keep only the arguments it accepts.
+            signature = inspect.signature(self.model.forward)
+            self._signature_columns = list(signature.parameters.keys())
+            # Labels may be named label or label_ids, the default data collator handles that.
+            self._signature_columns += list(set(["label", "label_ids"] + self.label_names))
+            self._signature_columns += ["gold"]
+
+    def save_model(self, output_dir: Optional[str] = None, _internal_call: bool = False):
+        """
+        We overload this function to fix an FSDP saving bug (before fix, it will likely cause OOM)
+        """
+
+        if output_dir is None:
+            output_dir = self.args.output_dir
+
+        if is_torch_tpu_available():
+            self._save_tpu(output_dir)
+        elif is_sagemaker_mp_enabled():
+            # Calling the state_dict needs to be done on the wrapped model and on all processes.
+            os.makedirs(output_dir, exist_ok=True)
+            state_dict = self.model_wrapped.state_dict()
+            if self.args.should_save:
+                self._save(output_dir, state_dict=state_dict)
+            if IS_SAGEMAKER_MP_POST_1_10:
+                # 'user_content.pt' indicates model state_dict saved with smp >= 1.10
+                Path(os.path.join(output_dir, "user_content.pt")).touch()
+        elif (
+                ShardedDDPOption.ZERO_DP_2 in self.args.sharded_ddp
+                or ShardedDDPOption.ZERO_DP_3 in self.args.sharded_ddp
+                or self.fsdp is not None
+        ):
+            from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, StateDictType, FullStateDictConfig
+            full_state_dict_config = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
+
+            # Fix the FSDP loading bug
+            with FSDP.state_dict_type(self.model, StateDictType.FULL_STATE_DICT, full_state_dict_config):
+                state_dict = self.model.state_dict()
+            # state_dict = self.model.state_dict()
+
+            if self.args.should_save:
+                self._save(output_dir, state_dict=state_dict)
+        elif self.deepspeed:
+            # this takes care of everything as long as we aren't under zero3
+            if self.args.should_save:
+                self._save(output_dir)
+
+            if is_deepspeed_zero3_enabled():
+                # It's too complicated to try to override different places where the weights dump gets
+                # saved, so since under zero3 the file is bogus, simply delete it. The user should
+                # either user deepspeed checkpoint to resume or to recover full weights use
+                # zero_to_fp32.py stored in the checkpoint.
+                if self.args.should_save:
+                    file = os.path.join(output_dir, WEIGHTS_NAME)
+                    if os.path.isfile(file):
+                        # logger.info(f"deepspeed zero3: removing {file}, see zero_to_fp32.py to recover weights")
+                        os.remove(file)
+
+                # now save the real model if stage3_gather_16bit_weights_on_model_save=True
+                # if false it will not be saved.
+                # This must be called on all ranks
+                if not self.deepspeed.save_16bit_model(output_dir, WEIGHTS_NAME):
+                    logger.warning(
+                        "deepspeed.save_16bit_model didn't save the model, since"
+                        " stage3_gather_16bit_weights_on_model_save=false. Saving the full checkpoint instead, use"
+                        " zero_to_fp32.py to recover weights"
+                    )
+                    self.deepspeed.save_checkpoint(output_dir)
+
+        elif self.args.should_save:
+            self._save(output_dir)
+
+        # Push to the Hub when `save_model` is called by the user.
+        if self.args.push_to_hub and not _internal_call:
+            self.push_to_hub(commit_message="Model save")
+
+
+# -----------------------------------------------------------------------------
+# Backwards-compatible export: the entrypoint imports `Trainer` from this module.
+# -----------------------------------------------------------------------------
+Trainer = OurTrainer

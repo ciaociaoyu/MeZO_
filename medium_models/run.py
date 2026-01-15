@@ -556,6 +556,18 @@ class DynamicTrainingArguments(TrainingArguments):
         metadata={"help": "Whether to choose finite-difference step h per-layer (same grouping as cs). Default False = use a single global h."}
     )
 
+    # Reproducibility / sampling
+    data_seed: Optional[int] = field(
+        default=None,
+        metadata={"help": "Seed for DataLoader shuffling (decoupled from MeZO perturbation RNG). If None, defaults to --seed."}
+    )
+
+    # Override HF default (False) to match standard SGD/MeZO assumption of random minibatches.
+    dataloader_shuffle: bool = field(
+        default=True,
+        metadata={"help": "Whether to shuffle the training dataloader (RandomSampler). Recommended True for training."}
+    )
+
 
 @dataclass
 class MyDataCollatorWithPadding:
@@ -758,6 +770,10 @@ def main():
 
     # Set seed
     set_seed(training_args.seed)
+
+    # If not provided, use the same seed for data shuffling.
+    if getattr(training_args, "data_seed", None) is None:
+        training_args.data_seed = training_args.seed
 
     try:
         num_labels = num_labels_mapping[data_args.task_name]
@@ -970,7 +986,7 @@ def main():
         else None
     )
 
-    set_seed(training_args.seed)
+    # set_seed(training_args.seed)  # (REMOVED redundant second call)
 
     if training_args.random_model_init:
         model.init_weights() # reinit weights to random
@@ -1170,7 +1186,6 @@ def main():
                 if 'evaluation_strategy' in final_result:
                     final_result.pop('evaluation_strategy')
                 f.write(str(final_result) + '\n')
-                print("有东西吗")
 
     logger.info('****** Output Dir *******')
     logger.info(training_args.output_dir)

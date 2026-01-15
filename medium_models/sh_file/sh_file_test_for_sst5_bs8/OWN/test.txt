@@ -17,4 +17,4 @@ conda activate ciao
 cd /home/jy03364/MeZO/medium_models
 
 # own method
-TASK=sst-5 K=16 SEED=16 BS=8 LR=1e-6 EPS=1.000000e-02 MODEL=roberta-large USE_H=True USE_C=False bash mezo.sh
+TASK=sst-5 K=16 SEED=16 BS=8 LR=1e-6 EPS=1.000000e-02 MODEL=roberta-large USE_H=True USE_C=False --dataloader_shuffle True bash mezo.sh
