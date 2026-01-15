@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=h_test_1-13-1524time	# Job name (testBowtie2)
+#SBATCH --job-name=h_test_1-14-1013time	# Job name (testBowtie2)
 #SBATCH --partition=gpu_p		# Partition name (batch, highmem_p, or gpu_p)
 #SBATCH --ntasks=1			# 1 task (process) for below commands
 #SBATCH --cpus-per-task=2	 	# CPU core count per task, by default 1 CPU core per task
