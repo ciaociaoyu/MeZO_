@@ -32,12 +32,6 @@ echo "Step: $STEP; Eval step: $EVAL_STEP"
 echo "Using adaptive h: $USE_H"
 echo "Dataloader shuffle: $DATALOADER_SHUFFLE"
 
-# Convert env var to CLI flag (avoid putting "--dataloader_shuffle" on its own line in slurm scripts)
-SHUFFLE_FLAG=""
-case "$DATALOADER_SHUFFLE" in
-  True|true|1|YES|yes|Y|y) SHUFFLE_FLAG="--dataloader_shuffle" ;;
-esac
-
 GR_TAG=seed$SEED-bs$BS-lr$LR-eps$EPS-wd$WD-step$STEP-evalstep$EVAL_STEP
 EXTRA_TAG=${EXTRA_TAG:-ft}
 TAG=${TAG:-k${K}-${MODEL}-mezo-${EXTRA_TAG}}
@@ -45,6 +39,6 @@ echo "Grid search tag: $GR_TAG"
 echo "Tag: $TAG"
 
 TYPE=prompt GRID_TAG=$GR_TAG TAG=$TAG STEPS=$STEP TASK=$TASK SEED=$SEED MODEL=$MODEL K=$K \
-    bash run_fewshot.sh --per_device_train_batch_size $BS --learning_rate $LR --eval_steps $EVAL_STEP --weight_decay $WD --zero_order_eps $EPS --use_adaptive_h $USE_H --use_c_scale $USE_C --data_seed $DATA_SEED $SHUFFLE_FLAG\
+    bash run_fewshot.sh --per_device_train_batch_size $BS --learning_rate $LR --eval_steps $EVAL_STEP --weight_decay $WD --zero_order_eps $EPS --use_adaptive_h $USE_H --use_c_scale $USE_C --data_seed $DATA_SEED\
     --zero_order_optim --lr_scheduler_type "constant" --optimizer "sgd" --efficient_zero_order \
     $@

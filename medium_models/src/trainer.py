@@ -33,7 +33,40 @@ from collections import deque
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 import copy
-from metrics import f1
+ # ------------------------------------------------------------------
+# Local F1 helper (previously imported from a non-existent `metrics` module)
+# Used only in `zo_forward_nondiff` for SQuAD-style evaluation.
+# ------------------------------------------------------------------
+
+def _simple_f1(prediction: str, ground_truth: str) -> float:
+    """Compute token-level F1 score between two strings.
+
+    This is a lightweight replacement to avoid an external `metrics` dependency.
+    """
+    pred_tokens = prediction.strip().split()
+    gt_tokens = ground_truth.strip().split()
+
+    if len(pred_tokens) == 0 and len(gt_tokens) == 0:
+        return 1.0
+    if len(pred_tokens) == 0 or len(gt_tokens) == 0:
+        return 0.0
+
+    common = {}
+    for t in pred_tokens:
+        common[t] = common.get(t, 0) + 1
+
+    num_same = 0
+    for t in gt_tokens:
+        if common.get(t, 0) > 0:
+            num_same += 1
+            common[t] -= 1
+
+    if num_same == 0:
+        return 0.0
+
+    precision = num_same / len(pred_tokens)
+    recall = num_same / len(gt_tokens)
+    return 2 * precision * recall / (precision + recall)
 import numpy as np
 
 from tqdm.auto import tqdm
@@ -1180,7 +1213,7 @@ class OurTrainer(Trainer):
             for i in range(len(outputs)):
                 output_text.append(
                     self.tokenizer.decode(outputs[i][inputs["input_ids"].size(1):], skip_special_tokens=True).strip())
-            f1s = [f1(output_text[i], inputs['gold'][i]) for i in range(len(output_text))]
+            f1s = [_simple_f1(output_text[i], inputs['gold'][i]) for i in range(len(output_text))]
 
         # # ===== DEBUG 2025-11-08: 记录 zo_forward_nondiff mean F1 开始 =====
         # debug_mean_f1 = np.mean(f1s)
