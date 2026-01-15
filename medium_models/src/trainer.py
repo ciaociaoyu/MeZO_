@@ -1,7 +1,7 @@
 ########## The following part is copied from Transformers' trainer (3.4.0) and later ported to be compatible with v4.4.2 and to support initialization from linear head probing. ##########
 
 # coding=utf-8
-# 最后修改时间：2026-01-13
+# 最后修改时间：2026-01-15
 # 修改摘要：
 # - Adaptive-h：rolling probe buffer、多batch(nb)与多方向(nd)估计，log-EMA 平滑更新
 # - 训练 eps 更新：加入 h_trunc_alpha（alpha^{-1/6}）放大因子；estimate_nu3 的 h_start 使用 min(eps_train, eps_f^{1/5}) 折中初始化
@@ -25,6 +25,8 @@
 The Trainer class, to easily train a 🤗 Transformers from scratch or finetune it on a new task.
 """
 
+import json
+import random
 import collections
 import inspect
 import math
@@ -459,6 +461,291 @@ class Trainer(LinearHeadTrainer):
         eps_est = float(np.mean(eps_vals)) if len(eps_vals) > 0 else float("nan")
         nu3_est = float(np.mean(nu3_vals)) if len(nu3_vals) > 0 else float("nan")
         return h_est, eps_est, nu3_est
+
+    # =============================
+    # h-probes (Probe 1/2/3)
+    # Enable via environment variables (no need to touch run.py args parser):
+    #   H_PROBE=1
+    #   H_PROBE_MODE=123   (any subset of 1/2/3)
+    #   H_PROBE_EVERY=0    (0 => only at global_step==0; else run every N steps)
+    #   H_PROBE_MIN=1e-6, H_PROBE_MAX=1e-2, H_PROBE_NUM=9
+    #   H_PROBE_NDIR=8, H_PROBE_NB=2
+    # Output: <output_dir>/hprobe.jsonl
+    # =============================
+
+    def _hprobe_enabled(self) -> bool:
+        v = os.environ.get("H_PROBE", "0").lower()
+        return v in ("1", "true", "yes", "y", "on")
+
+    def _hprobe_cfg(self) -> Dict[str, Any]:
+        mode = os.environ.get("H_PROBE_MODE", "123")
+        every = int(os.environ.get("H_PROBE_EVERY", "0"))
+        num_h = int(os.environ.get("H_PROBE_NUM", "9"))
+        h_min = float(os.environ.get("H_PROBE_MIN", "1e-6"))
+        h_max = float(os.environ.get("H_PROBE_MAX", "1e-2"))
+        ndir = int(os.environ.get("H_PROBE_NDIR", "8"))
+        nbatch = int(os.environ.get("H_PROBE_NB", "1"))
+        alpha = float(os.environ.get("H_PROBE_ALPHA", "2.0"))
+        out_name = os.environ.get("H_PROBE_OUT", "hprobe.jsonl")
+        return {
+            "mode": mode,
+            "every": every,
+            "num_h": max(num_h, 2),
+            "h_min": h_min,
+            "h_max": h_max,
+            "ndir": max(ndir, 1),
+            "nbatch": max(nbatch, 1),
+            "alpha": alpha,
+            "out_name": out_name,
+        }
+
+    def _hprobe_h_list(self, cfg: Dict[str, Any]) -> List[float]:
+        h_min, h_max, num_h = float(cfg["h_min"]), float(cfg["h_max"]), int(cfg["num_h"])
+        if (not math.isfinite(h_min)) or (not math.isfinite(h_max)) or h_min <= 0 or h_max <= 0:
+            h_min, h_max = 1e-6, 1e-2
+        if h_min > h_max:
+            h_min, h_max = h_max, h_min
+        hs = np.logspace(np.log10(h_min), np.log10(h_max), num=num_h, base=10.0)
+        return [float(x) for x in hs]
+
+    def _hprobe_use_wd(self, name: str) -> bool:
+        n = name.lower()
+        return ("bias" not in n) and ("layer_norm" not in n) and ("layernorm" not in n)
+
+    def _hprobe_eval_at(self, model: nn.Module, inputs: Dict[str, Any], h: float, seed: int, mult: float) -> float:
+        """Evaluate f(theta + mult*h*z) and restore params, using the same z via seed."""
+        # Ensure list exists
+        if (not hasattr(self, "named_parameters_to_optim")) or (self.named_parameters_to_optim is None) or (len(self.named_parameters_to_optim) == 0):
+            self.named_parameters_to_optim = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+
+        torch.manual_seed(seed)
+        with torch.no_grad():
+            for _, p in self.named_parameters_to_optim:
+                z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
+                p.data.add_(mult * float(h) * z)
+
+        val = float(self.zo_forward(model, inputs).item())
+
+        # Restore
+        torch.manual_seed(seed)
+        with torch.no_grad():
+            for _, p in self.named_parameters_to_optim:
+                z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
+                p.data.add_(-mult * float(h) * z)
+
+        return val
+
+    def _hprobe_proj_grad_at(self, model: nn.Module, inputs: Dict[str, Any], h: float, seed: int) -> Tuple[float, float, float, float]:
+        fp = self._hprobe_eval_at(model, inputs, h=h, seed=seed, mult=+1.0)
+        fm = self._hprobe_eval_at(model, inputs, h=h, seed=seed, mult=-1.0)
+        delta = float(fp - fm)
+        ghat = float(delta / (2.0 * float(h)))
+        return fp, fm, delta, ghat
+
+    def _hprobe_get_lr(self) -> float:
+        # Best-effort: prefer scheduler if present, else args.learning_rate
+        try:
+            if hasattr(self, "lr_scheduler") and self.lr_scheduler is not None:
+                lrs = self.lr_scheduler.get_last_lr()
+                if isinstance(lrs, (list, tuple)) and len(lrs) > 0:
+                    return float(lrs[0])
+        except Exception:
+            pass
+        return float(getattr(self.args, "learning_rate", 1e-4))
+
+    def _hprobe_apply_update(self, model: nn.Module, seed: int, projected_grad: float, lr: float, weight_decay: float):
+        if (not hasattr(self, "named_parameters_to_optim")) or (self.named_parameters_to_optim is None) or (len(self.named_parameters_to_optim) == 0):
+            self.named_parameters_to_optim = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+        torch.manual_seed(seed)
+        with torch.no_grad():
+            for name, p in self.named_parameters_to_optim:
+                z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
+                if self._hprobe_use_wd(name):
+                    p.data = p.data - lr * (projected_grad * z + weight_decay * p.data)
+                else:
+                    p.data = p.data - lr * (projected_grad * z)
+
+    def _hprobe_undo_update(self, model: nn.Module, seed: int, projected_grad: float, lr: float, weight_decay: float):
+        if (not hasattr(self, "named_parameters_to_optim")) or (self.named_parameters_to_optim is None) or (len(self.named_parameters_to_optim) == 0):
+            self.named_parameters_to_optim = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+
+        # Invert: p_new = (1-lr*wd) p_old - lr*g*z  =>  p_old = (p_new + lr*g*z)/(1-lr*wd)
+        denom = float(1.0 - lr * weight_decay)
+        if abs(denom) < 1e-12:
+            denom = 1.0
+
+        torch.manual_seed(seed)
+        with torch.no_grad():
+            for name, p in self.named_parameters_to_optim:
+                z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
+                if self._hprobe_use_wd(name):
+                    p.data = (p.data + lr * (projected_grad * z)) / denom
+                else:
+                    p.data = p.data + lr * (projected_grad * z)
+
+    def _hprobe_pick_batches(self, current_inputs: Dict[str, Any], nbatch: int):
+        """Prefer adaptive-h rolling buffer (CPU copies). Fallback to current batch."""
+        buf = getattr(self, "_h_probe_buffer", None)
+        batches = []
+        if isinstance(buf, list) and len(buf) > 0:
+            replace = len(buf) < nbatch
+            idxs = np.random.choice(len(buf), size=nbatch, replace=replace)
+            for idx in idxs:
+                item = buf[int(idx)]
+                batches.append(dict(item) if isinstance(item, dict) else item)
+            eval_batch = batches[-1] if len(batches) > 1 else batches[0]
+        else:
+            batches = [current_inputs]
+            eval_batch = current_inputs
+        return batches, eval_batch
+
+    def _hprobe_write_jsonl(self, rows: List[Dict[str, Any]], out_path: str):
+        # Only write on main process if distributed
+        try:
+            if hasattr(self.args, "local_rank") and getattr(self.args, "local_rank", -1) not in (-1, 0):
+                return
+        except Exception:
+            pass
+
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with open(out_path, "a", encoding="utf-8") as f:
+            for r in rows:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+
+    def _hprobe_run_once(self, model: nn.Module, current_inputs: Dict[str, Any]):
+        cfg = self._hprobe_cfg()
+        mode = str(cfg["mode"])
+        hs = self._hprobe_h_list(cfg)
+
+        # Save RNG states so probe does not affect training randomness
+        np_state = np.random.get_state()
+        py_state = random.getstate()
+        torch_state = torch.random.get_rng_state()
+        cuda_states = None
+        try:
+            if torch.cuda.is_available():
+                cuda_states = torch.cuda.get_rng_state_all()
+        except Exception:
+            cuda_states = None
+
+        try:
+            # Ensure parameter list exists
+            if (not hasattr(self, "named_parameters_to_optim")) or (self.named_parameters_to_optim is None) or (len(self.named_parameters_to_optim) == 0):
+                self.named_parameters_to_optim = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+
+            nbatch = int(cfg["nbatch"])
+            batches, eval_batch = self._hprobe_pick_batches(current_inputs, nbatch=nbatch)
+
+            # base losses
+            base_losses = [float(self.zo_forward(model, b).item()) for b in batches]
+            base_eval = float(self.zo_forward(model, eval_batch).item())
+
+            lr = float(self._hprobe_get_lr())
+            wd = float(getattr(self.args, "weight_decay", 0.0))
+            gs = int(getattr(self.state, "global_step", 0))
+
+            rows = []
+            for h in hs:
+                g_list, r_list, absdf_list = [], [], []
+                dL_same_list, dL_new_list = [], []
+
+                for bi, batch in enumerate(batches):
+                    base_b = base_losses[bi]
+                    for _ in range(int(cfg["ndir"])):
+                        seed = int(np.random.randint(0, 1_000_000_000))
+
+                        _, _, delta, ghat = self._hprobe_proj_grad_at(model, batch, h=float(h), seed=seed)
+
+                        if "2" in mode:
+                            absdf_list.append(abs(delta))
+
+                        if "1" in mode:
+                            _, _, _, ghat2 = self._hprobe_proj_grad_at(model, batch, h=float(cfg["alpha"]) * float(h), seed=seed)
+                            R = abs(ghat2 - ghat) / max(1.0, abs(ghat))
+                            r_list.append(float(R))
+                            g_list.append(float(ghat))
+
+                        if "3" in mode:
+                            self._hprobe_apply_update(model, seed=seed, projected_grad=ghat, lr=lr, weight_decay=wd)
+                            new_same = float(self.zo_forward(model, batch).item())
+                            new_eval = float(self.zo_forward(model, eval_batch).item())
+                            self._hprobe_undo_update(model, seed=seed, projected_grad=ghat, lr=lr, weight_decay=wd)
+
+                            dL_same_list.append(new_same - base_b)
+                            dL_new_list.append(new_eval - base_eval)
+
+                def _mean_std(x):
+                    if not x:
+                        return None, None
+                    arr = np.asarray(x, dtype=np.float64)
+                    return float(arr.mean()), float(arr.std())
+
+                row = {
+                    "global_step": gs,
+                    "h": float(h),
+                    "lr": lr,
+                    "wd": wd,
+                    "mode": mode,
+                    "ndir": int(cfg["ndir"]),
+                    "nbatch": len(batches),
+                }
+
+                if "1" in mode:
+                    mR, sR = _mean_std(r_list)
+                    mg, sg = _mean_std(g_list)
+                    row.update({"R_mean": mR, "R_std": sR, "ghat_mean": mg, "ghat_std": sg})
+
+                if "2" in mode:
+                    mdf, sdf = _mean_std(absdf_list)
+                    row.update({"abs_delta_f_mean": mdf, "abs_delta_f_std": sdf})
+
+                if "3" in mode:
+                    md1, sd1 = _mean_std(dL_same_list)
+                    md2, sd2 = _mean_std(dL_new_list)
+                    row.update({"dL_same_mean": md1, "dL_same_std": sd1, "dL_new_mean": md2, "dL_new_std": sd2})
+
+                rows.append(row)
+
+            out_path = os.path.join(getattr(self.args, "output_dir", "./outputs") or "./outputs", cfg["out_name"])
+            self._hprobe_write_jsonl(rows, out_path)
+            try:
+                logger.info(f"[hprobe] wrote {len(rows)} rows to {out_path} (step={gs}, mode={mode})")
+            except Exception:
+                pass
+
+        finally:
+            # Restore RNG states
+            np.random.set_state(np_state)
+            random.setstate(py_state)
+            torch.random.set_rng_state(torch_state)
+            try:
+                if cuda_states is not None and torch.cuda.is_available():
+                    torch.cuda.set_rng_state_all(cuda_states)
+            except Exception:
+                pass
+
+    def _hprobe_maybe_run(self, model: nn.Module, current_inputs: Dict[str, Any]):
+        if not self._hprobe_enabled():
+            return
+
+        cfg = self._hprobe_cfg()
+        every = int(cfg["every"])
+        gs = int(getattr(self.state, "global_step", 0))
+
+        should = (gs == 0) if every <= 0 else ((gs % every) == 0)
+        if not should:
+            return
+
+        if getattr(self, "_hprobe_last_step", None) == gs:
+            return
+        self._hprobe_last_step = gs
+
+        # Only meaningful for ZO mode
+        if not getattr(self.args, "zero_order_optim", False):
+            return
+
+        self._hprobe_run_once(model, current_inputs)
+
     # =============================================================================
     """
     Adding some functions based on Transformers' Trainer class.
@@ -1363,6 +1650,8 @@ class Trainer(LinearHeadTrainer):
                 # --- Rolling probe buffer for adaptive h estimation ---
                 if getattr(self.args, "use_adaptive_h", False):
                     self._update_h_probe_buffer(inputs)
+                # --- h-probes (Probe 1/2/3): stability / delta-loss floor / one-step gain ---
+                self._hprobe_maybe_run(model, inputs)
 
                 if self.args.zero_order_optim:
                     # Get parameters that should be optimized (for layer-wise optimization and prefix-tuning)
