@@ -16,6 +16,13 @@ DATALOADER_SHUFFLE=${DATALOADER_SHUFFLE:-"True"}
 DATA_SEED=${DATA_SEED:-$SEED}
 STEPS=${STEPS:-1000}
 
+# Convert DATALOADER_SHUFFLE (string) to the CLI flag expected by HfArgumentParser
+# In run.py, `dataloader_shuffle` is a bool field with default True, so disabling uses `--no_dataloader_shuffle`.
+SHUFFLE_FLAG=""
+case "$DATALOADER_SHUFFLE" in
+  False|false|0|NO|no|N|n) SHUFFLE_FLAG="--no_dataloader_shuffle" ;;
+esac
+
 echo "GPU数量: $NUM_GPU"
 
 TASK_EXTRA=""
@@ -96,7 +103,7 @@ ALL_ARGS_TOGETHER="
     --tag $TAG
     --max_seq_length 128
     --seed $SEED
-    --data_seed $DATA_SEED --dataloader_shuffle $DATALOADER_SHUFFLE
+    --data_seed $DATA_SEED $SHUFFLE_FLAG
     --do_eval --do_predict --do_train
     --trainer $TRAINER
     --optimizer $OPT --max_steps $STEPS
