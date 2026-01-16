@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Use Slurm job name as output directory (fallback if not under Slurm)
+JOB_NAME=${SLURM_JOB_NAME:-manual_run}
+OUT_DIR=$(pwd)/${JOB_NAME}
+
+mkdir -p ${OUT_DIR}
+
 TASK=${TASK:-SST-2}
 K=${K:-16}
 SEED=${SEED:-42}

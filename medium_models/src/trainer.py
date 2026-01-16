@@ -1647,8 +1647,8 @@ class Trainer(LinearHeadTrainer):
                 if steps_trained_in_current_epoch > 0:
                     steps_trained_in_current_epoch -= 1
                     continue
-                # --- Rolling probe buffer for adaptive h estimation ---
-                if getattr(self.args, "use_adaptive_h", False):
+                # --- Rolling probe buffer for adaptive h estimation (and for h-probes when enabled) ---
+                if getattr(self.args, "use_adaptive_h", False) or self._hprobe_enabled():
                     self._update_h_probe_buffer(inputs)
                 # --- h-probes (Probe 1/2/3): stability / delta-loss floor / one-step gain ---
                 self._hprobe_maybe_run(model, inputs)

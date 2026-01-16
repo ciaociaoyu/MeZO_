@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=h_test_1-15-1708time	# Job name (testBowtie2)
+#SBATCH --job-name=h_test_2-15-2038time	# Job name (testBowtie2)
 #SBATCH --partition=gpu_p		# Partition name (batch, highmem_p, or gpu_p)
 #SBATCH --ntasks=1			# 1 task (process) for below commands
 #SBATCH --cpus-per-task=2	 	# CPU core count per task, by default 1 CPU core per task
@@ -18,11 +18,15 @@ cd /home/jy03364/MeZO/medium_models
 
 # own method
 H_PROBE=1 \
-H_PROBE_MODE=123 \
-H_PROBE_EVERY=0 \
-H_PROBE_MIN=1e-6 \
-H_PROBE_MAX=1e-2 \
-H_PROBE_NUM=9 \
+H_PROBE_MODE=3 \
+H_PROBE_EVERY=1000 \
+H_PROBE_MIN=1e-5 \
+H_PROBE_MAX=3e-3 \
+H_PROBE_NUM=7 \
 H_PROBE_NDIR=8 \
 H_PROBE_NB=2 \
-TASK=sst-5 K=16 SEED=16 BS=8 LR=1e-6 EPS=1e-2 MODEL=roberta-large USE_H=False USE_C=False DATALOADER_SHUFFLE=True bash mezo.sh
+STEP=3000 EVAL_STEP=5000 \
+EXTRA_TAG=probe3-e1000 \
+TASK=sst-5 K=16 SEED=16 DATA_SEED=16 BS=8 LR=1e-6 EPS=1e-2 MODEL=roberta-large \
+USE_H=False USE_C=False DATALOADER_SHUFFLE=True \
+bash mezo.sh
