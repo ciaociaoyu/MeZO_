@@ -1,0 +1,532 @@
+TASK: sst-5
+K: 16
+Seed: 16
+Data seed: 16
+BS: 8
+LR: 1e-6
+EPS: 1e-2
+Step: 2000; Eval step: 5000
+Using adaptive h: False
+Dataloader shuffle: True
+Grid search tag: seed16-bs8-lr1e-6-eps1e-2-wd0-step2000-evalstep5000
+Tag: k16-roberta-large-mezo-probe12-e200
+GPU数量: 1
+01/15/2026 22:58:18 - WARNING - __main__ -   Process rank: -1, device: cuda:0, n_gpu: 1, distributed training: False, 16-bits training: False
+01/15/2026 22:58:18 - INFO - __main__ -   Training/evaluation parameters DynamicTrainingArguments(
+_n_gpu=1,
+accelerator_config={'split_batches': False, 'dispatch_batches': None, 'even_batches': True, 'use_seedable_sampler': True, 'non_blocking': False, 'gradient_accumulation_kwargs': None, 'use_configured_state': False},
+adafactor=False,
+adam_beta1=0.9,
+adam_beta2=0.999,
+adam_epsilon=1e-08,
+adjust_for_init=False,
+array_id=-1,
+auto_find_batch_size=False,
+average_tokens_across_devices=False,
+batch_eval_metrics=False,
+bf16=False,
+bf16_full_eval=False,
+binary_classification=False,
+change_grad_estimate=False,
+data_seed=16,
+dataloader_drop_last=False,
+dataloader_num_workers=0,
+dataloader_persistent_workers=False,
+dataloader_pin_memory=True,
+dataloader_prefetch_factor=None,
+dataloader_shuffle=True,
+ddp_backend=None,
+ddp_broadcast_buffers=None,
+ddp_bucket_cap_mb=None,
+ddp_find_unused_parameters=None,
+ddp_timeout=1800,
+debug=[],
+deepspeed=None,
+disable_tqdm=False,
+do_eval=True,
+do_predict=True,
+do_train=True,
+efficient_zero_order=True,
+efficient_zero_order_fp16=False,
+eval_accumulation_steps=None,
+eval_delay=0,
+eval_do_concat_batches=True,
+eval_on_start=False,
+eval_steps=5000.0,
+eval_strategy=IntervalStrategy.NO,
+eval_use_gather_object=False,
+evaluate_during_training=True,
+exclude_embeddings=False,
+exclude_first_layers=-1,
+exclude_head=False,
+f0_scaling=1.0,
+fix_layers=0,
+fp16=False,
+fp16_backend=auto,
+fp16_full_eval=False,
+fp16_opt_level=O1,
+from_linearhead=False,
+fsdp=[],
+fsdp_config={'min_num_params': 0, 'xla': False, 'xla_fsdp_v2': False, 'xla_fsdp_grad_ckpt': False},
+fsdp_min_num_params=0,
+fsdp_transformer_layer_cls_to_wrap=None,
+full_determinism=False,
+gradient_accumulation_steps=1,
+gradient_checkpointing=False,
+gradient_checkpointing_kwargs=None,
+greater_is_better=None,
+group_by_length=False,
+half_precision_backend=auto,
+head_tuning=False,
+hf_inference_model=False,
+hub_always_push=False,
+hub_model_id=None,
+hub_private_repo=None,
+hub_revision=None,
+hub_strategy=HubStrategy.EVERY_SAVE,
+hub_token=<HUB_TOKEN>,
+ignore_data_skip=False,
+include_for_metrics=[],
+include_inputs_for_metrics=False,
+include_num_input_tokens_seen=False,
+include_tokens_per_second=False,
+jit_mode_eval=False,
+kernel_formula=sgd,
+kernel_gamma=1.0,
+kernel_regularization=0.0,
+kernel_solver=logistic,
+label_names=None,
+label_smoothing_factor=0.0,
+layer_wise_optim=False,
+learning_rate=1e-06,
+length_column_name=length,
+liger_kernel_config=None,
+load_best_model_at_end=False,
+load_kernels=None,
+local_rank=-1,
+log_file=log-USE_H0-USE_LH0-USE_C0,
+log_level=passive,
+log_level_replica=warning,
+log_on_each_node=True,
+logging_dir=result/sst-5-roberta-large-prompt-standard-k16-roberta-large-mezo-probe12-e200seed16-bs8-lr1e-6-eps1e-2-wd0-step2000-evalstep5000/16-16/runs/Jan15_22-58-18_ra5-5,
+logging_first_step=False,
+logging_nan_inf_filter=True,
+logging_steps=10,
+logging_strategy=IntervalStrategy.STEPS,
+lp_early_stopping=False,
+lr_scheduler_kwargs={},
+lr_scheduler_type=SchedulerType.CONSTANT,
+max_grad_norm=1.0,
+max_steps=2000,
+max_zo_forward_steps=0,
+mc_tol=0.1,
+metric_for_best_model=None,
+model_id=-1,
+mp_parameters=,
+neftune_noise_alpha=None,
+no_cuda=False,
+no_predict=False,
+no_reparam=False,
+no_train=False,
+norm_running_update=False,
+num_hvp_vecs=128,
+num_prefix=10,
+num_train_epochs=3.0,
+only_biases=False,
+optim=OptimizerNames.ADAMW_TORCH,
+optim_args=None,
+optim_target_modules=None,
+optimize_acc=False,
+optimizer=sgd,
+optimizer_variant=,
+output_dir=result/sst-5-roberta-large-prompt-standard-k16-roberta-large-mezo-probe12-e200seed16-bs8-lr1e-6-eps1e-2-wd0-step2000-evalstep5000/16-16,
+overwrite_kernels=False,
+overwrite_output_dir=True,
+parallelism_config=None,
+past_index=-1,
+per_device_eval_batch_size=4,
+per_device_train_batch_size=8,
+prediction_loss_only=False,
+prefix_init_by_real_act=False,
+prefix_tuning=False,
+prob_as_feature=False,
+push_to_hub=False,
+push_to_hub_model_id=None,
+push_to_hub_organization=None,
+push_to_hub_token=<PUSH_TO_HUB_TOKEN>,
+random_model_init=False,
+ray_scope=last,
+recompute_norms=False,
+remove_unused_columns=True,
+report_to=[],
+restore_callback_states_from_checkpoint=False,
+resume_from_checkpoint=None,
+run_name=None,
+save_at_last=False,
+save_logit=False,
+save_logit_dir=None,
+save_on_each_node=False,
+save_only_model=False,
+save_safetensors=True,
+save_steps=500,
+save_strategy=SaveStrategy.STEPS,
+save_total_limit=None,
+scale_lr_with_samples=False,
+scale_norm_by_num_params=False,
+seed=16,
+skip_memory_metrics=True,
+sweep=False,
+sync_embedding_layers=False,
+tf32=None,
+tie_emb=False,
+torch_compile=False,
+torch_compile_backend=None,
+torch_compile_mode=None,
+torch_empty_cache_steps=None,
+torchdynamo=None,
+tpu_metrics_debug=False,
+tpu_num_cores=None,
+trainer=standard,
+untie_emb=False,
+update_noise_every=1000,
+use_adaptive_h=False,
+use_c_scale=False,
+use_cpu=False,
+use_ipex=False,
+use_layerwise_h=False,
+use_legacy_prediction_loop=False,
+use_liger_kernel=False,
+use_mps_device=False,
+use_zo_grad_est=False,
+warmup_ratio=0.0,
+warmup_steps=0,
+weight_decay=0.0,
+zero_order_clip_grad=False,
+zero_order_eps=0.01,
+zero_order_optim=True,
+zero_order_sample=1,
+zero_order_sample_scheduler=None,
+zero_order_use_trainer_optim=False,
+zo_by_layer=False,
+zo_variant=None,
+)
+01/15/2026 22:58:26 - INFO - __main__ -   Task name: sst-5, number of labels: 5, output mode: classification
+01/15/2026 22:58:48 - WARNING - src.models -   By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+01/15/2026 22:58:49 - INFO - src.dataset -   Label 0 to word Ġterrible (6587)
+01/15/2026 22:58:49 - INFO - src.dataset -   Label 1 to word Ġbad (1099)
+01/15/2026 22:58:49 - INFO - src.dataset -   Label 2 to word Ġokay (8578)
+01/15/2026 22:58:49 - INFO - src.dataset -   Label 3 to word Ġgood (205)
+01/15/2026 22:58:49 - INFO - src.dataset -   Label 4 to word Ġgreat (372)
+01/15/2026 22:58:49 - INFO - src.dataset -   Total num_sample for mode train: 1
+01/15/2026 22:58:49 - INFO - src.dataset -   Creating/loading examples from dataset file at data/k-shot-1k-test/sst-5/16-16
+01/15/2026 22:58:49 - INFO - src.dataset -   [FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+01/15/2026 22:58:49 - INFO - src.dataset -   Creating features from dataset file at data/k-shot-1k-test/sst-5/16-16
+01/15/2026 22:58:50 - INFO - src.dataset -   Label 0 to word Ġterrible (6587)
+01/15/2026 22:58:50 - INFO - src.dataset -   Label 1 to word Ġbad (1099)
+01/15/2026 22:58:50 - INFO - src.dataset -   Label 2 to word Ġokay (8578)
+01/15/2026 22:58:50 - INFO - src.dataset -   Label 3 to word Ġgood (205)
+01/15/2026 22:58:50 - INFO - src.dataset -   Label 4 to word Ġgreat (372)
+01/15/2026 22:58:50 - INFO - src.dataset -   Total num_sample for mode dev: 1
+01/15/2026 22:58:50 - INFO - src.dataset -   Creating/loading examples from dataset file at data/k-shot-1k-test/sst-5/16-16
+/home/jy03364/MeZO/medium_models/src/dataset.py:363: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  self.support_examples, self.query_examples = torch.load(cached_features_file)
+01/15/2026 22:58:54 - INFO - src.dataset -   Loading features from cached file data/k-shot-1k-test/sst-5/16-16/cached_dev_RobertaTokenizerFast-roberta_128_sst-5 [took 2.062 s]
+01/15/2026 22:58:54 - INFO - src.dataset -   *** Example ***
+01/15/2026 22:58:54 - INFO - src.dataset -   guid: dev-0
+01/15/2026 22:58:54 - INFO - src.dataset -   features: OurInputFeatures(input_ids=[0, 179, 39, 78, 16735, 23, 5, 1026, 2156, 1236, 21625, 1242, 1239, 10, 2829, 45889, 636, 1548, 14, 1364, 129, 38589, 625, 3435, 479, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=2, mask_pos=[27], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+01/15/2026 22:58:54 - INFO - src.dataset -   text: <s>in his first stab at the form , jacquot takes a slightly anarchic approach that works only sporadically . It was<mask>.</s>
+01/15/2026 22:58:54 - INFO - src.dataset -   Label 0 to word Ġterrible (6587)
+01/15/2026 22:58:54 - INFO - src.dataset -   Label 1 to word Ġbad (1099)
+01/15/2026 22:58:54 - INFO - src.dataset -   Label 2 to word Ġokay (8578)
+01/15/2026 22:58:54 - INFO - src.dataset -   Label 3 to word Ġgood (205)
+01/15/2026 22:58:54 - INFO - src.dataset -   Label 4 to word Ġgreat (372)
+01/15/2026 22:58:54 - INFO - src.dataset -   Total num_sample for mode test: 1
+01/15/2026 22:58:54 - INFO - src.dataset -   Creating/loading examples from dataset file at data/k-shot-1k-test/sst-5/16-16
+01/15/2026 22:58:57 - INFO - src.dataset -   Loading features from cached file data/k-shot-1k-test/sst-5/16-16/cached_test_RobertaTokenizerFast-roberta_128_sst-5 [took 1.046 s]
+01/15/2026 22:58:57 - INFO - src.dataset -   *** Example ***
+01/15/2026 22:58:57 - INFO - src.dataset -   guid: test-0
+01/15/2026 22:58:57 - INFO - src.dataset -   features: OurInputFeatures(input_ids=[0, 2362, 2079, 2156, 117, 1423, 257, 2258, 2156, 45, 203, 9, 932, 479, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=1, mask_pos=[16], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+01/15/2026 22:58:57 - INFO - src.dataset -   text: <s>no movement , no yuks , not much of anything . It was<mask>.</s>
+01/15/2026 22:59:03 - INFO - src.trainer -   [dataloader][debug] self class=Trainer, get_train_dataloader=<bound method Trainer.get_train_dataloader of <src.trainer.Trainer object at 0x15266084aab0>>
+01/15/2026 22:59:03 - INFO - src.trainer -   [dataloader][override] Trainer.get_train_dataloader active. shuffle_raw=True type=bool -> shuffle=True; data_seed=16 seed=16 local_rank=-1
+01/15/2026 22:59:03 - INFO - src.trainer -   [dataloader][override] selected sampler=RandomSampler
+01/15/2026 22:59:03 - INFO - src.trainer -   [dataloader] sampler=RandomSampler, batch_sampler=BatchSampler
+01/15/2026 22:59:03 - INFO - src.trainer -   [dataloader] training uses RandomSampler (shuffle).
+01/15/2026 22:59:03 - INFO - src.trainer -   [dataloader] args.dataloader_shuffle=True
+01/15/2026 22:59:03 - INFO - src.trainer -   [dataloader] args.data_seed=16 args.seed=16
+01/15/2026 22:59:03 - INFO - src.trainer -   ***** Running training *****
+01/15/2026 22:59:03 - INFO - src.trainer -     Num examples = 8544
+01/15/2026 22:59:03 - INFO - src.trainer -     Num Epochs = 2
+01/15/2026 22:59:03 - INFO - src.trainer -     Instantaneous batch size per device = 8
+01/15/2026 22:59:03 - INFO - src.trainer -     Total train batch size (w. parallel, distributed & accumulation) = 8
+01/15/2026 22:59:03 - INFO - src.trainer -     Gradient Accumulation steps = 1
+01/15/2026 22:59:03 - INFO - src.trainer -     Total optimization steps = 2000
+You're using a RobertaTokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+01/15/2026 22:59:20 - INFO - src.trainer -   [hprobe] wrote 9 rows to result/sst-5-roberta-large-prompt-standard-k16-roberta-large-mezo-probe12-e200seed16-bs8-lr1e-6-eps1e-2-wd0-step2000-evalstep5000/16-16/hprobe.jsonl (step=0, mode=12)
+01/15/2026 22:59:20 - INFO - src.trainer -   {'loss': 1.7308390140533447, 'learning_rate': 1e-06, 'global_step': 0, 'zo_forward_step': 148, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 15, 'eps': 0.01}
+01/15/2026 22:59:31 - INFO - src.trainer -   {'loss': 1.5200386047363281, 'learning_rate': 1e-06, 'global_step': 10, 'zo_forward_step': 168, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 27, 'eps': 0.01}
+01/15/2026 22:59:44 - INFO - src.trainer -   {'loss': 1.579965591430664, 'learning_rate': 1e-06, 'global_step': 20, 'zo_forward_step': 188, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 39, 'eps': 0.01}
+01/15/2026 22:59:56 - INFO - src.trainer -   {'loss': 1.7089099884033203, 'learning_rate': 1e-06, 'global_step': 30, 'zo_forward_step': 208, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 51, 'eps': 0.01}
+01/15/2026 23:00:06 - INFO - src.trainer -   {'loss': 1.640034794807434, 'learning_rate': 1e-06, 'global_step': 40, 'zo_forward_step': 228, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 61, 'eps': 0.01}
+01/15/2026 23:00:17 - INFO - src.trainer -   {'loss': 2.130955457687378, 'learning_rate': 1e-06, 'global_step': 50, 'zo_forward_step': 248, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 72, 'eps': 0.01}
+01/15/2026 23:00:26 - INFO - src.trainer -   {'loss': 1.850380539894104, 'learning_rate': 1e-06, 'global_step': 60, 'zo_forward_step': 268, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 82, 'eps': 0.01}
+01/15/2026 23:00:37 - INFO - src.trainer -   {'loss': 1.8224340677261353, 'learning_rate': 1e-06, 'global_step': 70, 'zo_forward_step': 288, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 92, 'eps': 0.01}
+01/15/2026 23:00:47 - INFO - src.trainer -   {'loss': 1.9861819744110107, 'learning_rate': 1e-06, 'global_step': 80, 'zo_forward_step': 308, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 103, 'eps': 0.01}
+01/15/2026 23:00:58 - INFO - src.trainer -   {'loss': 1.6239445209503174, 'learning_rate': 1e-06, 'global_step': 90, 'zo_forward_step': 328, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 113, 'eps': 0.01}
+01/15/2026 23:01:08 - INFO - src.trainer -   {'loss': 1.460053563117981, 'learning_rate': 1e-06, 'global_step': 100, 'zo_forward_step': 348, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 123, 'eps': 0.01}
+01/15/2026 23:01:18 - INFO - src.trainer -   {'loss': 1.5583432912826538, 'learning_rate': 1e-06, 'global_step': 110, 'zo_forward_step': 368, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 133, 'eps': 0.01}
+01/15/2026 23:01:28 - INFO - src.trainer -   {'loss': 1.692044734954834, 'learning_rate': 1e-06, 'global_step': 120, 'zo_forward_step': 388, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 143, 'eps': 0.01}
+01/15/2026 23:01:39 - INFO - src.trainer -   {'loss': 1.6711208820343018, 'learning_rate': 1e-06, 'global_step': 130, 'zo_forward_step': 408, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 155, 'eps': 0.01}
+01/15/2026 23:01:50 - INFO - src.trainer -   {'loss': 1.7316491603851318, 'learning_rate': 1e-06, 'global_step': 140, 'zo_forward_step': 428, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 165, 'eps': 0.01}
+01/15/2026 23:02:00 - INFO - src.trainer -   {'loss': 1.5729728937149048, 'learning_rate': 1e-06, 'global_step': 150, 'zo_forward_step': 448, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 175, 'eps': 0.01}
+01/15/2026 23:02:10 - INFO - src.trainer -   {'loss': 1.5551490783691406, 'learning_rate': 1e-06, 'global_step': 160, 'zo_forward_step': 468, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 185, 'eps': 0.01}
+01/15/2026 23:02:20 - INFO - src.trainer -   {'loss': 1.799975872039795, 'learning_rate': 1e-06, 'global_step': 170, 'zo_forward_step': 488, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 195, 'eps': 0.01}
+01/15/2026 23:02:30 - INFO - src.trainer -   {'loss': 1.483905553817749, 'learning_rate': 1e-06, 'global_step': 180, 'zo_forward_step': 508, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 205, 'eps': 0.01}
+01/15/2026 23:02:40 - INFO - src.trainer -   {'loss': 1.5936205387115479, 'learning_rate': 1e-06, 'global_step': 190, 'zo_forward_step': 528, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 215, 'eps': 0.01}
+01/15/2026 23:03:04 - INFO - src.trainer -   [hprobe] wrote 9 rows to result/sst-5-roberta-large-prompt-standard-k16-roberta-large-mezo-probe12-e200seed16-bs8-lr1e-6-eps1e-2-wd0-step2000-evalstep5000/16-16/hprobe.jsonl (step=200, mode=12)
+01/15/2026 23:03:04 - INFO - src.trainer -   {'loss': 1.4537601470947266, 'learning_rate': 1e-06, 'global_step': 200, 'zo_forward_step': 694, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 239, 'eps': 0.01}
+01/15/2026 23:03:14 - INFO - src.trainer -   {'loss': 1.4989242553710938, 'learning_rate': 1e-06, 'global_step': 210, 'zo_forward_step': 714, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 249, 'eps': 0.01}
+01/15/2026 23:03:23 - INFO - src.trainer -   {'loss': 1.4618239402770996, 'learning_rate': 1e-06, 'global_step': 220, 'zo_forward_step': 734, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 259, 'eps': 0.01}
+01/15/2026 23:03:35 - INFO - src.trainer -   {'loss': 1.5554869174957275, 'learning_rate': 1e-06, 'global_step': 230, 'zo_forward_step': 754, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 270, 'eps': 0.01}
+01/15/2026 23:03:45 - INFO - src.trainer -   {'loss': 1.1451094150543213, 'learning_rate': 1e-06, 'global_step': 240, 'zo_forward_step': 774, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 280, 'eps': 0.01}
+01/15/2026 23:03:55 - INFO - src.trainer -   {'loss': 1.77212655544281, 'learning_rate': 1e-06, 'global_step': 250, 'zo_forward_step': 794, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 291, 'eps': 0.01}
+01/15/2026 23:04:06 - INFO - src.trainer -   {'loss': 1.6124002933502197, 'learning_rate': 1e-06, 'global_step': 260, 'zo_forward_step': 814, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 301, 'eps': 0.01}
+01/15/2026 23:04:17 - INFO - src.trainer -   {'loss': 1.6253565549850464, 'learning_rate': 1e-06, 'global_step': 270, 'zo_forward_step': 834, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 312, 'eps': 0.01}
+01/15/2026 23:04:27 - INFO - src.trainer -   {'loss': 1.8193864822387695, 'learning_rate': 1e-06, 'global_step': 280, 'zo_forward_step': 854, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 322, 'eps': 0.01}
+01/15/2026 23:04:37 - INFO - src.trainer -   {'loss': 1.5968679189682007, 'learning_rate': 1e-06, 'global_step': 290, 'zo_forward_step': 874, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 332, 'eps': 0.01}
+01/15/2026 23:04:47 - INFO - src.trainer -   {'loss': 1.7489523887634277, 'learning_rate': 1e-06, 'global_step': 300, 'zo_forward_step': 894, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 343, 'eps': 0.01}
+01/15/2026 23:04:58 - INFO - src.trainer -   {'loss': 1.7480839490890503, 'learning_rate': 1e-06, 'global_step': 310, 'zo_forward_step': 914, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 353, 'eps': 0.01}
+01/15/2026 23:05:09 - INFO - src.trainer -   {'loss': 1.6735981702804565, 'learning_rate': 1e-06, 'global_step': 320, 'zo_forward_step': 934, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 364, 'eps': 0.01}
+01/15/2026 23:05:19 - INFO - src.trainer -   {'loss': 2.0947494506835938, 'learning_rate': 1e-06, 'global_step': 330, 'zo_forward_step': 954, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 374, 'eps': 0.01}
+01/15/2026 23:05:29 - INFO - src.trainer -   {'loss': 1.714756965637207, 'learning_rate': 1e-06, 'global_step': 340, 'zo_forward_step': 974, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 384, 'eps': 0.01}
+01/15/2026 23:05:39 - INFO - src.trainer -   {'loss': 1.5837537050247192, 'learning_rate': 1e-06, 'global_step': 350, 'zo_forward_step': 994, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 394, 'eps': 0.01}
+01/15/2026 23:05:49 - INFO - src.trainer -   {'loss': 1.8700201511383057, 'learning_rate': 1e-06, 'global_step': 360, 'zo_forward_step': 1014, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 404, 'eps': 0.01}
+01/15/2026 23:05:59 - INFO - src.trainer -   {'loss': 1.8847696781158447, 'learning_rate': 1e-06, 'global_step': 370, 'zo_forward_step': 1034, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 415, 'eps': 0.01}
+01/15/2026 23:06:10 - INFO - src.trainer -   {'loss': 1.453579306602478, 'learning_rate': 1e-06, 'global_step': 380, 'zo_forward_step': 1054, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 425, 'eps': 0.01}
+01/15/2026 23:06:19 - INFO - src.trainer -   {'loss': 2.099081039428711, 'learning_rate': 1e-06, 'global_step': 390, 'zo_forward_step': 1074, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 435, 'eps': 0.01}
+01/15/2026 23:06:44 - INFO - src.trainer -   [hprobe] wrote 9 rows to result/sst-5-roberta-large-prompt-standard-k16-roberta-large-mezo-probe12-e200seed16-bs8-lr1e-6-eps1e-2-wd0-step2000-evalstep5000/16-16/hprobe.jsonl (step=400, mode=12)
+01/15/2026 23:06:44 - INFO - src.trainer -   {'loss': 2.0494673252105713, 'learning_rate': 1e-06, 'global_step': 400, 'zo_forward_step': 1240, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 459, 'eps': 0.01}
+01/15/2026 23:06:54 - INFO - src.trainer -   {'loss': 2.526632308959961, 'learning_rate': 1e-06, 'global_step': 410, 'zo_forward_step': 1260, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 469, 'eps': 0.01}
+01/15/2026 23:07:04 - INFO - src.trainer -   {'loss': 1.612356185913086, 'learning_rate': 1e-06, 'global_step': 420, 'zo_forward_step': 1280, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 480, 'eps': 0.01}
+01/15/2026 23:07:16 - INFO - src.trainer -   {'loss': 1.5235532522201538, 'learning_rate': 1e-06, 'global_step': 430, 'zo_forward_step': 1300, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 491, 'eps': 0.01}
+01/15/2026 23:07:27 - INFO - src.trainer -   {'loss': 1.7454156875610352, 'learning_rate': 1e-06, 'global_step': 440, 'zo_forward_step': 1320, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 502, 'eps': 0.01}
+01/15/2026 23:07:37 - INFO - src.trainer -   {'loss': 1.7769819498062134, 'learning_rate': 1e-06, 'global_step': 450, 'zo_forward_step': 1340, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 512, 'eps': 0.01}
+01/15/2026 23:07:47 - INFO - src.trainer -   {'loss': 1.7367517948150635, 'learning_rate': 1e-06, 'global_step': 460, 'zo_forward_step': 1360, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 522, 'eps': 0.01}
+01/15/2026 23:07:57 - INFO - src.trainer -   {'loss': 2.0975046157836914, 'learning_rate': 1e-06, 'global_step': 470, 'zo_forward_step': 1380, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 532, 'eps': 0.01}
+01/15/2026 23:08:08 - INFO - src.trainer -   {'loss': 2.137312412261963, 'learning_rate': 1e-06, 'global_step': 480, 'zo_forward_step': 1400, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 543, 'eps': 0.01}
+01/15/2026 23:08:18 - INFO - src.trainer -   {'loss': 2.0077738761901855, 'learning_rate': 1e-06, 'global_step': 490, 'zo_forward_step': 1420, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 553, 'eps': 0.01}
+01/15/2026 23:08:28 - INFO - src.trainer -   {'loss': 2.3592514991760254, 'learning_rate': 1e-06, 'global_step': 500, 'zo_forward_step': 1440, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 563, 'eps': 0.01}
+01/15/2026 23:08:38 - INFO - src.trainer -   {'loss': 1.608851432800293, 'learning_rate': 1e-06, 'global_step': 510, 'zo_forward_step': 1460, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 573, 'eps': 0.01}
+01/15/2026 23:08:48 - INFO - src.trainer -   {'loss': 1.6098414659500122, 'learning_rate': 1e-06, 'global_step': 520, 'zo_forward_step': 1480, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 583, 'eps': 0.01}
+01/15/2026 23:08:58 - INFO - src.trainer -   {'loss': 1.76339852809906, 'learning_rate': 1e-06, 'global_step': 530, 'zo_forward_step': 1500, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 594, 'eps': 0.01}
+01/15/2026 23:09:09 - INFO - src.trainer -   {'loss': 1.826063632965088, 'learning_rate': 1e-06, 'global_step': 540, 'zo_forward_step': 1520, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 604, 'eps': 0.01}
+01/15/2026 23:09:19 - INFO - src.trainer -   {'loss': 1.6512877941131592, 'learning_rate': 1e-06, 'global_step': 550, 'zo_forward_step': 1540, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 614, 'eps': 0.01}
+01/15/2026 23:09:29 - INFO - src.trainer -   {'loss': 2.0772011280059814, 'learning_rate': 1e-06, 'global_step': 560, 'zo_forward_step': 1560, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 624, 'eps': 0.01}
+01/15/2026 23:09:39 - INFO - src.trainer -   {'loss': 1.8943312168121338, 'learning_rate': 1e-06, 'global_step': 570, 'zo_forward_step': 1580, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 634, 'eps': 0.01}
+01/15/2026 23:09:50 - INFO - src.trainer -   {'loss': 1.8482098579406738, 'learning_rate': 1e-06, 'global_step': 580, 'zo_forward_step': 1600, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 645, 'eps': 0.01}
+01/15/2026 23:10:00 - INFO - src.trainer -   {'loss': 1.8498258590698242, 'learning_rate': 1e-06, 'global_step': 590, 'zo_forward_step': 1620, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 655, 'eps': 0.01}
+01/15/2026 23:10:24 - INFO - src.trainer -   [hprobe] wrote 9 rows to result/sst-5-roberta-large-prompt-standard-k16-roberta-large-mezo-probe12-e200seed16-bs8-lr1e-6-eps1e-2-wd0-step2000-evalstep5000/16-16/hprobe.jsonl (step=600, mode=12)
+01/15/2026 23:10:24 - INFO - src.trainer -   {'loss': 1.5738575458526611, 'learning_rate': 1e-06, 'global_step': 600, 'zo_forward_step': 1786, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 680, 'eps': 0.01}
+01/15/2026 23:10:34 - INFO - src.trainer -   {'loss': 1.7438300848007202, 'learning_rate': 1e-06, 'global_step': 610, 'zo_forward_step': 1806, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 690, 'eps': 0.01}
+01/15/2026 23:10:45 - INFO - src.trainer -   {'loss': 2.1356852054595947, 'learning_rate': 1e-06, 'global_step': 620, 'zo_forward_step': 1826, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 700, 'eps': 0.01}
+01/15/2026 23:10:55 - INFO - src.trainer -   {'loss': 0.9667966365814209, 'learning_rate': 1e-06, 'global_step': 630, 'zo_forward_step': 1846, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 711, 'eps': 0.01}
+01/15/2026 23:11:05 - INFO - src.trainer -   {'loss': 1.5316474437713623, 'learning_rate': 1e-06, 'global_step': 640, 'zo_forward_step': 1866, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 721, 'eps': 0.01}
+01/15/2026 23:11:16 - INFO - src.trainer -   {'loss': 1.678829550743103, 'learning_rate': 1e-06, 'global_step': 650, 'zo_forward_step': 1886, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 731, 'eps': 0.01}
+01/15/2026 23:11:26 - INFO - src.trainer -   {'loss': 1.6491719484329224, 'learning_rate': 1e-06, 'global_step': 660, 'zo_forward_step': 1906, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 742, 'eps': 0.01}
+01/15/2026 23:11:37 - INFO - src.trainer -   {'loss': 1.775164008140564, 'learning_rate': 1e-06, 'global_step': 670, 'zo_forward_step': 1926, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 752, 'eps': 0.01}
+01/15/2026 23:11:47 - INFO - src.trainer -   {'loss': 1.7989674806594849, 'learning_rate': 1e-06, 'global_step': 680, 'zo_forward_step': 1946, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 763, 'eps': 0.01}
+01/15/2026 23:11:57 - INFO - src.trainer -   {'loss': 1.717096209526062, 'learning_rate': 1e-06, 'global_step': 690, 'zo_forward_step': 1966, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 772, 'eps': 0.01}
+01/15/2026 23:12:08 - INFO - src.trainer -   {'loss': 1.6842477321624756, 'learning_rate': 1e-06, 'global_step': 700, 'zo_forward_step': 1986, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 783, 'eps': 0.01}
+01/15/2026 23:12:18 - INFO - src.trainer -   {'loss': 1.6377079486846924, 'learning_rate': 1e-06, 'global_step': 710, 'zo_forward_step': 2006, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 793, 'eps': 0.01}
+01/15/2026 23:12:28 - INFO - src.trainer -   {'loss': 1.7331606149673462, 'learning_rate': 1e-06, 'global_step': 720, 'zo_forward_step': 2026, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 804, 'eps': 0.01}
+01/15/2026 23:12:38 - INFO - src.trainer -   {'loss': 1.4870834350585938, 'learning_rate': 1e-06, 'global_step': 730, 'zo_forward_step': 2046, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 813, 'eps': 0.01}
+01/15/2026 23:12:48 - INFO - src.trainer -   {'loss': 1.8448214530944824, 'learning_rate': 1e-06, 'global_step': 740, 'zo_forward_step': 2066, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 823, 'eps': 0.01}
+01/15/2026 23:12:58 - INFO - src.trainer -   {'loss': 1.961372971534729, 'learning_rate': 1e-06, 'global_step': 750, 'zo_forward_step': 2086, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 833, 'eps': 0.01}
+01/15/2026 23:13:07 - INFO - src.trainer -   {'loss': 1.6236456632614136, 'learning_rate': 1e-06, 'global_step': 760, 'zo_forward_step': 2106, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 842, 'eps': 0.01}
+01/15/2026 23:13:18 - INFO - src.trainer -   {'loss': 1.5502088069915771, 'learning_rate': 1e-06, 'global_step': 770, 'zo_forward_step': 2126, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 853, 'eps': 0.01}
+01/15/2026 23:13:29 - INFO - src.trainer -   {'loss': 2.0316526889801025, 'learning_rate': 1e-06, 'global_step': 780, 'zo_forward_step': 2146, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 864, 'eps': 0.01}
+01/15/2026 23:13:39 - INFO - src.trainer -   {'loss': 1.5955314636230469, 'learning_rate': 1e-06, 'global_step': 790, 'zo_forward_step': 2166, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 874, 'eps': 0.01}
+01/15/2026 23:14:04 - INFO - src.trainer -   [hprobe] wrote 9 rows to result/sst-5-roberta-large-prompt-standard-k16-roberta-large-mezo-probe12-e200seed16-bs8-lr1e-6-eps1e-2-wd0-step2000-evalstep5000/16-16/hprobe.jsonl (step=800, mode=12)
+01/15/2026 23:14:04 - INFO - src.trainer -   {'loss': 1.5060728788375854, 'learning_rate': 1e-06, 'global_step': 800, 'zo_forward_step': 2332, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 899, 'eps': 0.01}
+01/15/2026 23:14:14 - INFO - src.trainer -   {'loss': 1.4783775806427002, 'learning_rate': 1e-06, 'global_step': 810, 'zo_forward_step': 2352, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 909, 'eps': 0.01}
+01/15/2026 23:14:24 - INFO - src.trainer -   {'loss': 1.6092817783355713, 'learning_rate': 1e-06, 'global_step': 820, 'zo_forward_step': 2372, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 919, 'eps': 0.01}
+01/15/2026 23:14:34 - INFO - src.trainer -   {'loss': 1.7227706909179688, 'learning_rate': 1e-06, 'global_step': 830, 'zo_forward_step': 2392, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 929, 'eps': 0.01}
+01/15/2026 23:14:45 - INFO - src.trainer -   {'loss': 1.8239240646362305, 'learning_rate': 1e-06, 'global_step': 840, 'zo_forward_step': 2412, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 940, 'eps': 0.01}
+01/15/2026 23:14:56 - INFO - src.trainer -   {'loss': 1.777878999710083, 'learning_rate': 1e-06, 'global_step': 850, 'zo_forward_step': 2432, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 951, 'eps': 0.01}
+01/15/2026 23:15:06 - INFO - src.trainer -   {'loss': 1.4412481784820557, 'learning_rate': 1e-06, 'global_step': 860, 'zo_forward_step': 2452, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 961, 'eps': 0.01}
+01/15/2026 23:15:16 - INFO - src.trainer -   {'loss': 1.7162270545959473, 'learning_rate': 1e-06, 'global_step': 870, 'zo_forward_step': 2472, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 971, 'eps': 0.01}
+01/15/2026 23:15:26 - INFO - src.trainer -   {'loss': 1.4423425197601318, 'learning_rate': 1e-06, 'global_step': 880, 'zo_forward_step': 2492, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 981, 'eps': 0.01}
+01/15/2026 23:15:36 - INFO - src.trainer -   {'loss': 2.0457820892333984, 'learning_rate': 1e-06, 'global_step': 890, 'zo_forward_step': 2512, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 992, 'eps': 0.01}
+01/15/2026 23:15:47 - INFO - src.trainer -   {'loss': 1.228410243988037, 'learning_rate': 1e-06, 'global_step': 900, 'zo_forward_step': 2532, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1003, 'eps': 0.01}
+01/15/2026 23:15:57 - INFO - src.trainer -   {'loss': 1.379476547241211, 'learning_rate': 1e-06, 'global_step': 910, 'zo_forward_step': 2552, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1012, 'eps': 0.01}
+01/15/2026 23:16:07 - INFO - src.trainer -   {'loss': 1.5507339239120483, 'learning_rate': 1e-06, 'global_step': 920, 'zo_forward_step': 2572, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1022, 'eps': 0.01}
+01/15/2026 23:16:18 - INFO - src.trainer -   {'loss': 1.9122798442840576, 'learning_rate': 1e-06, 'global_step': 930, 'zo_forward_step': 2592, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1033, 'eps': 0.01}
+01/15/2026 23:16:28 - INFO - src.trainer -   {'loss': 1.3600080013275146, 'learning_rate': 1e-06, 'global_step': 940, 'zo_forward_step': 2612, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1043, 'eps': 0.01}
+01/15/2026 23:16:39 - INFO - src.trainer -   {'loss': 1.8800731897354126, 'learning_rate': 1e-06, 'global_step': 950, 'zo_forward_step': 2632, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1055, 'eps': 0.01}
+01/15/2026 23:16:50 - INFO - src.trainer -   {'loss': 1.8697108030319214, 'learning_rate': 1e-06, 'global_step': 960, 'zo_forward_step': 2652, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1065, 'eps': 0.01}
+01/15/2026 23:17:00 - INFO - src.trainer -   {'loss': 1.8405792713165283, 'learning_rate': 1e-06, 'global_step': 970, 'zo_forward_step': 2672, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1075, 'eps': 0.01}
+01/15/2026 23:17:10 - INFO - src.trainer -   {'loss': 1.577600121498108, 'learning_rate': 1e-06, 'global_step': 980, 'zo_forward_step': 2692, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1086, 'eps': 0.01}
+01/15/2026 23:17:21 - INFO - src.trainer -   {'loss': 1.7296135425567627, 'learning_rate': 1e-06, 'global_step': 990, 'zo_forward_step': 2712, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1097, 'eps': 0.01}
+01/15/2026 23:17:45 - INFO - src.trainer -   [hprobe] wrote 9 rows to result/sst-5-roberta-large-prompt-standard-k16-roberta-large-mezo-probe12-e200seed16-bs8-lr1e-6-eps1e-2-wd0-step2000-evalstep5000/16-16/hprobe.jsonl (step=1000, mode=12)
+01/15/2026 23:17:46 - INFO - src.trainer -   {'loss': 1.5453280210494995, 'learning_rate': 1e-06, 'global_step': 1000, 'zo_forward_step': 2878, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1121, 'eps': 0.01}
+01/15/2026 23:17:56 - INFO - src.trainer -   {'loss': 1.7233812808990479, 'learning_rate': 1e-06, 'global_step': 1010, 'zo_forward_step': 2898, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1131, 'eps': 0.01}
+01/15/2026 23:18:06 - INFO - src.trainer -   {'loss': 1.6911940574645996, 'learning_rate': 1e-06, 'global_step': 1020, 'zo_forward_step': 2918, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1141, 'eps': 0.01}
+01/15/2026 23:18:17 - INFO - src.trainer -   {'loss': 1.9264458417892456, 'learning_rate': 1e-06, 'global_step': 1030, 'zo_forward_step': 2938, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1152, 'eps': 0.01}
+01/15/2026 23:18:26 - INFO - src.trainer -   {'loss': 1.6435785293579102, 'learning_rate': 1e-06, 'global_step': 1040, 'zo_forward_step': 2958, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1162, 'eps': 0.01}
+01/15/2026 23:18:37 - INFO - src.trainer -   {'loss': 2.202735185623169, 'learning_rate': 1e-06, 'global_step': 1050, 'zo_forward_step': 2978, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1172, 'eps': 0.01}
+01/15/2026 23:18:47 - INFO - src.trainer -   {'loss': 1.9339241981506348, 'learning_rate': 1e-06, 'global_step': 1060, 'zo_forward_step': 2998, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1183, 'eps': 0.01}
+01/15/2026 23:18:57 - INFO - src.trainer -   {'loss': 1.941045880317688, 'learning_rate': 1e-06, 'global_step': 1070, 'zo_forward_step': 3018, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1193, 'eps': 0.01}
+01/15/2026 23:19:07 - INFO - src.trainer -   {'loss': 1.2863448858261108, 'learning_rate': 1e-06, 'global_step': 1080, 'zo_forward_step': 3038, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1203, 'eps': 0.01}
+01/15/2026 23:19:18 - INFO - src.trainer -   {'loss': 1.8973904848098755, 'learning_rate': 1e-06, 'global_step': 1090, 'zo_forward_step': 3058, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1213, 'eps': 0.01}
+01/15/2026 23:19:28 - INFO - src.trainer -   {'loss': 1.7868168354034424, 'learning_rate': 1e-06, 'global_step': 1100, 'zo_forward_step': 3078, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1224, 'eps': 0.01}
+01/15/2026 23:19:38 - INFO - src.trainer -   {'loss': 1.59706711769104, 'learning_rate': 1e-06, 'global_step': 1110, 'zo_forward_step': 3098, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1234, 'eps': 0.01}
+01/15/2026 23:19:49 - INFO - src.trainer -   {'loss': 1.6913270950317383, 'learning_rate': 1e-06, 'global_step': 1120, 'zo_forward_step': 3118, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1244, 'eps': 0.01}
+01/15/2026 23:19:59 - INFO - src.trainer -   {'loss': 1.7159955501556396, 'learning_rate': 1e-06, 'global_step': 1130, 'zo_forward_step': 3138, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1254, 'eps': 0.01}
+01/15/2026 23:20:09 - INFO - src.trainer -   {'loss': 1.851872444152832, 'learning_rate': 1e-06, 'global_step': 1140, 'zo_forward_step': 3158, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1265, 'eps': 0.01}
+01/15/2026 23:20:19 - INFO - src.trainer -   {'loss': 1.8413976430892944, 'learning_rate': 1e-06, 'global_step': 1150, 'zo_forward_step': 3178, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1275, 'eps': 0.01}
+01/15/2026 23:20:30 - INFO - src.trainer -   {'loss': 1.5604335069656372, 'learning_rate': 1e-06, 'global_step': 1160, 'zo_forward_step': 3198, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1286, 'eps': 0.01}
+01/15/2026 23:20:41 - INFO - src.trainer -   {'loss': 1.700058102607727, 'learning_rate': 1e-06, 'global_step': 1170, 'zo_forward_step': 3218, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1296, 'eps': 0.01}
+01/15/2026 23:20:51 - INFO - src.trainer -   {'loss': 1.828675389289856, 'learning_rate': 1e-06, 'global_step': 1180, 'zo_forward_step': 3238, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1307, 'eps': 0.01}
+01/15/2026 23:21:01 - INFO - src.trainer -   {'loss': 1.7576994895935059, 'learning_rate': 1e-06, 'global_step': 1190, 'zo_forward_step': 3258, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1316, 'eps': 0.01}
+01/15/2026 23:21:25 - INFO - src.trainer -   [hprobe] wrote 9 rows to result/sst-5-roberta-large-prompt-standard-k16-roberta-large-mezo-probe12-e200seed16-bs8-lr1e-6-eps1e-2-wd0-step2000-evalstep5000/16-16/hprobe.jsonl (step=1200, mode=12)
+01/15/2026 23:21:25 - INFO - src.trainer -   {'loss': 1.7767339944839478, 'learning_rate': 1e-06, 'global_step': 1200, 'zo_forward_step': 3424, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1340, 'eps': 0.01}
+01/15/2026 23:21:35 - INFO - src.trainer -   {'loss': 1.7081594467163086, 'learning_rate': 1e-06, 'global_step': 1210, 'zo_forward_step': 3444, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1351, 'eps': 0.01}
+01/15/2026 23:21:45 - INFO - src.trainer -   {'loss': 1.6886265277862549, 'learning_rate': 1e-06, 'global_step': 1220, 'zo_forward_step': 3464, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1361, 'eps': 0.01}
+01/15/2026 23:21:56 - INFO - src.trainer -   {'loss': 1.6223589181900024, 'learning_rate': 1e-06, 'global_step': 1230, 'zo_forward_step': 3484, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1371, 'eps': 0.01}
+01/15/2026 23:22:06 - INFO - src.trainer -   {'loss': 1.5965766906738281, 'learning_rate': 1e-06, 'global_step': 1240, 'zo_forward_step': 3504, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1381, 'eps': 0.01}
+01/15/2026 23:22:16 - INFO - src.trainer -   {'loss': 1.6817208528518677, 'learning_rate': 1e-06, 'global_step': 1250, 'zo_forward_step': 3524, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1391, 'eps': 0.01}
+01/15/2026 23:22:28 - INFO - src.trainer -   {'loss': 2.1471729278564453, 'learning_rate': 1e-06, 'global_step': 1260, 'zo_forward_step': 3544, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1403, 'eps': 0.01}
+01/15/2026 23:22:38 - INFO - src.trainer -   {'loss': 1.704779028892517, 'learning_rate': 1e-06, 'global_step': 1270, 'zo_forward_step': 3564, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1413, 'eps': 0.01}
+01/15/2026 23:22:48 - INFO - src.trainer -   {'loss': 1.7757782936096191, 'learning_rate': 1e-06, 'global_step': 1280, 'zo_forward_step': 3584, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1423, 'eps': 0.01}
+01/15/2026 23:22:59 - INFO - src.trainer -   {'loss': 1.9097366333007812, 'learning_rate': 1e-06, 'global_step': 1290, 'zo_forward_step': 3604, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1434, 'eps': 0.01}
+01/15/2026 23:23:08 - INFO - src.trainer -   {'loss': 1.9479234218597412, 'learning_rate': 1e-06, 'global_step': 1300, 'zo_forward_step': 3624, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1444, 'eps': 0.01}
+01/15/2026 23:23:18 - INFO - src.trainer -   {'loss': 1.6994980573654175, 'learning_rate': 1e-06, 'global_step': 1310, 'zo_forward_step': 3644, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1454, 'eps': 0.01}
+01/15/2026 23:23:29 - INFO - src.trainer -   {'loss': 1.8757966756820679, 'learning_rate': 1e-06, 'global_step': 1320, 'zo_forward_step': 3664, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1464, 'eps': 0.01}
+01/15/2026 23:23:38 - INFO - src.trainer -   {'loss': 1.7467716932296753, 'learning_rate': 1e-06, 'global_step': 1330, 'zo_forward_step': 3684, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1474, 'eps': 0.01}
+01/15/2026 23:23:48 - INFO - src.trainer -   {'loss': 2.0401358604431152, 'learning_rate': 1e-06, 'global_step': 1340, 'zo_forward_step': 3704, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1483, 'eps': 0.01}
+01/15/2026 23:23:59 - INFO - src.trainer -   {'loss': 1.4461802244186401, 'learning_rate': 1e-06, 'global_step': 1350, 'zo_forward_step': 3724, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1494, 'eps': 0.01}
+01/15/2026 23:24:09 - INFO - src.trainer -   {'loss': 1.345488429069519, 'learning_rate': 1e-06, 'global_step': 1360, 'zo_forward_step': 3744, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1504, 'eps': 0.01}
+01/15/2026 23:24:20 - INFO - src.trainer -   {'loss': 1.4003418684005737, 'learning_rate': 1e-06, 'global_step': 1370, 'zo_forward_step': 3764, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1515, 'eps': 0.01}
+01/15/2026 23:24:30 - INFO - src.trainer -   {'loss': 1.656883716583252, 'learning_rate': 1e-06, 'global_step': 1380, 'zo_forward_step': 3784, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1525, 'eps': 0.01}
+01/15/2026 23:24:40 - INFO - src.trainer -   {'loss': 1.7120071649551392, 'learning_rate': 1e-06, 'global_step': 1390, 'zo_forward_step': 3804, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1535, 'eps': 0.01}
+01/15/2026 23:25:04 - INFO - src.trainer -   [hprobe] wrote 9 rows to result/sst-5-roberta-large-prompt-standard-k16-roberta-large-mezo-probe12-e200seed16-bs8-lr1e-6-eps1e-2-wd0-step2000-evalstep5000/16-16/hprobe.jsonl (step=1400, mode=12)
+01/15/2026 23:25:05 - INFO - src.trainer -   {'loss': 1.528314232826233, 'learning_rate': 1e-06, 'global_step': 1400, 'zo_forward_step': 3970, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1560, 'eps': 0.01}
+01/15/2026 23:25:15 - INFO - src.trainer -   {'loss': 1.6243157386779785, 'learning_rate': 1e-06, 'global_step': 1410, 'zo_forward_step': 3990, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1571, 'eps': 0.01}
+01/15/2026 23:25:25 - INFO - src.trainer -   {'loss': 2.34243106842041, 'learning_rate': 1e-06, 'global_step': 1420, 'zo_forward_step': 4010, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1581, 'eps': 0.01}
+01/15/2026 23:25:36 - INFO - src.trainer -   {'loss': 1.5468394756317139, 'learning_rate': 1e-06, 'global_step': 1430, 'zo_forward_step': 4030, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1591, 'eps': 0.01}
+01/15/2026 23:25:46 - INFO - src.trainer -   {'loss': 1.8826918601989746, 'learning_rate': 1e-06, 'global_step': 1440, 'zo_forward_step': 4050, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1601, 'eps': 0.01}
+01/15/2026 23:25:56 - INFO - src.trainer -   {'loss': 1.7355239391326904, 'learning_rate': 1e-06, 'global_step': 1450, 'zo_forward_step': 4070, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1612, 'eps': 0.01}
+01/15/2026 23:26:07 - INFO - src.trainer -   {'loss': 1.651646614074707, 'learning_rate': 1e-06, 'global_step': 1460, 'zo_forward_step': 4090, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1622, 'eps': 0.01}
+01/15/2026 23:26:18 - INFO - src.trainer -   {'loss': 1.5950430631637573, 'learning_rate': 1e-06, 'global_step': 1470, 'zo_forward_step': 4110, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1633, 'eps': 0.01}
+01/15/2026 23:26:29 - INFO - src.trainer -   {'loss': 1.7484809160232544, 'learning_rate': 1e-06, 'global_step': 1480, 'zo_forward_step': 4130, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1644, 'eps': 0.01}
+01/15/2026 23:26:39 - INFO - src.trainer -   {'loss': 1.7127821445465088, 'learning_rate': 1e-06, 'global_step': 1490, 'zo_forward_step': 4150, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1655, 'eps': 0.01}
+01/15/2026 23:26:49 - INFO - src.trainer -   {'loss': 1.700196623802185, 'learning_rate': 1e-06, 'global_step': 1500, 'zo_forward_step': 4170, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1665, 'eps': 0.01}
+01/15/2026 23:27:00 - INFO - src.trainer -   {'loss': 1.5217726230621338, 'learning_rate': 1e-06, 'global_step': 1510, 'zo_forward_step': 4190, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1675, 'eps': 0.01}
+01/15/2026 23:27:10 - INFO - src.trainer -   {'loss': 1.5128949880599976, 'learning_rate': 1e-06, 'global_step': 1520, 'zo_forward_step': 4210, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1685, 'eps': 0.01}
+01/15/2026 23:27:20 - INFO - src.trainer -   {'loss': 1.582952857017517, 'learning_rate': 1e-06, 'global_step': 1530, 'zo_forward_step': 4230, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1695, 'eps': 0.01}
+01/15/2026 23:27:31 - INFO - src.trainer -   {'loss': 1.956597089767456, 'learning_rate': 1e-06, 'global_step': 1540, 'zo_forward_step': 4250, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1706, 'eps': 0.01}
+01/15/2026 23:27:41 - INFO - src.trainer -   {'loss': 1.6128038167953491, 'learning_rate': 1e-06, 'global_step': 1550, 'zo_forward_step': 4270, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1716, 'eps': 0.01}
+01/15/2026 23:27:51 - INFO - src.trainer -   {'loss': 1.9489845037460327, 'learning_rate': 1e-06, 'global_step': 1560, 'zo_forward_step': 4290, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1727, 'eps': 0.01}
+01/15/2026 23:28:01 - INFO - src.trainer -   {'loss': 1.7535542249679565, 'learning_rate': 1e-06, 'global_step': 1570, 'zo_forward_step': 4310, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1736, 'eps': 0.01}
+01/15/2026 23:28:12 - INFO - src.trainer -   {'loss': 1.9195892810821533, 'learning_rate': 1e-06, 'global_step': 1580, 'zo_forward_step': 4330, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1747, 'eps': 0.01}
+01/15/2026 23:28:23 - INFO - src.trainer -   {'loss': 1.628528118133545, 'learning_rate': 1e-06, 'global_step': 1590, 'zo_forward_step': 4350, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1758, 'eps': 0.01}
+01/15/2026 23:28:47 - INFO - src.trainer -   [hprobe] wrote 9 rows to result/sst-5-roberta-large-prompt-standard-k16-roberta-large-mezo-probe12-e200seed16-bs8-lr1e-6-eps1e-2-wd0-step2000-evalstep5000/16-16/hprobe.jsonl (step=1600, mode=12)
+01/15/2026 23:28:47 - INFO - src.trainer -   {'loss': 2.126685857772827, 'learning_rate': 1e-06, 'global_step': 1600, 'zo_forward_step': 4516, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1782, 'eps': 0.01}
+01/15/2026 23:28:58 - INFO - src.trainer -   {'loss': 1.78412926197052, 'learning_rate': 1e-06, 'global_step': 1610, 'zo_forward_step': 4536, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1793, 'eps': 0.01}
+01/15/2026 23:29:08 - INFO - src.trainer -   {'loss': 1.749053716659546, 'learning_rate': 1e-06, 'global_step': 1620, 'zo_forward_step': 4556, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1803, 'eps': 0.01}
+01/15/2026 23:29:18 - INFO - src.trainer -   {'loss': 1.9189000129699707, 'learning_rate': 1e-06, 'global_step': 1630, 'zo_forward_step': 4576, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1813, 'eps': 0.01}
+01/15/2026 23:29:29 - INFO - src.trainer -   {'loss': 1.7967467308044434, 'learning_rate': 1e-06, 'global_step': 1640, 'zo_forward_step': 4596, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1824, 'eps': 0.01}
+01/15/2026 23:29:39 - INFO - src.trainer -   {'loss': 1.6016209125518799, 'learning_rate': 1e-06, 'global_step': 1650, 'zo_forward_step': 4616, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1834, 'eps': 0.01}
+01/15/2026 23:29:49 - INFO - src.trainer -   {'loss': 1.8310067653656006, 'learning_rate': 1e-06, 'global_step': 1660, 'zo_forward_step': 4636, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1844, 'eps': 0.01}
+01/15/2026 23:29:59 - INFO - src.trainer -   {'loss': 1.3047312498092651, 'learning_rate': 1e-06, 'global_step': 1670, 'zo_forward_step': 4656, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1854, 'eps': 0.01}
+01/15/2026 23:30:11 - INFO - src.trainer -   {'loss': 1.7887377738952637, 'learning_rate': 1e-06, 'global_step': 1680, 'zo_forward_step': 4676, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1866, 'eps': 0.01}
+01/15/2026 23:30:20 - INFO - src.trainer -   {'loss': 1.70066237449646, 'learning_rate': 1e-06, 'global_step': 1690, 'zo_forward_step': 4696, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1876, 'eps': 0.01}
+01/15/2026 23:30:30 - INFO - src.trainer -   {'loss': 1.4837114810943604, 'learning_rate': 1e-06, 'global_step': 1700, 'zo_forward_step': 4716, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1885, 'eps': 0.01}
+01/15/2026 23:30:40 - INFO - src.trainer -   {'loss': 1.6572880744934082, 'learning_rate': 1e-06, 'global_step': 1710, 'zo_forward_step': 4736, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1895, 'eps': 0.01}
+01/15/2026 23:30:51 - INFO - src.trainer -   {'loss': 1.5551360845565796, 'learning_rate': 1e-06, 'global_step': 1720, 'zo_forward_step': 4756, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1906, 'eps': 0.01}
+01/15/2026 23:31:01 - INFO - src.trainer -   {'loss': 1.5642061233520508, 'learning_rate': 1e-06, 'global_step': 1730, 'zo_forward_step': 4776, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1916, 'eps': 0.01}
+01/15/2026 23:31:11 - INFO - src.trainer -   {'loss': 1.5008175373077393, 'learning_rate': 1e-06, 'global_step': 1740, 'zo_forward_step': 4796, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1926, 'eps': 0.01}
+01/15/2026 23:31:21 - INFO - src.trainer -   {'loss': 2.1766443252563477, 'learning_rate': 1e-06, 'global_step': 1750, 'zo_forward_step': 4816, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1936, 'eps': 0.01}
+01/15/2026 23:31:31 - INFO - src.trainer -   {'loss': 2.0812697410583496, 'learning_rate': 1e-06, 'global_step': 1760, 'zo_forward_step': 4836, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1947, 'eps': 0.01}
+01/15/2026 23:31:42 - INFO - src.trainer -   {'loss': 1.799507737159729, 'learning_rate': 1e-06, 'global_step': 1770, 'zo_forward_step': 4856, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1957, 'eps': 0.01}
+01/15/2026 23:31:52 - INFO - src.trainer -   {'loss': 2.0038866996765137, 'learning_rate': 1e-06, 'global_step': 1780, 'zo_forward_step': 4876, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1967, 'eps': 0.01}
+01/15/2026 23:32:02 - INFO - src.trainer -   {'loss': 1.718030333518982, 'learning_rate': 1e-06, 'global_step': 1790, 'zo_forward_step': 4896, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 1977, 'eps': 0.01}
+01/15/2026 23:32:26 - INFO - src.trainer -   [hprobe] wrote 9 rows to result/sst-5-roberta-large-prompt-standard-k16-roberta-large-mezo-probe12-e200seed16-bs8-lr1e-6-eps1e-2-wd0-step2000-evalstep5000/16-16/hprobe.jsonl (step=1800, mode=12)
+01/15/2026 23:32:26 - INFO - src.trainer -   {'loss': 1.4653675556182861, 'learning_rate': 1e-06, 'global_step': 1800, 'zo_forward_step': 5062, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2001, 'eps': 0.01}
+01/15/2026 23:32:37 - INFO - src.trainer -   {'loss': 1.4938169717788696, 'learning_rate': 1e-06, 'global_step': 1810, 'zo_forward_step': 5082, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2012, 'eps': 0.01}
+01/15/2026 23:32:46 - INFO - src.trainer -   {'loss': 1.7852693796157837, 'learning_rate': 1e-06, 'global_step': 1820, 'zo_forward_step': 5102, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2022, 'eps': 0.01}
+01/15/2026 23:32:57 - INFO - src.trainer -   {'loss': 1.6973600387573242, 'learning_rate': 1e-06, 'global_step': 1830, 'zo_forward_step': 5122, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2032, 'eps': 0.01}
+01/15/2026 23:33:06 - INFO - src.trainer -   {'loss': 1.8758759498596191, 'learning_rate': 1e-06, 'global_step': 1840, 'zo_forward_step': 5142, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2042, 'eps': 0.01}
+01/15/2026 23:33:17 - INFO - src.trainer -   {'loss': 1.5052075386047363, 'learning_rate': 1e-06, 'global_step': 1850, 'zo_forward_step': 5162, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2052, 'eps': 0.01}
+01/15/2026 23:33:27 - INFO - src.trainer -   {'loss': 1.6643550395965576, 'learning_rate': 1e-06, 'global_step': 1860, 'zo_forward_step': 5182, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2062, 'eps': 0.01}
+01/15/2026 23:33:37 - INFO - src.trainer -   {'loss': 1.7925840616226196, 'learning_rate': 1e-06, 'global_step': 1870, 'zo_forward_step': 5202, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2072, 'eps': 0.01}
+01/15/2026 23:33:46 - INFO - src.trainer -   {'loss': 1.754359483718872, 'learning_rate': 1e-06, 'global_step': 1880, 'zo_forward_step': 5222, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2081, 'eps': 0.01}
+01/15/2026 23:33:56 - INFO - src.trainer -   {'loss': 1.6294546127319336, 'learning_rate': 1e-06, 'global_step': 1890, 'zo_forward_step': 5242, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2091, 'eps': 0.01}
+01/15/2026 23:34:06 - INFO - src.trainer -   {'loss': 1.8424617052078247, 'learning_rate': 1e-06, 'global_step': 1900, 'zo_forward_step': 5262, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2101, 'eps': 0.01}
+01/15/2026 23:34:16 - INFO - src.trainer -   {'loss': 1.9526647329330444, 'learning_rate': 1e-06, 'global_step': 1910, 'zo_forward_step': 5282, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2111, 'eps': 0.01}
+01/15/2026 23:34:26 - INFO - src.trainer -   {'loss': 1.6351817846298218, 'learning_rate': 1e-06, 'global_step': 1920, 'zo_forward_step': 5302, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2122, 'eps': 0.01}
+01/15/2026 23:34:36 - INFO - src.trainer -   {'loss': 1.8733909130096436, 'learning_rate': 1e-06, 'global_step': 1930, 'zo_forward_step': 5322, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2131, 'eps': 0.01}
+01/15/2026 23:34:47 - INFO - src.trainer -   {'loss': 1.6043678522109985, 'learning_rate': 1e-06, 'global_step': 1940, 'zo_forward_step': 5342, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2142, 'eps': 0.01}
+01/15/2026 23:34:57 - INFO - src.trainer -   {'loss': 1.4841821193695068, 'learning_rate': 1e-06, 'global_step': 1950, 'zo_forward_step': 5362, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2152, 'eps': 0.01}
+01/15/2026 23:35:07 - INFO - src.trainer -   {'loss': 1.7075719833374023, 'learning_rate': 1e-06, 'global_step': 1960, 'zo_forward_step': 5382, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2162, 'eps': 0.01}
+01/15/2026 23:35:17 - INFO - src.trainer -   {'loss': 1.4366979598999023, 'learning_rate': 1e-06, 'global_step': 1970, 'zo_forward_step': 5402, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2172, 'eps': 0.01}
+01/15/2026 23:35:27 - INFO - src.trainer -   {'loss': 1.6375250816345215, 'learning_rate': 1e-06, 'global_step': 1980, 'zo_forward_step': 5422, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2182, 'eps': 0.01}
+01/15/2026 23:35:37 - INFO - src.trainer -   {'loss': 1.7617132663726807, 'learning_rate': 1e-06, 'global_step': 1990, 'zo_forward_step': 5442, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2192, 'eps': 0.01}
+01/15/2026 23:36:01 - INFO - src.trainer -   [hprobe] wrote 9 rows to result/sst-5-roberta-large-prompt-standard-k16-roberta-large-mezo-probe12-e200seed16-bs8-lr1e-6-eps1e-2-wd0-step2000-evalstep5000/16-16/hprobe.jsonl (step=2000, mode=12)
+01/15/2026 23:36:01 - INFO - src.trainer -   {'loss': 1.8102117776870728, 'learning_rate': 1e-06, 'global_step': 2000, 'zo_forward_step': 5608, 'max_steps': 2000, 'max_zo_forward_steps': 0, 'time': 2217, 'eps': 0.01}
+01/15/2026 23:36:01 - INFO - src.trainer -   
+
+Training completed. Do not forget to share your model on huggingface.co/models =)
+
+
+RobertaConfig {
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "dtype": "float32",
+  "eos_token_id": 2,
+  "finetuning_task": "sst-5",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "id2label": {
+    "0": "LABEL_0",
+    "1": "LABEL_1",
+    "2": "LABEL_2",
+    "3": "LABEL_3",
+    "4": "LABEL_4"
+  },
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "label2id": {
+    "LABEL_0": 0,
+    "LABEL_1": 1,
+    "LABEL_2": 2,
+    "LABEL_3": 3,
+    "LABEL_4": 4
+  },
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "transformers_version": "4.56.0",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+
+Traceback (most recent call last):
+  File "/home/jy03364/MeZO/medium_models/run.py", line 1196, in <module>
+    main()
+  File "/home/jy03364/MeZO/medium_models/run.py", line 1113, in main
+    trainer.model.load_state_dict(trainer.best_model_ckpt)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Trainer' object has no attribute 'best_model_ckpt'
