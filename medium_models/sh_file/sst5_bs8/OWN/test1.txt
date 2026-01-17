@@ -29,4 +29,4 @@ STEP=2000 EVAL_STEP=5000 \
 EXTRA_TAG=probe12-e200 \
 TASK=sst-5 K=16 SEED=16 DATA_SEED=16 BS=8 LR=1e-6 EPS=1e-2 MODEL=roberta-large \
 USE_H=False USE_C=False DATALOADER_SHUFFLE=True \
-bash mezo.sh
+bash mezo.sh --result_root /home/jy03364/MeZo

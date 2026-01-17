@@ -16,6 +16,42 @@ DATALOADER_SHUFFLE=${DATALOADER_SHUFFLE:-"True"}
 DATA_SEED=${DATA_SEED:-$SEED}
 STEPS=${STEPS:-1000}
 
+# ---------------------------
+# Output directory layout
+# Default: result/<SLURM_JOB_NAME>/seed<SEED>/
+# Override:
+#   --result_root /path/to/results
+#   --job_name my_job
+# ---------------------------
+RESULT_ROOT=${RESULT_ROOT:-result}
+JOB_NAME=${JOB_NAME:-${SLURM_JOB_NAME:-}}
+
+# Parse our own script-only args (remove them from args forwarded to python).
+PY_ARGS=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --result_root|--result_dir|--output_root)
+            RESULT_ROOT="$2"; shift 2 ;;
+        --job_name|--job)
+            JOB_NAME="$2"; shift 2 ;;
+        *)
+            PY_ARGS+=("$1"); shift ;;
+    esac
+done
+
+if [[ -z "$JOB_NAME" ]]; then
+    JOB_NAME="local"
+fi
+
+JOB_NAME_SAFE=$(echo "$JOB_NAME" | tr '/ ' '__')
+OUTPUT_DIR="$RESULT_ROOT/$JOB_NAME_SAFE/seed$SEED"
+
+echo "Result root: $RESULT_ROOT"
+echo "Job name: $JOB_NAME_SAFE"
+echo "Output dir: $OUTPUT_DIR"
+
+
+
 # Convert DATALOADER_SHUFFLE (string) to the CLI flag expected by HfArgumentParser
 # In run.py, `dataloader_shuffle` is a bool field with default True, so disabling uses `--no_dataloader_shuffle`.
 SHUFFLE_FLAG=""
@@ -98,7 +134,7 @@ ALL_ARGS_TOGETHER="
     --model_name_or_path $MODEL --few_shot_type $TYPE
     --task_name $TASK --template $TEMPLATE --mapping $MAPPING
     --data_dir data/k-shot-1k-test/$TASK/$K-$SEED
-    --overwrite_output_dir --output_dir result/$TASK-$MODEL-$TYPE-$TRAINER-$TAG$GRID_TAG/$K-$SEED
+    --overwrite_output_dir --output_dir $OUTPUT_DIR
     --num_k $K
     --tag $TAG
     --max_seq_length 128
@@ -114,7 +150,7 @@ ALL_ARGS_TOGETHER="
     --use_c_scale $USE_C
     $TASK_EXTRA
     $LOAD_KERNELS
-    $@
+    ${PY_ARGS[@]}
 "
 
 if [[ $NUM_GPU > 1 ]]; then
@@ -131,4 +167,4 @@ else
         $ALL_ARGS_TOGETHER
 fi
 
-rm -rf result/$TASK-$MODEL-$TYPE-$TRAINER-$TAG$GRID_TAG/$K-$SEED/checkpoint-*
+rm -rf "$OUTPUT_DIR"/checkpoint-*
