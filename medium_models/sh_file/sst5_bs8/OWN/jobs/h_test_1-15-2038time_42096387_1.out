@@ -1,0 +1,17 @@
+TASK: sst-5
+K: 16
+Seed: 16
+Data seed: 16
+BS: 8
+LR: 1e-6
+EPS: 1e-2
+Step: 20; Eval step: 5000
+Using adaptive h: False
+Dataloader shuffle: True
+Grid search tag: seed16-bs8-lr1e-6-eps1e-2-wd0-step20-evalstep5000
+Tag: k16-roberta-large-mezo-probe12-e200
+Result root: /home/jy03364/MeZO/medium_models/sh_file/sst5_bs8/OWN
+Job name: h_test_1-15-2038time
+Output dir: /home/jy03364/MeZO/medium_models/sh_file/sst5_bs8/OWN/h_test_1-15-2038time/seed16
+GPU数量: 1
+slurmstepd: error: *** JOB 42096387 ON ra5-5 CANCELLED AT 2026-01-17T19:06:59 ***
