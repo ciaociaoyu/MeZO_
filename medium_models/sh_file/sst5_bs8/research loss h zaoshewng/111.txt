@@ -4,7 +4,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=100G
-#SBATCH --gres=gpu:L4:1
+#SBATCH --gres=gpu:H100:1
 #SBATCH --time=24:00:00
 #SBATCH --output=jobs/%x_%j.out
 #SBATCH --mail-user=jichao.yu@uga.edu
@@ -71,7 +71,7 @@ SEED=16 \
 DATA_SEED=16 \
 BS=8 \
 LR=1e-6 \
-EPS=1e-2 \
+EPS=1e-3 \
 MODEL=roberta-large \
 USE_H=False \
 USE_C=False \
@@ -79,7 +79,7 @@ DATALOADER_SHUFFLE=True \
 STEP=$STEP \
 EVAL_STEP=$EVAL_STEP \
 EXTRA_TAG=$EXTRA_TAG \
-bash mezo.sh --result_root /home/jy03364/MeZO/medium_models/results/hprobe
+bash mezo.sh --result_root /home/jy03364/MeZO/medium_models/sh_file/sst5_bs8/research loss h zaoshewng/hprobe
 
 # After run:
 # - Trainer output_dir (from run_fewshot.sh) is:
