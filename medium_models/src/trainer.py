@@ -463,13 +463,16 @@ class Trainer(LinearHeadTrainer):
         return h_est, eps_est, nu3_est
 
     # =============================
-    # h-probes (Probe 1/2/3)
+    # h-probe (new)
     # Enable via environment variables (no need to touch run.py args parser):
     #   H_PROBE=1
-    #   H_PROBE_MODE=123   (any subset of 1/2/3)
-    #   H_PROBE_EVERY=0    (0 => only at global_step==0; else run every N steps)
-    #   H_PROBE_MIN=1e-6, H_PROBE_MAX=1e-2, H_PROBE_NUM=9
-    #   H_PROBE_NDIR=8, H_PROBE_NB=2
+    #   H_PROBE_EVERY=500              (0 => only at global_step==0)
+    #   H_PROBE_MIN=1e-8, H_PROBE_MAX=1e-2
+    #   H_PROBE_HLIST=...              (optional, comma-separated overrides)
+    #   H_PROBE_NDIR=8                 (M directions per probe)
+    #   H_PROBE_NB=1                   (1 => eval batch = probe batch; >=2 => use a separate fixed eval batch)
+    #   H_PROBE_UNIT_U=1               (normalize direction to unit norm across all params)
+    #   H_PROBE_SAVE_PARAMS=1          (best-effort snapshot/restore theta_t; fallback to exact undo)
     # Output: <output_dir>/hprobe.jsonl
     # =============================
 
@@ -477,40 +480,148 @@ class Trainer(LinearHeadTrainer):
         v = os.environ.get("H_PROBE", "0").lower()
         return v in ("1", "true", "yes", "y", "on")
 
+    def _hprobe_bool_env(self, key: str, default: str = "0") -> bool:
+        v = os.environ.get(key, default)
+        if isinstance(v, str):
+            return v.lower() in ("1", "true", "yes", "y", "on")
+        return bool(v)
+
     def _hprobe_cfg(self) -> Dict[str, Any]:
-        mode = os.environ.get("H_PROBE_MODE", "123")
         every = int(os.environ.get("H_PROBE_EVERY", "0"))
-        num_h = int(os.environ.get("H_PROBE_NUM", "9"))
-        h_min = float(os.environ.get("H_PROBE_MIN", "1e-6"))
+        num_h = int(os.environ.get("H_PROBE_NUM", "9"))  # kept for backward compat; ignored when H_PROBE_HLIST is empty
+        h_min = float(os.environ.get("H_PROBE_MIN", "1e-8"))
         h_max = float(os.environ.get("H_PROBE_MAX", "1e-2"))
         ndir = int(os.environ.get("H_PROBE_NDIR", "8"))
         nbatch = int(os.environ.get("H_PROBE_NB", "1"))
-        alpha = float(os.environ.get("H_PROBE_ALPHA", "2.0"))
         out_name = os.environ.get("H_PROBE_OUT", "hprobe.jsonl")
+        h_list = os.environ.get("H_PROBE_HLIST", "")
+        unit_u = self._hprobe_bool_env("H_PROBE_UNIT_U", "1")
+        save_params = self._hprobe_bool_env("H_PROBE_SAVE_PARAMS", "1")
+        log_each_h = self._hprobe_bool_env("H_PROBE_LOG_EACH_H", "1")
         return {
-            "mode": mode,
             "every": every,
             "num_h": max(num_h, 2),
             "h_min": h_min,
             "h_max": h_max,
             "ndir": max(ndir, 1),
             "nbatch": max(nbatch, 1),
-            "alpha": alpha,
             "out_name": out_name,
+            "h_list": h_list,
+            "unit_u": unit_u,
+            "save_params": save_params,
+            "log_each_h": log_each_h,
         }
 
     def _hprobe_h_list(self, cfg: Dict[str, Any]) -> List[float]:
-        h_min, h_max, num_h = float(cfg["h_min"]), float(cfg["h_max"]), int(cfg["num_h"])
+        # Optional explicit override: comma/space-separated list
+        h_list = str(cfg.get("h_list", "") or "").strip()
+        if h_list:
+            hs = []
+            for tok in re.split(r"[\s,]+", h_list):
+                if not tok:
+                    continue
+                try:
+                    hs.append(float(tok))
+                except Exception:
+                    pass
+            hs = sorted(set([float(x) for x in hs if math.isfinite(x) and x > 0]))
+            return hs
+
+        # Default: log-scale set with multipliers {1,3} per decade: 1e-8,3e-8,1e-7,3e-7,...,1e-2
+        h_min, h_max = float(cfg["h_min"]), float(cfg["h_max"])
         if (not math.isfinite(h_min)) or (not math.isfinite(h_max)) or h_min <= 0 or h_max <= 0:
-            h_min, h_max = 1e-6, 1e-2
+            h_min, h_max = 1e-8, 1e-2
         if h_min > h_max:
             h_min, h_max = h_max, h_min
-        hs = np.logspace(np.log10(h_min), np.log10(h_max), num=num_h, base=10.0)
-        return [float(x) for x in hs]
+
+        emin = int(math.floor(math.log10(h_min)))
+        emax = int(math.ceil(math.log10(h_max)))
+        hs = []
+        for e in range(emin, emax + 1):
+            for m in (1.0, 3.0):
+                h = m * (10.0 ** e)
+                if h < h_min or h > h_max:
+                    continue
+                hs.append(float(h))
+        hs = sorted(set(hs))
+        if len(hs) == 0:
+            hs = [float(h_min), float(h_max)]
+        return hs
 
     def _hprobe_use_wd(self, name: str) -> bool:
         n = name.lower()
         return ("bias" not in n) and ("layer_norm" not in n) and ("layernorm" not in n)
+
+    def _hprobe_get_inv_norm(self, model: nn.Module, seed: int) -> float:
+        """Compute 1/||u|| for the direction generated by seed (across all params). Cached within one probe."""
+        cache = getattr(self, "_hprobe_inv_norm_cache", None)
+        if isinstance(cache, dict) and (seed in cache):
+            return float(cache[seed])
+
+        # Ensure parameter list exists
+        if (not hasattr(self, "named_parameters_to_optim")) or (self.named_parameters_to_optim is None) or (len(self.named_parameters_to_optim) == 0):
+            self.named_parameters_to_optim = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+
+        torch.manual_seed(seed)
+        ss = 0.0
+        with torch.no_grad():
+            for _, p in self.named_parameters_to_optim:
+                z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
+                ss += float(torch.sum(z.float() * z.float()).item())
+        inv = 1.0 / math.sqrt(max(ss, 1e-30))
+        if not isinstance(cache, dict):
+            cache = {}
+        cache[seed] = float(inv)
+        self._hprobe_inv_norm_cache = cache
+        return float(inv)
+
+    def _hprobe_true_grad(self, model: nn.Module, inputs: Dict[str, Any]) -> Tuple[float, List[Optional[torch.Tensor]]]:
+        """Compute loss and true gradient on a fixed probe batch (one backward via autograd.grad)."""
+        # Ensure parameter list exists
+        if (not hasattr(self, "named_parameters_to_optim")) or (self.named_parameters_to_optim is None) or (len(self.named_parameters_to_optim) == 0):
+            self.named_parameters_to_optim = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+
+        was_training = bool(model.training)
+        model.eval()
+        inputs = self._prepare_inputs(inputs)
+        with self.compute_loss_context_manager():
+            loss = self.compute_loss(model, inputs)
+        if self.args.n_gpu > 1:
+            loss = loss.mean()
+        params = [p for _, p in self.named_parameters_to_optim]
+        grads = torch.autograd.grad(loss, params, retain_graph=False, create_graph=False, allow_unused=True)
+        grads = [g.detach() if g is not None else None for g in grads]
+        loss_val = float(loss.detach().item())
+        if was_training:
+            model.train()
+        return loss_val, grads
+
+    def _hprobe_dot_grad_direction(
+        self,
+        model: nn.Module,
+        grads: List[Optional[torch.Tensor]],
+        seed: int,
+    ) -> float:
+        """Compute d_true = g_true \cdot u(seed)."""
+        # Ensure parameter list exists
+        if (not hasattr(self, "named_parameters_to_optim")) or (self.named_parameters_to_optim is None) or (len(self.named_parameters_to_optim) == 0):
+            self.named_parameters_to_optim = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+
+        inv_norm = 1.0
+        if getattr(self, "_hprobe_unit_u", False):
+            inv_norm = float(self._hprobe_get_inv_norm(model, seed))
+
+        torch.manual_seed(seed)
+        dot = 0.0
+        with torch.no_grad():
+            for (_, p), g in zip(self.named_parameters_to_optim, grads):
+                z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
+                if inv_norm != 1.0:
+                    z = z * inv_norm
+                if g is None:
+                    continue
+                dot += float(torch.sum(g.float() * z.float()).item())
+        return float(dot)
 
     def _hprobe_eval_at(self, model: nn.Module, inputs: Dict[str, Any], h: float, seed: int, mult: float) -> float:
         """Evaluate f(theta + mult*h*z) and restore params, using the same z via seed."""
@@ -518,10 +629,16 @@ class Trainer(LinearHeadTrainer):
         if (not hasattr(self, "named_parameters_to_optim")) or (self.named_parameters_to_optim is None) or (len(self.named_parameters_to_optim) == 0):
             self.named_parameters_to_optim = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
 
+        inv_norm = 1.0
+        if getattr(self, "_hprobe_unit_u", False):
+            inv_norm = float(self._hprobe_get_inv_norm(model, seed))
+
         torch.manual_seed(seed)
         with torch.no_grad():
             for _, p in self.named_parameters_to_optim:
                 z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
+                if inv_norm != 1.0:
+                    z = z * inv_norm
                 p.data.add_(mult * float(h) * z)
 
         val = float(self.zo_forward(model, inputs).item())
@@ -531,6 +648,8 @@ class Trainer(LinearHeadTrainer):
         with torch.no_grad():
             for _, p in self.named_parameters_to_optim:
                 z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
+                if inv_norm != 1.0:
+                    z = z * inv_norm
                 p.data.add_(-mult * float(h) * z)
 
         return val
@@ -556,10 +675,16 @@ class Trainer(LinearHeadTrainer):
     def _hprobe_apply_update(self, model: nn.Module, seed: int, projected_grad: float, lr: float, weight_decay: float):
         if (not hasattr(self, "named_parameters_to_optim")) or (self.named_parameters_to_optim is None) or (len(self.named_parameters_to_optim) == 0):
             self.named_parameters_to_optim = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+        inv_norm = 1.0
+        if getattr(self, "_hprobe_unit_u", False):
+            inv_norm = float(self._hprobe_get_inv_norm(model, seed))
+
         torch.manual_seed(seed)
         with torch.no_grad():
             for name, p in self.named_parameters_to_optim:
                 z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
+                if inv_norm != 1.0:
+                    z = z * inv_norm
                 if self._hprobe_use_wd(name):
                     p.data = p.data - lr * (projected_grad * z + weight_decay * p.data)
                 else:
@@ -574,30 +699,45 @@ class Trainer(LinearHeadTrainer):
         if abs(denom) < 1e-12:
             denom = 1.0
 
+        inv_norm = 1.0
+        if getattr(self, "_hprobe_unit_u", False):
+            inv_norm = float(self._hprobe_get_inv_norm(model, seed))
+
         torch.manual_seed(seed)
         with torch.no_grad():
             for name, p in self.named_parameters_to_optim:
                 z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
+                if inv_norm != 1.0:
+                    z = z * inv_norm
                 if self._hprobe_use_wd(name):
                     p.data = (p.data + lr * (projected_grad * z)) / denom
                 else:
                     p.data = p.data + lr * (projected_grad * z)
 
     def _hprobe_pick_batches(self, current_inputs: Dict[str, Any], nbatch: int):
-        """Prefer adaptive-h rolling buffer (CPU copies). Fallback to current batch."""
+        """Pick and cache a fixed probe batch (and optional fixed eval batch) for the whole run."""
+        probe_batch = getattr(self, "_hprobe_fixed_probe_batch", None)
+        eval_batch = getattr(self, "_hprobe_fixed_eval_batch", None)
+        if probe_batch is not None:
+            return probe_batch, (eval_batch if eval_batch is not None else probe_batch)
+
         buf = getattr(self, "_h_probe_buffer", None)
-        batches = []
+        picked = []
+        nbatch = max(1, int(nbatch))
         if isinstance(buf, list) and len(buf) > 0:
             replace = len(buf) < nbatch
             idxs = np.random.choice(len(buf), size=nbatch, replace=replace)
             for idx in idxs:
                 item = buf[int(idx)]
-                batches.append(dict(item) if isinstance(item, dict) else item)
-            eval_batch = batches[-1] if len(batches) > 1 else batches[0]
+                picked.append(dict(item) if isinstance(item, dict) else item)
         else:
-            batches = [current_inputs]
-            eval_batch = current_inputs
-        return batches, eval_batch
+            picked = [current_inputs]
+
+        probe_batch = picked[0]
+        eval_batch = picked[1] if len(picked) > 1 else probe_batch
+        self._hprobe_fixed_probe_batch = probe_batch
+        self._hprobe_fixed_eval_batch = eval_batch
+        return probe_batch, eval_batch
 
     def _hprobe_write_jsonl(self, rows: List[Dict[str, Any]], out_path: str):
         # Only write on main process if distributed
@@ -614,7 +754,6 @@ class Trainer(LinearHeadTrainer):
 
     def _hprobe_run_once(self, model: nn.Module, current_inputs: Dict[str, Any]):
         cfg = self._hprobe_cfg()
-        mode = str(cfg["mode"])
         hs = self._hprobe_h_list(cfg)
 
         # Save RNG states so probe does not affect training randomness
@@ -634,86 +773,144 @@ class Trainer(LinearHeadTrainer):
                 self.named_parameters_to_optim = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
 
             nbatch = int(cfg["nbatch"])
-            batches, eval_batch = self._hprobe_pick_batches(current_inputs, nbatch=nbatch)
+            probe_batch, eval_batch = self._hprobe_pick_batches(current_inputs, nbatch=nbatch)
 
-            # base losses
-            base_losses = [float(self.zo_forward(model, b).item()) for b in batches]
-            base_eval = float(self.zo_forward(model, eval_batch).item())
+            # (1) Save theta_t (best-effort)
+            param_backup = None
+            if bool(cfg.get("save_params", True)):
+                try:
+                    with torch.no_grad():
+                        param_backup = [p.data.detach().clone() for _, p in self.named_parameters_to_optim]
+                except Exception as e:
+                    param_backup = None
+                    try:
+                        logger.warning(f"[hprobe] param snapshot failed; will rely on exact undo. err={type(e).__name__}: {e}")
+                    except Exception:
+                        pass
+
+            # (2) Base loss and true gradient on fixed B_probe
+            self._hprobe_unit_u = bool(cfg.get("unit_u", True))
+            self._hprobe_inv_norm_cache = {}
+            base_probe_loss, grads = self._hprobe_true_grad(model, probe_batch)
+            base_eval_loss = float(self.zo_forward(model, eval_batch).item())
+
+            grad_sq = 0.0
+            for g in grads:
+                if g is None:
+                    continue
+                grad_sq += float(torch.sum(g.float() * g.float()).item())
+            grad_norm = float(math.sqrt(max(grad_sq, 0.0)))
+
+            # (3) Sample M directions (fixed within this probe, re-sampled each probe step)
+            ndir = int(cfg["ndir"])
+            dir_seeds = [int(np.random.randint(0, 1_000_000_000)) for _ in range(max(1, ndir))]
+
+            # Pre-cache direction norms if using unit directions
+            if self._hprobe_unit_u:
+                for s in dir_seeds:
+                    try:
+                        _ = self._hprobe_get_inv_norm(model, s)
+                    except Exception:
+                        pass
+
+            d_true_list = [float(self._hprobe_dot_grad_direction(model, grads, s)) for s in dir_seeds]
 
             lr = float(self._hprobe_get_lr())
-            wd = float(getattr(self.args, "weight_decay", 0.0))
             gs = int(getattr(self.state, "global_step", 0))
 
             rows = []
             for h in hs:
-                g_list, r_list, absdf_list = [], [], []
-                dL_same_list, dL_new_list = [], []
+                d_fd_list, e_list = [], []
+                for j, seed in enumerate(dir_seeds):
+                    _, _, _delta, ghat = self._hprobe_proj_grad_at(model, probe_batch, h=float(h), seed=seed)
+                    d_fd_list.append(float(ghat))
+                    e_list.append(float(d_true_list[j] - float(ghat)))
 
-                for bi, batch in enumerate(batches):
-                    base_b = base_losses[bi]
-                    for _ in range(int(cfg["ndir"])):
-                        seed = int(np.random.randint(0, 1_000_000_000))
+                e_arr = np.asarray(e_list, dtype=np.float64) if len(e_list) > 0 else None
+                dtrue_arr = np.asarray(d_true_list, dtype=np.float64) if len(d_true_list) > 0 else None
+                dfd_arr = np.asarray(d_fd_list, dtype=np.float64) if len(d_fd_list) > 0 else None
 
-                        _, _, delta, ghat = self._hprobe_proj_grad_at(model, batch, h=float(h), seed=seed)
-
-                        if "2" in mode:
-                            absdf_list.append(abs(delta))
-
-                        if "1" in mode:
-                            _, _, _, ghat2 = self._hprobe_proj_grad_at(model, batch, h=float(cfg["alpha"]) * float(h), seed=seed)
-                            R = abs(ghat2 - ghat) / max(1.0, abs(ghat))
-                            r_list.append(float(R))
-                            g_list.append(float(ghat))
-
-                        if "3" in mode:
-                            self._hprobe_apply_update(model, seed=seed, projected_grad=ghat, lr=lr, weight_decay=wd)
-                            new_same = float(self.zo_forward(model, batch).item())
-                            new_eval = float(self.zo_forward(model, eval_batch).item())
-                            self._hprobe_undo_update(model, seed=seed, projected_grad=ghat, lr=lr, weight_decay=wd)
-
-                            dL_same_list.append(new_same - base_b)
-                            dL_new_list.append(new_eval - base_eval)
-
-                def _mean_std(x):
-                    if not x:
+                def _mean_std(arr):
+                    if arr is None or arr.size == 0:
                         return None, None
-                    arr = np.asarray(x, dtype=np.float64)
                     return float(arr.mean()), float(arr.std())
+
+                e_mean, e_std = _mean_std(e_arr)
+                e_abs_mean, e_abs_std = _mean_std(np.abs(e_arr) if e_arr is not None else None)
+                dtrue_mean, dtrue_std = _mean_std(dtrue_arr)
+                dfd_mean, dfd_std = _mean_std(dfd_arr)
+
+                # (5) Virtual one-step update: theta'(h) = theta - lr * g_fd(h), evaluate on fixed B_eval
+                lr_per_dir = lr / float(max(1, len(dir_seeds)))
+                for j, seed in enumerate(dir_seeds):
+                    self._hprobe_apply_update(model, seed=seed, projected_grad=d_fd_list[j], lr=lr_per_dir, weight_decay=0.0)
+                loss_after = float(self.zo_forward(model, eval_batch).item())
+                for j, seed in enumerate(dir_seeds):
+                    self._hprobe_undo_update(model, seed=seed, projected_grad=d_fd_list[j], lr=lr_per_dir, weight_decay=0.0)
+                deltaL = float(loss_after - base_eval_loss)
 
                 row = {
                     "global_step": gs,
                     "h": float(h),
                     "lr": lr,
-                    "wd": wd,
-                    "mode": mode,
-                    "ndir": int(cfg["ndir"]),
-                    "nbatch": len(batches),
+                    "unit_u": bool(self._hprobe_unit_u),
+                    "ndir": int(len(dir_seeds)),
+                    "probe_loss": float(base_probe_loss),
+                    "eval_loss": float(base_eval_loss),
+                    "grad_true_norm": float(grad_norm),
+                    "d_true_mean": dtrue_mean,
+                    "d_true_std": dtrue_std,
+                    "d_fd_mean": dfd_mean,
+                    "d_fd_std": dfd_std,
+                    "e_d_mean": e_mean,
+                    "e_d_std": e_std,
+                    "e_d_abs_mean": e_abs_mean,
+                    "e_d_abs_std": e_abs_std,
+                    "deltaL": float(deltaL),
+                    "loss_after": float(loss_after),
+                    "dir_seeds": dir_seeds,
+                    "d_true_list": d_true_list,
+                    "d_fd_list": d_fd_list,
+                    "e_d_list": e_list,
                 }
-
-                if "1" in mode:
-                    mR, sR = _mean_std(r_list)
-                    mg, sg = _mean_std(g_list)
-                    row.update({"R_mean": mR, "R_std": sR, "ghat_mean": mg, "ghat_std": sg})
-
-                if "2" in mode:
-                    mdf, sdf = _mean_std(absdf_list)
-                    row.update({"abs_delta_f_mean": mdf, "abs_delta_f_std": sdf})
-
-                if "3" in mode:
-                    md1, sd1 = _mean_std(dL_same_list)
-                    md2, sd2 = _mean_std(dL_new_list)
-                    row.update({"dL_same_mean": md1, "dL_same_std": sd1, "dL_new_mean": md2, "dL_new_std": sd2})
-
                 rows.append(row)
+
+                if bool(cfg.get("log_each_h", True)):
+                    try:
+                        logger.info(
+                            f"[hprobe] step={gs} h={float(h):.3e} "
+                            f"probe_loss={base_probe_loss:.6e} eval_loss={base_eval_loss:.6e} "
+                            f"e_abs_mean={e_abs_mean if e_abs_mean is not None else float('nan'):.6e} "
+                            f"deltaL={deltaL:.6e}"
+                        )
+                    except Exception:
+                        pass
 
             out_path = os.path.join(getattr(self.args, "output_dir", "./outputs") or "./outputs", cfg["out_name"])
             self._hprobe_write_jsonl(rows, out_path)
             try:
-                logger.info(f"[hprobe] wrote {len(rows)} rows to {out_path} (step={gs}, mode={mode})")
+                logger.info(f"[hprobe] wrote {len(rows)} rows to {out_path} (step={gs})")
             except Exception:
                 pass
 
+            # Restore theta_t (if snapshot succeeded)
+            if param_backup is not None:
+                try:
+                    with torch.no_grad():
+                        for (_, p), saved in zip(self.named_parameters_to_optim, param_backup):
+                            p.data.copy_(saved)
+                except Exception:
+                    pass
+
         finally:
+            # cleanup per-probe caches
+            try:
+                if hasattr(self, "_hprobe_inv_norm_cache"):
+                    self._hprobe_inv_norm_cache = None
+                if hasattr(self, "_hprobe_unit_u"):
+                    self._hprobe_unit_u = False
+            except Exception:
+                pass
             # Restore RNG states
             np.random.set_state(np_state)
             random.setstate(py_state)
@@ -725,6 +922,12 @@ class Trainer(LinearHeadTrainer):
                 pass
 
     def _hprobe_maybe_run(self, model: nn.Module, current_inputs: Dict[str, Any]):
+        # Run probe only on local process zero to avoid duplicated heavy work
+        try:
+            if hasattr(self.args, "local_rank") and getattr(self.args, "local_rank", -1) not in (-1, 0):
+                return
+        except Exception:
+            pass
         if not self._hprobe_enabled():
             return
 
@@ -739,10 +942,6 @@ class Trainer(LinearHeadTrainer):
         if getattr(self, "_hprobe_last_step", None) == gs:
             return
         self._hprobe_last_step = gs
-
-        # Only meaningful for ZO mode
-        if not getattr(self.args, "zero_order_optim", False):
-            return
 
         self._hprobe_run_once(model, current_inputs)
 
