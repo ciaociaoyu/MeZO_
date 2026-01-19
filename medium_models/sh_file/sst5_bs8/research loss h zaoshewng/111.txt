@@ -1,0 +1,88 @@
+#!/bin/bash
+#SBATCH --job-name=hprobe_sst5_k500
+#SBATCH --partition=gpu_p
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=100G
+#SBATCH --gres=gpu:L4:1
+#SBATCH --time=24:00:00
+#SBATCH --output=jobs/%x_%j.out
+#SBATCH --mail-user=jichao.yu@uga.edu
+#SBATCH --mail-type=ALL
+
+ml jq
+
+source ~/.bashrc
+conda activate ciao
+
+cd /home/jy03364/MeZO/medium_models
+
+# =========================
+# (A) h-probe settings (NEW)
+# =========================
+export H_PROBE=1
+
+# probe frequency: every K steps
+export H_PROBE_EVERY=500
+
+# M directions per probe step
+export H_PROBE_NDIR=8
+
+# fixed batches:
+#   =1  => eval batch == probe batch
+#   >=2 => fixed probe batch + fixed eval batch (recommended)
+export H_PROBE_NB=2
+
+# use unit-norm directions u (recommended)
+export H_PROBE_UNIT_U=1
+
+# save/restore theta_t around probe (safer)
+export H_PROBE_SAVE_PARAMS=1
+
+# log each h row
+export H_PROBE_LOG_EACH_H=1
+
+# output jsonl name under output_dir
+export H_PROBE_OUT="hprobe.jsonl"
+
+# Explicit h list (log-scale with {1,3} per decade, covering 1e-8 ... 1e-2)
+# You can edit this list freely for ablations.
+export H_PROBE_HLIST="1e-8,3e-8,1e-7,3e-7,1e-6,3e-6,1e-5,3e-5,1e-4,3e-4,1e-3,3e-3,1e-2"
+
+# If you prefer MIN/MAX auto list (and NOT explicit list), comment HLIST above and use:
+# export H_PROBE_MIN=1e-8
+# export H_PROBE_MAX=1e-2
+
+# =========================
+# (B) Training run settings
+# =========================
+# To capture early/mid/late phases, set enough steps.
+# Example: 50k steps with eval every 5k (you can change).
+export STEP=50000
+export EVAL_STEP=5000
+
+# Tagging (will go into output_dir naming logic in run_fewshot.sh)
+export EXTRA_TAG="hprobe-k${H_PROBE_EVERY}-M${H_PROBE_NDIR}-NB${H_PROBE_NB}"
+
+# Choose ONE training run (as required by the plan)
+TASK=sst-5 \
+K=16 \
+SEED=16 \
+DATA_SEED=16 \
+BS=8 \
+LR=1e-6 \
+EPS=1e-2 \
+MODEL=roberta-large \
+USE_H=False \
+USE_C=False \
+DATALOADER_SHUFFLE=True \
+STEP=$STEP \
+EVAL_STEP=$EVAL_STEP \
+EXTRA_TAG=$EXTRA_TAG \
+bash mezo.sh --result_root /home/jy03364/MeZO/medium_models/results/hprobe
+
+# After run:
+# - Trainer output_dir (from run_fewshot.sh) is:
+#   <result_root>/<SLURM_JOB_NAME>/seed<SEED>/
+# - Probe file will be:
+#   .../hprobe.jsonl
