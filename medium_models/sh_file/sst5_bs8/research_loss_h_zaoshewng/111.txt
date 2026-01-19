@@ -79,7 +79,7 @@ DATALOADER_SHUFFLE=True \
 STEP=$STEP \
 EVAL_STEP=$EVAL_STEP \
 EXTRA_TAG=$EXTRA_TAG \
-bash mezo.sh --result_root /home/jy03364/MeZO/medium_models/sh_file/sst5_bs8/resear/hprobe 
+bash mezo.sh --result_root /home/jy03364/MeZO/medium_models/sh_file/sst5_bs8/research_loss_h_zaoshewng/hprobe 
 
 # After run:
 # - Trainer output_dir (from run_fewshot.sh) is:
