@@ -607,17 +607,15 @@ class Trainer(LinearHeadTrainer):
         if (not hasattr(self, "named_parameters_to_optim")) or (self.named_parameters_to_optim is None) or (len(self.named_parameters_to_optim) == 0):
             self.named_parameters_to_optim = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
 
-        inv_norm = 1.0
-        if getattr(self, "_hprobe_unit_u", False):
-            inv_norm = float(self._hprobe_get_inv_norm(model, seed))
+        inv_norm = 1.0  # raw-z probe: do not normalize
 
         torch.manual_seed(seed)
         dot = 0.0
         with torch.no_grad():
             for (_, p), g in zip(self.named_parameters_to_optim, grads):
                 z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
-                if inv_norm != 1.0:
-                    z = z * inv_norm
+                # if inv_norm != 1.0:
+                #     z = z * inv_norm
                 if g is None:
                     continue
                 dot += float(torch.sum(g.float() * z.float()).item())
@@ -629,16 +627,14 @@ class Trainer(LinearHeadTrainer):
         if (not hasattr(self, "named_parameters_to_optim")) or (self.named_parameters_to_optim is None) or (len(self.named_parameters_to_optim) == 0):
             self.named_parameters_to_optim = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
 
-        inv_norm = 1.0
-        if getattr(self, "_hprobe_unit_u", False):
-            inv_norm = float(self._hprobe_get_inv_norm(model, seed))
+        inv_norm = 1.0  # raw-z probe: do not normalize
 
         torch.manual_seed(seed)
         with torch.no_grad():
             for _, p in self.named_parameters_to_optim:
                 z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
-                if inv_norm != 1.0:
-                    z = z * inv_norm
+                # if inv_norm != 1.0:
+                #     z = z * inv_norm
                 p.data.add_(mult * float(h) * z)
 
         val = float(self.zo_forward(model, inputs).item())
@@ -648,8 +644,8 @@ class Trainer(LinearHeadTrainer):
         with torch.no_grad():
             for _, p in self.named_parameters_to_optim:
                 z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
-                if inv_norm != 1.0:
-                    z = z * inv_norm
+                # if inv_norm != 1.0:
+                #     z = z * inv_norm
                 p.data.add_(-mult * float(h) * z)
 
         return val
@@ -676,15 +672,15 @@ class Trainer(LinearHeadTrainer):
         if (not hasattr(self, "named_parameters_to_optim")) or (self.named_parameters_to_optim is None) or (len(self.named_parameters_to_optim) == 0):
             self.named_parameters_to_optim = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         inv_norm = 1.0
-        if getattr(self, "_hprobe_unit_u", False):
-            inv_norm = float(self._hprobe_get_inv_norm(model, seed))
+        # if getattr(self, "_hprobe_unit_u", False):
+        #     inv_norm = float(self._hprobe_get_inv_norm(model, seed))
 
         torch.manual_seed(seed)
         with torch.no_grad():
             for name, p in self.named_parameters_to_optim:
                 z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
-                if inv_norm != 1.0:
-                    z = z * inv_norm
+                # if inv_norm != 1.0:
+                #     z = z * inv_norm
                 if self._hprobe_use_wd(name):
                     p.data = p.data - lr * (projected_grad * z + weight_decay * p.data)
                 else:
@@ -700,15 +696,15 @@ class Trainer(LinearHeadTrainer):
             denom = 1.0
 
         inv_norm = 1.0
-        if getattr(self, "_hprobe_unit_u", False):
-            inv_norm = float(self._hprobe_get_inv_norm(model, seed))
+        # if getattr(self, "_hprobe_unit_u", False):
+        #     inv_norm = float(self._hprobe_get_inv_norm(model, seed))
 
         torch.manual_seed(seed)
         with torch.no_grad():
             for name, p in self.named_parameters_to_optim:
                 z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
-                if inv_norm != 1.0:
-                    z = z * inv_norm
+                # if inv_norm != 1.0:
+                #     z = z * inv_norm
                 if self._hprobe_use_wd(name):
                     p.data = (p.data + lr * (projected_grad * z)) / denom
                 else:
@@ -789,7 +785,7 @@ class Trainer(LinearHeadTrainer):
                         pass
 
             # (2) Base loss and true gradient on fixed B_probe
-            self._hprobe_unit_u = bool(cfg.get("unit_u", True))
+            self._hprobe_unit_u = False  # raw-z probe: never normalize directions
             self._hprobe_inv_norm_cache = {}
             base_probe_loss, grads = self._hprobe_true_grad(model, probe_batch)
             base_eval_loss = float(self.zo_forward(model, eval_batch).item())
@@ -805,13 +801,7 @@ class Trainer(LinearHeadTrainer):
             ndir = int(cfg["ndir"])
             dir_seeds = [int(np.random.randint(0, 1_000_000_000)) for _ in range(max(1, ndir))]
 
-            # Pre-cache direction norms if using unit directions
-            if self._hprobe_unit_u:
-                for s in dir_seeds:
-                    try:
-                        _ = self._hprobe_get_inv_norm(model, s)
-                    except Exception:
-                        pass
+            # raw-z probe: no direction norm cache needed
 
             d_true_list = [float(self._hprobe_dot_grad_direction(model, grads, s)) for s in dir_seeds]
 
