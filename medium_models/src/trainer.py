@@ -621,21 +621,51 @@ class Trainer(LinearHeadTrainer):
                 dot += float(torch.sum(g.float() * z.float()).item())
         return float(dot)
 
-    def _hprobe_eval_at(self, model: nn.Module, inputs: Dict[str, Any], h: float, seed: int, mult: float) -> float:
-        """Evaluate f(theta + mult*h*z) and restore params, using the same z via seed."""
+    def _hprobe_eval_at(self, model: nn.Module, inputs: Dict[str, Any], h: float, seed: int, mult: float, collect_stats: bool = False) -> Tuple[float, Optional[Dict[str, Any]]]:
+        """Evaluate f(theta + mult*h*z) and restore params, using the same z via seed.
+
+        If collect_stats=True and a param snapshot is available (H_PROBE_SAVE_PARAMS=1), additionally return
+        quantization/perturbation diagnostics:
+          - h_eff = ||theta_perturbed - theta|| / ||u||
+          - r     = #(theta_i^+ != theta_i) / N
+        """
         # Ensure list exists
         if (not hasattr(self, "named_parameters_to_optim")) or (self.named_parameters_to_optim is None) or (len(self.named_parameters_to_optim) == 0):
             self.named_parameters_to_optim = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
 
         inv_norm = 1.0  # raw-z probe: do not normalize
 
+        # Optional: perturbation/quantization stats (requires param snapshot)
+        base_params = getattr(self, "_hprobe_param_backup", None)
+        if not (isinstance(base_params, list) and len(base_params) == len(self.named_parameters_to_optim)):
+            base_params = None
+
+        u_ss = 0.0
+        diff_ss = 0.0
+        changed = 0
+        numel = 0
+
         torch.manual_seed(seed)
         with torch.no_grad():
-            for _, p in self.named_parameters_to_optim:
+            for idx, (_, p) in enumerate(self.named_parameters_to_optim):
                 z = torch.normal(mean=0, std=1, size=p.data.size(), device=p.data.device, dtype=p.data.dtype)
                 # if inv_norm != 1.0:
                 #     z = z * inv_norm
                 p.data.add_(mult * float(h) * z)
+                if bool(collect_stats):
+                    u_ss += float(torch.sum(z.float() * z.float()).item())
+                    if base_params is not None:
+                        bp = base_params[idx]
+                        try:
+                            diff = (p.data - bp).float()
+                            diff_ss += float(torch.sum(diff * diff).item())
+                        except Exception:
+                            diff_ss = float("nan")
+                        try:
+                            changed += int(torch.sum(p.data != bp).item())
+                            numel += int(p.data.numel())
+                        except Exception:
+                            pass
 
         val = float(self.zo_forward(model, inputs).item())
 
@@ -648,14 +678,42 @@ class Trainer(LinearHeadTrainer):
                 #     z = z * inv_norm
                 p.data.add_(-mult * float(h) * z)
 
-        return val
+        stats = None
+        if bool(collect_stats):
+            u_norm = float(math.sqrt(max(u_ss, 0.0)))
+            h_eff = None
+            r = None
+            if base_params is not None and math.isfinite(diff_ss) and u_norm > 0.0:
+                diff_norm = float(math.sqrt(max(diff_ss, 0.0)))
+                h_eff = float(diff_norm / u_norm)
+                if numel > 0:
+                    r = float(changed / float(numel))
+                stats = {
+                    "u_norm": float(u_norm),
+                    "diff_norm": float(diff_norm),
+                    "h_eff": h_eff,
+                    "param_changed_ratio": r,
+                    "param_changed_count": int(changed),
+                    "numel": int(numel),
+                }
+            else:
+                stats = {
+                    "u_norm": float(u_norm),
+                    "diff_norm": None,
+                    "h_eff": None,
+                    "param_changed_ratio": None,
+                    "param_changed_count": None,
+                    "numel": None,
+                }
 
-    def _hprobe_proj_grad_at(self, model: nn.Module, inputs: Dict[str, Any], h: float, seed: int) -> Tuple[float, float, float, float]:
-        fp = self._hprobe_eval_at(model, inputs, h=h, seed=seed, mult=+1.0)
-        fm = self._hprobe_eval_at(model, inputs, h=h, seed=seed, mult=-1.0)
+        return val, stats
+
+    def _hprobe_proj_grad_at(self, model: nn.Module, inputs: Dict[str, Any], h: float, seed: int) -> Tuple[float, float, float, float, Optional[Dict[str, Any]]]:
+        fp, stats_p = self._hprobe_eval_at(model, inputs, h=h, seed=seed, mult=+1.0, collect_stats=True)
+        fm, _ = self._hprobe_eval_at(model, inputs, h=h, seed=seed, mult=-1.0, collect_stats=False)
         delta = float(fp - fm)
         ghat = float(delta / (2.0 * float(h)))
-        return fp, fm, delta, ghat
+        return fp, fm, delta, ghat, stats_p
 
     def _hprobe_get_lr(self) -> float:
         # Best-effort: prefer scheduler if present, else args.learning_rate
@@ -784,6 +842,17 @@ class Trainer(LinearHeadTrainer):
                     except Exception:
                         pass
 
+            # Expose snapshot to _hprobe_eval_at for perturbation/quantization diagnostics.
+            # Note: when snapshot is unavailable, stats will be recorded as None.
+            self._hprobe_param_backup = param_backup
+            if param_backup is None:
+                try:
+                    if not getattr(self, "_hprobe_warned_no_backup", False):
+                        logger.warning("[hprobe] no param snapshot available for perturb stats. Consider setting H_PROBE_SAVE_PARAMS=1")
+                        self._hprobe_warned_no_backup = True
+                except Exception:
+                    pass
+
             # (2) Base loss and true gradient on fixed B_probe
             self._hprobe_unit_u = False  # raw-z probe: never normalize directions
             self._hprobe_inv_norm_cache = {}
@@ -811,10 +880,24 @@ class Trainer(LinearHeadTrainer):
             rows = []
             for h in hs:
                 d_fd_list, e_list = [], []
+                delta_list = []
+                h_eff_list, r_list = [], []
+                u_norm_list, diff_norm_list = [], []
                 for j, seed in enumerate(dir_seeds):
-                    _, _, _delta, ghat = self._hprobe_proj_grad_at(model, probe_batch, h=float(h), seed=seed)
+                    _, _, _delta, ghat, stats_p = self._hprobe_proj_grad_at(model, probe_batch, h=float(h), seed=seed)
                     d_fd_list.append(float(ghat))
                     e_list.append(float(d_true_list[j] - float(ghat)))
+                    delta_list.append(float(_delta))
+                    if isinstance(stats_p, dict):
+                        h_eff_list.append(stats_p.get("h_eff"))
+                        r_list.append(stats_p.get("param_changed_ratio"))
+                        u_norm_list.append(stats_p.get("u_norm"))
+                        diff_norm_list.append(stats_p.get("diff_norm"))
+                    else:
+                        h_eff_list.append(None)
+                        r_list.append(None)
+                        u_norm_list.append(None)
+                        diff_norm_list.append(None)
 
                 e_arr = np.asarray(e_list, dtype=np.float64) if len(e_list) > 0 else None
                 dtrue_arr = np.asarray(d_true_list, dtype=np.float64) if len(d_true_list) > 0 else None
@@ -829,6 +912,29 @@ class Trainer(LinearHeadTrainer):
                 e_abs_mean, e_abs_std = _mean_std(np.abs(e_arr) if e_arr is not None else None)
                 dtrue_mean, dtrue_std = _mean_std(dtrue_arr)
                 dfd_mean, dfd_std = _mean_std(dfd_arr)
+
+                # Perturbation/quantization diagnostics (ignore None entries)
+                def _mean_std_nonnull(x_list):
+                    if not isinstance(x_list, list) or len(x_list) == 0:
+                        return None, None
+                    vals = [float(x) for x in x_list if (x is not None) and isinstance(x, (int, float)) and math.isfinite(float(x))]
+                    if len(vals) == 0:
+                        return None, None
+                    arr = np.asarray(vals, dtype=np.float64)
+                    return float(arr.mean()), float(arr.std())
+
+                h_eff_mean, h_eff_std = _mean_std_nonnull(h_eff_list)
+                r_mean, r_std = _mean_std_nonnull(r_list)
+                delta_zero_frac = None
+                delta_unique = None
+                try:
+                    if isinstance(delta_list, list) and len(delta_list) > 0:
+                        dz = np.asarray(delta_list, dtype=np.float64)
+                        delta_zero_frac = float(np.mean(dz == 0.0))
+                        delta_unique = int(len(set([float(x) for x in delta_list])))
+                except Exception:
+                    delta_zero_frac = None
+                    delta_unique = None
 
                 # (5) Virtual one-step update: theta'(h) = theta - lr * g_fd(h), evaluate on fixed B_eval
                 lr_per_dir = lr / float(max(1, len(dir_seeds)))
@@ -862,6 +968,17 @@ class Trainer(LinearHeadTrainer):
                     "d_true_list": d_true_list,
                     "d_fd_list": d_fd_list,
                     "e_d_list": e_list,
+                    "delta_list": delta_list,
+                    "h_eff_mean": h_eff_mean,
+                    "h_eff_std": h_eff_std,
+                    "h_eff_list": h_eff_list,
+                    "param_changed_ratio_mean": r_mean,
+                    "param_changed_ratio_std": r_std,
+                    "param_changed_ratio_list": r_list,
+                    "u_norm_list": u_norm_list,
+                    "diff_norm_list": diff_norm_list,
+                    "delta_zero_frac": delta_zero_frac,
+                    "delta_unique": delta_unique,
                 }
                 rows.append(row)
 
@@ -871,7 +988,10 @@ class Trainer(LinearHeadTrainer):
                             f"[hprobe] step={gs} h={float(h):.3e} "
                             f"probe_loss={base_probe_loss:.6e} eval_loss={base_eval_loss:.6e} "
                             f"e_abs_mean={e_abs_mean if e_abs_mean is not None else float('nan'):.6e} "
-                            f"deltaL={deltaL:.6e}"
+                            f"deltaL={deltaL:.6e} "
+                            f"h_eff_mean={h_eff_mean if h_eff_mean is not None else float('nan'):.3e} "
+                            f"r_mean={r_mean if r_mean is not None else float('nan'):.3e} "
+                            f"d0={delta_zero_frac if delta_zero_frac is not None else float('nan'):.3e}"
                         )
                     except Exception:
                         pass
@@ -899,6 +1019,8 @@ class Trainer(LinearHeadTrainer):
                     self._hprobe_inv_norm_cache = None
                 if hasattr(self, "_hprobe_unit_u"):
                     self._hprobe_unit_u = False
+                if hasattr(self, "_hprobe_param_backup"):
+                    self._hprobe_param_backup = None
             except Exception:
                 pass
             # Restore RNG states
