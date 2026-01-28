@@ -408,6 +408,12 @@ class DynamicTrainingArguments(TrainingArguments):
         default=1e-3,
         metadata={'help': 'eps for zero order optim'}
     )
+    zo_use_true_directional_derivative: bool = field(
+        default=False,
+        metadata={
+            'help': 'For ZO/MeZO: replace finite-difference (loss1-loss2)/(2*eps) with the true directional derivative <grad, z> while keeping the same z direction. Intended for fixed-h ablations; requires one backward (autograd.grad) per z sample.'
+        }
+    )
     prob_as_feature: bool = field(
         default=False,
         metadata={'help': 'in linear head, use log prob as feature'}

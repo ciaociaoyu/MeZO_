@@ -1,0 +1,12 @@
+dir,csv,eps,eps_exponent,best_eval_loss,best_train_loss
+sst5_singleh_eps1e-8,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,1e-08,-8,1.3640799522399902,1.084506630897522
+sst5_singleh_eps3e-8,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,3e-08,-8,1.183549165725708,0.7412176132202148
+sst5_singleh_eps1e-7,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,1e-07,-7,1.2064170837402344,0.7206888198852539
+sst5_singleh_eps3e-7,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,3e-07,-7,1.1745195388793943,0.7262991070747375
+sst5_singleh_eps1e-6,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,1e-06,-6,1.2034132480621338,0.7697311043739319
+sst5_singleh_eps1e-5,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,1e-05,-5,1.2543212175369265,0.9600079655647278
+sst5_singleh_eps3e-5,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,3e-05,-5,1.156630039215088,0.7510998249053955
+sst5_singleh_eps1e-4,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,0.0001,-4,1.1613115072250366,0.7631766200065613
+sst5_singleh_eps3e-4,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,0.0003,-4,1.1571087837219238,0.7717267870903015
+sst5_singleh_eps1e-3,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,0.001,-3,1.1344908475875854,0.7265495657920837
+sst5_singleh_eps3e-3,metrics_adaptiveH-0_cscale-0_layerwiseH-0.csv,0.003,-3,1.1352503299713137,0.6410984396934509

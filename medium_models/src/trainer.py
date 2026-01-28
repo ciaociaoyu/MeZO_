@@ -1483,6 +1483,96 @@ class Trainer(LinearHeadTrainer):
         self.state.zo_forward_step += 1
         return loss.detach()
 
+    def zo_true_directional_derivative(
+        self,
+        model: nn.Module,
+        inputs: Dict[str, Union[torch.Tensor, Any]],
+        random_vector: Optional[Dict[str, torch.Tensor]] = None,
+        random_seed: Optional[int] = None,
+        layer_name: Optional[str] = None,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Compute the true directional derivative <grad, z> for MeZO.
+
+        This is an ablation utility: keep the same sampled direction z, but replace the finite-difference
+        directional derivative (loss1-loss2)/(2*eps) with the true directional derivative <∇L(θ), z>.
+
+        Notes:
+        - If random_seed is provided, z will be regenerated on-the-fly using torch.manual_seed(random_seed)
+          (mirrors efficient_zero_order behavior).
+        - Otherwise random_vector should map parameter name -> z tensor.
+        - Uses torch.autograd.grad so it does NOT overwrite/clear param.grad (important for grad accumulation).
+        """
+        model.eval()
+        inputs = self._prepare_inputs(inputs)
+        if self.args.optimize_acc:
+            loss, logits = model(**inputs)
+            preds = F.softmax(logits, dim=-1)
+            acc = torch.sum(torch.argmax(preds, 1) == inputs['labels']) / len(preds)
+            loss = -acc
+        else:
+            with self.compute_loss_context_manager():
+                loss = self.compute_loss(model, inputs)
+            if self.args.n_gpu > 1:
+                loss = loss.mean()  # mean() to average on multi-gpu parallel training
+
+        named_params = self.named_parameters_to_optim
+        if layer_name is not None:
+            named_params = [(n, p) for (n, p) in self.named_parameters_to_optim if self.retrieve_c(n) == layer_name]
+
+        params = [p for _, p in named_params]
+        grads = torch.autograd.grad(loss, params, retain_graph=False, create_graph=False, allow_unused=True)
+
+        if random_seed is not None:
+            torch.manual_seed(int(random_seed))
+
+        # Match the z used later when writing pseudo-gradients.
+        apply_c_scale = (
+            getattr(self.args, "use_c_scale", False)
+            and getattr(self.args, "zero_order_use_trainer_optim", False)
+            and (self.args.zo_variant is not None)
+            and (not self.args.change_grad_estimate)
+        )
+
+        proj = None
+        for (name, param), g in zip(named_params, grads):
+            if g is None:
+                # keep RNG consumption in sync for efficient mode
+                if random_seed is not None:
+                    _ = torch.normal(
+                        mean=0,
+                        std=1,
+                        size=param.data.size(),
+                        device=param.data.device,
+                        dtype=param.data.dtype,
+                    )
+                continue
+
+            if random_seed is not None:
+                z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+            else:
+                if random_vector is None or name not in random_vector:
+                    z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                else:
+                    z = random_vector[name]
+
+            if apply_c_scale:
+                cname = self.retrieve_c(name)
+                if cname in self.cs:
+                    c_val = self.cs[cname]
+                    if isinstance(c_val, torch.Tensor):
+                        c_val = float(c_val.item())
+                    if c_val != 0.0:
+                        z = z * c_val
+
+            contrib = torch.sum(g.detach().float() * z.detach().float())
+            proj = contrib if proj is None else proj + contrib
+
+        if proj is None:
+            proj = torch.tensor(0.0, device=loss.device)
+
+        self.state.zo_forward_step += 1
+        return loss.detach(), proj.detach()
+
     def efficient_perturb_parameters(self, model: nn.Module, random_seed: int, scaling_factor=1):
         torch.manual_seed(random_seed)
         # 需要 name 以支持分层 h
@@ -1992,11 +2082,46 @@ class Trainer(LinearHeadTrainer):
                                 else:
                                     # 关闭 C-缩放：按新方法，不做分层缩放
                                     c_i_val = 1.0
-                                model, random_vector = self.perturb_single_layer(model, layer, scaling_factor=1.0/c_i_val)
-                                loss1 = self.zo_forward(model, inputs)
-                                model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=-2.0/c_i_val)
-                                loss2 = self.zo_forward(model, inputs)
-                                model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=1.0/c_i_val)
+                                if getattr(self.args, "zo_use_true_directional_derivative", False):
+                                    # Sample z for this layer (no perturbation), then compute true directional derivative <grad, z>.
+                                    model, random_vector = self.perturb_single_layer(model, layer, scaling_factor=0.0)
+
+                                    model.eval()
+                                    _in = self._prepare_inputs(inputs)
+                                    if self.args.optimize_acc:
+                                        loss, logits = model(**_in)
+                                        preds = F.softmax(logits, dim=-1)
+                                        acc = torch.sum(torch.argmax(preds, 1) == _in['labels']) / len(preds)
+                                        loss = -acc
+                                    else:
+                                        with self.compute_loss_context_manager():
+                                            loss = self.compute_loss(model, _in)
+                                        if self.args.n_gpu > 1:
+                                            loss = loss.mean()
+
+                                    self.state.zo_forward_step += 1
+
+                                    layer_named_params = [(n, p) for (n, p) in self.named_parameters_to_optim if self.retrieve_c(n) == layer]
+                                    layer_params = [p for _, p in layer_named_params]
+                                    layer_grads = torch.autograd.grad(loss, layer_params, retain_graph=False, create_graph=False, allow_unused=True)
+
+                                    proj = None
+                                    for (n, _), g in zip(layer_named_params, layer_grads):
+                                        if g is None:
+                                            continue
+                                        z_tilde = random_vector[n] * (c_i_val if getattr(self.args, "use_c_scale", False) else 1.0)
+                                        contrib = torch.sum(g.detach().float() * z_tilde.detach().float())
+                                        proj = contrib if proj is None else proj + contrib
+
+                                    projected_grad = proj if proj is not None else torch.tensor(0.0, device=loss.device)
+                                    loss1 = loss.detach()
+                                    loss2 = loss1
+                                else:
+                                    model, random_vector = self.perturb_single_layer(model, layer, scaling_factor=1.0/c_i_val)
+                                    loss1 = self.zo_forward(model, inputs)
+                                    model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=-2.0/c_i_val)
+                                    loss2 = self.zo_forward(model, inputs)
+                                    model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=1.0/c_i_val)
 
                                 # Debugging: check for NaN in losses
                                 if torch.isnan(loss1).item() or torch.isnan(loss2).item():
@@ -2004,7 +2129,8 @@ class Trainer(LinearHeadTrainer):
 
                                 # === Begin Adaptive h (Berahas et al.) ===
                                 eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
-                                projected_grad = (loss1 - loss2) / (2 * eps)
+                                if not getattr(self.args, "zo_use_true_directional_derivative", False):
+                                    projected_grad = (loss1 - loss2) / (2 * eps)
                                 # Debugging: check for NaN or Inf in projected_grad
                                 if torch.isnan(projected_grad).item() or torch.isinf(projected_grad).item():
                                     logger.warning(f"projected_grad became invalid. loss1: {loss1.item()}, loss2: {loss2.item()}, eps: {eps}")
@@ -2038,24 +2164,37 @@ class Trainer(LinearHeadTrainer):
                             if self.args.efficient_zero_order:
                                 random_seed = np.random.randint(1000000000)
 
-                            with torch.no_grad():
-                                # first function evaluation
+                            if getattr(self.args, "zo_use_true_directional_derivative", False):
+                                # Fixed-h ablation: use the true directional derivative <grad, z> for the same z direction.
+                                # We do NOT perturb parameters in this mode (but we keep the same z sampling).
                                 if self.args.efficient_zero_order:
-                                    model = self.efficient_perturb_parameters(model, random_seed)
+                                    loss1, projected_grad = self.zo_true_directional_derivative(model, inputs, random_seed=random_seed)
                                 elif self.args.zo_variant is not None:
-                                    model, random_vector = self.norm_perturb_parameters(model)
+                                    model, random_vector = self.norm_perturb_parameters(model, scaling_factor=0.0)
+                                    loss1, projected_grad = self.zo_true_directional_derivative(model, inputs, random_vector=random_vector)
                                 else:
-                                    model, random_vector = self.perturb_parameters(model)
-                                loss1 = self.zo_forward(model, inputs)
+                                    model, random_vector = self.perturb_parameters(model, scaling_factor=0.0)
+                                    loss1, projected_grad = self.zo_true_directional_derivative(model, inputs, random_vector=random_vector)
+                                loss2 = loss1
+                            else:
+                                with torch.no_grad():
+                                    # first function evaluation
+                                    if self.args.efficient_zero_order:
+                                        model = self.efficient_perturb_parameters(model, random_seed)
+                                    elif self.args.zo_variant is not None:
+                                        model, random_vector = self.norm_perturb_parameters(model)
+                                    else:
+                                        model, random_vector = self.perturb_parameters(model)
+                                    loss1 = self.zo_forward(model, inputs)
 
-                                # second function evaluation
-                                if self.args.efficient_zero_order:
-                                    model = self.efficient_perturb_parameters(model, random_seed, scaling_factor=-2)
-                                elif self.args.zo_variant is not None:
-                                    model, random_vector = self.norm_perturb_parameters(model, random_vector, scaling_factor=-2)
-                                else:
-                                    model, random_vector = self.perturb_parameters(model, random_vector, scaling_factor=-2)
-                                loss2 = self.zo_forward(model, inputs)
+                                    # second function evaluation
+                                    if self.args.efficient_zero_order:
+                                        model = self.efficient_perturb_parameters(model, random_seed, scaling_factor=-2)
+                                    elif self.args.zo_variant is not None:
+                                        model, random_vector = self.norm_perturb_parameters(model, random_vector, scaling_factor=-2)
+                                    else:
+                                        model, random_vector = self.perturb_parameters(model, random_vector, scaling_factor=-2)
+                                    loss2 = self.zo_forward(model, inputs)
 
                             # Debugging: check for NaN in losses
                             if torch.isnan(loss1).item() or torch.isnan(loss2).item():
@@ -2063,9 +2202,10 @@ class Trainer(LinearHeadTrainer):
 
                             # === Begin Adaptive h (Berahas et al.) ===
                             eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
-                            # === Original Code ===
-                            projected_grad = (loss1 - loss2) / (2 * eps)
-                            # === Original Code ===
+                            if not getattr(self.args, "zo_use_true_directional_derivative", False):
+                                # === Original Code ===
+                                projected_grad = (loss1 - loss2) / (2 * eps)
+                                # === Original Code ===
 
                             # Debugging: check for NaN or Inf in projected_grad
                             if torch.isnan(projected_grad).item() or torch.isinf(projected_grad).item():
@@ -2114,12 +2254,13 @@ class Trainer(LinearHeadTrainer):
                                         param.grad += projected_grad * z
 
                             # reset model back to its parameters at start of step
-                            if self.args.efficient_zero_order:
-                                model = self.efficient_perturb_parameters(model, random_seed)
-                            elif self.args.zo_variant is not None:
-                                model, random_vector = self.norm_perturb_parameters(model, random_vector)
-                            else:
-                                model, random_vector = self.perturb_parameters(model, random_vector)
+                            if not getattr(self.args, "zo_use_true_directional_derivative", False):
+                                if self.args.efficient_zero_order:
+                                    model = self.efficient_perturb_parameters(model, random_seed)
+                                elif self.args.zo_variant is not None:
+                                    model, random_vector = self.norm_perturb_parameters(model, random_vector)
+                                else:
+                                    model, random_vector = self.perturb_parameters(model, random_vector)
 
                     # apply gradient updates
                     # if using trainer, follow trainer logic to clip grad and check if parameters should be updated
