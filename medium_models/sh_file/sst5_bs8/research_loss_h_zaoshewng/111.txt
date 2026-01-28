@@ -1,17 +1,14 @@
 #!/bin/bash
-#SBATCH --job-name=singleh_sst5
+#SBATCH --job-name=singleh_sst5_truedir
 #SBATCH --partition=gpu_p
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=100G
-#SBATCH --gres=gpu:L4:1
+#SBATCH --gres=gpu:H100:1
 #SBATCH --time=24:00:00
 
-# 13 个 h：array index 0..12
-# 你可以用 % 控制同时并行的最大任务数，比如最多同时跑 6 个：
-#SBATCH --array=0-12%6
-
-#SBATCH --output=jobs/%x_%A_%a.out
+# 非 array job：用 job id 命名输出文件更稳
+#SBATCH --output=jobs/%x_%j.out
 #SBATCH --mail-user=jichao.yu@uga.edu
 #SBATCH --mail-type=ALL
 
@@ -38,16 +35,11 @@ unset H_PROBE_MIN
 unset H_PROBE_MAX
 
 # =========================
-# (B) h 列表：每个 array task 取一个 eps/h
+# (B) true directional derivative 模式下 eps 仅用于 tag/目录命名
+#     （不再用 (L+ - L-)/(2h)）
 # =========================
-H_LIST=( \
-  1e-8 3e-8 1e-7 3e-7 1e-6 3e-6 \
-  1e-5 3e-5 1e-4 3e-4 1e-3 3e-3 1e-2 \
-)
-
-EPS="${H_LIST[$SLURM_ARRAY_TASK_ID]}"
-echo "SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID}"
-echo "Running fixed EPS(h) = ${EPS}"
+EPS="1e-3"
+echo "Running TRUE directional derivative mode; EPS(h) tag = ${EPS}"
 
 # =========================
 # (C) 训练设置
@@ -56,16 +48,16 @@ export STEP=50000
 export EVAL_STEP=5000
 
 # 让 tag 里也带上 eps，便于你聚合 log
-export EXTRA_TAG="singleh-eps${EPS}"
+export EXTRA_TAG="singleh-truedir-eps${EPS}"
 
-# 强烈建议：给每个 eps 一个独立 job_name（否则输出目录会冲突/覆盖）
-JOB_NAME="sst5_singleh_eps${EPS}"
+# 强烈建议：给每个 run 一个独立 job_name（否则输出目录会冲突/覆盖）
+JOB_NAME="sst5_singleh_truedir_eps${EPS}"
 
-# 结果根目录（你可以改成自己的实验目录）
-RESULT_ROOT="/home/jy03364/MeZO/medium_models/sh_file/sst5_bs8/research_loss_h_zaoshewng/single_h"
+# 结果根目录（建议和 finite-diff 结果分开，避免混淆）
+RESULT_ROOT="/home/jy03364/MeZO/medium_models/sh_file/sst5_bs8/research_loss_h_zaoshewng/single_h_true_dir"
 
 # =========================
-# (D) 开跑：固定 h（zero_order_eps=EPS），关闭 adaptive-h（USE_H=False）
+# (D) 开跑：关键新增 --zo_use_true_directional_derivative
 # =========================
 TASK=sst-5 \
 K=16 \
@@ -83,4 +75,5 @@ EVAL_STEP=$EVAL_STEP \
 EXTRA_TAG=$EXTRA_TAG \
 bash mezo.sh \
   --result_root "$RESULT_ROOT" \
-  --job_name "$JOB_NAME"
+  --job_name "$JOB_NAME" \
+  --zo_use_true_directional_derivative
