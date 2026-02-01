@@ -1,2 +1,0 @@
-dir,csv,eps,eps_exponent,best_eval_loss,best_train_loss
-sst-5-roberta-large-prompt-standard-k16-roberta-large-mezo-ftseed16-bs8-lr1e-6-eps1e-3-wd0-step50000-evalstep5000,metrics_adaptiveH-1_cscale-0_layerwiseH-0.csv,0.001,-3,,1.0887778997421265
