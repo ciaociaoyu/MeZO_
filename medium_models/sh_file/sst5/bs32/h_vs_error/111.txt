@@ -30,7 +30,7 @@ export H_PROBE_LOG_EACH_H=1
 export H_PROBE_OUT="hprobe_bs32_sst5.jsonl"
 
 # Explicit h list (includes 1e-3 and neighbors for error vs h)
-export H_PROBE_HLIST="1e-6,3e-6,1e-5,3e-5,1e-4,3e-4,1e-3,3e-3,1e-2"
+export H_PROBE_HLIST="1e-9,3e-9,1e-8,3e-8,1e-7,3e-7,1e-6,3e-6,1e-5,3e-5,1e-4,3e-4,1e-3,3e-3,1e-2"
 
 # =========================
 # (B) Training run settings
@@ -54,4 +54,4 @@ DATALOADER_SHUFFLE=True \
 STEP=$STEP \
 EVAL_STEP=$EVAL_STEP \
 EXTRA_TAG=$EXTRA_TAG \
-bash mezo.sh --result_root /home/jy03364/MeZO/medium_models/results/hprobe
+bash mezo.sh --result_root /home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/h_vs_error/hprobe
