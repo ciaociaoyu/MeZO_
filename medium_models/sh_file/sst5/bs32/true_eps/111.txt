@@ -1,0 +1,79 @@
+#!/bin/bash
+#SBATCH --job-name=singleh_sst5_truedir
+#SBATCH --partition=gpu_p
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=100G
+#SBATCH --gres=gpu:H100:1
+#SBATCH --time=12:00:00
+
+# 非 array job：用 job id 命名输出文件更稳
+#SBATCH --output=jobs/%x_%j.out
+#SBATCH --mail-user=jichao.yu@uga.edu
+#SBATCH --mail-type=ALL
+
+ml jq
+
+source ~/.bashrc
+conda activate ciao
+
+cd /home/jy03364/MeZO/medium_models
+
+# =========================
+# (A) 固定 h 单独跑：关闭 h-probe（避免额外计算）
+# =========================
+export H_PROBE=0
+unset H_PROBE_EVERY
+unset H_PROBE_NDIR
+unset H_PROBE_NB
+unset H_PROBE_UNIT_U
+unset H_PROBE_SAVE_PARAMS
+unset H_PROBE_LOG_EACH_H
+unset H_PROBE_OUT
+unset H_PROBE_HLIST
+unset H_PROBE_MIN
+unset H_PROBE_MAX
+
+# =========================
+# (B) true directional derivative 模式下 eps 仅用于 tag/目录命名
+#     （不再用 (L+ - L-)/(2h)）
+# =========================
+EPS="1e-3"
+echo "Running TRUE directional derivative mode; EPS(h) tag = ${EPS}"
+
+# =========================
+# (C) 训练设置
+# =========================
+export STEP=50000
+export EVAL_STEP=5000
+
+# 让 tag 里也带上 eps，便于你聚合 log
+export EXTRA_TAG="singleh-truedir-eps${EPS}"
+
+# 强烈建议：给每个 run 一个独立 job_name（否则输出目录会冲突/覆盖）
+JOB_NAME="sst5_singleh_truedir_eps${EPS}"
+
+# 结果根目录（建议和 finite-diff 结果分开，避免混淆）
+RESULT_ROOT="/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/true_eps"
+
+# =========================
+# (D) 开跑：关键新增 --zo_use_true_directional_derivative
+# =========================
+TASK=sst-5 \
+K=16 \
+SEED=16 \
+DATA_SEED=16 \
+BS=32 \
+LR=1e-6 \
+EPS="$EPS" \
+MODEL=roberta-large \
+USE_H=False \
+USE_C=False \
+DATALOADER_SHUFFLE=True \
+STEP=$STEP \
+EVAL_STEP=$EVAL_STEP \
+EXTRA_TAG=$EXTRA_TAG \
+bash mezo.sh \
+  --result_root "$RESULT_ROOT" \
+  --job_name "$JOB_NAME" \
+  --zo_use_true_directional_derivative
