@@ -241,7 +241,9 @@ class Trainer(LinearHeadTrainer):
         if not os.path.exists(self._metrics_csv_path):
             with open(self._metrics_csv_path, "w", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(["epoch", "global_step", "train_loss", "train_acc", "eval_ran", "eval_loss", "eval_acc"])
+                writer.writerow(["epoch", "global_step", "train_loss", "train_acc", "eval_ran", "eval_loss", "eval_acc", "eval_loss_avg5"])
+        # Track eval loss history for tail-average reporting
+        self._eval_loss_history = []
 
     def _compute_train_acc(self, model, inputs) -> Optional[float]:
         """计算当前 batch 的训练准确率（不影响梯度）。若任务非分类或缺少 labels，返回 None。"""
@@ -913,6 +915,26 @@ class Trainer(LinearHeadTrainer):
                 dtrue_mean, dtrue_std = _mean_std(dtrue_arr)
                 dfd_mean, dfd_std = _mean_std(dfd_arr)
 
+                # Direction consistency + correlation (between true and FD directional derivatives)
+                dir_sign_match = None
+                dir_corr = None
+                try:
+                    if dtrue_arr is not None and dfd_arr is not None and dtrue_arr.size > 0 and dfd_arr.size > 0:
+                        st = np.sign(dtrue_arr)
+                        sf = np.sign(dfd_arr)
+                        mask = (st != 0) & (sf != 0)
+                        if mask.any():
+                            dir_sign_match = float(np.mean(st[mask] == sf[mask]))
+                        # Pearson correlation requires non-zero variance and >=2 samples
+                        if dtrue_arr.size >= 2:
+                            std_t = float(np.std(dtrue_arr))
+                            std_f = float(np.std(dfd_arr))
+                            if std_t > 0.0 and std_f > 0.0:
+                                dir_corr = float(np.corrcoef(dtrue_arr, dfd_arr)[0, 1])
+                except Exception:
+                    dir_sign_match = None
+                    dir_corr = None
+
                 # Perturbation/quantization diagnostics (ignore None entries)
                 def _mean_std_nonnull(x_list):
                     if not isinstance(x_list, list) or len(x_list) == 0:
@@ -952,6 +974,7 @@ class Trainer(LinearHeadTrainer):
                     "unit_u": bool(self._hprobe_unit_u),
                     "ndir": int(len(dir_seeds)),
                     "probe_loss": float(base_probe_loss),
+                    "train_loss": float(base_probe_loss),
                     "eval_loss": float(base_eval_loss),
                     "grad_true_norm": float(grad_norm),
                     "d_true_mean": dtrue_mean,
@@ -962,6 +985,8 @@ class Trainer(LinearHeadTrainer):
                     "e_d_std": e_std,
                     "e_d_abs_mean": e_abs_mean,
                     "e_d_abs_std": e_abs_std,
+                    "dir_sign_match": dir_sign_match,
+                    "dir_corr": dir_corr,
                     "deltaL": float(deltaL),
                     "loss_after": float(loss_after),
                     "dir_seeds": dir_seeds,
@@ -979,6 +1004,7 @@ class Trainer(LinearHeadTrainer):
                     "diff_norm_list": diff_norm_list,
                     "delta_zero_frac": delta_zero_frac,
                     "delta_unique": delta_unique,
+                    "quant_noise_indicator": delta_zero_frac,
                 }
                 rows.append(row)
 
@@ -2477,13 +2503,41 @@ class Trainer(LinearHeadTrainer):
                     epoch_iterator.close()
                     break
 
-                if self.args.evaluate_during_training and self.state.global_step % self.args.eval_steps == 0:
+                # Optional: force eval on the last K steps (each step once)
+                try:
+                    tail_eval_steps = int(os.environ.get("FINAL_EVAL_STEPS", "0"))
+                except Exception:
+                    tail_eval_steps = 0
+
+                eval_reason = None
+                do_eval = False
+                if getattr(self.args, "evaluate_during_training", False) and self.state.global_step % self.args.eval_steps == 0:
+                    do_eval = True
+                    eval_reason = "YES"
+                if tail_eval_steps > 0 and getattr(self.args, "max_steps", 0) and int(self.args.max_steps) > 0:
+                    remaining = int(self.args.max_steps) - int(self.state.global_step)
+                    if remaining < int(tail_eval_steps) and int(self.state.global_step) > 0:
+                        do_eval = True
+                        eval_reason = "TAIL"
+
+                if do_eval:
                     output = self.evaluate()
                     metrics = output.metrics
                     objective = self.dev_objective(metrics)
                     # === CSV：本步触发了评估，把评估度量与训练度量一并写入 ===
                     try:
                         eval_loss = float(metrics.get("eval_loss", float("nan"))) if isinstance(metrics, dict) else float("nan")
+                        eval_loss_avg5 = None
+                        try:
+                            if math.isfinite(eval_loss):
+                                if not hasattr(self, "_eval_loss_history") or self._eval_loss_history is None:
+                                    self._eval_loss_history = []
+                                self._eval_loss_history.append((int(self.state.global_step), float(eval_loss)))
+                                if len(self._eval_loss_history) >= 5:
+                                    last5 = [v for _, v in self._eval_loss_history[-5:]]
+                                    eval_loss_avg5 = float(sum(last5) / float(len(last5)))
+                        except Exception:
+                            eval_loss_avg5 = None
                         eval_acc = self._extract_eval_acc(metrics)
                         with open(self._metrics_csv_path, "a", newline="") as f:
                             writer = csv.writer(f)
@@ -2492,9 +2546,10 @@ class Trainer(LinearHeadTrainer):
                                 _csv_pending.get("global_step") if _csv_pending else int(self.state.global_step),
                                 _csv_pending.get("train_loss") if _csv_pending else float("nan"),
                                 _csv_pending.get("train_acc") if _csv_pending else None,
-                                "YES",
+                                (eval_reason if eval_reason is not None else "YES"),
                                 eval_loss,
                                 (None if eval_acc is None else float(eval_acc)),
+                                eval_loss_avg5,
                             ]
                             writer.writerow(row)
                     except Exception as e:
@@ -2519,6 +2574,7 @@ class Trainer(LinearHeadTrainer):
                                 "NO",
                                 None,
                                 None,
+                                None,
                             ]
                             writer.writerow(row)
                     except Exception as e:
@@ -2534,6 +2590,84 @@ class Trainer(LinearHeadTrainer):
         if self.args.past_index and hasattr(self, "_past"):
             # Clean the state at the end of training
             delattr(self, "_past")
+
+        # Optional: extra evals at the very end for stability
+        try:
+            final_eval_repeat = int(os.environ.get("FINAL_EVAL_REPEAT", "0"))
+        except Exception:
+            final_eval_repeat = 0
+        if final_eval_repeat > 0:
+            for i in range(final_eval_repeat):
+                try:
+                    output = self.evaluate()
+                    metrics = output.metrics
+                    eval_loss = float(metrics.get("eval_loss", float("nan"))) if isinstance(metrics, dict) else float("nan")
+                    eval_acc = self._extract_eval_acc(metrics) if isinstance(metrics, dict) else None
+
+                    eval_loss_avg5 = None
+                    try:
+                        if math.isfinite(eval_loss):
+                            if not hasattr(self, "_eval_loss_history") or self._eval_loss_history is None:
+                                self._eval_loss_history = []
+                            self._eval_loss_history.append((int(self.state.global_step), float(eval_loss)))
+                            if len(self._eval_loss_history) >= 5:
+                                last5 = [v for _, v in self._eval_loss_history[-5:]]
+                                eval_loss_avg5 = float(sum(last5) / float(len(last5)))
+                    except Exception:
+                        eval_loss_avg5 = None
+
+                    try:
+                        with open(self._metrics_csv_path, "a", newline="") as f:
+                            writer = csv.writer(f)
+                            row = [
+                                float(self.epoch),
+                                int(self.state.global_step),
+                                float("nan"),
+                                None,
+                                "FINAL",
+                                eval_loss,
+                                (None if eval_acc is None else float(eval_acc)),
+                                eval_loss_avg5,
+                            ]
+                            writer.writerow(row)
+                    except Exception as e:
+                        logger.warning(f"[CSV] failed to write final eval row: {e}")
+
+                    logger.info(f"[final_eval] {i+1}/{final_eval_repeat} eval_loss={eval_loss:.6e}")
+                except Exception as e:
+                    try:
+                        logger.warning(f"[final_eval] failed: {e}")
+                    except Exception:
+                        pass
+
+        # Write tail-avg eval loss summary (mean of last 5 eval losses)
+        try:
+            if hasattr(self.args, "local_rank") and getattr(self.args, "local_rank", -1) not in (-1, 0):
+                pass
+            else:
+                hist = getattr(self, "_eval_loss_history", None)
+                if isinstance(hist, list) and len(hist) > 0:
+                    count = min(5, len(hist))
+                    last = hist[-count:]
+                    last_steps = [int(s) for s, _ in last]
+                    last_vals = [float(v) for _, v in last]
+                    avg = float(sum(last_vals) / float(count))
+                    summary = {
+                        "eval_loss_last5_mean": avg,
+                        "eval_loss_last5_count": int(count),
+                        "eval_loss_last5_steps": last_steps,
+                        "eval_loss_last5_values": last_vals,
+                    }
+                    out_dir = getattr(self.args, "output_dir", "./outputs") or "./outputs"
+                    out_path = os.path.join(out_dir, "eval_loss_last5.json")
+                    with open(out_path, "w", encoding="utf-8") as f:
+                        json.dump(summary, f, ensure_ascii=False)
+                    logger.info(f"[eval_loss_last5] mean={avg:.6e} count={count} steps={last_steps}")
+        except Exception as e:
+            try:
+                logger.warning(f"[eval_loss_last5] failed to write summary: {e}")
+            except Exception:
+                pass
 
         logger.info("\n\nTraining completed. Do not forget to share your model on huggingface.co/models =)\n\n")
         return TrainOutput(self.state.global_step, tr_loss / self.state.global_step, metrics), self.objective

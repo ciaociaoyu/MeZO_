@@ -1,0 +1,76 @@
+#!/bin/bash
+#SBATCH --job-name=sst5_bs32_hloss      # 作业名（用于输出目录与日志标识）
+#SBATCH --partition=gpu_p              # Slurm 分区
+#SBATCH --ntasks=1                     # 任务数（通常=1）
+#SBATCH --cpus-per-task=2              # 每个任务使用的 CPU 核数
+#SBATCH --mem=100G                     # 内存上限
+#SBATCH --gres=gpu:L4:1                # GPU 资源类型与数量
+#SBATCH --time=24:00:00                # 最长运行时长
+#SBATCH --array=0-14%6                 # 15 个 h 取值的数组任务，并发上限 6
+#SBATCH --output=jobs/%x_%A_%a.out     # 输出日志路径（含 job name、array id）
+#SBATCH --mail-user=jichao.yu@uga.edu  # 邮件通知地址
+#SBATCH --mail-type=ALL                # 邮件通知类型（BEGIN/END/FAIL 等）
+
+ml jq  # 加载 jq（mezo.sh 里会用到）
+
+source ~/.bashrc          # 载入环境变量
+conda activate ciao       # 激活 conda 环境
+
+cd /home/jy03364/MeZO/medium_models  # 切换到运行目录
+
+# =========================
+# (A) h-probe settings (collect FD vs true dir-deriv + quantization indicators)
+# =========================
+export H_PROBE=1                 # 启用 h-probe
+export H_PROBE_EVERY=500         # 每 500 步进行一次 probe
+export H_PROBE_NDIR=8            # 每次 probe 采样的方向数 M
+export H_PROBE_NB=2              # 固定 batch 数（1=同一 batch；>=2=probe 与 eval 分离）
+export H_PROBE_UNIT_U=1          # 方向归一化开关（当前实现仍为 raw-z，但保留开关）
+export H_PROBE_SAVE_PARAMS=1     # 保存参数快照（用于量化噪声指标统计）
+export H_PROBE_LOG_EACH_H=1      # 每个 h 在日志中单独输出一行
+export H_PROBE_OUT="hprobe.jsonl"  # probe 输出文件名
+
+# =========================
+# (B) h 列表：每个 array task 取一个 h
+# =========================
+H_LIST=( \                             # h 列表（数组任务依次取）
+  1e-9 3e-9 1e-8 3e-8 1e-7 3e-7 1e-6 3e-6 \
+  1e-5 3e-5 1e-4 3e-4 1e-3 3e-3 1e-2 \
+)
+
+EPS="${H_LIST[$SLURM_ARRAY_TASK_ID]}"   # 当前任务对应的 h/eps
+echo "SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID}"  # 打印数组任务 id
+echo "Running fixed-h training; EPS(h) = ${EPS}"   # 打印当前 h
+
+# h-probe 只测当前 h
+export H_PROBE_HLIST="${EPS}"  # 只对当前 h 做 probe
+
+# =========================
+# (C) 训练设置：固定 h
+# =========================
+export STEP=50000              # 训练总步数
+export EVAL_STEP=5000          # 常规评估频率
+export FINAL_EVAL_STEPS=5      # 训练最后 K 步每步都 eval（K=5）
+export FINAL_EVAL_REPEAT=0     # 训练结束后额外重复 eval 次数（此处关闭）
+
+export EXTRA_TAG="hloss-bs32-eps${EPS}"                 # 额外标签（用于输出目录区分）
+JOB_NAME="sst5_bs32_hloss_eps${EPS}"                    # 每个 h 独立 job name（避免覆盖）
+RESULT_ROOT="/home/jy03364/MeZO/medium_models/results/sst5_bs32_hloss"  # 结果根目录
+
+TASK=sst-5 \                    # 任务名
+K=16 \                          # K-shot
+SEED=16 \                       # 随机种子
+DATA_SEED=16 \                  # 数据划分种子
+BS=32 \                         # batch size（bs=32）
+LR=1e-6 \                       # 学习率
+EPS="$EPS" \                    # zero-order eps（固定 h）
+MODEL=roberta-large \           # 模型
+USE_H=False \                   # 关闭自适应 h
+USE_C=False \                   # 关闭 c-scale
+DATALOADER_SHUFFLE=True \       # 训练数据是否 shuffle
+STEP=$STEP \                    # 训练总步数
+EVAL_STEP=$EVAL_STEP \          # 评估频率
+EXTRA_TAG=$EXTRA_TAG \          # 额外标签
+bash mezo.sh \
+  --result_root "$RESULT_ROOT" \  # 输出根目录（覆盖 run_fewshot.sh 默认）
+  --job_name "$JOB_NAME"          # 输出 job 名（避免多数组任务覆盖）
