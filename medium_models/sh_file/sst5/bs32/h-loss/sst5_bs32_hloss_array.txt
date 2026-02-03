@@ -33,7 +33,7 @@ export H_PROBE_OUT="hprobe.jsonl"  # probe 输出文件名
 # =========================
 # (B) h 列表：每个 array task 取一个 h
 # =========================
-H_LIST=( \                             # h 列表（数组任务依次取）
+H_LIST=( \
   1e-9 3e-9 1e-8 3e-8 1e-7 3e-7 1e-6 3e-6 \
   1e-5 3e-5 1e-4 3e-4 1e-3 3e-3 1e-2 \
 )
@@ -57,20 +57,21 @@ export EXTRA_TAG="hloss-bs32-eps${EPS}"                 # 额外标签（用于�
 JOB_NAME="sst5_bs32_hloss_eps${EPS}"                    # 每个 h 独立 job name（避免覆盖）
 RESULT_ROOT="/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/h-loss"  # 结果根目录
 
-TASK=sst-5 \                    # 任务名
-K=16 \                          # K-shot
-SEED=16 \                       # 随机种子
-DATA_SEED=16 \                  # 数据划分种子
-BS=32 \                         # batch size（bs=32）
-LR=1e-6 \                       # 学习率
-EPS="$EPS" \                    # zero-order eps（固定 h）
-MODEL=roberta-large \           # 模型
-USE_H=False \                   # 关闭自适应 h
-USE_C=False \                   # 关闭 c-scale
-DATALOADER_SHUFFLE=True \       # 训练数据是否 shuffle
-STEP=$STEP \                    # 训练总步数
-EVAL_STEP=$EVAL_STEP \          # 评估频率
-EXTRA_TAG=$EXTRA_TAG \          # 额外标签
+export TASK=sst-5                # 任务名
+export K=16                      # K-shot
+export SEED=16                   # 随机种子
+export DATA_SEED=16              # 数据划分种子
+export BS=32                     # batch size（bs=32）
+export LR=1e-6                   # 学习率
+export EPS="$EPS"                # zero-order eps（固定 h）
+export MODEL=roberta-large       # 模型
+export USE_H=False               # 关闭自适应 h
+export USE_C=False               # 关闭 c-scale
+export DATALOADER_SHUFFLE=True   # 训练数据是否 shuffle
+export STEP=$STEP                # 训练总步数
+export EVAL_STEP=$EVAL_STEP      # 评估频率
+export EXTRA_TAG=$EXTRA_TAG      # 额外标签
+
 bash mezo.sh \
-  --result_root "$RESULT_ROOT" \  # 输出根目录（覆盖 run_fewshot.sh 默认）
-  --job_name "$JOB_NAME"          # 输出 job 名（避免多数组任务覆盖）
+  --result_root "$RESULT_ROOT" \
+  --job_name "$JOB_NAME"

@@ -47,20 +47,21 @@ export EXTRA_TAG="adaptive_h-eps${EPS}"
 JOB_NAME="sst5_bs32_use_h"
 RESULT_ROOT="/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/use_h"
 
-TASK=sst-5 \
-K=16 \
-SEED=16 \
-DATA_SEED=16 \
-BS=32 \
-LR=1e-6 \
-EPS="$EPS" \
-MODEL=roberta-large \
-USE_H=True \
-USE_C=False \
-DATALOADER_SHUFFLE=True \
-STEP=$STEP \
-EVAL_STEP=$EVAL_STEP \
-EXTRA_TAG=$EXTRA_TAG \
+export TASK=sst-5
+export K=16
+export SEED=16
+export DATA_SEED=16
+export BS=32
+export LR=1e-6
+export EPS="$EPS"
+export MODEL=roberta-large
+export USE_H=True
+export USE_C=False
+export DATALOADER_SHUFFLE=True
+export STEP=$STEP
+export EVAL_STEP=$EVAL_STEP
+export EXTRA_TAG=$EXTRA_TAG
+
 bash mezo.sh \
   --result_root "$RESULT_ROOT" \
   --job_name "$JOB_NAME"
