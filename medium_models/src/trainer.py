@@ -234,8 +234,7 @@ class Trainer(LinearHeadTrainer):
         # 根据开关构造文件名
         use_ah = int(getattr(self.args, "use_adaptive_h", False))
         use_cs = int(getattr(self.args, "use_c_scale", False))
-        use_lh = int(getattr(self.args, "use_layerwise_h", False))
-        filename = f"metrics_adaptiveH-{use_ah}_cscale-{use_cs}_layerwiseH-{use_lh}.csv"
+        filename = f"metrics_adaptiveH-{use_ah}_cscale-{use_cs}.csv"
         self._metrics_csv_path = os.path.join(log_dir, filename)
         # 若文件不存在则写入表头
         if not os.path.exists(self._metrics_csv_path):
@@ -1601,23 +1600,11 @@ class Trainer(LinearHeadTrainer):
 
     def efficient_perturb_parameters(self, model: nn.Module, random_seed: int, scaling_factor=1):
         torch.manual_seed(random_seed)
-        # 需要 name 以支持分层 h
+        # 需要 name 以支持按层操作
         for name, param in self.named_parameters_to_optim:
             z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
             # === Begin Adaptive h (Berahas et al.) ===
-            # 若启用按层 h（use_layerwise_h=True），则针对该参数所在层选用分层步长；否则使用全局 adaptive_h
-            if getattr(self.args, "use_adaptive_h", False):
-                if getattr(self.args, "use_layerwise_h", False):
-                    cname = self.retrieve_c(name)
-                    if hasattr(self, "layerwise_h") and isinstance(self.layerwise_h, dict) and (cname in self.layerwise_h):
-                        _h = self.layerwise_h[cname]
-                        eps = float(_h.item()) if isinstance(_h, torch.Tensor) else float(_h)
-                    else:
-                        eps = float(self.adaptive_h)
-                else:
-                    eps = float(self.adaptive_h)
-            else:
-                eps = float(self.args.zero_order_eps)
+            eps = float(self.adaptive_h) if getattr(self.args, "use_adaptive_h", False) else float(self.args.zero_order_eps)
             param.data = param.data + scaling_factor * z * eps
             # === End Adaptive h ===
         return model
@@ -1646,18 +1633,7 @@ class Trainer(LinearHeadTrainer):
                     z = z / c_val
 
             # === Begin Adaptive h (Berahas et al.) ===
-            if getattr(self.args, "use_adaptive_h", False):
-                if getattr(self.args, "use_layerwise_h", False):
-                    cname = self.retrieve_c(name)
-                    if hasattr(self, "layerwise_h") and isinstance(self.layerwise_h, dict) and (cname in self.layerwise_h):
-                        _h = self.layerwise_h[cname]
-                        eps = float(_h.item()) if isinstance(_h, torch.Tensor) else float(_h)
-                    else:
-                        eps = float(self.adaptive_h)
-                else:
-                    eps = float(self.adaptive_h)
-            else:
-                eps = float(self.args.zero_order_eps)
+            eps = float(self.adaptive_h) if getattr(self.args, "use_adaptive_h", False) else float(self.args.zero_order_eps)
             param.data = param.data + scaling_factor * z * eps
             # === End Adaptive h ===
 
@@ -1693,18 +1669,7 @@ class Trainer(LinearHeadTrainer):
                     z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
                     random_vector[name] = z
                 # === Begin Adaptive h (Berahas et al.) ===
-                # 若启用按层 h（use_layerwise_h=True），则针对该参数所在层选用分层步长；否则使用全局 adaptive_h
-                if getattr(self.args, "use_adaptive_h", False):
-                    if getattr(self.args, "use_layerwise_h", False):
-                        if hasattr(self, "layerwise_h") and isinstance(self.layerwise_h, dict) and (cname in self.layerwise_h):
-                            _h = self.layerwise_h[cname]
-                            eps = float(_h.item()) if isinstance(_h, torch.Tensor) else float(_h)
-                        else:
-                            eps = float(self.adaptive_h)
-                    else:
-                        eps = float(self.adaptive_h)
-                else:
-                    eps = float(self.args.zero_order_eps)
+                eps = float(self.adaptive_h) if getattr(self.args, "use_adaptive_h", False) else float(self.args.zero_order_eps)
                 param.data = param.data + scaling_factor * z * eps
                 # === End Adaptive h ===
 
@@ -1816,7 +1781,7 @@ class Trainer(LinearHeadTrainer):
 
     def retrieve_c(self, param_name: str) -> str:
         """
-        将参数名映射到“层键”（用于分层 c / 分层 h）。
+        将参数名映射到“层键”（用于分层 c / 分层优化）。
         兼容性：在某些配置下（如 zo_variant=None 或 use_c_scale=False），initialize_c()
         可能尚未被调用，此时 self.cs 尚不存在。为避免 AttributeError，
         这里按以下优先级匹配：
@@ -1832,7 +1797,7 @@ class Trainer(LinearHeadTrainer):
                 if c_name and c_name in param_name:
                     return c_name
 
-        # 2) 其次使用已构造的 layer_names（train() 中在 use_layerwise_h=True 时会构造）
+        # 2) 其次使用已构造的 layer_names
         layer_names = getattr(self, "layer_names", None)
         if isinstance(layer_names, (list, tuple)):
             for key in layer_names:
@@ -1989,8 +1954,6 @@ class Trainer(LinearHeadTrainer):
         logger.info("  Total optimization steps = %d", t_total)
 
         self.state = TrainerState()
-        # 仅打印一次分层 h 的日志
-        self._logged_layerwise_h = False
         # 初始化 CSV 日志文件
         self._setup_metrics_csv()
         _csv_pending = None  # 暂存本 step 的训练度量，待是否有 eval 再一起写入

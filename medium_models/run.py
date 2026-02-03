@@ -553,15 +553,6 @@ class DynamicTrainingArguments(TrainingArguments):
         default=False,
         metadata={"help": "Whether to use per-layer c (cs) to scale the finite-difference step h / perturbations; default False to match the new method"}
     )
-    # 是否“按层”选择有限差分步长 h（层划分与 cs 相同：embed / lm_head / layer(s).i.）
-    # 说明：默认 False，表示使用“全局 h”（在全参数空间上估计）；
-    #       当设为 True 时，训练时会对每一层分别调用二次试探+(18a)(18b)来选择该层的 h，
-    #       并将各层 h 的中位数作为全局兜底 self.adaptive_h（防止个别层缺值/异常）。
-    use_layerwise_h: bool = field(
-        default=False,
-        metadata={"help": "Whether to choose finite-difference step h per-layer (same grouping as cs). Default False = use a single global h."}
-    )
-
     # Reproducibility / sampling
     data_seed: Optional[int] = field(
         default=None,
@@ -666,14 +657,12 @@ def main():
 
     # Append MeZO-related switches into the log filename so that runs are easier to identify.
     # USE_H  -> training_args.use_adaptive_h
-    # USE_LH -> training_args.use_layerwise_h
     # USE_C  -> training_args.use_c_scale
     # 更改了result文件的命名规则
     if getattr(training_args, "log_file", None):
         base, ext = os.path.splitext(training_args.log_file)
         suffix = (
             f"-USE_H{int(getattr(training_args, 'use_adaptive_h', False))}"
-            f"-USE_LH{int(getattr(training_args, 'use_layerwise_h', False))}"
             f"-USE_C{int(getattr(training_args, 'use_c_scale', False))}"
         )
         training_args.log_file = base + suffix + ext
