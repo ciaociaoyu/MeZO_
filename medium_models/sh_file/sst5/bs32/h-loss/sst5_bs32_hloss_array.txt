@@ -55,7 +55,7 @@ export FINAL_EVAL_REPEAT=0     # 训练结束后额外重复 eval 次数（此�
 
 export EXTRA_TAG="hloss-bs32-eps${EPS}"                 # 额外标签（用于输出目录区分）
 JOB_NAME="sst5_bs32_hloss_eps${EPS}"                    # 每个 h 独立 job name（避免覆盖）
-RESULT_ROOT="/home/jy03364/MeZO/medium_models/results/sst5_bs32_hloss"  # 结果根目录
+RESULT_ROOT="/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/h-loss"  # 结果根目录
 
 TASK=sst-5 \                    # 任务名
 K=16 \                          # K-shot
