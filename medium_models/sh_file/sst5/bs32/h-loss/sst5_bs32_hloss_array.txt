@@ -4,8 +4,8 @@
 #SBATCH --ntasks=1                     # 任务数（通常=1）
 #SBATCH --cpus-per-task=2              # 每个任务使用的 CPU 核数
 #SBATCH --mem=100G                     # 内存上限
-#SBATCH --gres=gpu:L4:1                # GPU 资源类型与数量
-#SBATCH --time=24:00:00                # 最长运行时长
+#SBATCH --gres=gpu:H100:1                # GPU 资源类型与数量
+#SBATCH --time=12:00:00                # 最长运行时长
 #SBATCH --array=0-14%6                 # 15 个 h 取值的数组任务，并发上限 6
 #SBATCH --output=jobs/%x_%A_%a.out     # 输出日志路径（含 job name、array id）
 #SBATCH --mail-user=jichao.yu@uga.edu  # 邮件通知地址
