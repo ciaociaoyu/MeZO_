@@ -1,0 +1,66 @@
+#!/bin/bash
+#SBATCH --job-name=sst5_bs32_use_h
+#SBATCH --partition=gpu_p
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=100G
+#SBATCH --gres=gpu:H100:1
+#SBATCH --time=12:00:00
+#SBATCH --output=jobs/%x_%j.out
+#SBATCH --mail-user=jichao.yu@uga.edu
+#SBATCH --mail-type=ALL
+
+ml jq
+
+source ~/.bashrc
+conda activate ciao
+
+cd /home/jy03364/MeZO/medium_models
+
+# =========================
+# (A) 关闭 h-probe（只跑 adaptive_h 训练）
+# =========================
+export H_PROBE=0
+unset H_PROBE_EVERY
+unset H_PROBE_NDIR
+unset H_PROBE_NB
+unset H_PROBE_UNIT_U
+unset H_PROBE_SAVE_PARAMS
+unset H_PROBE_LOG_EACH_H
+unset H_PROBE_OUT
+unset H_PROBE_HLIST
+unset H_PROBE_MIN
+unset H_PROBE_MAX
+
+# =========================
+# (B) 训练设置
+# =========================
+export STEP=50000
+export EVAL_STEP=5000
+export FINAL_EVAL_STEPS=5
+export FINAL_EVAL_REPEAT=0
+
+# 仅用于 tag/目录命名的初始 eps（adaptive_h 会在训练中更新 h）
+EPS="1e-3"
+export EXTRA_TAG="adaptive_h-eps${EPS}"
+
+JOB_NAME="sst5_bs32_use_h"
+RESULT_ROOT="/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/use_h"
+
+TASK=sst-5 \
+K=16 \
+SEED=16 \
+DATA_SEED=16 \
+BS=32 \
+LR=1e-6 \
+EPS="$EPS" \
+MODEL=roberta-large \
+USE_H=True \
+USE_C=False \
+DATALOADER_SHUFFLE=True \
+STEP=$STEP \
+EVAL_STEP=$EVAL_STEP \
+EXTRA_TAG=$EXTRA_TAG \
+bash mezo.sh \
+  --result_root "$RESULT_ROOT" \
+  --job_name "$JOB_NAME"
