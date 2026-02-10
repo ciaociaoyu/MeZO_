@@ -1,0 +1,2 @@
+dir,csv,eps,eps_exponent,best_eval_loss,best_train_loss
+sst5_singleh_truedir_eps1e-3,metrics_adaptiveH-0_cscale-0.csv,0.001,-3,1.100910186767578,0.8576747179031372
