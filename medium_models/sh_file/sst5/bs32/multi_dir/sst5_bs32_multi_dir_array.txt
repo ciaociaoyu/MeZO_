@@ -1,0 +1,93 @@
+#!/bin/bash
+#SBATCH --job-name=sst5_bs32_multi_dir
+#SBATCH --partition=gpu_p
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=100G
+#SBATCH --gres=gpu:H100:1
+#SBATCH --time=12:00:00
+#SBATCH --array=0-14%6
+#SBATCH --output=jobs/%x_%A_%a.out
+#SBATCH --mail-user=jichao.yu@uga.edu
+#SBATCH --mail-type=ALL
+
+ml jq
+
+source ~/.bashrc
+conda activate ciao
+
+cd /home/jy03364/MeZO/medium_models
+
+# =========================
+# (A) 关闭 h-probe（本实验关注多方向聚合训练性能）
+# =========================
+export H_PROBE=0
+unset H_PROBE_EVERY
+unset H_PROBE_NDIR
+unset H_PROBE_NB
+unset H_PROBE_UNIT_U
+unset H_PROBE_SAVE_PARAMS
+unset H_PROBE_LOG_EACH_H
+unset H_PROBE_OUT
+unset H_PROBE_HLIST
+unset H_PROBE_MIN
+unset H_PROBE_MAX
+
+# =========================
+# (B) 多方向聚合设置（核心）
+# =========================
+# 每个优化 step 采样的随机方向数（z 的个数）
+export ZERO_ORDER_SAMPLE=4
+# 固定使用上面的方向数（每步恒定）
+export ZERO_ORDER_SAMPLE_SCHEDULER=constant
+# 多方向时需要开启 trainer optimizer（代码里有断言要求）
+export ZERO_ORDER_USE_TRAINER_OPTIM=True
+# False 表示自动除以方向数，做“平均聚合”
+export SCALE_LR_WITH_SAMPLES=False
+
+# =========================
+# (C) h 列表：每个 array task 跑一个 h
+# =========================
+H_LIST=( \
+  1e-9 3e-9 1e-8 3e-8 1e-7 3e-7 1e-6 3e-6 \
+  1e-5 3e-5 1e-4 3e-4 1e-3 3e-3 1e-2 \
+)
+
+EPS="${H_LIST[$SLURM_ARRAY_TASK_ID]}"
+echo "SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID}"
+echo "Running multi-direction aggregation; EPS(h) = ${EPS}, num_z = ${ZERO_ORDER_SAMPLE}"
+
+# =========================
+# (D) 训练设置
+# =========================
+export STEP=50000
+export EVAL_STEP=5000
+export FINAL_EVAL_STEPS=5
+export FINAL_EVAL_REPEAT=0
+
+export EXTRA_TAG="multi-dir-z${ZERO_ORDER_SAMPLE}-eps${EPS}"
+JOB_NAME="sst5_bs32_multi_dir_eps${EPS}"
+RESULT_ROOT="/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/multi_dir"
+
+export TASK=sst-5
+export K=16
+export SEED=16
+export DATA_SEED=16
+export BS=32
+export LR=1e-6
+export EPS="$EPS"
+export MODEL=roberta-large
+export USE_H=False
+export USE_C=False
+export DATALOADER_SHUFFLE=True
+export STEP=$STEP
+export EVAL_STEP=$EVAL_STEP
+export EXTRA_TAG=$EXTRA_TAG
+
+bash mezo.sh \
+  --result_root "$RESULT_ROOT" \
+  --job_name "$JOB_NAME" \
+  --zero_order_sample "$ZERO_ORDER_SAMPLE" \
+  --zero_order_sample_scheduler "$ZERO_ORDER_SAMPLE_SCHEDULER" \
+  --zero_order_use_trainer_optim "$ZERO_ORDER_USE_TRAINER_OPTIM" \
+  --scale_lr_with_samples "$SCALE_LR_WITH_SAMPLES"
