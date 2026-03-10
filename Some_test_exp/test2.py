@@ -70,6 +70,13 @@ class Cfg:
 
     a_scale_B: float = 1.0  # scale of a -> controls constant grad magnitude
 
+    # -------- Regime C (theta/grad change, norms stay near-constant) --------
+    theta_radius_C: float = 40.0
+    grad_radius_C: float = 8.0
+    theta_omega_C: float = 0.23  # rad / step
+    grad_omega_C: float = 0.41   # rad / step
+    grad_phase_C: float = 0.7
+
     verbose: bool = True
 
 
@@ -212,6 +219,29 @@ def loss_grad_A(theta_f32: torch.Tensor, omega: float, At: float) -> Tuple[torch
 def loss_grad_B(theta_f32: torch.Tensor, a: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     loss = torch.sum(a * theta_f32)  # scalar
     grad = a  # constant
+    return loss, grad
+
+
+def orthonormal_pair(d: int, device: str, generator: torch.Generator) -> Tuple[torch.Tensor, torch.Tensor]:
+    u = torch.randn(d, device=device, dtype=torch.float32, generator=generator)
+    u = u / (torch.norm(u) + 1e-12)
+
+    v = torch.randn(d, device=device, dtype=torch.float32, generator=generator)
+    v = v - torch.dot(v, u) * u
+    v = v / (torch.norm(v) + 1e-12)
+    return u, v
+
+
+@torch.no_grad()
+def loss_grad_C(theta_f32: torch.Tensor, center: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Moving quadratic well:
+      L_C(t, theta) = 0.5 * ||theta - center_t||^2
+      grad_C = theta - center_t
+    """
+    diff = theta_f32 - center
+    loss = 0.5 * torch.sum(diff * diff)
+    grad = diff
     return loss, grad
 
 
@@ -410,12 +440,84 @@ def run_regime_B(cfg: Cfg):
 
 
 # ----------------------------
+# run regime C
+# ----------------------------
+def run_regime_C(cfg: Cfg):
+    """
+    Construct theta_t and grad_t that both keep changing direction,
+    while their norms stay near constants.
+    """
+    storage = Storage(cfg)
+    g = torch.Generator(device=cfg.device)
+    g.manual_seed(cfg.seed + 2718)
+
+    u, v = orthonormal_pair(cfg.d, cfg.device, g)
+    p, q = orthonormal_pair(cfg.d, cfg.device, g)
+
+    rs = np.random.RandomState(cfg.seed + 999)
+    probe_seeds = rs.randint(0, 1_000_000_000, size=cfg.n_probe, dtype=np.int64).tolist()
+
+    def target_theta_grad(t: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        phi = float(cfg.theta_omega_C) * float(t)
+        psi = float(cfg.grad_omega_C) * float(t) + float(cfg.grad_phase_C)
+
+        theta_t = float(cfg.theta_radius_C) * (math.cos(phi) * u + math.sin(phi) * v)
+        grad_t = float(cfg.grad_radius_C) * (math.cos(psi) * p + math.sin(psi) * q)
+        return theta_t, grad_t
+
+    logs = {"t": [], "loss": [], "theta_norm": [], "grad_norm": [], "mse": [], "mean_g2": [],
+            "dtheta": [], "dgrad": [], "dead_frac": [], "changed_ratio": [], "grid_step": []}
+
+    prev_theta, prev_grad = target_theta_grad(0)
+
+    for t in range(cfg.steps + 1):
+        theta_t, grad_t = target_theta_grad(t)
+        center_t = theta_t - grad_t
+
+        if t % cfg.probe_every == 0:
+            # Quantize temporary theta_t only for probing / dead-zone measurements
+            base = storage.quantize(theta_t)
+
+            def lg(th):
+                return loss_grad_C(th, center=center_t)
+
+            st = probe(cfg, storage, base, probe_seeds, lg)
+            cur_theta = theta_t
+            _, cur_grad = loss_grad_C(cur_theta, center_t)
+
+            logs["t"].append(t)
+            logs["loss"].append(st["loss"])
+            logs["theta_norm"].append(st["theta_norm"])
+            logs["grad_norm"].append(st["grad_norm"])
+            logs["mse"].append(st["mse"])
+            logs["mean_g2"].append(st["mean_g2"])
+            logs["dead_frac"].append(st["dead_frac"])
+            logs["changed_ratio"].append(st["changed_ratio"])
+            logs["grid_step"].append(st["grid_step"])
+
+            logs["dtheta"].append(float(torch.norm(cur_theta - prev_theta).item()))
+            logs["dgrad"].append(float(torch.norm(cur_grad - prev_grad).item()))
+            prev_theta, prev_grad = cur_theta.clone(), cur_grad.clone()
+
+            if cfg.verbose:
+                print(f"[C t={t:4d}] ||Δθ||={logs['dtheta'][-1]:.3e}  ||Δg||={logs['dgrad'][-1]:.3e}  "
+                      f"||θ||={st['theta_norm']:.3e}  ||g||={st['grad_norm']:.3e}  "
+                      f"MSE={st['mse']:.3e}  mean(G^2)={st['mean_g2']:.3e}")
+
+        if t == cfg.steps:
+            break
+
+    return logs
+
+
+# ----------------------------
 # plot compare
 # ----------------------------
-def plot_compare(logA, logB, cfg: Cfg):
-    """Plot only two summary figures (A/B) and include changed_ratio."""
+def plot_compare(logA, logB, logC, cfg: Cfg):
+    """Plot A/B summary figures and one extra C figure."""
     tA = np.asarray(logA["t"])
     tB = np.asarray(logB["t"])
+    tC = np.asarray(logC["t"])
     cr_eps = 1e-12
 
     # Regime A summary
@@ -446,6 +548,20 @@ def plot_compare(logA, logB, cfg: Cfg):
     plt.grid(True, which="both", ls="--", alpha=0.3)
     plt.legend()
 
+    # Regime C summary
+    crC = np.asarray(logC["changed_ratio"], dtype=np.float64)
+    crC_plot = np.maximum(crC, cr_eps)
+    plt.figure()
+    plt.semilogy(tC, np.asarray(logC["mse"]), marker="o", label="MSE(D-G)")
+    plt.semilogy(tC, np.asarray(logC["grad_norm"]), marker="x", label="||g||")
+    plt.semilogy(tC, np.asarray(logC["theta_norm"]), marker="s", label="||theta||")
+    plt.semilogy(tC, crC_plot, marker="^", label=f"changed_ratio (floored at {cr_eps:g})")
+    plt.xlabel("iteration")
+    plt.ylabel("value (log)")
+    plt.title(f"Regime C: MSE, ||g||, ||theta||, changed_ratio  (h_probe={cfg.h_probe}, store={cfg.store_mode})")
+    plt.grid(True, which="both", ls="--", alpha=0.3)
+    plt.legend()
+
     plt.show()
 
 
@@ -461,8 +577,9 @@ def main():
 
     logA = run_regime_A(cfg)
     logB = run_regime_B(cfg)
+    logC = run_regime_C(cfg)
 
-    plot_compare(logA, logB, cfg)
+    plot_compare(logA, logB, logC, cfg)
 
 
 if __name__ == "__main__":

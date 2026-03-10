@@ -244,6 +244,49 @@ class Trainer(LinearHeadTrainer):
         # Track eval loss history for tail-average reporting
         self._eval_loss_history = []
 
+    def _grad_norm_log_enabled(self) -> bool:
+        v = str(os.environ.get("GRAD_NORM_LOG", "0")).strip().lower()
+        return v in ("1", "true", "yes", "y", "on")
+
+    def _setup_grad_norm_csv(self):
+        base_dir = getattr(self.args, "output_dir", "./outputs") or "./outputs"
+        log_dir = os.path.join(base_dir, "metrics_logs")
+        os.makedirs(log_dir, exist_ok=True)
+        self._grad_norm_csv_path = os.path.join(log_dir, "grad_norms.csv")
+        try:
+            self._grad_norm_log_every = max(1, int(os.environ.get("GRAD_NORM_LOG_EVERY", "1")))
+        except Exception:
+            self._grad_norm_log_every = 1
+        if not os.path.exists(self._grad_norm_csv_path):
+            with open(self._grad_norm_csv_path, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["epoch", "global_step", "grad_l1_norm", "grad_l2_norm", "source"])
+
+    def _compute_grad_l1_l2_from_param_grads(self, model: nn.Module) -> Tuple[float, float]:
+        l1_sum = 0.0
+        l2_sq = 0.0
+        for _, p in model.named_parameters():
+            if p.grad is None:
+                continue
+            g = p.grad.detach().float()
+            l1_sum += float(torch.sum(torch.abs(g)).item())
+            l2_sq += float(torch.sum(g * g).item())
+        return float(l1_sum), float(math.sqrt(max(l2_sq, 0.0)))
+
+    def _write_grad_norm_row(self, epoch_val: float, global_step: int, grad_l1: Optional[float], grad_l2: Optional[float], source: str):
+        path = getattr(self, "_grad_norm_csv_path", None)
+        if (not path) or grad_l1 is None or grad_l2 is None:
+            return
+        every = int(getattr(self, "_grad_norm_log_every", 1))
+        if every > 1 and int(global_step) % every != 0:
+            return
+        try:
+            with open(path, "a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([float(epoch_val), int(global_step), float(grad_l1), float(grad_l2), str(source)])
+        except Exception as e:
+            logger.warning(f"[grad_norm] failed to append CSV row: {e}")
+
     def _compute_train_acc(self, model, inputs) -> Optional[float]:
         """计算当前 batch 的训练准确率（不影响梯度）。若任务非分类或缺少 labels，返回 None。"""
         try:
@@ -1956,6 +1999,14 @@ class Trainer(LinearHeadTrainer):
         self.state = TrainerState()
         # 初始化 CSV 日志文件
         self._setup_metrics_csv()
+        grad_norm_logging = self._grad_norm_log_enabled()
+        if grad_norm_logging:
+            self._setup_grad_norm_csv()
+            logger.info(
+                f"[grad_norm] enabled: path={self._grad_norm_csv_path}, every={getattr(self, '_grad_norm_log_every', 1)}"
+            )
+        else:
+            self._grad_norm_csv_path = None
         _csv_pending = None  # 暂存本 step 的训练度量，待是否有 eval 再一起写入
         self.state.global_step = 0
         start_time = time.time()
@@ -2259,6 +2310,17 @@ class Trainer(LinearHeadTrainer):
                             len(epoch_iterator) <= self.args.gradient_accumulation_steps
                             and (step + 1) == len(epoch_iterator)
                         ):
+                            grad_l1_step = None
+                            grad_l2_step = None
+                            if grad_norm_logging:
+                                grad_l1_step, grad_l2_step = self._compute_grad_l1_l2_from_param_grads(model)
+                                self._write_grad_norm_row(
+                                    epoch_val=float(self.epoch),
+                                    global_step=int(self.state.global_step),
+                                    grad_l1=grad_l1_step,
+                                    grad_l2=grad_l2_step,
+                                    source="zo_trainer",
+                                )
                             # Gradient norm clipping
                             if self.args.zero_order_clip_grad:
                                 norm = torch.nn.utils.clip_grad_norm_(model.parameters(), self.args.max_grad_norm)
@@ -2293,6 +2355,9 @@ class Trainer(LinearHeadTrainer):
                                 logs["time"] = int(time.time() - start_time)
                                 # Log current eps value as float
                                 logs["eps"] = eps if isinstance(eps, float) else eps.item()
+                                if grad_l1_step is not None and grad_l2_step is not None:
+                                    logs["grad_l1_norm"] = float(grad_l1_step)
+                                    logs["grad_l2_norm"] = float(grad_l2_step)
                                 self.log(logs)
                                 logger.info(str(logs))
                                 # === CSV：记录本 step 的训练度量，评估结果稍后补充 ===
@@ -2317,12 +2382,32 @@ class Trainer(LinearHeadTrainer):
 
                         if self.args.efficient_zero_order:
                             torch.manual_seed(random_seed)
+                        grad_l1_step = None
+                        grad_l2_step = None
+                        grad_l1_acc = 0.0
+                        grad_l2_sq_acc = 0.0
                         for name, param in self.named_parameters_to_optim:
                             if self.args.efficient_zero_order:
                                 z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
                             else:
                                 z = random_vector[name]
-                            param.data = param.data - self.args.learning_rate * (projected_grad * z + self.args.weight_decay * param.data)
+                            grad_est = projected_grad * z
+                            if grad_norm_logging:
+                                g = grad_est.detach().float()
+                                grad_l1_acc += float(torch.sum(torch.abs(g)).item())
+                                grad_l2_sq_acc += float(torch.sum(g * g).item())
+                            param.data = param.data - self.args.learning_rate * (grad_est + self.args.weight_decay * param.data)
+
+                        if grad_norm_logging:
+                            grad_l1_step = float(grad_l1_acc)
+                            grad_l2_step = float(math.sqrt(max(grad_l2_sq_acc, 0.0)))
+                            self._write_grad_norm_row(
+                                epoch_val=float(self.epoch),
+                                global_step=int(self.state.global_step),
+                                grad_l1=grad_l1_step,
+                                grad_l2=grad_l2_step,
+                                source="zo_direct",
+                            )
 
                         if (self.args.logging_steps > 0 and self.state.global_step % self.args.logging_steps == 0) or (
                                 self.state.global_step == 1 and self.args.logging_first_step
@@ -2337,6 +2422,9 @@ class Trainer(LinearHeadTrainer):
                                 logs["time"] = int(time.time() - start_time)
                                 # Log current eps value as float
                                 logs["eps"] = eps if isinstance(eps, float) else eps.item()
+                                if grad_l1_step is not None and grad_l2_step is not None:
+                                    logs["grad_l1_norm"] = float(grad_l1_step)
+                                    logs["grad_l2_norm"] = float(grad_l2_step)
                                 self.log(logs)
                                 logger.info(str(logs))
                                 # === CSV：记录本 step 的训练度量，评估结果稍后补充 ===
@@ -2378,6 +2466,18 @@ class Trainer(LinearHeadTrainer):
                                 if p.grad is not None:
                                     p.grad = torch.sign(p.grad)
 
+                        grad_l1_step = None
+                        grad_l2_step = None
+                        if grad_norm_logging:
+                            grad_l1_step, grad_l2_step = self._compute_grad_l1_l2_from_param_grads(model)
+                            self._write_grad_norm_row(
+                                epoch_val=float(self.epoch),
+                                global_step=int(self.state.global_step),
+                                grad_l1=grad_l1_step,
+                                grad_l2=grad_l2_step,
+                                source="fo",
+                            )
+
                         if transformers.is_torch_tpu_available():
                             xm.optimizer_step(optimizer)
                         elif self.args.fp16 and _use_native_amp:
@@ -2404,6 +2504,9 @@ class Trainer(LinearHeadTrainer):
                                 if version.parse(torch.__version__) >= version.parse("1.4")
                                 else scheduler.get_lr()[0]
                             )
+                            if grad_l1_step is not None and grad_l2_step is not None:
+                                logs["grad_l1_norm"] = float(grad_l1_step)
+                                logs["grad_l2_norm"] = float(grad_l2_step)
                             logging_loss_scalar = tr_loss_scalar
 
                             self.log(logs)

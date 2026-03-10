@@ -1,0 +1,64 @@
+#!/bin/bash
+#SBATCH --job-name=sst5_bs32_hloss_eps3e-5_noprobe   # 作业名（固定 h=3e-5，关闭 probe）
+#SBATCH --partition=gpu_p              # Slurm 分区
+#SBATCH --ntasks=1                     # 任务数（通常=1）
+#SBATCH --cpus-per-task=2              # 每个任务使用的 CPU 核数
+#SBATCH --mem=100G                     # 内存上限
+#SBATCH --gres=gpu:H100:1                # GPU 资源类型与数量
+#SBATCH --time=12:00:00                # 最长运行时长
+#SBATCH --output=jobs/%x_%j.out        # 输出日志路径（单作业：job name + job id）
+#SBATCH --mail-user=jichao.yu@uga.edu  # 邮件通知地址
+#SBATCH --mail-type=ALL                # 邮件通知类型（BEGIN/END/FAIL 等）
+
+ml jq  # 加载 jq（mezo.sh 里会用到）
+
+source ~/.bashrc          # 载入环境变量
+conda activate ciao       # 激活 conda 环境
+
+cd /home/jy03364/MeZO/medium_models  # 切换到运行目录
+
+# =========================
+# (A) h-probe settings
+# =========================
+export H_PROBE=0                 # 关闭 h-probe
+
+# =========================
+# (B) 固定 h/eps
+# =========================
+EPS="3e-5"                              # 只跑单个 h=3e-5
+echo "Running fixed-h training; EPS(h) = ${EPS}"   # 打印当前 h
+
+# 记录训练过程中的梯度 L1/L2 范数
+export GRAD_NORM_LOG=1          # 启用梯度范数 CSV 日志
+export GRAD_NORM_LOG_EVERY=1    # 每个更新步都记录
+
+# =========================
+# (C) 训练设置：固定 h
+# =========================
+export STEP=50000              # 训练总步数
+export EVAL_STEP=5000          # 常规评估频率
+export FINAL_EVAL_STEPS=5      # 训练最后 K 步每步都 eval（K=5）
+export FINAL_EVAL_REPEAT=0     # 训练结束后额外重复 eval 次数（此处关闭）
+
+export EXTRA_TAG="hloss-bs32-eps${EPS}-noprobe-gradnorm"  # 额外标签（用于输出目录区分）
+JOB_NAME="sst5_bs32_hloss_eps${EPS}_noprobe_gradnorm"     # job 名
+RESULT_ROOT="/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/h-loss"  # 结果根目录
+
+export TASK=sst-5                # 任务名
+export K=16                      # K-shot
+export SEED=16                   # 随机种子
+export DATA_SEED=16              # 数据划分种子
+export BS=32                     # batch size（bs=32）
+export LR=1e-6                   # 学习率
+export EPS="$EPS"                # zero-order eps（固定 h）
+export MODEL=roberta-large       # 模型
+export USE_H=False               # 关闭自适应 h
+export USE_C=False               # 关闭 c-scale
+export DATALOADER_SHUFFLE=True   # 训练数据是否 shuffle
+export STEP=$STEP                # 训练总步数
+export EVAL_STEP=$EVAL_STEP      # 评估频率
+export EXTRA_TAG=$EXTRA_TAG      # 额外标签
+
+bash mezo.sh \
+  --result_root "$RESULT_ROOT" \
+  --job_name "$JOB_NAME"
