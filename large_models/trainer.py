@@ -851,8 +851,9 @@ class OurTrainer(Trainer):
         #         logger.warning(f"[DEBUG] 记录 zo_step 信息失败: err={e}")
         # # ===== DEBUG 2025-11-08: 记录 MeZO 两次 loss 和 projected_grad 结束 =====
 
-        # No gradient accumulation support
-        assert self.args.gradient_accumulation_steps == 1
+        if not hasattr(self, "zo_random_seed_buffer"):
+            self.zo_random_seed_buffer = []
+        self.zo_random_seed_buffer.append((self.zo_random_seed, self.projected_grad))
 
         # Reset model back to its parameters at start of step
         self.zo_perturb_parameters(scaling_factor=1)
@@ -866,16 +867,38 @@ class OurTrainer(Trainer):
         """
         args = self.args
 
-        # Reset the random seed for sampling zs
-        torch.manual_seed(self.zo_random_seed)     
+        if not hasattr(self, "zo_random_seed_buffer") or len(self.zo_random_seed_buffer) == 0:
+            return
 
-        for name, param in self.named_parameters_to_optim:
-            # Resample z
-            z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-            if "bias" not in name and "layer_norm" not in name and "layernorm" not in name:
-                param.data = param.data - self._get_learning_rate() * (self.projected_grad * z + args.weight_decay * param.data)
-            else:
-                param.data = param.data - self._get_learning_rate() * (self.projected_grad * z)
+        learning_rate = self._get_learning_rate()
+
+        # Keep the original update formula when there is no gradient accumulation.
+        if len(self.zo_random_seed_buffer) == 1:
+            self.zo_random_seed, self.projected_grad = self.zo_random_seed_buffer[0]
+            torch.manual_seed(self.zo_random_seed)
+            for name, param in self.named_parameters_to_optim:
+                z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                if "bias" not in name and "layer_norm" not in name and "layernorm" not in name:
+                    param.data = param.data - learning_rate * (self.projected_grad * z + args.weight_decay * param.data)
+                else:
+                    param.data = param.data - learning_rate * (self.projected_grad * z)
+        else:
+            # Average ZO directional gradients over micro-batches when using accumulation.
+            # We keep finite-difference + random-direction logic unchanged per micro-step.
+            num_micro_batches = len(self.zo_random_seed_buffer)
+            for zo_random_seed, projected_grad in self.zo_random_seed_buffer:
+                torch.manual_seed(zo_random_seed)
+                for _, param in self.named_parameters_to_optim:
+                    z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                    param.data = param.data - learning_rate * ((projected_grad / num_micro_batches) * z)
+
+            # Apply weight decay once per optimizer update (excluding bias/layernorm params).
+            if args.weight_decay > 0:
+                for name, param in self.named_parameters_to_optim:
+                    if "bias" not in name and "layer_norm" not in name and "layernorm" not in name:
+                        param.data = param.data - learning_rate * (args.weight_decay * param.data)
+
+        self.zo_random_seed_buffer = []
 
         self.lr_scheduler.step()
 

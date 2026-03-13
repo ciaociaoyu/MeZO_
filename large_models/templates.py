@@ -327,6 +327,44 @@ class RTETemplate(Template):
         return f"{self.verbalizer[candidate]}"
 
 
+class MNLITemplate(Template):
+    # Map MNLI labels to verbalizers in a robust way.
+    # HF GLUE/MNLI label names are typically: entailment, neutral, contradiction.
+    def __init__(self, label_to_id=None):
+        if label_to_id is None:
+            label_to_id = {"entailment": 0, "neutral": 1, "contradiction": 2}
+        self.verbalizer = {
+            label_to_id["entailment"]: "Yes",
+            label_to_id["neutral"]: "Maybe",
+            label_to_id["contradiction"]: "No",
+        }
+
+    def encode(self, sample):
+        premise = sample.data["premise"]
+        hypothesis = sample.data["hypothesis"]
+        return (
+            f"Premise: {premise}\n"
+            f"Hypothesis: {hypothesis}\n"
+            'Can we infer that the hypothesis is true? Yes, No, or Maybe?\n'
+        )
+
+    def verbalize(self, sample, candidate):
+        premise = sample.data["premise"]
+        hypothesis = sample.data["hypothesis"]
+        return (
+            f"Premise: {premise}\n"
+            f"Hypothesis: {hypothesis}\n"
+            'Can we infer that the hypothesis is true? Yes, No, or Maybe?\n'
+            f"{self.verbalizer[candidate]}"
+        )
+
+    def encode_sfc(self, sample):
+        return ""
+
+    def verbalize_sfc(self, sample, candidate):
+        return f"{self.verbalizer[candidate]}"
+
+
 class SQuADv2Template(Template):
 
     def encode(self, sample):
