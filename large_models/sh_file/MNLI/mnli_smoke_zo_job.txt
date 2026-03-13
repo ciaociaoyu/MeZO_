@@ -1,0 +1,39 @@
+#!/bin/bash
+#SBATCH --job-name=mnli_smoke_opt125m_zo      # 作业名（MNLI smoke test）
+#SBATCH --partition=gpu_p                      # Slurm 分区
+#SBATCH --ntasks=1                             # 任务数
+#SBATCH --cpus-per-task=2                      # 每个任务 CPU 核数
+#SBATCH --mem=100G                             # 内存上限
+#SBATCH --gres=gpu:H100:1                        # GPU 资源
+#SBATCH --time=08:00:00                        # 最长运行时长
+#SBATCH --output=sh_file/MNLI/jobs/%x_%j.out   # 输出日志路径
+#SBATCH --mail-user=jichao.yu@uga.edu          # 邮件通知地址
+#SBATCH --mail-type=ALL                        # 邮件通知类型
+
+ml jq
+
+source ~/.bashrc
+conda activate mezo-env
+
+cd /home/jy03364/MeZO/large_models
+
+# =========================
+# MNLI smoke test settings
+# =========================
+export MODEL=${MODEL:-facebook/opt-125m}
+export TASK=${TASK:-MNLI}
+export SEED=${SEED:-0}
+
+# 小规模冒烟测试，验证训练+matched/mismatched评估链路
+export STEPS=${STEPS:-2}
+export TRAIN=${TRAIN:-64}
+export EVAL=${EVAL:-64}
+
+export BS=${BS:-1}
+export GA=${GA:-1}
+export LR=${LR:-1e-6}
+export EPS=${EPS:-1e-3}
+
+# 如需测 2.7B，可直接用 sbatch --export=MODEL=facebook/opt-2.7b 提交
+
+bash sh_file/MNLI/smoke_test_mnli_zo.sh
