@@ -6,7 +6,7 @@
 #SBATCH --mem=100G                             # 内存上限
 #SBATCH --gres=gpu:L4:1                      # GPU 资源
 #SBATCH --time=08:00:00                        # 最长运行时长
-#SBATCH --output=sh_file/MNLI/jobs/%x_%j.out   # 输出日志路径
+#SBATCH --output=/home/jy03364/MeZO/large_models/sh_file/MNLI/jobs/%x_%j.out   # 输出日志路径
 #SBATCH --mail-user=jichao.yu@uga.edu          # 邮件通知地址
 #SBATCH --mail-type=ALL                        # 邮件通知类型
 
@@ -36,4 +36,4 @@ export EPS=${EPS:-1e-3}
 
 # 如需测 2.7B，可直接用 sbatch --export=MODEL=facebook/opt-2.7b 提交
 
-bash sh_file/MNLI/smoke_test_mnli_zo.sh
+bash /home/jy03364/MeZO/large_models/sh_file/MNLI/smoke_test_mnli_zo.sh
