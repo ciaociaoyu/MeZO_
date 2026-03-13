@@ -27,7 +27,7 @@ import random
 @dataclass
 class OurArguments(TrainingArguments):
     # dataset and sampling strategy
-    task_name: str = "SST2" # task name should match the string before Dataset in the Dataset class name. We support the following task_name: SST2, RTE, CB, BoolQ, WSC, WIC, MultiRC, Copa, ReCoRD, SQuAD, DROP
+    task_name: str = "SST2" # task name should match the string before Dataset in the Dataset class name. We support the following task_name: SST2, RTE, CB, BoolQ, WSC, WIC, MultiRC, Copa, ReCoRD, MNLI, SQuAD, DROP
 
     # Number of examples
     num_train: int = 0 # ICL mode: number of demonstrations; training mode: number of training samples
@@ -147,9 +147,18 @@ class Framework:
                 )
             elif self.args.no_auto_device:
                 # No auto device (use for FSDP)
+                torch_dtype = None
+                if self.args.load_float16:
+                    torch_dtype = torch.float16
+                elif self.args.load_bfloat16:
+                    torch_dtype = torch.bfloat16
+                load_kwargs = {}
+                if torch_dtype is not None:
+                    load_kwargs["torch_dtype"] = torch_dtype
                 model = AutoModelForCausalLM.from_pretrained(
                     self.args.model_name,
                     config=config,
+                    **load_kwargs,
                 )
             else:
                 # Auto device loading
@@ -175,9 +184,20 @@ class Framework:
         if "opt" in self.args.model_name:
             tokenizer.bos_token_id = 0
 
+        # Decoder-only LMs may miss a pad token. Keep tokenizer/model pad ids aligned.
+        if tokenizer.pad_token_id is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        if model.config.pad_token_id is None:
+            model.config.pad_token_id = tokenizer.pad_token_id
+        if getattr(model, "generation_config", None) is not None and model.generation_config.pad_token_id is None:
+            model.generation_config.pad_token_id = tokenizer.pad_token_id
+
         if "llama" in self.args.model_name:
             # LLaMA padding token
             tokenizer.pad_token_id = 0 # technically <unk>
+            model.config.pad_token_id = tokenizer.pad_token_id
+            if getattr(model, "generation_config", None) is not None:
+                model.generation_config.pad_token_id = tokenizer.pad_token_id
 
         # Prefix tuning/LoRA
         if self.args.prefix_tuning:
@@ -342,56 +362,55 @@ class Framework:
 
         class HFDataset(Dataset):
 
-            def __init__(self, data):
-                self.data = data
+            def __init__(self, samples, convert_one_fn):
+                self.samples = samples
+                self.convert_one_fn = convert_one_fn
 
             def __len__(self):
-                return len(self.data)
+                return len(self.samples)
 
             def __getitem__(self, idx):
-                return self.data[idx]
+                return self.convert_one_fn(self.samples[idx])
 
 
-        def _convert(samples):
+        task_template = self.task.get_template()
+
+        def _convert_one(sample):
             """
-            Convert samples to HF-compatible dataset
+            Convert one sample to HF-compatible format.
+            We tokenize lazily in __getitem__ to avoid large up-front memory for big datasets (e.g., MNLI full train).
             """
-            data = []
-            for sample in samples:
-                encoded_candidates, option_lens = encode_prompt(
-                    self.task, self.task.get_template(), [], sample, self.tokenizer,
-                    max_length=self.args.max_length, generation=self.task.generation, generation_with_gold=True,
-                    max_new_tokens=self.args.max_new_tokens
-                )
-                if self.task.generation:
-                    correct_candidate_id = 0
-                elif isinstance(sample.correct_candidate, list):
-                    correct_candidate_id = sample.candidates.index(sample.correct_candidate[0])
-                else:
-                    correct_candidate_id = sample.candidates.index(sample.correct_candidate)
+            encoded_candidates, option_lens = encode_prompt(
+                self.task, task_template, [], sample, self.tokenizer,
+                max_length=self.args.max_length, generation=self.task.generation, generation_with_gold=True,
+                max_new_tokens=self.args.max_new_tokens
+            )
+            if self.task.generation:
+                correct_candidate_id = 0
+            elif isinstance(sample.correct_candidate, list):
+                correct_candidate_id = sample.candidates.index(sample.correct_candidate[0])
+            else:
+                correct_candidate_id = sample.candidates.index(sample.correct_candidate)
 
+            if self.args.non_diff:
+                # For non-differentiable objective, there is no teacher forcing thus the
+                # current answer part is removed
+                encoded_candidates[correct_candidate_id] = encoded_candidates[correct_candidate_id][:-option_lens[correct_candidate_id]]
+
+            if self.args.train_as_classification:
+                # For classification, we provide the label as the correct candidate id
+                return [{"input_ids": encoded_candidates[_i], "labels": correct_candidate_id, "option_len": option_lens[_i], "num_options": len(sample.candidates)} for _i in range(len(encoded_candidates))]
+            if self.args.only_train_option:
+                # Otherwise, it is just LM-style teacher forcing
                 if self.args.non_diff:
-                    # For non-differentiable objective, there is no teacher forcing thus the
-                    # current answer part is removed
-                    encoded_candidates[correct_candidate_id] = encoded_candidates[correct_candidate_id][:-option_lens[correct_candidate_id]]
+                    # For non-differentiable objective, we need to provide the gold answer to calculate F1/acc
+                    return {"input_ids": encoded_candidates[correct_candidate_id], "labels": encoded_candidates[correct_candidate_id], "option_len": option_lens[correct_candidate_id], "gold": sample.correct_candidate}
+                return {"input_ids": encoded_candidates[correct_candidate_id], "labels": encoded_candidates[correct_candidate_id], "option_len": option_lens[correct_candidate_id]}
+            return {"input_ids": encoded_candidates[correct_candidate_id], "labels": encoded_candidates[correct_candidate_id]}
 
-                if self.args.train_as_classification:
-                    # For classification, we provide the label as the correct candidate id
-                    data.append([{"input_ids": encoded_candidates[_i], "labels": correct_candidate_id, "option_len": option_lens[_i], "num_options": len(sample.candidates)} for _i in range(len(encoded_candidates))])
-                elif self.args.only_train_option:
-                    # Otherwise, it is just LM-style teacher forcing
-                    if self.args.non_diff:
-                        # For non-differentiable objective, we need to provide the gold answer to calculate F1/acc
-                        data.append({"input_ids": encoded_candidates[correct_candidate_id], "labels": encoded_candidates[correct_candidate_id], "option_len": option_lens[correct_candidate_id], "gold": sample.correct_candidate})
-                    else:
-                        data.append({"input_ids": encoded_candidates[correct_candidate_id], "labels": encoded_candidates[correct_candidate_id], "option_len": option_lens[correct_candidate_id]})
-                else:
-                    data.append({"input_ids": encoded_candidates[correct_candidate_id], "labels": encoded_candidates[correct_candidate_id]})
-            return data
-
-        with count_time("Tokenizing training samples"):
-            train_dataset = HFDataset(_convert(train_samples))
-            eval_dataset = HFDataset(_convert(eval_samples))
+        with count_time("Preparing training/evaluation datasets"):
+            train_dataset = HFDataset(train_samples, _convert_one)
+            eval_dataset = HFDataset(eval_samples, _convert_one)
 
         if self.args.only_train_option and not self.args.non_diff:
             # If --only_train_option and not with a non-differentiable objective, we wrap the forward function
@@ -592,6 +611,29 @@ def result_file_tag(args):
     return f"{args.task_name}-{save_model_name}" + sfc_tag + icl_sfc_tag + sample_eval_tag + sample_train_tag + sample_dev_tag + eps_tag + customized_tag
 
 
+def get_eval_split_samples(task, num_eval=None, seed=0):
+    eval_splits = task.get_eval_splits() if hasattr(task, "get_eval_splits") else {"valid": task.valid_samples}
+    sampled_splits = {}
+    for split_name in eval_splits:
+        if num_eval is not None and num_eval > 0:
+            sampled_splits[split_name] = task.sample_subset(data_split=split_name, seed=seed, num=num_eval)
+        else:
+            sampled_splits[split_name] = eval_splits[split_name]
+    return sampled_splits
+
+
+def evaluate_across_splits(framework, train_samples, eval_split_samples, primary_split_name):
+    metrics = {}
+    for split_name, split_samples in eval_split_samples.items():
+        split_metrics = framework.evaluate(train_samples, split_samples)
+        if split_name == primary_split_name:
+            metrics.update(split_metrics)
+        else:
+            for metric_name, metric_val in split_metrics.items():
+                metrics[f"{split_name}_{metric_name}"] = metric_val
+    return metrics
+
+
 def main():
     args = parse_args()
 
@@ -612,11 +654,9 @@ def main():
         for train_set_id, train_samples in enumerate(train_sets):
             train_set_seed = train_set_id if args.train_set_seed is None else args.train_set_seed
 
-            # Sample eval samples
-            if args.num_eval is not None and args.num_eval > 0:
-                eval_samples = task.sample_subset(data_split="valid", seed=train_set_seed, num=args.num_eval)
-            else:
-                eval_samples = task.valid_samples
+            eval_split_samples = get_eval_split_samples(task, num_eval=args.num_eval, seed=train_set_seed)
+            primary_eval_split = "valid" if "valid" in eval_split_samples else list(eval_split_samples.keys())[0]
+            eval_samples = eval_split_samples[primary_eval_split]
 
             if args.trainer != "none":
                 if args.num_dev is not None and args.num_dev > 0:
@@ -636,7 +676,13 @@ def main():
                 framework.train(train_samples, dev_samples if dev_samples is not None else eval_samples)
 
                 if not args.no_eval:
-                    metrics = framework.evaluate([], eval_samples) # No in-context learning if there is training
+                    # No in-context learning if there is training
+                    metrics = evaluate_across_splits(
+                        framework=framework,
+                        train_samples=[],
+                        eval_split_samples=eval_split_samples,
+                        primary_split_name=primary_eval_split,
+                    )
                     if dev_samples is not None:
                         dev_metrics = framework.evaluate([], dev_samples) 
                         for m in dev_metrics:
@@ -644,7 +690,12 @@ def main():
             else:
                 assert args.num_dev is None
                 # Zero-shot / in-context learning
-                metrics = framework.evaluate(train_samples, eval_samples)
+                metrics = evaluate_across_splits(
+                    framework=framework,
+                    train_samples=train_samples,
+                    eval_split_samples=eval_split_samples,
+                    primary_split_name=primary_eval_split,
+                )
 
             if not args.no_eval:
                 logger.info("===== Train set %d =====" % train_set_seed)
@@ -656,7 +707,7 @@ def main():
         # For each eval sample, there is a training set. no training is allowed
         # This is for in-context learning (ICL)
         assert args.trainer == "none"
-        if args.num_eval is not None:
+        if args.num_eval is not None and args.num_eval > 0:
             eval_samples = task.sample_subset(data_split="valid", seed=0, num=args.num_eval)
         else:
             eval_samples = task.valid_samples

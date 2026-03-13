@@ -113,7 +113,11 @@ class Dataset:
         with temp_seed(seed):
             samples = self.samples[data_split]
             lens = len(samples)
-            take = min(num, lens if exclude is None else lens - 1)
+            max_take = lens if exclude is None else lens - 1
+            if num is None or (isinstance(num, int) and num <= 0):
+                take = max_take
+            else:
+                take = min(num, max_take)
             index = np.random.permutation(lens).tolist()
             if exclude is not None and 0 <= exclude < lens:
                 # Remove the excluded index if present
@@ -125,6 +129,9 @@ class Dataset:
     @property
     def valid_samples(self):
         return self.samples["valid"]
+
+    def get_eval_splits(self):
+        return {"valid": self.samples["valid"]}
 
 
 class SST2Dataset(Dataset):
@@ -376,7 +383,50 @@ class RTEDataset(Dataset):
     def get_template(self, template_version=0):
         return {0: RTETemplate}[template_version]()
 
- 
+
+class MNLIDataset(Dataset):
+
+    def __init__(self, subtask=None, **kwargs) -> None:
+        self.load_dataset(subtask, **kwargs)
+
+    def load_dataset(self, path, **kwargs):
+        d = load_dataset("glue", "mnli")
+        train_set = d["train"]
+        valid_matched_set = d["validation_matched"]
+        valid_mismatched_set = d["validation_mismatched"]
+
+        label_names = train_set.features["label"].names
+        self.label_to_id = {name: idx for idx, name in enumerate(label_names)}
+
+        train_samples = [self.build_sample(example) for example in train_set]
+        valid_matched_samples = [self.build_sample(example) for example in valid_matched_set]
+        valid_mismatched_samples = [self.build_sample(example) for example in valid_mismatched_set]
+
+        # Keep "valid" as matched split for backward compatibility with the current pipeline.
+        self.samples = {
+            "train": train_samples,
+            "valid": valid_matched_samples,
+            "valid_mismatched": valid_mismatched_samples,
+        }
+
+    def build_sample(self, example):
+        return Sample(
+            id=example["idx"],
+            data=example,
+            candidates=[0, 1, 2],
+            correct_candidate=int(example["label"]),
+        )
+
+    def get_eval_splits(self):
+        return {
+            "valid": self.samples["valid"],
+            "valid_mismatched": self.samples["valid_mismatched"],
+        }
+
+    def get_template(self, template_version=0):
+        return {0: MNLITemplate}[template_version](label_to_id=self.label_to_id)
+
+
 class SQuADDataset(Dataset):
     metric_name = "f1"
     generation = True
