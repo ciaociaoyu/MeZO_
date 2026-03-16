@@ -4,7 +4,7 @@
 #SBATCH --ntasks=1                             # 任务数
 #SBATCH --cpus-per-task=2                      # 每个任务 CPU 核数
 #SBATCH --mem=100G                             # 内存上限
-#SBATCH --gres=gpu:L4:8                      # GPU 资源
+#SBATCH --gres=gpu:L4:4                      # GPU 资源
 #SBATCH --time=08:00:00                        # 最长运行时长
 #SBATCH --output=jobs/%x_%j.out   # 输出日志路径
 #SBATCH --mail-user=jichao.yu@uga.edu          # 邮件通知地址
