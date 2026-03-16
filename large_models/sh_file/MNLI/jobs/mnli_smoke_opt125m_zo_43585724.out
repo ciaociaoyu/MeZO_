@@ -1,0 +1,661 @@
+[Smoke] model=facebook/opt-125m task=MNLI seed=0
+[Smoke] steps=2 train=64 eval=64 bs=1 ga=1 lr=1e-6 eps=1e-3
+[Smoke] output_dir=result/MNLI-opt-125m-smoke-zo
+[Smoke] result_file=result/MNLI-opt-125m-smoke-zo-metrics.json
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/accelerate/utils/torch_xla.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+OurArguments(
+_n_gpu=1,
+adafactor=False,
+adam_beta1=0.9,
+adam_beta2=0.999,
+adam_epsilon=1e-08,
+auto_find_batch_size=False,
+bf16=False,
+bf16_full_eval=False,
+data_seed=None,
+dataloader_drop_last=False,
+dataloader_num_workers=0,
+dataloader_pin_memory=True,
+ddp_bucket_cap_mb=None,
+ddp_find_unused_parameters=None,
+ddp_timeout=1800,
+debug=[],
+deepspeed=None,
+disable_tqdm=False,
+do_eval=True,
+do_predict=False,
+do_train=False,
+eos_token=<EOS_TOKEN>,
+eval_accumulation_steps=None,
+eval_delay=0,
+eval_steps=1,
+evaluation_strategy=steps,
+fp16=False,
+fp16_backend=auto,
+fp16_full_eval=False,
+fp16_opt_level=O1,
+fsdp=[],
+fsdp_config={'fsdp_min_num_params': 0, 'xla': False, 'xla_fsdp_grad_ckpt': False},
+fsdp_min_num_params=0,
+fsdp_transformer_layer_cls_to_wrap=None,
+full_determinism=False,
+gradient_accumulation_steps=1,
+gradient_checkpointing=False,
+greater_is_better=None,
+group_by_length=False,
+half_precision_backend=auto,
+head_tuning=False,
+hub_model_id=None,
+hub_private_repo=False,
+hub_strategy=every_save,
+hub_token=<HUB_TOKEN>,
+icl_sfc=False,
+ignore_data_skip=False,
+include_inputs_for_metrics=False,
+jit_mode_eval=False,
+label_names=None,
+label_smoothing_factor=0.0,
+learning_rate=1e-06,
+length_column_name=length,
+linear_probing=False,
+load_best_model_at_end=False,
+load_bfloat16=False,
+load_float16=True,
+load_int8=False,
+local_rank=-1,
+log_level=passive,
+log_level_replica=warning,
+log_on_each_node=True,
+logging_dir=result/MNLI-opt-125m-smoke-zo/runs/Mar13_16-51-38_ra8-7,
+logging_first_step=False,
+logging_nan_inf_filter=True,
+logging_steps=1,
+logging_strategy=steps,
+lora=False,
+lora_alpha=16,
+lora_r=8,
+lp_early_stopping=False,
+lr_scheduler_type=linear,
+max_grad_norm=1.0,
+max_length=2048,
+max_new_tokens=50,
+max_steps=2,
+metric_for_best_model=None,
+model_name=facebook/opt-125m,
+mp_parameters=,
+no_auto_device=False,
+no_cuda=False,
+no_eval=False,
+no_reparam=True,
+non_diff=False,
+num_beams=1,
+num_dev=0,
+num_eval=64,
+num_prefix=5,
+num_train=64,
+num_train_epochs=3.0,
+num_train_sets=None,
+only_train_option=True,
+optim=adamw_hf,
+optim_args=None,
+output_dir=result/MNLI-opt-125m-smoke-zo,
+overwrite_output_dir=False,
+past_index=-1,
+per_device_eval_batch_size=8,
+per_device_train_batch_size=1,
+prediction_loss_only=False,
+prefix_init_by_real_act=True,
+prefix_tuning=False,
+push_to_hub=False,
+push_to_hub_model_id=None,
+push_to_hub_organization=None,
+push_to_hub_token=<PUSH_TO_HUB_TOKEN>,
+ray_scope=last,
+remove_unused_columns=True,
+report_to=[],
+result_file=result/MNLI-opt-125m-smoke-zo-metrics.json,
+resume_from_checkpoint=None,
+run_name=result/MNLI-opt-125m-smoke-zo,
+sampling=False,
+save_model=False,
+save_on_each_node=False,
+save_on_interrupt=False,
+save_safetensors=False,
+save_steps=500,
+save_strategy=no,
+save_total_limit=None,
+seed=42,
+sfc=False,
+sharded_ddp=[],
+skip_memory_metrics=True,
+tag=,
+task_name=MNLI,
+temperature=1.0,
+tf32=None,
+top_k=None,
+top_p=0.95,
+torch_compile=False,
+torch_compile_backend=None,
+torch_compile_mode=None,
+torchdynamo=None,
+tpu_metrics_debug=False,
+tpu_num_cores=None,
+train_as_classification=True,
+train_set_seed=0,
+trainer=zo,
+untie_emb=False,
+use_ipex=False,
+use_legacy_prediction_loop=False,
+use_mps_device=False,
+verbose=False,
+warmup_ratio=0.0,
+warmup_steps=0,
+weight_decay=0.0,
+xpu_backend=None,
+zo_eps=0.001,
+)
+Generating train split:   0%|          | 0/392702 [00:00<?, ? examples/s]Generating train split:   0%|          | 1000/392702 [00:00<02:25, 2683.97 examples/s]Generating train split:  64%|██████▍   | 253000/392702 [00:00<00:00, 693902.28 examples/s]Generating train split: 100%|██████████| 392702/392702 [00:00<00:00, 556335.01 examples/s]
+Generating validation_matched split:   0%|          | 0/9815 [00:00<?, ? examples/s]Generating validation_matched split: 100%|██████████| 9815/9815 [00:00<00:00, 218312.00 examples/s]
+Generating validation_mismatched split:   0%|          | 0/9832 [00:00<?, ? examples/s]Generating validation_mismatched split: 100%|██████████| 9832/9832 [00:00<00:00, 159716.79 examples/s]
+Generating test_matched split:   0%|          | 0/9796 [00:00<?, ? examples/s]Generating test_matched split: 100%|██████████| 9796/9796 [00:00<00:00, 229192.85 examples/s]
+Generating test_mismatched split:   0%|          | 0/9847 [00:00<?, ? examples/s]Generating test_mismatched split: 100%|██████████| 9847/9847 [00:00<00:00, 290704.86 examples/s]
+2026-03-13 16:51:55,544 - INFO - Loading model with FP16...
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/modeling_utils.py:442: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  return torch.load(checkpoint_file, map_location="cpu")
+2026-03-13 16:52:03,258 - INFO - Done with 7.71s
+2026-03-13 16:52:04,550 - INFO - Preparing training/evaluation datasets...
+2026-03-13 16:52:04,550 - INFO - Done with 0.00s
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/optimization.py:391: FutureWarning: This implementation of AdamW is deprecated and will be removed in a future version. Use the PyTorch implementation torch.optim.AdamW instead, or set `no_deprecation_warning=True` to disable this warning
+  warnings.warn(
+2026-03-13 16:52:04,775 - INFO - ***** Running training *****
+2026-03-13 16:52:04,775 - INFO -   Num examples = 64
+2026-03-13 16:52:04,775 - INFO -   Num Epochs = 1
+2026-03-13 16:52:04,775 - INFO -   Instantaneous batch size per device = 1
+2026-03-13 16:52:04,775 - INFO -   Total train batch size (w. parallel, distributed & accumulation) = 1
+2026-03-13 16:52:04,775 - INFO -   Gradient Accumulation steps = 1
+2026-03-13 16:52:04,775 - INFO -   Total optimization steps = 2
+2026-03-13 16:52:04,775 - INFO -   Number of trainable parameters = 125239296
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:04<00:04,  4.54s/it]                                              50%|█████     | 1/2 [00:04<00:04,  4.54s/it]{'loss': 1.0615, 'learning_rate': 5e-07, 'epoch': 0.02}
+
+  0%|          | 0/8 [00:00<?, ?it/s][A
+ 50%|█████     | 4/8 [00:00<00:00, 31.29it/s][A
+100%|██████████| 8/8 [00:00<00:00, 31.51it/s][A                                             
+                                             [A 50%|█████     | 1/2 [00:05<00:04,  4.54s/it]
+100%|██████████| 8/8 [00:00<00:00, 31.51it/s][A
+                                             [A2026-03-13 16:52:10,282 - INFO - There are 0 training samples and 64 validation samples
+{'eval_loss': 1.083984375, 'eval_runtime': 0.3387, 'eval_samples_per_second': 188.977, 'eval_steps_per_second': 23.622, 'epoch': 0.02}
+
+  0%|          | 0/64 [00:00<?, ?it/s][A2026-03-13 16:52:10,282 - INFO - ========= Example =========
+2026-03-13 16:52:10,283 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:10,283 - INFO - Correct candidate: 2
+2026-03-13 16:52:10,676 - INFO - === Candidate 0 ===
+2026-03-13 16:52:10,676 - INFO - <s>Premise: oh really it wouldn't matter if we plant them when it was starting to get warmer
+Hypothesis: The plants are strictly seasonal, only grown during the winter.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:10,965 - INFO - Log probabilities of the option tokens: tensor([-3.5605], dtype=torch.float16)
+2026-03-13 16:52:10,971 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:10,972 - INFO - <s>Premise: oh really it wouldn't matter if we plant them when it was starting to get warmer
+Hypothesis: The plants are strictly seasonal, only grown during the winter.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:10,972 - INFO - Log probabilities of the option tokens: tensor([-4.0078], dtype=torch.float16)
+2026-03-13 16:52:10,978 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:10,978 - INFO - <s>Premise: oh really it wouldn't matter if we plant them when it was starting to get warmer
+Hypothesis: The plants are strictly seasonal, only grown during the winter.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:10,978 - INFO - Log probabilities of the option tokens: tensor([-3.3574], dtype=torch.float16)
+2026-03-13 16:52:10,995 - INFO - Prediction scores: [-3.560546875, -4.0078125, -3.357421875]
+
+  2%|▏         | 1/64 [00:00<00:46,  1.37it/s][A2026-03-13 16:52:11,015 - INFO - ========= Example =========
+2026-03-13 16:52:11,015 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:11,015 - INFO - Correct candidate: 2
+2026-03-13 16:52:11,023 - INFO - === Candidate 0 ===
+2026-03-13 16:52:11,023 - INFO - <s>Premise: Do you know what this is?" With a dramatic gesture she flung back the left side of her coat and exposed a small enamelled badge.
+Hypothesis: She was not wearing a coat during the time.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:11,023 - INFO - Log probabilities of the option tokens: tensor([-4.8633], dtype=torch.float16)
+2026-03-13 16:52:11,029 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:11,029 - INFO - <s>Premise: Do you know what this is?" With a dramatic gesture she flung back the left side of her coat and exposed a small enamelled badge.
+Hypothesis: She was not wearing a coat during the time.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:11,029 - INFO - Log probabilities of the option tokens: tensor([-4.9805], dtype=torch.float16)
+2026-03-13 16:52:11,035 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:11,035 - INFO - <s>Premise: Do you know what this is?" With a dramatic gesture she flung back the left side of her coat and exposed a small enamelled badge.
+Hypothesis: She was not wearing a coat during the time.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:11,035 - INFO - Log probabilities of the option tokens: tensor([-4.8086], dtype=torch.float16)
+2026-03-13 16:52:11,035 - INFO - Prediction scores: [-4.86328125, -4.98046875, -4.80859375]
+2026-03-13 16:52:11,035 - INFO - ========= Example =========
+2026-03-13 16:52:11,035 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:11,035 - INFO - Correct candidate: 1
+2026-03-13 16:52:11,042 - INFO - === Candidate 0 ===
+2026-03-13 16:52:11,043 - INFO - <s>Premise: Finally, the Administration strongly opposes including reductions for CO2 in S. 556 or any multi-pollutant bill.
+Hypothesis: Any multi-pollutant bill is opposed by the Administration, that means people will be happy about that.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:11,043 - INFO - Log probabilities of the option tokens: tensor([-4.1875], dtype=torch.float16)
+2026-03-13 16:52:11,048 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:11,049 - INFO - <s>Premise: Finally, the Administration strongly opposes including reductions for CO2 in S. 556 or any multi-pollutant bill.
+Hypothesis: Any multi-pollutant bill is opposed by the Administration, that means people will be happy about that.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:11,049 - INFO - Log probabilities of the option tokens: tensor([-5.8125], dtype=torch.float16)
+2026-03-13 16:52:11,054 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:11,055 - INFO - <s>Premise: Finally, the Administration strongly opposes including reductions for CO2 in S. 556 or any multi-pollutant bill.
+Hypothesis: Any multi-pollutant bill is opposed by the Administration, that means people will be happy about that.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:11,055 - INFO - Log probabilities of the option tokens: tensor([-3.8652], dtype=torch.float16)
+2026-03-13 16:52:11,055 - INFO - Prediction scores: [-4.1875, -5.8125, -3.865234375]
+
+ 11%|█         | 7/64 [00:00<00:05, 10.68it/s][A
+ 20%|██        | 13/64 [00:00<00:02, 19.48it/s][A
+ 30%|██▉       | 19/64 [00:01<00:01, 27.40it/s][A
+ 39%|███▉      | 25/64 [00:01<00:01, 34.02it/s][A
+ 48%|████▊     | 31/64 [00:01<00:00, 39.36it/s][A
+ 58%|█████▊    | 37/64 [00:01<00:00, 43.42it/s][A
+ 67%|██████▋   | 43/64 [00:01<00:00, 46.61it/s][A
+ 77%|███████▋  | 49/64 [00:01<00:00, 48.96it/s][A
+ 86%|████████▌ | 55/64 [00:01<00:00, 50.96it/s][A
+ 95%|█████████▌| 61/64 [00:01<00:00, 52.27it/s][A100%|██████████| 64/64 [00:01<00:00, 34.00it/s]
+2026-03-13 16:52:12,187 - INFO - There are 0 training samples and 64 validation samples
+
+  0%|          | 0/64 [00:00<?, ?it/s][A2026-03-13 16:52:12,188 - INFO - ========= Example =========
+2026-03-13 16:52:12,188 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:12,188 - INFO - Correct candidate: 2
+2026-03-13 16:52:12,196 - INFO - === Candidate 0 ===
+2026-03-13 16:52:12,196 - INFO - <s>Premise: Before any legal action is brought against this rule in federal court, the administrative appeal rights set forth at 7 C.F.R.
+Hypothesis: Before we send this to federal court, there is a conference.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:12,196 - INFO - Log probabilities of the option tokens: tensor([-4.4414], dtype=torch.float16)
+2026-03-13 16:52:12,202 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:12,202 - INFO - <s>Premise: Before any legal action is brought against this rule in federal court, the administrative appeal rights set forth at 7 C.F.R.
+Hypothesis: Before we send this to federal court, there is a conference.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:12,202 - INFO - Log probabilities of the option tokens: tensor([-5.8398], dtype=torch.float16)
+2026-03-13 16:52:12,208 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:12,208 - INFO - <s>Premise: Before any legal action is brought against this rule in federal court, the administrative appeal rights set forth at 7 C.F.R.
+Hypothesis: Before we send this to federal court, there is a conference.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:12,208 - INFO - Log probabilities of the option tokens: tensor([-4.1992], dtype=torch.float16)
+2026-03-13 16:52:12,208 - INFO - Prediction scores: [-4.44140625, -5.83984375, -4.19921875]
+2026-03-13 16:52:12,208 - INFO - ========= Example =========
+2026-03-13 16:52:12,208 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:12,208 - INFO - Correct candidate: 0
+2026-03-13 16:52:12,215 - INFO - === Candidate 0 ===
+2026-03-13 16:52:12,216 - INFO - <s>Premise: Walk along past the battery to the Cart Shed, built in the aftermath of the Jacobian uprising in 1746.
+Hypothesis: The Jacobian uprising took place in 1746.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:12,216 - INFO - Log probabilities of the option tokens: tensor([-4.4648], dtype=torch.float16)
+2026-03-13 16:52:12,222 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:12,222 - INFO - <s>Premise: Walk along past the battery to the Cart Shed, built in the aftermath of the Jacobian uprising in 1746.
+Hypothesis: The Jacobian uprising took place in 1746.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:12,222 - INFO - Log probabilities of the option tokens: tensor([-4.9258], dtype=torch.float16)
+2026-03-13 16:52:12,228 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:12,228 - INFO - <s>Premise: Walk along past the battery to the Cart Shed, built in the aftermath of the Jacobian uprising in 1746.
+Hypothesis: The Jacobian uprising took place in 1746.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:12,228 - INFO - Log probabilities of the option tokens: tensor([-4.1914], dtype=torch.float16)
+2026-03-13 16:52:12,228 - INFO - Prediction scores: [-4.46484375, -4.92578125, -4.19140625]
+2026-03-13 16:52:12,228 - INFO - ========= Example =========
+2026-03-13 16:52:12,228 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:12,228 - INFO - Correct candidate: 1
+2026-03-13 16:52:12,235 - INFO - === Candidate 0 ===
+2026-03-13 16:52:12,235 - INFO - <s>Premise: White put down a little cover fire.
+Hypothesis: White put down cover fire so they could go in the train.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:12,235 - INFO - Log probabilities of the option tokens: tensor([-4.1250], dtype=torch.float16)
+2026-03-13 16:52:12,241 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:12,241 - INFO - <s>Premise: White put down a little cover fire.
+Hypothesis: White put down cover fire so they could go in the train.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:12,241 - INFO - Log probabilities of the option tokens: tensor([-4.1328], dtype=torch.float16)
+2026-03-13 16:52:12,247 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:12,247 - INFO - <s>Premise: White put down a little cover fire.
+Hypothesis: White put down cover fire so they could go in the train.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:12,247 - INFO - Log probabilities of the option tokens: tensor([-3.8184], dtype=torch.float16)
+2026-03-13 16:52:12,247 - INFO - Prediction scores: [-4.125, -4.1328125, -3.818359375]
+
+  9%|▉         | 6/64 [00:00<00:01, 52.46it/s][A
+ 19%|█▉        | 12/64 [00:00<00:00, 53.12it/s][A
+ 28%|██▊       | 18/64 [00:00<00:00, 53.88it/s][A
+ 38%|███▊      | 24/64 [00:00<00:00, 54.09it/s][A
+ 47%|████▋     | 30/64 [00:00<00:00, 54.43it/s][A
+ 56%|█████▋    | 36/64 [00:00<00:00, 54.25it/s][A
+ 66%|██████▌   | 42/64 [00:00<00:00, 54.11it/s][A
+ 75%|███████▌  | 48/64 [00:00<00:00, 54.25it/s][A
+ 84%|████████▍ | 54/64 [00:00<00:00, 54.04it/s][A
+ 94%|█████████▍| 60/64 [00:01<00:00, 54.14it/s][A100%|██████████| 64/64 [00:01<00:00, 54.08it/s]
+100%|██████████| 2/2 [00:08<00:00,  4.29s/it]                                             100%|██████████| 2/2 [00:08<00:00,  4.29s/it]{'loss': 1.4268, 'learning_rate': 0.0, 'epoch': 0.03}
+
+  0%|          | 0/8 [00:00<?, ?it/s][A
+ 62%|██████▎   | 5/8 [00:00<00:00, 39.65it/s][A                                             
+                                             [A100%|██████████| 2/2 [00:08<00:00,  4.29s/it]
+100%|██████████| 8/8 [00:00<00:00, 39.65it/s][A
+                                             [A2026-03-13 16:52:13,963 - INFO - There are 0 training samples and 64 validation samples
+{'eval_loss': 1.083984375, 'eval_runtime': 0.2461, 'eval_samples_per_second': 260.079, 'eval_steps_per_second': 32.51, 'epoch': 0.03}
+
+  0%|          | 0/64 [00:00<?, ?it/s][A2026-03-13 16:52:13,964 - INFO - ========= Example =========
+2026-03-13 16:52:13,964 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:13,964 - INFO - Correct candidate: 2
+2026-03-13 16:52:13,972 - INFO - === Candidate 0 ===
+2026-03-13 16:52:13,972 - INFO - <s>Premise: oh really it wouldn't matter if we plant them when it was starting to get warmer
+Hypothesis: The plants are strictly seasonal, only grown during the winter.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:13,972 - INFO - Log probabilities of the option tokens: tensor([-3.5742], dtype=torch.float16)
+2026-03-13 16:52:13,978 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:13,978 - INFO - <s>Premise: oh really it wouldn't matter if we plant them when it was starting to get warmer
+Hypothesis: The plants are strictly seasonal, only grown during the winter.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:13,978 - INFO - Log probabilities of the option tokens: tensor([-3.9961], dtype=torch.float16)
+2026-03-13 16:52:13,984 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:13,984 - INFO - <s>Premise: oh really it wouldn't matter if we plant them when it was starting to get warmer
+Hypothesis: The plants are strictly seasonal, only grown during the winter.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:13,984 - INFO - Log probabilities of the option tokens: tensor([-3.3711], dtype=torch.float16)
+2026-03-13 16:52:13,985 - INFO - Prediction scores: [-3.57421875, -3.99609375, -3.37109375]
+2026-03-13 16:52:13,985 - INFO - ========= Example =========
+2026-03-13 16:52:13,985 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:13,985 - INFO - Correct candidate: 2
+2026-03-13 16:52:13,992 - INFO - === Candidate 0 ===
+2026-03-13 16:52:13,992 - INFO - <s>Premise: Do you know what this is?" With a dramatic gesture she flung back the left side of her coat and exposed a small enamelled badge.
+Hypothesis: She was not wearing a coat during the time.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:13,992 - INFO - Log probabilities of the option tokens: tensor([-4.8711], dtype=torch.float16)
+2026-03-13 16:52:13,998 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:13,998 - INFO - <s>Premise: Do you know what this is?" With a dramatic gesture she flung back the left side of her coat and exposed a small enamelled badge.
+Hypothesis: She was not wearing a coat during the time.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:13,998 - INFO - Log probabilities of the option tokens: tensor([-4.9805], dtype=torch.float16)
+2026-03-13 16:52:14,004 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:14,004 - INFO - <s>Premise: Do you know what this is?" With a dramatic gesture she flung back the left side of her coat and exposed a small enamelled badge.
+Hypothesis: She was not wearing a coat during the time.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:14,004 - INFO - Log probabilities of the option tokens: tensor([-4.8086], dtype=torch.float16)
+2026-03-13 16:52:14,004 - INFO - Prediction scores: [-4.87109375, -4.98046875, -4.80859375]
+2026-03-13 16:52:14,004 - INFO - ========= Example =========
+2026-03-13 16:52:14,004 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:14,004 - INFO - Correct candidate: 1
+2026-03-13 16:52:14,011 - INFO - === Candidate 0 ===
+2026-03-13 16:52:14,012 - INFO - <s>Premise: Finally, the Administration strongly opposes including reductions for CO2 in S. 556 or any multi-pollutant bill.
+Hypothesis: Any multi-pollutant bill is opposed by the Administration, that means people will be happy about that.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:14,012 - INFO - Log probabilities of the option tokens: tensor([-4.1836], dtype=torch.float16)
+2026-03-13 16:52:14,017 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:14,018 - INFO - <s>Premise: Finally, the Administration strongly opposes including reductions for CO2 in S. 556 or any multi-pollutant bill.
+Hypothesis: Any multi-pollutant bill is opposed by the Administration, that means people will be happy about that.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:14,018 - INFO - Log probabilities of the option tokens: tensor([-5.8164], dtype=torch.float16)
+2026-03-13 16:52:14,023 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:14,024 - INFO - <s>Premise: Finally, the Administration strongly opposes including reductions for CO2 in S. 556 or any multi-pollutant bill.
+Hypothesis: Any multi-pollutant bill is opposed by the Administration, that means people will be happy about that.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:14,024 - INFO - Log probabilities of the option tokens: tensor([-3.8633], dtype=torch.float16)
+2026-03-13 16:52:14,024 - INFO - Prediction scores: [-4.18359375, -5.81640625, -3.86328125]
+
+  9%|▉         | 6/64 [00:00<00:01, 52.51it/s][A
+ 19%|█▉        | 12/64 [00:00<00:00, 53.56it/s][A
+ 28%|██▊       | 18/64 [00:00<00:00, 54.41it/s][A
+ 38%|███▊      | 24/64 [00:00<00:00, 54.64it/s][A
+ 47%|████▋     | 30/64 [00:00<00:00, 54.75it/s][A
+ 56%|█████▋    | 36/64 [00:00<00:00, 54.67it/s][A
+ 66%|██████▌   | 42/64 [00:00<00:00, 54.85it/s][A
+ 75%|███████▌  | 48/64 [00:00<00:00, 54.78it/s][A
+ 84%|████████▍ | 54/64 [00:00<00:00, 54.99it/s][A
+ 94%|█████████▍| 60/64 [00:01<00:00, 55.05it/s][A100%|██████████| 64/64 [00:01<00:00, 54.71it/s]
+2026-03-13 16:52:15,207 - INFO - There are 0 training samples and 64 validation samples
+
+  0%|          | 0/64 [00:00<?, ?it/s][A2026-03-13 16:52:15,208 - INFO - ========= Example =========
+2026-03-13 16:52:15,208 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:15,208 - INFO - Correct candidate: 2
+2026-03-13 16:52:15,216 - INFO - === Candidate 0 ===
+2026-03-13 16:52:15,216 - INFO - <s>Premise: Before any legal action is brought against this rule in federal court, the administrative appeal rights set forth at 7 C.F.R.
+Hypothesis: Before we send this to federal court, there is a conference.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:15,216 - INFO - Log probabilities of the option tokens: tensor([-4.4414], dtype=torch.float16)
+2026-03-13 16:52:15,222 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:15,222 - INFO - <s>Premise: Before any legal action is brought against this rule in federal court, the administrative appeal rights set forth at 7 C.F.R.
+Hypothesis: Before we send this to federal court, there is a conference.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:15,222 - INFO - Log probabilities of the option tokens: tensor([-5.8555], dtype=torch.float16)
+2026-03-13 16:52:15,228 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:15,228 - INFO - <s>Premise: Before any legal action is brought against this rule in federal court, the administrative appeal rights set forth at 7 C.F.R.
+Hypothesis: Before we send this to federal court, there is a conference.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:15,228 - INFO - Log probabilities of the option tokens: tensor([-4.1914], dtype=torch.float16)
+2026-03-13 16:52:15,228 - INFO - Prediction scores: [-4.44140625, -5.85546875, -4.19140625]
+2026-03-13 16:52:15,228 - INFO - ========= Example =========
+2026-03-13 16:52:15,228 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:15,228 - INFO - Correct candidate: 0
+2026-03-13 16:52:15,236 - INFO - === Candidate 0 ===
+2026-03-13 16:52:15,236 - INFO - <s>Premise: Walk along past the battery to the Cart Shed, built in the aftermath of the Jacobian uprising in 1746.
+Hypothesis: The Jacobian uprising took place in 1746.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:15,236 - INFO - Log probabilities of the option tokens: tensor([-4.4375], dtype=torch.float16)
+2026-03-13 16:52:15,242 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:15,242 - INFO - <s>Premise: Walk along past the battery to the Cart Shed, built in the aftermath of the Jacobian uprising in 1746.
+Hypothesis: The Jacobian uprising took place in 1746.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:15,242 - INFO - Log probabilities of the option tokens: tensor([-4.9297], dtype=torch.float16)
+2026-03-13 16:52:15,248 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:15,248 - INFO - <s>Premise: Walk along past the battery to the Cart Shed, built in the aftermath of the Jacobian uprising in 1746.
+Hypothesis: The Jacobian uprising took place in 1746.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:15,248 - INFO - Log probabilities of the option tokens: tensor([-4.1797], dtype=torch.float16)
+2026-03-13 16:52:15,248 - INFO - Prediction scores: [-4.4375, -4.9296875, -4.1796875]
+2026-03-13 16:52:15,248 - INFO - ========= Example =========
+2026-03-13 16:52:15,248 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:15,248 - INFO - Correct candidate: 1
+2026-03-13 16:52:15,255 - INFO - === Candidate 0 ===
+2026-03-13 16:52:15,255 - INFO - <s>Premise: White put down a little cover fire.
+Hypothesis: White put down cover fire so they could go in the train.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:15,255 - INFO - Log probabilities of the option tokens: tensor([-4.1289], dtype=torch.float16)
+2026-03-13 16:52:15,261 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:15,261 - INFO - <s>Premise: White put down a little cover fire.
+Hypothesis: White put down cover fire so they could go in the train.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:15,261 - INFO - Log probabilities of the option tokens: tensor([-4.1211], dtype=torch.float16)
+2026-03-13 16:52:15,267 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:15,267 - INFO - <s>Premise: White put down a little cover fire.
+Hypothesis: White put down cover fire so they could go in the train.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:15,267 - INFO - Log probabilities of the option tokens: tensor([-3.8418], dtype=torch.float16)
+2026-03-13 16:52:15,267 - INFO - Prediction scores: [-4.12890625, -4.12109375, -3.841796875]
+
+  9%|▉         | 6/64 [00:00<00:01, 52.85it/s][A
+ 19%|█▉        | 12/64 [00:00<00:00, 53.95it/s][A
+ 28%|██▊       | 18/64 [00:00<00:00, 54.62it/s][A
+ 38%|███▊      | 24/64 [00:00<00:00, 54.84it/s][A
+ 47%|████▋     | 30/64 [00:00<00:00, 54.66it/s][A
+ 56%|█████▋    | 36/64 [00:00<00:00, 54.67it/s][A
+ 66%|██████▌   | 42/64 [00:00<00:00, 54.50it/s][A
+ 75%|███████▌  | 48/64 [00:00<00:00, 54.72it/s][A
+ 84%|████████▍ | 54/64 [00:00<00:00, 54.85it/s][A
+ 94%|█████████▍| 60/64 [00:01<00:00, 54.90it/s][A100%|██████████| 64/64 [00:01<00:00, 54.69it/s]
+2026-03-13 16:52:16,409 - INFO - 
+
+Training completed. Do not forget to share your model on huggingface.co/models =)
+
+
+                                             100%|██████████| 2/2 [00:11<00:00,  4.29s/it]100%|██████████| 2/2 [00:11<00:00,  5.87s/it]
+2026-03-13 16:52:16,524 - INFO - There are 0 training samples and 64 validation samples
+{'train_runtime': 11.6336, 'train_samples_per_second': 0.172, 'train_steps_per_second': 0.172, 'train_loss': 1.244140625, 'epoch': 0.03}
+  0%|          | 0/64 [00:00<?, ?it/s]2026-03-13 16:52:16,524 - INFO - ========= Example =========
+2026-03-13 16:52:16,524 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:16,524 - INFO - Correct candidate: 2
+2026-03-13 16:52:16,532 - INFO - === Candidate 0 ===
+2026-03-13 16:52:16,532 - INFO - <s>Premise: oh really it wouldn't matter if we plant them when it was starting to get warmer
+Hypothesis: The plants are strictly seasonal, only grown during the winter.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:16,532 - INFO - Log probabilities of the option tokens: tensor([-3.5742], dtype=torch.float16)
+2026-03-13 16:52:16,538 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:16,538 - INFO - <s>Premise: oh really it wouldn't matter if we plant them when it was starting to get warmer
+Hypothesis: The plants are strictly seasonal, only grown during the winter.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:16,539 - INFO - Log probabilities of the option tokens: tensor([-3.9961], dtype=torch.float16)
+2026-03-13 16:52:16,544 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:16,544 - INFO - <s>Premise: oh really it wouldn't matter if we plant them when it was starting to get warmer
+Hypothesis: The plants are strictly seasonal, only grown during the winter.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:16,545 - INFO - Log probabilities of the option tokens: tensor([-3.3711], dtype=torch.float16)
+2026-03-13 16:52:16,545 - INFO - Prediction scores: [-3.57421875, -3.99609375, -3.37109375]
+2026-03-13 16:52:16,545 - INFO - ========= Example =========
+2026-03-13 16:52:16,545 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:16,545 - INFO - Correct candidate: 2
+2026-03-13 16:52:16,552 - INFO - === Candidate 0 ===
+2026-03-13 16:52:16,552 - INFO - <s>Premise: Do you know what this is?" With a dramatic gesture she flung back the left side of her coat and exposed a small enamelled badge.
+Hypothesis: She was not wearing a coat during the time.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:16,552 - INFO - Log probabilities of the option tokens: tensor([-4.8711], dtype=torch.float16)
+2026-03-13 16:52:16,558 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:16,558 - INFO - <s>Premise: Do you know what this is?" With a dramatic gesture she flung back the left side of her coat and exposed a small enamelled badge.
+Hypothesis: She was not wearing a coat during the time.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:16,558 - INFO - Log probabilities of the option tokens: tensor([-4.9805], dtype=torch.float16)
+2026-03-13 16:52:16,564 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:16,564 - INFO - <s>Premise: Do you know what this is?" With a dramatic gesture she flung back the left side of her coat and exposed a small enamelled badge.
+Hypothesis: She was not wearing a coat during the time.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:16,564 - INFO - Log probabilities of the option tokens: tensor([-4.8086], dtype=torch.float16)
+2026-03-13 16:52:16,564 - INFO - Prediction scores: [-4.87109375, -4.98046875, -4.80859375]
+2026-03-13 16:52:16,564 - INFO - ========= Example =========
+2026-03-13 16:52:16,564 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:16,564 - INFO - Correct candidate: 1
+2026-03-13 16:52:16,572 - INFO - === Candidate 0 ===
+2026-03-13 16:52:16,572 - INFO - <s>Premise: Finally, the Administration strongly opposes including reductions for CO2 in S. 556 or any multi-pollutant bill.
+Hypothesis: Any multi-pollutant bill is opposed by the Administration, that means people will be happy about that.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:16,572 - INFO - Log probabilities of the option tokens: tensor([-4.1836], dtype=torch.float16)
+2026-03-13 16:52:16,578 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:16,578 - INFO - <s>Premise: Finally, the Administration strongly opposes including reductions for CO2 in S. 556 or any multi-pollutant bill.
+Hypothesis: Any multi-pollutant bill is opposed by the Administration, that means people will be happy about that.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:16,578 - INFO - Log probabilities of the option tokens: tensor([-5.8164], dtype=torch.float16)
+2026-03-13 16:52:16,584 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:16,584 - INFO - <s>Premise: Finally, the Administration strongly opposes including reductions for CO2 in S. 556 or any multi-pollutant bill.
+Hypothesis: Any multi-pollutant bill is opposed by the Administration, that means people will be happy about that.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:16,584 - INFO - Log probabilities of the option tokens: tensor([-3.8633], dtype=torch.float16)
+2026-03-13 16:52:16,584 - INFO - Prediction scores: [-4.18359375, -5.81640625, -3.86328125]
+  9%|▉         | 6/64 [00:00<00:01, 52.21it/s] 19%|█▉        | 12/64 [00:00<00:00, 53.20it/s] 28%|██▊       | 18/64 [00:00<00:00, 53.95it/s] 38%|███▊      | 24/64 [00:00<00:00, 54.18it/s] 47%|████▋     | 30/64 [00:00<00:00, 54.34it/s] 56%|█████▋    | 36/64 [00:00<00:00, 54.23it/s] 66%|██████▌   | 42/64 [00:00<00:00, 54.44it/s] 75%|███████▌  | 48/64 [00:00<00:00, 54.48it/s] 84%|████████▍ | 54/64 [00:00<00:00, 54.72it/s] 94%|█████████▍| 60/64 [00:01<00:00, 54.67it/s]100%|██████████| 64/64 [00:01<00:00, 54.32it/s]
+2026-03-13 16:52:17,702 - INFO - There are 0 training samples and 64 validation samples
+  0%|          | 0/64 [00:00<?, ?it/s]2026-03-13 16:52:17,703 - INFO - ========= Example =========
+2026-03-13 16:52:17,703 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:17,703 - INFO - Correct candidate: 2
+2026-03-13 16:52:17,710 - INFO - === Candidate 0 ===
+2026-03-13 16:52:17,710 - INFO - <s>Premise: At 9:00, American Airlines Executive Vice President Gerard Arpey learned that communications had been lost with American 77.
+Hypothesis: It wasn't until 10:00 that Gerard Arpey leaned that communication had been lost with American 77.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:17,711 - INFO - Log probabilities of the option tokens: tensor([-5.1680], dtype=torch.float16)
+2026-03-13 16:52:17,716 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:17,717 - INFO - <s>Premise: At 9:00, American Airlines Executive Vice President Gerard Arpey learned that communications had been lost with American 77.
+Hypothesis: It wasn't until 10:00 that Gerard Arpey leaned that communication had been lost with American 77.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:17,717 - INFO - Log probabilities of the option tokens: tensor([-5.2930], dtype=torch.float16)
+2026-03-13 16:52:17,722 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:17,723 - INFO - <s>Premise: At 9:00, American Airlines Executive Vice President Gerard Arpey learned that communications had been lost with American 77.
+Hypothesis: It wasn't until 10:00 that Gerard Arpey leaned that communication had been lost with American 77.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:17,723 - INFO - Log probabilities of the option tokens: tensor([-4.9336], dtype=torch.float16)
+2026-03-13 16:52:17,723 - INFO - Prediction scores: [-5.16796875, -5.29296875, -4.93359375]
+2026-03-13 16:52:17,723 - INFO - ========= Example =========
+2026-03-13 16:52:17,723 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:17,723 - INFO - Correct candidate: 0
+2026-03-13 16:52:17,730 - INFO - === Candidate 0 ===
+2026-03-13 16:52:17,730 - INFO - <s>Premise: Not really, that's all.
+Hypothesis: We do not have anything else.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:17,730 - INFO - Log probabilities of the option tokens: tensor([-4.5859], dtype=torch.float16)
+2026-03-13 16:52:17,736 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:17,736 - INFO - <s>Premise: Not really, that's all.
+Hypothesis: We do not have anything else.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:17,736 - INFO - Log probabilities of the option tokens: tensor([-5.2578], dtype=torch.float16)
+2026-03-13 16:52:17,742 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:17,742 - INFO - <s>Premise: Not really, that's all.
+Hypothesis: We do not have anything else.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:17,742 - INFO - Log probabilities of the option tokens: tensor([-4.2109], dtype=torch.float16)
+2026-03-13 16:52:17,742 - INFO - Prediction scores: [-4.5859375, -5.2578125, -4.2109375]
+2026-03-13 16:52:17,742 - INFO - ========= Example =========
+2026-03-13 16:52:17,742 - INFO - Candidate: [0, 1, 2]
+2026-03-13 16:52:17,742 - INFO - Correct candidate: 0
+2026-03-13 16:52:17,749 - INFO - === Candidate 0 ===
+2026-03-13 16:52:17,749 - INFO - <s>Premise: So, I'm kind of like the hope, I guess.
+Hypothesis: I suppose I'm the hope, or something.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Yes
+2026-03-13 16:52:17,750 - INFO - Log probabilities of the option tokens: tensor([-4.7070], dtype=torch.float16)
+2026-03-13 16:52:17,755 - INFO - === Candidate 1 (without context)===
+2026-03-13 16:52:17,755 - INFO - <s>Premise: So, I'm kind of like the hope, I guess.
+Hypothesis: I suppose I'm the hope, or something.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+Maybe
+2026-03-13 16:52:17,756 - INFO - Log probabilities of the option tokens: tensor([-4.6055], dtype=torch.float16)
+2026-03-13 16:52:17,761 - INFO - === Candidate 2 (without context)===
+2026-03-13 16:52:17,761 - INFO - <s>Premise: So, I'm kind of like the hope, I guess.
+Hypothesis: I suppose I'm the hope, or something.
+Can we infer that the hypothesis is true? Yes, No, or Maybe?
+No
+2026-03-13 16:52:17,762 - INFO - Log probabilities of the option tokens: tensor([-4.3398], dtype=torch.float16)
+2026-03-13 16:52:17,762 - INFO - Prediction scores: [-4.70703125, -4.60546875, -4.33984375]
+  9%|▉         | 6/64 [00:00<00:01, 52.15it/s] 19%|█▉        | 12/64 [00:00<00:00, 53.16it/s] 28%|██▊       | 18/64 [00:00<00:00, 53.65it/s] 38%|███▊      | 24/64 [00:00<00:00, 53.20it/s] 47%|████▋     | 30/64 [00:00<00:00, 53.35it/s] 56%|█████▋    | 36/64 [00:00<00:00, 53.71it/s] 66%|██████▌   | 42/64 [00:00<00:00, 53.72it/s] 75%|███████▌  | 48/64 [00:00<00:00, 53.88it/s] 84%|████████▍ | 54/64 [00:01<00:00, 53.99it/s] 94%|█████████▍| 60/64 [00:01<00:00, 54.11it/s]100%|██████████| 64/64 [00:01<00:00, 53.75it/s]
+2026-03-13 16:52:18,893 - INFO - ===== Train set 0 =====
+2026-03-13 16:52:18,893 - INFO - {'accuracy': np.float64(0.46875), 'valid_mismatched_accuracy': np.float64(0.4375)}
+[PASS] MNLI smoke test finished.
+accuracy = 0.46875
+valid_mismatched_accuracy = 0.4375
+[Smoke] done.
