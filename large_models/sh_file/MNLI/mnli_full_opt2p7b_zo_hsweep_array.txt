@@ -11,9 +11,6 @@
 #SBATCH --mail-user=jichao.yu@uga.edu
 #SBATCH --mail-type=ALL
 
-set -euo pipefail
-
-source ~/.bashrc
 conda activate mezo-env
 
 cd /home/jy03364/MeZO/large_models
