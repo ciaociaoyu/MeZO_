@@ -1,7 +1,6 @@
 MODEL=${MODEL:-facebook/opt-2.7b}
 TASK=${TASK:-MNLI}
-MODEL_NAME=(${MODEL//\// })
-MODEL_NAME="${MODEL_NAME[-1]}"
+MODEL_NAME="${MODEL##*/}"
 
 MODE=${MODE:-ft}
 LR=${LR:-1e-6}

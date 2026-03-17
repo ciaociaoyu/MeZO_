@@ -1,0 +1,63 @@
+#!/bin/bash
+#SBATCH --job-name=mnli_opt2p7b_zo_hsweep              # 作业名（MNLI full-data + MeZO h sweep）
+#SBATCH --partition=gpu_p                              # Slurm 分区
+#SBATCH --ntasks=1                                     # 任务数
+#SBATCH --cpus-per-task=4                              # 每个任务 CPU 核数
+#SBATCH --mem=120G                                     # 内存上限
+#SBATCH --gres=gpu:L4:1                                # GPU 资源
+#SBATCH --time=48:00:00                                # 最长运行时长
+#SBATCH --array=0-13                                   # 14 个 h 值，每个 array task 跑 1 个
+#SBATCH --output=/home/jy03364/MeZO/large_models/sh_file/MNLI/jobs/%x_%A_%a.out
+#SBATCH --mail-user=jichao.yu@uga.edu
+#SBATCH --mail-type=ALL
+
+set -euo pipefail
+
+source ~/.bashrc
+conda activate mezo-env
+
+cd /home/jy03364/MeZO/large_models
+
+# h(zo_eps) sweep:
+# 1e-8 到 1e-2（含每档 3x 中间值），并额外包含 3e-2。
+EPS_LIST=(1e-8 3e-8 1e-7 3e-7 1e-6 3e-6 1e-5 3e-5 1e-4 3e-4 1e-3 3e-3 1e-2 3e-2)
+EPS="${EPS_LIST[$SLURM_ARRAY_TASK_ID]}"
+
+echo "========== MNLI full-data + MeZO h sweep =========="
+echo "SLURM_JOB_ID=${SLURM_JOB_ID}"
+echo "SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID}"
+echo "Selected h(zo_eps)=${EPS}"
+echo "seed=42, train_set_seed=0"
+echo "===================================================="
+
+echo "[Preflight] Checking MNLI split sizes..."
+python - <<'PY'
+from datasets import load_dataset
+
+d = load_dataset("glue", "mnli")
+print(f"MNLI train size: {len(d['train'])}")
+print(f"MNLI validation_matched size: {len(d['validation_matched'])}")
+print(f"MNLI validation_mismatched size: {len(d['validation_mismatched'])}")
+print(f"MNLI test_matched size: {len(d['test_matched'])}")
+print(f"MNLI test_mismatched size: {len(d['test_mismatched'])}")
+PY
+
+export MODEL=facebook/opt-2.7b
+export TASK=MNLI
+export MODE=ft
+export EPOCH=1
+export BS=1
+export GA=8
+export LR=1e-6
+export EPS="${EPS}"
+
+# Full-data training/eval
+export TRAIN=-1
+export EVAL=-1
+export DEV=0
+
+# train_set_seed
+export SEED=0
+
+echo "[Run] MODEL=${MODEL} TASK=${TASK} EPS=${EPS} EPOCH=${EPOCH} BS=${BS} GA=${GA} LR=${LR}"
+bash /home/jy03364/MeZO/large_models/train_opt_2p7b_mnli.sh --seed 42
