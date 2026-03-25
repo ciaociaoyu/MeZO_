@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="560" viewBox="0 0 920 560">
+<rect x="0" y="0" width="100%" height="100%" fill="white"/>
+<text x="460" y="26" text-anchor="middle" font-size="20" font-family="Arial">MNLI MeZO Sweep (h vs accuracy)</text>
+<line x1="90" y1="480.00" x2="880" y2="480.00" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="484.00" text-anchor="end" font-size="12" font-family="Arial">0.417</text>
+<line x1="90" y1="407.50" x2="880" y2="407.50" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="411.50" text-anchor="end" font-size="12" font-family="Arial">0.429</text>
+<line x1="90" y1="335.00" x2="880" y2="335.00" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="339.00" text-anchor="end" font-size="12" font-family="Arial">0.441</text>
+<line x1="90" y1="262.50" x2="880" y2="262.50" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="266.50" text-anchor="end" font-size="12" font-family="Arial">0.453</text>
+<line x1="90" y1="190.00" x2="880" y2="190.00" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="194.00" text-anchor="end" font-size="12" font-family="Arial">0.465</text>
+<line x1="90" y1="117.50" x2="880" y2="117.50" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="121.50" text-anchor="end" font-size="12" font-family="Arial">0.477</text>
+<line x1="90" y1="45.00" x2="880" y2="45.00" stroke="#e6e6e6" stroke-width="1"/>
+<text x="80" y="49.00" text-anchor="end" font-size="12" font-family="Arial">0.489</text>
+<line x1="-305.00" y1="45" x2="-305.00" y2="480" stroke="#f0f0f0" stroke-width="1"/>
+<text x="-305.00" y="502" text-anchor="middle" font-size="12" font-family="Arial">1e-4</text>
+<line x1="485.00" y1="45" x2="485.00" y2="480" stroke="#f0f0f0" stroke-width="1"/>
+<text x="485.00" y="502" text-anchor="middle" font-size="12" font-family="Arial">1e-3</text>
+<line x1="1275.00" y1="45" x2="1275.00" y2="480" stroke="#f0f0f0" stroke-width="1"/>
+<text x="1275.00" y="502" text-anchor="middle" font-size="12" font-family="Arial">1e-2</text>
+<line x1="90" y1="45" x2="90" y2="480" stroke="#222" stroke-width="1.5"/>
+<line x1="90" y1="480" x2="880" y2="480" stroke="#222" stroke-width="1.5"/>
+<text x="32" y="262.50" transform="rotate(-90 32,262.50)" text-anchor="middle" font-size="13" font-family="Arial">Accuracy</text>
+<text x="485.00" y="540" text-anchor="middle" font-size="13" font-family="Arial">h / zo_eps (log scale)</text>
+<polyline points="485.00,167.11" fill="none" stroke="#1f77b4" stroke-width="2.3"/>
+<polyline points="485.00,357.89" fill="none" stroke="#ff7f0e" stroke-width="2.3"/>
+<circle cx="485.00" cy="167.11" r="3.8" fill="#1f77b4"/>
+<text x="485.00" y="159.11" text-anchor="middle" font-size="10" font-family="Arial" fill="#1f77b4">0.469</text>
+<rect x="481.70" y="354.59" width="6.6" height="6.6" fill="#ff7f0e"/>
+<text x="485.00" y="372.89" text-anchor="middle" font-size="10" font-family="Arial" fill="#ff7f0e">0.438</text>
+<rect x="635" y="55" width="235" height="54" fill="white" stroke="#ccc"/>
+<line x1="649" y1="73" x2="685" y2="73" stroke="#1f77b4" stroke-width="2.3"/>
+<circle cx="667" cy="73" r="3.8" fill="#1f77b4"/>
+<text x="695" y="77" font-size="12" font-family="Arial">validation_matched</text>
+<line x1="649" y1="93" x2="685" y2="93" stroke="#ff7f0e" stroke-width="2.3"/>
+<rect x="664" y="90" width="6.6" height="6.6" fill="#ff7f0e"/>
+<text x="695" y="97" font-size="12" font-family="Arial">validation_mismatched</text>
+<text x="90" y="552" font-size="11" font-family="Arial" fill="#666">n=1 run(s)</text>
+</svg>

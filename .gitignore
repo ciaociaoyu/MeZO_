@@ -142,6 +142,7 @@ cython_debug/
 *.sh
 !large_models/train_opt_2p7b_mnli.sh
 !large_models/sh_file/MNLI/*.sh
+!medium_models/scripts/exp_sst5_h_precision_sweep.sh
 .venv
 .vscode
 data
@@ -153,6 +154,8 @@ ensemble_predict_results
 auto*
 my*
 slurm
+!medium_models/slurm/
+!medium_models/slurm/sst5_h_precision_sweep_a100.slurm
 tmp
 display.py
 llm_eval/result

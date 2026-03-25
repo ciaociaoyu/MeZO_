@@ -414,6 +414,24 @@ class DynamicTrainingArguments(TrainingArguments):
             'help': 'For ZO/MeZO: replace finite-difference (loss1-loss2)/(2*eps) with the true directional derivative <grad, z> while keeping the same z direction. Intended for fixed-h ablations; requires one backward (autograd.grad) per z sample.'
         }
     )
+    zo_two_point_precision: str = field(
+        default="fp32",
+        metadata={
+            'help': 'Precision used ONLY for the two finite-difference function evaluations (loss1/loss2) in ZO. Choices: fp32, fp16.'
+        }
+    )
+    zo_probe_every: int = field(
+        default=0,
+        metadata={"help": "Run directional-derivative probe every N training steps. <=0 disables probing."}
+    )
+    zo_probe_num_seeds: int = field(
+        default=16,
+        metadata={"help": "Number of random direction seeds used in each directional-derivative probe."}
+    )
+    zo_probe_log_csv: bool = field(
+        default=True,
+        metadata={"help": "If true, append directional-derivative probe metrics to output_dir/zo_directional_probe.csv."}
+    )
     prob_as_feature: bool = field(
         default=False,
         metadata={'help': 'in linear head, use log prob as feature'}
@@ -655,6 +673,12 @@ def main():
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
+    training_args.zo_two_point_precision = str(getattr(training_args, "zo_two_point_precision", "fp32")).lower()
+    if training_args.zo_two_point_precision not in {"fp32", "fp16"}:
+        raise ValueError(f"Invalid --zo_two_point_precision={training_args.zo_two_point_precision}. Allowed: fp32, fp16")
+    if int(getattr(training_args, "zo_probe_num_seeds", 16)) <= 0:
+        raise ValueError("--zo_probe_num_seeds must be > 0")
+
     # Append MeZO-related switches into the log filename so that runs are easier to identify.
     # USE_H  -> training_args.use_adaptive_h
     # USE_C  -> training_args.use_c_scale
@@ -762,6 +786,12 @@ def main():
         training_args.fp16,
     )
     logger.info("Training/evaluation parameters %s", training_args)
+    logger.info(
+        "[zo-config] zo_two_point_precision=%s | zero_order_eps=%s | zo_use_true_directional_derivative=%s",
+        training_args.zo_two_point_precision,
+        training_args.zero_order_eps,
+        bool(getattr(training_args, "zo_use_true_directional_derivative", False)),
+    )
 
     # Set seed
     set_seed(training_args.seed)

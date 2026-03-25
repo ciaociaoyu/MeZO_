@@ -30,6 +30,7 @@ import random
 import collections
 import inspect
 import math
+from contextlib import nullcontext
 import os
 import re
 import shutil
@@ -1535,6 +1536,207 @@ class Trainer(LinearHeadTrainer):
     def should_optim(self, name, param):
         return (not self.args.layer_wise_optim or f".{self.state.global_step % self.model.config.num_hidden_layers}." in name) and param.requires_grad
 
+    def _zo_two_point_autocast_context(self):
+        precision = str(getattr(self.args, "zo_two_point_precision", "fp32")).lower()
+        if precision == "fp16":
+            if torch.cuda.is_available() and _use_native_amp and ("autocast" in globals()):
+                return autocast(dtype=torch.float16)
+            if not getattr(self, "_zo_two_point_fp16_warned", False):
+                logger.warning(
+                    "[zo] zo_two_point_precision=fp16 requested but CUDA AMP autocast is unavailable; "
+                    "falling back to fp32 for two-point evaluations."
+                )
+                self._zo_two_point_fp16_warned = True
+        return nullcontext()
+
+    def _zo_two_point_forward(self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]]) -> torch.Tensor:
+        with self._zo_two_point_autocast_context():
+            return self.zo_forward(model, inputs)
+
+    def _zo_fd_projected_grad(self, loss1: torch.Tensor, loss2: torch.Tensor, eps: float) -> torch.Tensor:
+        return (loss1.float() - loss2.float()) / (2.0 * float(eps))
+
+    def _setup_zo_probe_csv(self):
+        self._zo_probe_csv_path = None
+        self._zo_probe_csv_fields = [
+            "global_step",
+            "eps",
+            "zo_two_point_precision",
+            "fd_mean",
+            "td_mean",
+            "mae",
+            "rmse",
+            "sign_acc",
+            "corr",
+            "probe_num_seeds",
+        ]
+
+        every = int(getattr(self.args, "zo_probe_every", 0))
+        if every <= 0 or (not bool(getattr(self.args, "zo_probe_log_csv", True))):
+            return
+
+        base_dir = getattr(self.args, "output_dir", "./outputs") or "./outputs"
+        os.makedirs(base_dir, exist_ok=True)
+        self._zo_probe_csv_path = os.path.join(base_dir, "zo_directional_probe.csv")
+        if not os.path.exists(self._zo_probe_csv_path):
+            with open(self._zo_probe_csv_path, "w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=self._zo_probe_csv_fields)
+                writer.writeheader()
+
+    def _zo_probe_should_run(self) -> bool:
+        every = int(getattr(self.args, "zo_probe_every", 0))
+        if every <= 0:
+            return False
+        try:
+            if hasattr(self.args, "local_rank") and getattr(self.args, "local_rank", -1) not in (-1, 0):
+                return False
+        except Exception:
+            return False
+
+        global_step = int(getattr(self.state, "global_step", 0))
+        if global_step <= 0 or (global_step % every) != 0:
+            return False
+        if getattr(self, "_zo_probe_last_step", None) == global_step:
+            return False
+        self._zo_probe_last_step = global_step
+        return True
+
+    def _zo_probe_seed_list(self, global_step: int, num_seeds: int) -> List[int]:
+        base_seed = int(getattr(self.args, "seed", 0))
+        mixed_seed = (base_seed * 1000003 + int(global_step) * 9176 + 97) % 2147483647
+        rng = np.random.RandomState(int(mixed_seed))
+        return [int(x) for x in rng.randint(0, 2147483647, size=max(1, int(num_seeds)))]
+
+    def _zo_probe_append_csv_row(self, row: Dict[str, Any]):
+        if getattr(self, "_zo_probe_csv_path", None) is None:
+            return
+        try:
+            with open(self._zo_probe_csv_path, "a", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=self._zo_probe_csv_fields)
+                writer.writerow(row)
+        except Exception as e:
+            logger.warning(f"[zo_probe] failed to append CSV row: {type(e).__name__}: {e}")
+
+    def _zo_maybe_run_directional_probe(self, model: nn.Module, inputs: Dict[str, Any]):
+        if not self._zo_probe_should_run():
+            return
+
+        global_step = int(getattr(self.state, "global_step", 0))
+        num_seeds = max(1, int(getattr(self.args, "zo_probe_num_seeds", 16)))
+        eps = float(self.adaptive_h) if getattr(self.args, "use_adaptive_h", False) else float(getattr(self.args, "zero_order_eps", 1e-3))
+        precision = str(getattr(self.args, "zo_two_point_precision", "fp32")).lower()
+        dir_seeds = self._zo_probe_seed_list(global_step, num_seeds)
+
+        fd_vals: List[float] = []
+        td_vals: List[float] = []
+
+        zo_forward_step_backup = int(getattr(self.state, "zo_forward_step", 0))
+        torch_state = torch.random.get_rng_state()
+        cuda_states = None
+        try:
+            if torch.cuda.is_available():
+                cuda_states = torch.cuda.get_rng_state_all()
+        except Exception:
+            cuda_states = None
+
+        try:
+            for seed in dir_seeds:
+                if self.args.efficient_zero_order:
+                    with torch.no_grad():
+                        model = self.efficient_perturb_parameters(model, seed)
+                        loss1 = self._zo_two_point_forward(model, inputs)
+                        model = self.efficient_perturb_parameters(model, seed, scaling_factor=-2)
+                        loss2 = self._zo_two_point_forward(model, inputs)
+                        model = self.efficient_perturb_parameters(model, seed, scaling_factor=1)
+                    _, td = self.zo_true_directional_derivative(model, inputs, random_seed=seed)
+                else:
+                    # Deterministically sample the same z direction for FD and true-directional checks.
+                    torch.manual_seed(int(seed))
+                    if torch.cuda.is_available():
+                        torch.cuda.manual_seed_all(int(seed))
+
+                    random_vector = None
+                    with torch.no_grad():
+                        if self.args.zo_variant is not None:
+                            model, random_vector = self.norm_perturb_parameters(model)
+                        else:
+                            model, random_vector = self.perturb_parameters(model)
+                        loss1 = self._zo_two_point_forward(model, inputs)
+
+                        if self.args.zo_variant is not None:
+                            model, random_vector = self.norm_perturb_parameters(model, random_vector=random_vector, scaling_factor=-2)
+                        else:
+                            model, random_vector = self.perturb_parameters(model, random_vector=random_vector, scaling_factor=-2)
+                        loss2 = self._zo_two_point_forward(model, inputs)
+
+                        if self.args.zo_variant is not None:
+                            model, random_vector = self.norm_perturb_parameters(model, random_vector=random_vector, scaling_factor=1)
+                        else:
+                            model, random_vector = self.perturb_parameters(model, random_vector=random_vector, scaling_factor=1)
+                    _, td = self.zo_true_directional_derivative(model, inputs, random_vector=random_vector)
+
+                fd = self._zo_fd_projected_grad(loss1, loss2, eps)
+                fd_vals.append(float(fd.detach().item()))
+                td_vals.append(float(td.detach().float().item()))
+
+            fd_arr = np.asarray(fd_vals, dtype=np.float64)
+            td_arr = np.asarray(td_vals, dtype=np.float64)
+            valid = np.isfinite(fd_arr) & np.isfinite(td_arr)
+            fd_arr = fd_arr[valid]
+            td_arr = td_arr[valid]
+            if fd_arr.size == 0:
+                logger.warning(f"[zo_probe] step={global_step}: no finite probe pairs; skipping row.")
+                return
+
+            diff = fd_arr - td_arr
+            fd_mean = float(np.mean(fd_arr))
+            td_mean = float(np.mean(td_arr))
+            mae = float(np.mean(np.abs(diff)))
+            rmse = float(np.sqrt(np.mean(diff * diff)))
+            sign_acc = float(np.mean(np.sign(fd_arr) == np.sign(td_arr)))
+
+            corr = float("nan")
+            if fd_arr.size >= 2:
+                std_fd = float(np.std(fd_arr))
+                std_td = float(np.std(td_arr))
+                if std_fd > 0.0 and std_td > 0.0:
+                    corr = float(np.corrcoef(fd_arr, td_arr)[0, 1])
+
+            row = {
+                "global_step": int(global_step),
+                "eps": float(eps),
+                "zo_two_point_precision": precision,
+                "fd_mean": fd_mean,
+                "td_mean": td_mean,
+                "mae": mae,
+                "rmse": rmse,
+                "sign_acc": sign_acc,
+                "corr": corr,
+                "probe_num_seeds": int(num_seeds),
+            }
+            self._zo_probe_append_csv_row(row)
+            logger.info(
+                "[zo_probe] step=%d eps=%.3e precision=%s n=%d mae=%.6e rmse=%.6e sign_acc=%.4f corr=%s",
+                int(global_step),
+                float(eps),
+                precision,
+                int(fd_arr.size),
+                mae,
+                rmse,
+                sign_acc,
+                f"{corr:.6f}" if math.isfinite(corr) else "nan",
+            )
+        except Exception as e:
+            logger.warning(f"[zo_probe] step={global_step} failed: {type(e).__name__}: {e}")
+        finally:
+            self.state.zo_forward_step = zo_forward_step_backup
+            torch.random.set_rng_state(torch_state)
+            try:
+                if cuda_states is not None and torch.cuda.is_available():
+                    torch.cuda.set_rng_state_all(cuda_states)
+            except Exception:
+                pass
+
     def zo_forward(self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]]) -> torch.Tensor:
         model.eval()
         inputs = self._prepare_inputs(inputs)
@@ -1995,10 +2197,24 @@ class Trainer(LinearHeadTrainer):
         logger.info("  Total train batch size (w. parallel, distributed & accumulation) = %d", total_train_batch_size)
         logger.info("  Gradient Accumulation steps = %d", self.args.gradient_accumulation_steps)
         logger.info("  Total optimization steps = %d", t_total)
+        logger.info(
+            "[zo-config] zo_two_point_precision=%s | zero_order_eps=%s | zo_use_true_directional_derivative=%s",
+            str(getattr(self.args, "zo_two_point_precision", "fp32")).lower(),
+            getattr(self.args, "zero_order_eps", 1e-3),
+            bool(getattr(self.args, "zo_use_true_directional_derivative", False)),
+        )
 
         self.state = TrainerState()
         # 初始化 CSV 日志文件
         self._setup_metrics_csv()
+        self._setup_zo_probe_csv()
+        if int(getattr(self.args, "zo_probe_every", 0)) > 0:
+            logger.info(
+                "[zo_probe] enabled: every=%d, num_seeds=%d, csv=%s",
+                int(getattr(self.args, "zo_probe_every", 0)),
+                int(getattr(self.args, "zo_probe_num_seeds", 16)),
+                self._zo_probe_csv_path if getattr(self, "_zo_probe_csv_path", None) else "disabled",
+            )
         grad_norm_logging = self._grad_norm_log_enabled()
         if grad_norm_logging:
             self._setup_grad_norm_csv()
@@ -2100,6 +2316,7 @@ class Trainer(LinearHeadTrainer):
                     for name, param in model.named_parameters():
                         if self.should_optim(name, param):
                             self.named_parameters_to_optim.append((name, param))
+                    self._zo_maybe_run_directional_probe(model, inputs)
 
                     if self.args.zo_by_layer:
                         assert not self.args.efficient_zero_order, 'did not implement preconditioned ZO for efficient ZO yet'
@@ -2158,9 +2375,9 @@ class Trainer(LinearHeadTrainer):
                                     loss2 = loss1
                                 else:
                                     model, random_vector = self.perturb_single_layer(model, layer, scaling_factor=1.0/c_i_val)
-                                    loss1 = self.zo_forward(model, inputs)
+                                    loss1 = self._zo_two_point_forward(model, inputs)
                                     model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=-2.0/c_i_val)
-                                    loss2 = self.zo_forward(model, inputs)
+                                    loss2 = self._zo_two_point_forward(model, inputs)
                                     model, random_vector = self.perturb_single_layer(model, layer, random_vector=random_vector, scaling_factor=1.0/c_i_val)
 
                                 # Debugging: check for NaN in losses
@@ -2170,7 +2387,7 @@ class Trainer(LinearHeadTrainer):
                                 # === Begin Adaptive h (Berahas et al.) ===
                                 eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
                                 if not getattr(self.args, "zo_use_true_directional_derivative", False):
-                                    projected_grad = (loss1 - loss2) / (2 * eps)
+                                    projected_grad = self._zo_fd_projected_grad(loss1, loss2, eps)
                                 # Debugging: check for NaN or Inf in projected_grad
                                 if torch.isnan(projected_grad).item() or torch.isinf(projected_grad).item():
                                     logger.warning(f"projected_grad became invalid. loss1: {loss1.item()}, loss2: {loss2.item()}, eps: {eps}")
@@ -2225,7 +2442,7 @@ class Trainer(LinearHeadTrainer):
                                         model, random_vector = self.norm_perturb_parameters(model)
                                     else:
                                         model, random_vector = self.perturb_parameters(model)
-                                    loss1 = self.zo_forward(model, inputs)
+                                    loss1 = self._zo_two_point_forward(model, inputs)
 
                                     # second function evaluation
                                     if self.args.efficient_zero_order:
@@ -2234,7 +2451,7 @@ class Trainer(LinearHeadTrainer):
                                         model, random_vector = self.norm_perturb_parameters(model, random_vector, scaling_factor=-2)
                                     else:
                                         model, random_vector = self.perturb_parameters(model, random_vector, scaling_factor=-2)
-                                    loss2 = self.zo_forward(model, inputs)
+                                    loss2 = self._zo_two_point_forward(model, inputs)
 
                             # Debugging: check for NaN in losses
                             if torch.isnan(loss1).item() or torch.isnan(loss2).item():
@@ -2244,7 +2461,7 @@ class Trainer(LinearHeadTrainer):
                             eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
                             if not getattr(self.args, "zo_use_true_directional_derivative", False):
                                 # === Original Code ===
-                                projected_grad = (loss1 - loss2) / (2 * eps)
+                                projected_grad = self._zo_fd_projected_grad(loss1, loss2, eps)
                                 # === Original Code ===
 
                             # Debugging: check for NaN or Inf in projected_grad
