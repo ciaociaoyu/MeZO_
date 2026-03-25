@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=sst5_bs32_h_precision_sweep
 #SBATCH --partition=gpu_p
-#SBATCH --array=0-25%8
+#SBATCH --array=0-25%4
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=64G
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=100G
 #SBATCH --gres=gpu:H100:1
-#SBATCH --time=24:00:00
+#SBATCH --time=12:00:00
 #SBATCH --output=jobs/%x_%A_%a.out
 #SBATCH --mail-user=jichao.yu@uga.edu
 #SBATCH --mail-type=ALL
@@ -53,6 +53,10 @@ export RESULT_ROOT="/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/h_precisi
 
 echo "SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID}"
 # 当前设置下总任务数 = 2(precision) * 13(eps) * 1(seed) = 26，所以 array=0-25
-# 若修改 SEEDS 数量，请同步修改上面的 --array 范围。
+# 若需更高并发（比如 %8），可在提交时覆盖：
+#   sbatch --array=0-25%8 sst5_bs32_h_precision_sweep_a100.txt
+# 若集群限制 array 大小，可拆成两次提交：
+#   sbatch --array=0-12%8 sst5_bs32_h_precision_sweep_a100.txt
+#   sbatch --array=13-25%8 sst5_bs32_h_precision_sweep_a100.txt
 
 bash scripts/exp_sst5_h_precision_sweep.sh
