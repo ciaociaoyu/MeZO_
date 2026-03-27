@@ -1,0 +1,2 @@
+eval_loss = nan
+eval_acc = 0.133
