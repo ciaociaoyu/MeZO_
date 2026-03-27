@@ -14,6 +14,8 @@ USE_H=${USE_H:-"True"}
 USE_C=${USE_C:-"False"}
 DATALOADER_SHUFFLE=${DATALOADER_SHUFFLE:-"True"}
 DATA_SEED=${DATA_SEED:-$SEED}
+DATASET_MODE=${DATASET_MODE:-"auto"}
+DATA_ROOT=${DATA_ROOT:-"data/k-shot-1k-test"}
 STEPS=${STEPS:-1000}
 
 # ---------------------------
@@ -34,6 +36,10 @@ while [[ $# -gt 0 ]]; do
             RESULT_ROOT="$2"; shift 2 ;;
         --job_name|--job)
             JOB_NAME="$2"; shift 2 ;;
+        --dataset_mode)
+            DATASET_MODE="$2"; shift 2 ;;
+        --data_root|--data_dir_root)
+            DATA_ROOT="$2"; shift 2 ;;
         *)
             PY_ARGS+=("$1"); shift ;;
     esac
@@ -49,6 +55,8 @@ OUTPUT_DIR="$RESULT_ROOT/$JOB_NAME_SAFE/seed$SEED"
 echo "Result root: $RESULT_ROOT"
 echo "Job name: $JOB_NAME_SAFE"
 echo "Output dir: $OUTPUT_DIR"
+echo "Dataset mode: $DATASET_MODE"
+echo "Data root: $DATA_ROOT"
 
 
 
@@ -133,7 +141,9 @@ esac
 ALL_ARGS_TOGETHER="
     --model_name_or_path $MODEL --few_shot_type $TYPE
     --task_name $TASK --template $TEMPLATE --mapping $MAPPING
-    --data_dir data/k-shot-1k-test/$TASK/$K-$SEED
+    --data_dir $DATA_ROOT/$TASK/$K-$SEED
+    --dataset_mode $DATASET_MODE
+    --data_root $DATA_ROOT
     --overwrite_output_dir --output_dir $OUTPUT_DIR
     --num_k $K
     --tag $TAG

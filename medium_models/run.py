@@ -22,6 +22,7 @@ from transformers import HfArgumentParser, TrainingArguments, set_seed
 
 from src.linearhead_trainer import LinearHeadTrainer
 from src.dataset import FewShotDataset, OurInputFeatures
+from src.data_utils import resolve_and_prepare_data
 from src.models import MODEL_TYPES, resize_token_type_embeddings, convert_opt_model
 from src.trainer import Trainer
 from src.processors import processors_mapping, num_labels_mapping, output_modes_mapping, compute_metrics_mapping, bound_mapping
@@ -221,6 +222,21 @@ class DynamicDataTrainingArguments(DataTrainingArguments):
     use_full_length: bool = field(
         default=None,
         metadata={"help": "Use the full length (512)"}
+    )
+
+    dataset_mode: str = field(
+        default="auto",
+        metadata={"help": "Data mode: auto, fewshot, or full."}
+    )
+
+    data_root: Optional[str] = field(
+        default=None,
+        metadata={"help": "Root directory for materialized splits (default: infer from --data_dir, else data/k-shot-1k-test)."}
+    )
+
+    full_dev_ratio: float = field(
+        default=0.1,
+        metadata={"help": "For full mode: deterministic stratified validation ratio sampled from original train."}
     )
 
     # GPT-3's in-context learning
@@ -806,6 +822,14 @@ def main():
         logger.info("Task name: {}, number of labels: {}, output mode: {}".format(data_args.task_name, num_labels, output_mode))
     except KeyError:
         raise ValueError("Task not found: %s" % (data_args.task_name))
+
+    data_resolution = resolve_and_prepare_data(
+        data_args=data_args,
+        training_args=training_args,
+        logger=logger,
+    )
+    data_args.dataset_mode = data_resolution.resolved_dataset_mode
+    data_args.data_dir = data_resolution.resolved_data_dir
 
     # Automatically generate template for using demonstrations
     if data_args.auto_demo and model_args.few_shot_type == 'prompt-demo':

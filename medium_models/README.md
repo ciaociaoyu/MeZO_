@@ -8,24 +8,29 @@ Please install the latest versions of PyTorch (`pytorch` following [https://pyto
 
 ## Prepare the data
 
-We pack the datasets [here](https://nlp.cs.princeton.edu/projects/lm-bff/datasets.tar). Please download it and extract the files to `./data/original`, or run the following commands:
+`run.py` now supports automatic data preparation for both few-shot and full-dataset modes.
+When the target split directory is missing, it will:
+- check `data/original`
+- auto-download datasets via `data/download_dataset.sh` if needed
+- auto-materialize the requested split under `data/k-shot-1k-test/$TASK/...`
 
 ```bash
-cd data
-bash download_dataset.sh
+TASK=SST-2 K=16 SEED=42 DATASET_MODE=fewshot bash mezo.sh
+TASK=SST-2 SEED=42 DATASET_MODE=full bash mezo.sh
 ```
 
-Then use the following command (in the `medium_models` folder) to generate the data we need:
+If you still want to pre-generate data manually, you can do:
 
 ```bash
-for K in 16 512; do
-    # Generate k-shot splits for seeds 13,21,42,87,100 with a maximum of 1k test examples in data/k-shot-1k-test,
-    # where k is the number of training/validation examples per label
-    python tools/generate_k_shot_data.py --mode k-shot-1k-test --k $K
-done
+# few-shot (historical behavior)
+python tools/generate_k_shot_data.py --mode k-shot-1k-test --dataset_mode fewshot --k 16 --seed 42 --task SST-2
+
+# full-dataset materialization (train/dev/test)
+python tools/generate_k_shot_data.py --mode k-shot-1k-test --dataset_mode full --seed 42 --task SST-2
 ```
 
-See `tools/generate_k_shot_data.py` for more options. For results in the paper, we use the default options: we take `K=16` and `K=512` and take 5 different seeds of 13, 21, 42, 87, 100. The few-shot data will be generated to `data/k-shot-1k-test`. In the directory of each dataset, there will be folders named as `$K-$SEED` indicating different dataset samples.
+Few-shot directories remain `data/k-shot-1k-test/$TASK/$K-$SEED`.
+Full-dataset directories use `data/k-shot-1k-test/$TASK/full-$SEED` (legacy `-16-$SEED` is also recognized).
 
 ## Usage
 
@@ -47,6 +52,12 @@ TASK=SST-2 K=16 SEED=42 BS=8 LR=1e-4 MODEL=roberta-large EXTRA_TAG=lora bash fin
 
 # MeZO
 TASK=SST-2 K=16 SEED=42 BS=64 LR=1e-6 EPS=1e-3 MODEL=roberta-large bash mezo.sh
+
+# MeZO (full dataset via env var)
+TASK=SST-2 SEED=42 DATASET_MODE=full BS=64 LR=1e-6 EPS=1e-3 MODEL=roberta-large bash mezo.sh
+
+# MeZO (full dataset via CLI override)
+TASK=SST-2 SEED=42 BS=64 LR=1e-6 EPS=1e-3 MODEL=roberta-large bash mezo.sh --dataset_mode full
 
 # MeZO + prefix-tuning
 TASK=SST-2 K=16 SEED=42 BS=64 LR=1e-2 EPS=1e-1 MODEL=roberta-large EXTRA_TAG=prefix bash mezo.sh --prefix_tuning --num_prefix 5 --no_reparam --prefix_init_by_real_act
