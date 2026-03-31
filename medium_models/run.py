@@ -1,7 +1,10 @@
 """Finetuning the library models for sequence classification on GLUE."""
 
+import csv
 import dataclasses
+import json
 import logging
+import math
 import os
 import sys
 from dataclasses import dataclass, field
@@ -32,6 +35,47 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+def _normalize_for_json(value):
+    if value is None or isinstance(value, (bool, int, str)):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, np.generic):
+        return _normalize_for_json(value.item())
+    if isinstance(value, dict):
+        return {str(k): _normalize_for_json(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_normalize_for_json(v) for v in value]
+    return str(value)
+
+
+def _read_json_if_exists(path: str):
+    if not path or not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return _normalize_for_json(json.load(f))
+    except Exception as exc:
+        logger.warning("Failed to read JSON artifact %s: %s", path, exc)
+        return None
+
+
+def _read_last_csv_row(path: str):
+    if not path or not os.path.exists(path):
+        return None
+    try:
+        last_row = None
+        with open(path, "r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if any(value not in (None, "") for value in row.values()):
+                    last_row = row
+        return _normalize_for_json(last_row)
+    except Exception as exc:
+        logger.warning("Failed to read CSV artifact %s: %s", path, exc)
+        return None
 
 
 @dataclass
@@ -1119,8 +1163,18 @@ def main():
 
 
     # Training
+    train_result = None
+    train_output = None
+    train_objective = None
     if training_args.do_train:
         train_result = trainer.train(model_path=model_args.model_name_or_path if os.path.isdir(model_args.model_name_or_path) else None)
+        if isinstance(train_result, tuple):
+            if len(train_result) > 0:
+                train_output = train_result[0]
+            if len(train_result) > 1:
+                train_objective = train_result[1]
+        else:
+            train_output = train_result
 
         if training_args.trainer == "hessian":
             # Write the result to log
@@ -1166,8 +1220,26 @@ def main():
         'time': str(datetime.today()),
         'output_dir': training_args.output_dir
     }
+    train_summary = {}
+    if train_output is not None:
+        train_global_step = getattr(train_output, "global_step", None)
+        train_loss = getattr(train_output, "training_loss", None)
+        train_metrics = getattr(train_output, "metrics", None)
+        if train_global_step is not None:
+            train_summary["global_step"] = int(train_global_step)
+            final_result["train_global_step"] = int(train_global_step)
+        if train_loss is not None:
+            train_summary["training_loss"] = float(train_loss)
+            final_result["train_loss"] = float(train_loss)
+        if isinstance(train_metrics, dict) and len(train_metrics) > 0:
+            train_summary["metrics"] = dict(train_metrics)
+        if train_objective is not None:
+            train_summary["best_dev_objective"] = train_objective
+            final_result["best_dev_objective"] = train_objective
 
     eval_results = {}
+    eval_results_by_task = {}
+    eval_output_files = {}
     if training_args.do_eval:
         logger.info("*** Validate ***")
 
@@ -1181,6 +1253,8 @@ def main():
             output_eval_file = os.path.join(
                 training_args.output_dir, f"eval_results_{eval_dataset.args.task_name}.txt"
             )
+            eval_output_files[eval_dataset.args.task_name] = output_eval_file
+            eval_results_by_task[eval_dataset.args.task_name] = dict(eval_result)
             if trainer.is_world_process_zero():
                 with open(output_eval_file, "w") as writer:
                     logger.info("***** Eval results {} *****".format(eval_dataset.args.task_name))
@@ -1191,6 +1265,8 @@ def main():
             eval_results.update(eval_result)
 
     test_results = {}
+    test_results_by_task = {}
+    test_output_files = {}
     if training_args.do_predict:
         logging.info("*** Test ***")
         test_datasets = [test_dataset]
@@ -1209,6 +1285,8 @@ def main():
             output_test_file = os.path.join(
                 training_args.output_dir, f"test_results_{test_dataset.args.task_name}.txt"
             )
+            test_output_files[test_dataset.args.task_name] = output_test_file
+            test_results_by_task[test_dataset.args.task_name] = dict(test_result)
             if trainer.is_world_process_zero():
                 with open(output_test_file, "w") as writer:
                     logger.info("***** Test results {} *****".format(test_dataset.args.task_name))
@@ -1227,14 +1305,54 @@ def main():
 
 
     if trainer.is_world_process_zero():
+        metrics_csv_path = os.path.join(
+            training_args.output_dir,
+            "metrics_logs",
+            f"metrics_adaptiveH-{int(training_args.use_adaptive_h)}_cscale-{int(training_args.use_c_scale)}.csv",
+        )
+        zo_probe_csv_path = os.path.join(training_args.output_dir, "zo_directional_probe.csv")
+        eval_loss_last5_path = os.path.join(training_args.output_dir, "eval_loss_last5.json")
+        run_summary_path = os.path.join(training_args.output_dir, "run_summary.json")
+        summary_payload = {
+            "time": final_result["time"],
+            "task_name": data_args.task_name,
+            "dataset_mode": getattr(data_args, "dataset_mode", None),
+            "output_dir": training_args.output_dir,
+            "train": train_summary,
+            "eval": eval_results_by_task,
+            "test": test_results_by_task,
+            "artifacts": {
+                "metrics_csv_last_row": _read_last_csv_row(metrics_csv_path),
+                "zo_directional_probe_last_row": _read_last_csv_row(zo_probe_csv_path),
+                "eval_loss_last5": _read_json_if_exists(eval_loss_last5_path),
+            },
+            "paths": {
+                "metrics_csv": metrics_csv_path if os.path.exists(metrics_csv_path) else None,
+                "zo_directional_probe_csv": zo_probe_csv_path if os.path.exists(zo_probe_csv_path) else None,
+                "eval_loss_last5_json": eval_loss_last5_path if os.path.exists(eval_loss_last5_path) else None,
+                "eval_results": eval_output_files,
+                "test_results": test_output_files,
+            },
+            "config": {
+                "model_args": vars(model_args),
+                "training_args": vars(training_args),
+                "data_args": vars(data_args),
+            },
+            "final_result": final_result,
+        }
+        with open(run_summary_path, "w", encoding="utf-8") as f:
+            json.dump(_normalize_for_json(summary_payload), f, ensure_ascii=False, indent=2)
+        final_result["run_summary_path"] = run_summary_path
+
         with FileLock('log.lock'):
             with open(training_args.log_file, 'a') as f:
-                final_result.update(vars(model_args))
-                final_result.update(vars(training_args))
-                final_result.update(vars(data_args))
-                if 'evaluation_strategy' in final_result:
-                    final_result.pop('evaluation_strategy')
-                f.write(str(final_result) + '\n')
+                log_result = dict(final_result)
+                log_result.update(vars(model_args))
+                log_result.update(vars(training_args))
+                log_result.update(vars(data_args))
+                if 'evaluation_strategy' in log_result:
+                    log_result.pop('evaluation_strategy')
+                f.write(str(log_result) + '\n')
 
     logger.info('****** Output Dir *******')
     logger.info(training_args.output_dir)
