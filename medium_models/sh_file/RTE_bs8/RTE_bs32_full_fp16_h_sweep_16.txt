@@ -9,7 +9,8 @@
 #SBATCH --time=24:00:00
 #SBATCH --output=jobs/%x_%A_%a.out
 
-set -euo pipefail
+set -eu
+set -o pipefail 2>/dev/null || true
 
 source ~/.bashrc
 conda activate ciao

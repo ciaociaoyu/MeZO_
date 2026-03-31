@@ -1,5 +1,6 @@
 #!/bin/bash
-set -euo pipefail
+set -eu
+set -o pipefail 2>/dev/null || true
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
