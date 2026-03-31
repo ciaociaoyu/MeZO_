@@ -1,0 +1,90 @@
+#!/bin/bash
+#SBATCH --job-name=mnli_test_hh
+#SBATCH --partition=gpu_p
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=80G
+#SBATCH --gres=gpu:H100:1
+#SBATCH --time=08:00:00
+#SBATCH --output=jobs/%x_%j.out
+
+ml jq
+
+source ~/.bashrc
+conda activate ciao
+
+cd /home/jy03364/MeZO/medium_models
+mkdir -p jobs
+
+TASK_WORKSPACE="/home/jy03364/MeZO/medium_models/sh_file/test_hh/workspaces/mnli"
+RESULT_ROOT="${TASK_WORKSPACE}/result"
+JOB_NAME="mnli_test_hh_fp16"
+SUMMARY_FILE="${RESULT_ROOT}/${JOB_NAME}/summary.jsonl"
+
+mkdir -p "${TASK_WORKSPACE}/result" "${TASK_WORKSPACE}/launch_meta" "${RESULT_ROOT}/${JOB_NAME}"
+
+cat > "${TASK_WORKSPACE}/launch_meta/job_${SLURM_JOB_ID:-manual}.txt" <<EOF
+task=MNLI
+bs=32
+seed=16
+data_seed=16
+dataset_mode=full
+active_h_source=fixed
+fixed_h=1e-3
+EOF
+
+TASK=MNLI \
+K=16 \
+SEED=16 \
+DATA_SEED=16 \
+DATASET_MODE=full \
+BS=32 \
+LR=1e-6 \
+WD=0 \
+STEP=100 \
+EVAL_STEP=100 \
+MODEL=roberta-large \
+USE_H=False \
+USE_C=False \
+DATALOADER_SHUFFLE=False \
+EPS=1e-3 \
+EXTRA_TAG="test-hh-fp16-fixed1e-3" \
+bash mezo.sh \
+  --result_root "${RESULT_ROOT}" \
+  --job_name "${JOB_NAME}" \
+  --dataset_mode full \
+  --logging_steps 1 \
+  --save_at_last True \
+  --zo_two_point_precision fp16 \
+  --zo_probe_every 0 \
+  --zo_probe_log_csv False \
+  --enable_additive_h_estimation True \
+  --enable_two_point_h_estimation True \
+  --h_estimation_active_source fixed \
+  --initial_h 1e-3 \
+  --update_noise_every 1 \
+  --two_point_h_refresh_every 1 \
+  --adaptive_h_estimate_num_batches 1 \
+  --adaptive_h_estimate_num_directions 1 \
+  --adaptive_h_min 1e-8 \
+  --adaptive_h_max 1e-2 \
+  --two_point_h_min 1e-8 \
+  --two_point_h_max 1e-2 \
+  --two_point_h_num_directions_g 4 \
+  --two_point_h_num_directions_l 4 \
+  --two_point_h_delta_sample_size 2048 \
+  --two_point_h_fixed_probe_batch True \
+  --two_point_h_log_csv True
+
+RUN_SUMMARY_PATH="${RESULT_ROOT}/${JOB_NAME}/seed16/run_summary.json"
+python - "${RUN_SUMMARY_PATH}" "${SUMMARY_FILE}" <<'PY'
+import json
+import os
+import sys
+run_summary_path, summary_file = sys.argv[1:]
+with open(run_summary_path, "r", encoding="utf-8") as f:
+    record = json.load(f)
+os.makedirs(os.path.dirname(summary_file), exist_ok=True)
+with open(summary_file, "a", encoding="utf-8") as out_file:
+    out_file.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+PY

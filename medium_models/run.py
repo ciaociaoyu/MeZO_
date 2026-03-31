@@ -623,6 +623,130 @@ class DynamicTrainingArguments(TrainingArguments):
         default=1000,
         metadata={"help": "Number of steps between re-estimating epsilon_f and nu3 during training"}
     )
+    enable_additive_h_estimation: bool = field(
+        default=False,
+        metadata={"help": "Also compute the legacy additive error estimation h even when it is not the active training step size."}
+    )
+    enable_two_point_h_estimation: bool = field(
+        default=False,
+        metadata={"help": "Compute the two-point simple estimation h based on Delta/G/L."}
+    )
+    h_estimation_active_source: str = field(
+        default="auto",
+        metadata={"help": "Which h drives actual training perturbations: auto, fixed, additive, or two_point."}
+    )
+    initial_h: float = field(
+        default=1e-3,
+        metadata={"help": "Initial h value used by both additive and two-point estimators."}
+    )
+    adaptive_h_ema_beta: float = field(
+        default=0.1,
+        metadata={"help": "Log-space EMA beta for the legacy additive error estimation h update."}
+    )
+    adaptive_h_estimate_num_batches: int = field(
+        default=4,
+        metadata={"help": "Number of batches used by the legacy additive error estimation refresh."}
+    )
+    adaptive_h_estimate_num_directions: int = field(
+        default=3,
+        metadata={"help": "Number of random directions used by the legacy additive error estimation refresh."}
+    )
+    adaptive_h_estimate_reduce: str = field(
+        default="mean",
+        metadata={"help": "Reduction used for the legacy additive error estimation h aggregation: mean or median."}
+    )
+    adaptive_h_probe_buffer_size: int = field(
+        default=64,
+        metadata={"help": "Rolling probe buffer size shared by the additive and two-point h estimators."}
+    )
+    adaptive_h_min: float = field(
+        default=1e-5,
+        metadata={"help": "Minimum legacy additive error estimation h."}
+    )
+    adaptive_h_max: float = field(
+        default=0.5,
+        metadata={"help": "Maximum legacy additive error estimation h."}
+    )
+    h_trunc_alpha: float = field(
+        default=1.0,
+        metadata={"help": "Legacy additive error estimation truncation scaling alpha."}
+    )
+    dh_h_growth: float = field(
+        default=2.0,
+        metadata={"help": "Growth factor used by the additive error estimation h search."}
+    )
+    dh_max_trials: int = field(
+        default=10,
+        metadata={"help": "Maximum h search trials for the additive error estimation nu3 routine."}
+    )
+    dh_test_h: float = field(
+        default=1e-2,
+        metadata={"help": "Diagnostic h used by the additive error estimation test log."}
+    )
+    nu3_retry: int = field(
+        default=3,
+        metadata={"help": "Retry count when the additive error estimation nu3 finite difference hits a numerical floor."}
+    )
+    two_point_h_refresh_every: int = field(
+        default=100,
+        metadata={"help": "Number of steps between two-point simple estimation h refreshes."}
+    )
+    two_point_h_window_g: int = field(
+        default=5,
+        metadata={"help": "Sliding-window size for G in the two-point simple estimation h scheduler."}
+    )
+    two_point_h_window_l: int = field(
+        default=5,
+        metadata={"help": "Sliding-window size for L in the two-point simple estimation h scheduler."}
+    )
+    two_point_h_window_delta: int = field(
+        default=3,
+        metadata={"help": "Sliding-window size for Delta in the two-point simple estimation h scheduler."}
+    )
+    two_point_h_num_directions_g: int = field(
+        default=4,
+        metadata={"help": "Number of directions used for the G probe in the two-point simple estimation h scheduler."}
+    )
+    two_point_h_num_directions_l: int = field(
+        default=4,
+        metadata={"help": "Number of directions used for the L probe in the two-point simple estimation h scheduler."}
+    )
+    two_point_h_beta: float = field(
+        default=0.5,
+        metadata={"help": "Log-space EMA beta for the two-point simple estimation h update."}
+    )
+    two_point_h_min: float = field(
+        default=1e-5,
+        metadata={"help": "Minimum two-point simple estimation h."}
+    )
+    two_point_h_max: float = field(
+        default=0.5,
+        metadata={"help": "Maximum two-point simple estimation h."}
+    )
+    two_point_h_q_l: float = field(
+        default=0.5,
+        metadata={"help": "Quantile used to aggregate raw L probes in the two-point simple estimation h scheduler."}
+    )
+    two_point_h_eps_num: float = field(
+        default=1e-12,
+        metadata={"help": "Small positive constant used when normalizing the two-point simple estimation curvature probe."}
+    )
+    two_point_h_c2: float = field(
+        default=1.0,
+        metadata={"help": "c2 constant used to initialize h2 in the two-point simple estimation curvature probe."}
+    )
+    two_point_h_delta_sample_size: int = field(
+        default=4096,
+        metadata={"help": "Number of parameter coordinates sampled when estimating Delta on the fp16 path."}
+    )
+    two_point_h_fixed_probe_batch: bool = field(
+        default=True,
+        metadata={"help": "Reuse a fixed probe batch for the two-point simple estimation h scheduler when possible."}
+    )
+    two_point_h_log_csv: bool = field(
+        default=True,
+        metadata={"help": "If true, append h_additive / h_two_point logs to output_dir/h_estimation.csv."}
+    )
 
     # 是否使用每层的 c 值（cs）对差分步长 h / 扰动进行缩放；
     # 说明：我们的新方法默认不需要分层缩放，因此默认 False。
@@ -738,6 +862,29 @@ def main():
         raise ValueError(f"Invalid --zo_two_point_precision={training_args.zo_two_point_precision}. Allowed: fp32, fp16")
     if int(getattr(training_args, "zo_probe_num_seeds", 16)) <= 0:
         raise ValueError("--zo_probe_num_seeds must be > 0")
+    training_args.h_estimation_active_source = str(
+        getattr(training_args, "h_estimation_active_source", "auto")
+    ).lower()
+    allowed_h_sources = {"auto", "fixed", "additive", "two_point"}
+    if training_args.h_estimation_active_source not in allowed_h_sources:
+        raise ValueError(
+            f"Invalid --h_estimation_active_source={training_args.h_estimation_active_source}. "
+            f"Allowed: {sorted(allowed_h_sources)}"
+        )
+    if training_args.h_estimation_active_source == "auto":
+        training_args.h_estimation_active_source = "additive" if bool(training_args.use_adaptive_h) else "fixed"
+    if training_args.h_estimation_active_source == "additive" and not (
+        bool(training_args.use_adaptive_h) or bool(getattr(training_args, "enable_additive_h_estimation", False))
+    ):
+        raise ValueError(
+            "--h_estimation_active_source=additive requires --use_adaptive_h or --enable_additive_h_estimation"
+        )
+    if training_args.h_estimation_active_source == "two_point" and not bool(
+        getattr(training_args, "enable_two_point_h_estimation", False)
+    ):
+        raise ValueError(
+            "--h_estimation_active_source=two_point requires --enable_two_point_h_estimation"
+        )
 
     # Append MeZO-related switches into the log filename so that runs are easier to identify.
     # USE_H  -> training_args.use_adaptive_h
@@ -1311,6 +1458,7 @@ def main():
             f"metrics_adaptiveH-{int(training_args.use_adaptive_h)}_cscale-{int(training_args.use_c_scale)}.csv",
         )
         zo_probe_csv_path = os.path.join(training_args.output_dir, "zo_directional_probe.csv")
+        h_estimation_csv_path = os.path.join(training_args.output_dir, "h_estimation.csv")
         eval_loss_last5_path = os.path.join(training_args.output_dir, "eval_loss_last5.json")
         run_summary_path = os.path.join(training_args.output_dir, "run_summary.json")
         summary_payload = {
@@ -1324,11 +1472,13 @@ def main():
             "artifacts": {
                 "metrics_csv_last_row": _read_last_csv_row(metrics_csv_path),
                 "zo_directional_probe_last_row": _read_last_csv_row(zo_probe_csv_path),
+                "h_estimation_last_row": _read_last_csv_row(h_estimation_csv_path),
                 "eval_loss_last5": _read_json_if_exists(eval_loss_last5_path),
             },
             "paths": {
                 "metrics_csv": metrics_csv_path if os.path.exists(metrics_csv_path) else None,
                 "zo_directional_probe_csv": zo_probe_csv_path if os.path.exists(zo_probe_csv_path) else None,
+                "h_estimation_csv": h_estimation_csv_path if os.path.exists(h_estimation_csv_path) else None,
                 "eval_loss_last5_json": eval_loss_last5_path if os.path.exists(eval_loss_last5_path) else None,
                 "eval_results": eval_output_files,
                 "test_results": test_output_files,

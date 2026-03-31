@@ -245,6 +245,52 @@ class Trainer(LinearHeadTrainer):
         # Track eval loss history for tail-average reporting
         self._eval_loss_history = []
 
+    def _setup_h_estimation_csv(self):
+        self._h_estimation_csv_path = None
+        self._h_estimation_csv_fields = [
+            "global_step",
+            "training_h_source",
+            "training_h",
+            "h_additive",
+            "h_two_point",
+            "h_two_point_tilde",
+            "eps_est",
+            "nu3_est",
+            "noise_est",
+            "delta_tilde",
+            "g_tilde",
+            "l_tilde",
+            "delta_hat",
+            "g_hat",
+            "l_hat",
+            "h2",
+            "two_point_precision",
+            "additive_noise_precision",
+        ]
+        if not bool(getattr(self.args, "two_point_h_log_csv", True)):
+            return
+        if not (self._should_compute_additive_h() or self._should_compute_two_point_h()):
+            return
+        base_dir = getattr(self.args, "output_dir", "./outputs") or "./outputs"
+        os.makedirs(base_dir, exist_ok=True)
+        self._h_estimation_csv_path = os.path.join(base_dir, "h_estimation.csv")
+        if not os.path.exists(self._h_estimation_csv_path):
+            with open(self._h_estimation_csv_path, "w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=self._h_estimation_csv_fields)
+                writer.writeheader()
+
+    def _append_h_estimation_row(self, row: Dict[str, Any]):
+        path = getattr(self, "_h_estimation_csv_path", None)
+        if not path:
+            return
+        try:
+            with open(path, "a", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=self._h_estimation_csv_fields)
+                payload = {k: row.get(k) for k in self._h_estimation_csv_fields}
+                writer.writerow(payload)
+        except Exception as e:
+            logger.warning(f"[h_estimation] failed to append CSV row: {type(e).__name__}: {e}")
+
     def _grad_norm_log_enabled(self) -> bool:
         v = str(os.environ.get("GRAD_NORM_LOG", "0")).strip().lower()
         return v in ("1", "true", "yes", "y", "on")
@@ -380,7 +426,7 @@ class Trainer(LinearHeadTrainer):
         if h0 is None:
             h0 = getattr(self.args, "initial_h", None)
         if h0 is None:
-            h0 = getattr(self.args, "zero_order_eps", 1e-4)
+            h0 = getattr(self.args, "zero_order_eps", 1e-3)
         return float(h0)
 
     def _smooth_h_log_ema(self, prev_h: float, new_h: float, beta: float, h_min: float, h_max: float) -> float:
@@ -459,6 +505,391 @@ class Trainer(LinearHeadTrainer):
             batches.append(dict(b) if isinstance(b, dict) else b)
 
         return batches[:num_batches]
+
+    def _should_compute_additive_h(self) -> bool:
+        return bool(getattr(self.args, "use_adaptive_h", False) or getattr(self.args, "enable_additive_h_estimation", False))
+
+    def _should_compute_two_point_h(self) -> bool:
+        return bool(getattr(self.args, "enable_two_point_h_estimation", False))
+
+    def _get_active_h_source(self) -> str:
+        src = str(getattr(self.args, "h_estimation_active_source", "fixed")).lower()
+        if src == "auto":
+            if self._should_compute_additive_h():
+                return "additive"
+            return "fixed"
+        return src
+
+    def _get_current_additive_h(self) -> float:
+        val = getattr(self, "additive_h", getattr(self, "adaptive_h", self._get_init_h()))
+        try:
+            val = float(val)
+        except Exception:
+            val = self._get_init_h()
+        if (not math.isfinite(val)) or val <= 0.0:
+            val = self._get_init_h()
+        return float(val)
+
+    def _get_current_two_point_h(self) -> float:
+        val = getattr(self, "two_point_h", self._get_init_h())
+        try:
+            val = float(val)
+        except Exception:
+            val = self._get_init_h()
+        if (not math.isfinite(val)) or val <= 0.0:
+            val = self._get_init_h()
+        return float(val)
+
+    def _get_training_step_size(self) -> float:
+        src = self._get_active_h_source()
+        if src == "additive" and self._should_compute_additive_h():
+            return self._get_current_additive_h()
+        if src == "two_point" and self._should_compute_two_point_h():
+            return self._get_current_two_point_h()
+        return float(getattr(self.args, "zero_order_eps", 1e-3))
+
+    def _should_quantize_training_perturbation(self) -> bool:
+        return self._get_active_h_source() == "two_point"
+
+    def _quantize_delta_tensor(self, delta: torch.Tensor, target_dtype: Optional[torch.dtype] = None) -> torch.Tensor:
+        precision = str(getattr(self.args, "zo_two_point_precision", "fp32")).lower()
+        if target_dtype is None:
+            target_dtype = delta.dtype
+        if precision != "fp16":
+            return delta.to(dtype=target_dtype)
+        return delta.detach().to(dtype=torch.float16).to(dtype=target_dtype)
+
+    def _copy_probe_inputs(self, inputs):
+        if not isinstance(inputs, dict):
+            return inputs
+        copied = {}
+        for k, v in inputs.items():
+            if isinstance(v, torch.Tensor):
+                copied[k] = v.detach().cpu()
+            else:
+                copied[k] = v
+        return copied
+
+    def _get_two_point_probe_batch(self, current_inputs):
+        if bool(getattr(self.args, "two_point_h_fixed_probe_batch", True)):
+            cached = getattr(self, "_two_point_fixed_probe_batch", None)
+            if cached is None:
+                cached = self._copy_probe_inputs(current_inputs)
+                self._two_point_fixed_probe_batch = cached
+            return dict(cached) if isinstance(cached, dict) else cached
+        return dict(current_inputs) if isinstance(current_inputs, dict) else current_inputs
+
+    def _build_named_parameters_to_optim(self, model: nn.Module) -> List[Tuple[str, nn.Parameter]]:
+        named_params = []
+        for name, param in model.named_parameters():
+            if self.should_optim(name, param):
+                named_params.append((name, param))
+        self.named_parameters_to_optim = named_params
+        return named_params
+
+    def _init_h_estimation_state(self):
+        h0 = self._get_init_h()
+        add_min = float(getattr(self.args, "adaptive_h_min", 1e-5))
+        add_max = float(getattr(self.args, "adaptive_h_max", 0.5))
+        tp_min = float(getattr(self.args, "two_point_h_min", 1e-5))
+        tp_max = float(getattr(self.args, "two_point_h_max", 0.5))
+        self.additive_h = float(min(add_max, max(add_min, h0)))
+        self.adaptive_h = float(self.additive_h)
+        self._additive_prev_h = float(self.additive_h)
+        self.two_point_h = float(min(tp_max, max(tp_min, h0)))
+        self.two_point_h_tilde = float("nan")
+        self._two_point_prev_h = float(self.two_point_h)
+        self.epsilon_f = float("nan")
+        self.nu3 = float("nan")
+        self._additive_last_stats = {
+            "h_additive": float(self.additive_h),
+            "eps_est": float("nan"),
+            "nu3_est": float("nan"),
+            "noise_est": float("nan"),
+        }
+        self._two_point_delta_buf = collections.deque(maxlen=max(1, int(getattr(self.args, "two_point_h_window_delta", 3))))
+        self._two_point_g_buf = collections.deque(maxlen=max(1, int(getattr(self.args, "two_point_h_window_g", 5))))
+        self._two_point_l_buf = collections.deque(maxlen=max(1, int(getattr(self.args, "two_point_h_window_l", 5))))
+        self._two_point_last_stats = {
+            "h_two_point": float(self.two_point_h),
+            "h_two_point_tilde": float("nan"),
+            "delta_tilde": float("nan"),
+            "g_tilde": float("nan"),
+            "l_tilde": float("nan"),
+            "delta_hat": float("nan"),
+            "g_hat": float("nan"),
+            "l_hat": float("nan"),
+            "h2": float("nan"),
+        }
+
+    @staticmethod
+    def _mean_or_none(xs: List[float]) -> Optional[float]:
+        vals = [float(x) for x in xs if math.isfinite(float(x))]
+        if len(vals) == 0:
+            return None
+        return float(sum(vals) / len(vals))
+
+    @staticmethod
+    def _median_or_none(xs: List[float]) -> Optional[float]:
+        vals = sorted(float(x) for x in xs if math.isfinite(float(x)))
+        if len(vals) == 0:
+            return None
+        n = len(vals)
+        if n % 2 == 1:
+            return float(vals[n // 2])
+        return float(0.5 * (vals[n // 2 - 1] + vals[n // 2]))
+
+    def _current_two_point_delta_hat(self) -> Optional[float]:
+        return self._median_or_none(list(getattr(self, "_two_point_delta_buf", [])))
+
+    def _current_two_point_g_hat(self) -> Optional[float]:
+        return self._mean_or_none(list(getattr(self, "_two_point_g_buf", [])))
+
+    def _current_two_point_l_hat(self) -> Optional[float]:
+        return self._median_or_none(list(getattr(self, "_two_point_l_buf", [])))
+
+    def _update_two_point_buffers(self, delta_tilde=None, g_tilde=None, l_tilde=None):
+        if delta_tilde is not None and math.isfinite(float(delta_tilde)) and float(delta_tilde) > 0.0:
+            self._two_point_delta_buf.append(float(delta_tilde))
+        if g_tilde is not None and math.isfinite(float(g_tilde)) and float(g_tilde) > 0.0:
+            self._two_point_g_buf.append(float(g_tilde))
+        if l_tilde is not None and math.isfinite(float(l_tilde)) and float(l_tilde) > 0.0:
+            self._two_point_l_buf.append(float(l_tilde))
+
+    def _sample_direction_and_delta(self, named_params: List[Tuple[str, nn.Parameter]], h: float) -> Tuple[List[torch.Tensor], float]:
+        delta_list = []
+        norm_sq = 0.0
+        for _, param in named_params:
+            z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+            norm_sq += float(torch.sum(z.detach().float() * z.detach().float()).item())
+            delta_list.append(self._quantize_delta_tensor(z * float(h), target_dtype=param.data.dtype))
+        return delta_list, float(norm_sq)
+
+    def _apply_delta_list(self, named_params: List[Tuple[str, nn.Parameter]], delta_list: List[torch.Tensor], multiplier: float):
+        with torch.no_grad():
+            for (_, param), delta in zip(named_params, delta_list):
+                param.data.add_(float(multiplier) * delta)
+
+    def _estimate_delta_rms_sampled(self, model: nn.Module) -> Optional[float]:
+        named_params = self._build_named_parameters_to_optim(model)
+        if len(named_params) == 0:
+            return None
+        total_numel = int(sum(param.data.numel() for _, param in named_params))
+        if total_numel <= 0:
+            return None
+        sample_size = max(1, min(int(getattr(self.args, "two_point_h_delta_sample_size", 4096)), total_numel))
+        cums = np.cumsum([int(param.data.numel()) for _, param in named_params])
+        picks = np.random.randint(0, total_numel, size=sample_size)
+        vals = []
+        for flat_idx in picks:
+            param_idx = int(np.searchsorted(cums, int(flat_idx), side="right"))
+            prev = 0 if param_idx == 0 else int(cums[param_idx - 1])
+            local_idx = int(flat_idx) - prev
+            tensor = named_params[param_idx][1].data.detach().view(-1)[local_idx].float().cpu()
+            vals.append(float(tensor.item()))
+        if len(vals) == 0:
+            return None
+        sample = torch.tensor(vals, dtype=torch.float32)
+        sample_low = sample.to(dtype=torch.float16)
+        sample_next = torch.nextafter(sample_low, torch.full_like(sample_low, float("inf")))
+        delta_i = (sample_next - sample_low).abs().to(dtype=torch.float32)
+        delta_rms = torch.sqrt(torch.mean(delta_i * delta_i))
+        val = float(delta_rms.item())
+        if (not math.isfinite(val)) or val <= 0.0:
+            return None
+        return val
+
+    def _estimate_two_point_g_raw(self, model: nn.Module, probe_inputs, h: float) -> Optional[float]:
+        if (not math.isfinite(float(h))) or float(h) <= 0.0:
+            return None
+        named_params = self._build_named_parameters_to_optim(model)
+        if len(named_params) == 0:
+            return None
+        vals = []
+        for _ in range(max(1, int(getattr(self.args, "two_point_h_num_directions_g", 4)))):
+            delta_list, _ = self._sample_direction_and_delta(named_params, float(h))
+            try:
+                self._apply_delta_list(named_params, delta_list, +1.0)
+                loss_plus = float(self._zo_two_point_forward(model, probe_inputs).item())
+            finally:
+                self._apply_delta_list(named_params, delta_list, -1.0)
+            try:
+                self._apply_delta_list(named_params, delta_list, -1.0)
+                loss_minus = float(self._zo_two_point_forward(model, probe_inputs).item())
+            finally:
+                self._apply_delta_list(named_params, delta_list, +1.0)
+            d_hat = (loss_plus - loss_minus) / (2.0 * float(h))
+            if math.isfinite(d_hat):
+                vals.append(abs(float(d_hat)))
+        if len(vals) == 0:
+            return None
+        return float(math.sqrt(math.pi / 2.0) * (sum(vals) / len(vals)))
+
+    def _estimate_two_point_l_raw(self, model: nn.Module, probe_inputs, delta_hat: float) -> Tuple[Optional[float], Optional[float]]:
+        if (not math.isfinite(float(delta_hat))) or float(delta_hat) <= 0.0:
+            return None, None
+        named_params = self._build_named_parameters_to_optim(model)
+        if len(named_params) == 0:
+            return None, None
+        c2 = float(getattr(self.args, "two_point_h_c2", 1.0))
+        eps_num = float(getattr(self.args, "two_point_h_eps_num", 1e-12))
+        q_l = min(1.0, max(0.0, float(getattr(self.args, "two_point_h_q_l", 0.5))))
+        h2 = float(max(float(delta_hat), c2 * math.sqrt(float(delta_hat))))
+        base_loss = float(self._zo_two_point_forward(model, probe_inputs).item())
+        if not math.isfinite(base_loss):
+            return None, h2
+        lambdas = []
+        for _ in range(max(1, int(getattr(self.args, "two_point_h_num_directions_l", 4)))):
+            delta_list, norm_sq = self._sample_direction_and_delta(named_params, h2)
+            try:
+                self._apply_delta_list(named_params, delta_list, +1.0)
+                loss1 = float(self._zo_two_point_forward(model, probe_inputs).item())
+                self._apply_delta_list(named_params, delta_list, +1.0)
+                loss2 = float(self._zo_two_point_forward(model, probe_inputs).item())
+            finally:
+                self._apply_delta_list(named_params, delta_list, -2.0)
+            k_hat = (loss2 - 2.0 * loss1 + base_loss) / max(h2 ** 2, 1e-30)
+            lam = abs(float(k_hat)) / (float(norm_sq) + eps_num)
+            if math.isfinite(lam):
+                lambdas.append(float(lam))
+        if len(lambdas) == 0:
+            return None, h2
+        lambdas_arr = np.asarray(lambdas, dtype=np.float64)
+        return float(np.quantile(lambdas_arr, q_l)), h2
+
+    def _refresh_additive_h_estimation(self, model, train_dataloader, current_inputs):
+        if not self._should_compute_additive_h():
+            return None
+        nb = int(getattr(self.args, "adaptive_h_estimate_num_batches", 4))
+        nd = int(getattr(self.args, "adaptive_h_estimate_num_directions", 3))
+        reduce = getattr(self.args, "adaptive_h_estimate_reduce", "mean")
+        h_min = float(getattr(self.args, "adaptive_h_min", 1e-5))
+        h_max = float(getattr(self.args, "adaptive_h_max", 0.5))
+        beta = float(getattr(self.args, "adaptive_h_ema_beta", 0.1))
+        inputs_list = self._get_h_estimation_inputs(train_dataloader, current_inputs, nb)
+        h_raw, eps_est, nu3_est = self.estimate_adaptive_h_multi(
+            model, self.compute_loss, inputs_list,
+            layer_name=None, num_directions=nd,
+            reduce=reduce, h_min=h_min, h_max=h_max
+        )
+        if (not math.isfinite(h_raw)) or (h_raw <= 0.0):
+            logger.warning(
+                f"[additive error estimation][skip] step={self.state.global_step} "
+                f"h_raw invalid -> keep h={self._get_current_additive_h():.3e}"
+            )
+            stats = {
+                "h_additive": self._get_current_additive_h(),
+                "eps_est": float(eps_est) if math.isfinite(float(eps_est)) else float("nan"),
+                "nu3_est": float(nu3_est) if math.isfinite(float(nu3_est)) else float("nan"),
+                "noise_est": float(eps_est) if math.isfinite(float(eps_est)) else float("nan"),
+            }
+            self._additive_last_stats = stats
+            return stats
+        alpha = float(getattr(self.args, "h_trunc_alpha", 1.0))
+        if math.isfinite(alpha) and alpha > 0.0:
+            h_raw = float(h_raw) * (alpha ** (-1.0 / 6.0))
+        h_sm = self._smooth_h_log_ema(self._additive_prev_h, h_raw, beta, h_min, h_max)
+        self.additive_h = float(h_sm)
+        self.adaptive_h = float(h_sm)
+        self._additive_prev_h = float(h_sm)
+        self.epsilon_f = float(eps_est)
+        self.nu3 = float(nu3_est)
+        stats = {
+            "h_additive": float(h_sm),
+            "eps_est": float(eps_est),
+            "nu3_est": float(nu3_est),
+            "noise_est": float(eps_est),
+        }
+        self._additive_last_stats = stats
+        logger.info(
+            f"[additive error estimation][update] step={self.state.global_step} "
+            f"h_raw={float(h_raw):.3e} -> h={float(h_sm):.3e} "
+            f"(eps≈{float(eps_est):.2e}, nu3≈{float(nu3_est):.2e}, nb={nb}, nd={nd}, reduce={reduce})"
+        )
+        return stats
+
+    def _refresh_two_point_h_estimation(self, model, current_inputs):
+        if not self._should_compute_two_point_h():
+            return None
+        probe_inputs = self._get_two_point_probe_batch(current_inputs)
+        delta_tilde = self._estimate_delta_rms_sampled(model)
+        delta_for_l = self._current_two_point_delta_hat()
+        if delta_for_l is None:
+            delta_for_l = delta_tilde
+        g_tilde = self._estimate_two_point_g_raw(model, probe_inputs, self._get_current_two_point_h())
+        l_tilde, h2 = self._estimate_two_point_l_raw(model, probe_inputs, delta_for_l) if delta_for_l is not None else (None, None)
+        self._update_two_point_buffers(delta_tilde=delta_tilde, g_tilde=g_tilde, l_tilde=l_tilde)
+        delta_hat = self._current_two_point_delta_hat()
+        g_hat = self._current_two_point_g_hat()
+        l_hat = self._current_two_point_l_hat()
+        h_tilde = None
+        if (
+            delta_hat is not None and g_hat is not None and l_hat is not None
+            and delta_hat > 0.0 and g_hat > 0.0 and l_hat > 0.0
+        ):
+            named_params = self._build_named_parameters_to_optim(model)
+            d_dim = max(1, int(sum(param.data.numel() for _, param in named_params)))
+            h_tilde = (
+                (float(delta_hat) ** 2 * float(g_hat) ** 2)
+                / (16.0 * (float(l_hat) ** 2) * float(d_dim) * float(d_dim + 2))
+            ) ** 0.25
+            h_min = float(getattr(self.args, "two_point_h_min", 1e-5))
+            h_max = float(getattr(self.args, "two_point_h_max", 0.5))
+            beta = float(getattr(self.args, "two_point_h_beta", 0.5))
+            h_tilde = float(min(h_max, max(h_min, h_tilde)))
+            self.two_point_h = float(self._smooth_h_log_ema(self._two_point_prev_h, h_tilde, beta, h_min, h_max))
+            self._two_point_prev_h = float(self.two_point_h)
+            self.two_point_h_tilde = float(h_tilde)
+            logger.info(
+                f"[two-point simple estimation][update] step={self.state.global_step} "
+                f"h_tilde={float(h_tilde):.3e} -> h={float(self.two_point_h):.3e} "
+                f"(Delta≈{float(delta_hat):.2e}, G≈{float(g_hat):.2e}, L≈{float(l_hat):.2e}, h2={float(h2) if h2 is not None else float('nan'):.2e})"
+            )
+        else:
+            logger.warning(
+                f"[two-point simple estimation][skip] step={self.state.global_step} "
+                f"invalid state -> keep h={self._get_current_two_point_h():.3e}"
+            )
+        stats = {
+            "h_two_point": self._get_current_two_point_h(),
+            "h_two_point_tilde": float(h_tilde) if h_tilde is not None and math.isfinite(float(h_tilde)) else float("nan"),
+            "delta_tilde": float(delta_tilde) if delta_tilde is not None and math.isfinite(float(delta_tilde)) else float("nan"),
+            "g_tilde": float(g_tilde) if g_tilde is not None and math.isfinite(float(g_tilde)) else float("nan"),
+            "l_tilde": float(l_tilde) if l_tilde is not None and math.isfinite(float(l_tilde)) else float("nan"),
+            "delta_hat": float(delta_hat) if delta_hat is not None and math.isfinite(float(delta_hat)) else float("nan"),
+            "g_hat": float(g_hat) if g_hat is not None and math.isfinite(float(g_hat)) else float("nan"),
+            "l_hat": float(l_hat) if l_hat is not None and math.isfinite(float(l_hat)) else float("nan"),
+            "h2": float(h2) if h2 is not None and math.isfinite(float(h2)) else float("nan"),
+        }
+        self._two_point_last_stats = stats
+        return stats
+
+    def _log_joint_h_estimation_step(self):
+        if not (self._should_compute_additive_h() or self._should_compute_two_point_h()):
+            return
+        additive = dict(getattr(self, "_additive_last_stats", {}) or {})
+        two_point = dict(getattr(self, "_two_point_last_stats", {}) or {})
+        row = {
+            "global_step": int(getattr(self.state, "global_step", 0)),
+            "training_h_source": self._get_active_h_source(),
+            "training_h": float(self._get_training_step_size()),
+            "h_additive": additive.get("h_additive"),
+            "h_two_point": two_point.get("h_two_point"),
+            "h_two_point_tilde": two_point.get("h_two_point_tilde"),
+            "eps_est": additive.get("eps_est"),
+            "nu3_est": additive.get("nu3_est"),
+            "noise_est": additive.get("noise_est"),
+            "delta_tilde": two_point.get("delta_tilde"),
+            "g_tilde": two_point.get("g_tilde"),
+            "l_tilde": two_point.get("l_tilde"),
+            "delta_hat": two_point.get("delta_hat"),
+            "g_hat": two_point.get("g_hat"),
+            "l_hat": two_point.get("l_hat"),
+            "h2": two_point.get("h2"),
+            "two_point_precision": str(getattr(self.args, "zo_two_point_precision", "fp32")).lower(),
+            "additive_noise_precision": str(getattr(self.args, "zo_two_point_precision", "fp32")).lower(),
+        }
+        self._append_h_estimation_row(row)
 
     def estimate_adaptive_h_multi(
         self,
@@ -1156,7 +1587,9 @@ class Trainer(LinearHeadTrainer):
 
         返回：float ν3（>0）或 NaN（表示该方向/该 batch 下 ν3 不可靠）。
         """
-        # Estimate ε_f for this context (allow override for multi-batch / multi-direction averaging)
+        # Legacy additive error estimation:
+        # ε_f is estimated from finite differences and, for this experiment, those difference evaluations
+        # must follow the fp16 two-point path.
         if eps_f_override is not None:
             eps_f = float(eps_f_override)
         else:
@@ -1166,7 +1599,7 @@ class Trainer(LinearHeadTrainer):
                     raise ValueError("invalid epsilon_f")
             except Exception:
                 eps_f = float(self.estimate_noise(model, self.compute_loss, inputs, layer_name=layer_name))
-                logger.info(f"[estimate_nu3] on-the-fly epsilon_f = {eps_f:.3e}")
+                logger.info(f"[additive error estimation][estimate_nu3] on-the-fly epsilon_f = {eps_f:.3e}")
         names, params = [], []
         for name, param in model.named_parameters():
             if self.should_optim(name, param):
@@ -1192,12 +1625,12 @@ class Trainer(LinearHeadTrainer):
         with torch.no_grad():
             for p, orig in zip(params, originals):
                 p.data.copy_(orig.to(dtype=dtype))
-            f0 = float(self.zo_forward(model, inputs))
+            f0 = float(self._zo_two_point_forward(model, inputs))
         def eval_at(alpha: float) -> float:
             try:
                 with torch.no_grad():
                     set_params(alpha)
-                    val = float(self.zo_forward(model, inputs))
+                    val = float(self._zo_two_point_forward(model, inputs))
             finally:
                 for p, orig in zip(params, originals):
                     p.data.copy_(orig.to(dtype=dtype))
@@ -1244,7 +1677,7 @@ class Trainer(LinearHeadTrainer):
         h_min, h_max = 1e-8, 5e-2
 
         # Start from current training eps (adaptive_h if enabled, else zero_order_eps)
-        eps_train = float(self.adaptive_h) if getattr(self.args, "use_adaptive_h", False) else float(getattr(self.args, "zero_order_eps", 1e-3))
+        eps_train = float(self._get_current_additive_h())
         # Hybrid warm start: theory scale for v3 (eps_f^{1/5}) but never larger than current training eps
         h_theory = float(max(eps_f, tiny) ** 0.2)
         h_start = float(min(eps_train, h_theory))
@@ -1413,7 +1846,9 @@ class Trainer(LinearHeadTrainer):
         delta = float(delta)
         if (not math.isfinite(delta)) or (delta <= 0.0):
             delta = 1e-6
-        # === Float64 precision for more stable epsilon_f / nu3 estimation ===
+        # Legacy additive error estimation:
+        # keep parameter arithmetic in float64 for stability, but evaluate the finite differences
+        # through the fp16 two-point path (_zo_two_point_forward).
         # Collect all parameters to optimize
         # 若指定 layer_name，则仅在该层参数子空间内估计 ECnoise
         names, params = [], []
@@ -1451,7 +1886,7 @@ class Trainer(LinearHeadTrainer):
             for i in range(q + 1):
                 set_params(i * delta)
                 with torch.no_grad():
-                    f_vals.append(float(self.zo_forward(model, inputs)))
+                    f_vals.append(float(self._zo_two_point_forward(model, inputs)))
         finally:
             # Restore original parameters
             for p, orig in zip(params, originals):
@@ -1466,7 +1901,7 @@ class Trainer(LinearHeadTrainer):
         gamma = (math.factorial(j)**2) / math.factorial(2*j)
         s_j_sq = gamma / (q + 1 - j) * sum(T[i][j]**2 for i in range(q + 1 - j))
         epsilon_f = math.sqrt(s_j_sq)
-        logger.info(f"Estimated epsilon_f: {epsilon_f}")
+        logger.info(f"[additive error estimation][noise] epsilon_f={epsilon_f}")
         return float(epsilon_f)
     # === End Adaptive h ===
 
@@ -1623,7 +2058,7 @@ class Trainer(LinearHeadTrainer):
 
         global_step = int(getattr(self.state, "global_step", 0))
         num_seeds = max(1, int(getattr(self.args, "zo_probe_num_seeds", 16)))
-        eps = float(self.adaptive_h) if getattr(self.args, "use_adaptive_h", False) else float(getattr(self.args, "zero_order_eps", 1e-3))
+        eps = float(self._get_training_step_size())
         precision = str(getattr(self.args, "zo_two_point_precision", "fp32")).lower()
         dir_seeds = self._zo_probe_seed_list(global_step, num_seeds)
 
@@ -1849,8 +2284,11 @@ class Trainer(LinearHeadTrainer):
         for name, param in self.named_parameters_to_optim:
             z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
             # === Begin Adaptive h (Berahas et al.) ===
-            eps = float(self.adaptive_h) if getattr(self.args, "use_adaptive_h", False) else float(self.args.zero_order_eps)
-            param.data = param.data + scaling_factor * z * eps
+            eps = float(self._get_training_step_size())
+            delta = z * (float(scaling_factor) * eps)
+            if self._should_quantize_training_perturbation():
+                delta = self._quantize_delta_tensor(delta, target_dtype=param.data.dtype)
+            param.data = param.data + delta
             # === End Adaptive h ===
         return model
 
@@ -1878,8 +2316,11 @@ class Trainer(LinearHeadTrainer):
                     z = z / c_val
 
             # === Begin Adaptive h (Berahas et al.) ===
-            eps = float(self.adaptive_h) if getattr(self.args, "use_adaptive_h", False) else float(self.args.zero_order_eps)
-            param.data = param.data + scaling_factor * z * eps
+            eps = float(self._get_training_step_size())
+            delta = z * (float(scaling_factor) * eps)
+            if self._should_quantize_training_perturbation():
+                delta = self._quantize_delta_tensor(delta, target_dtype=param.data.dtype)
+            param.data = param.data + delta
             # === End Adaptive h ===
 
         return model, random_vector
@@ -1895,8 +2336,11 @@ class Trainer(LinearHeadTrainer):
                 z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
                 random_vector[name] = z
             # === Begin Adaptive h (Berahas et al.) ===
-            eps = float(self.adaptive_h) if getattr(self.args, "use_adaptive_h", False) else float(self.args.zero_order_eps)
-            param.data = param.data + scaling_factor * z * eps
+            eps = float(self._get_training_step_size())
+            delta = z * (float(scaling_factor) * eps)
+            if self._should_quantize_training_perturbation():
+                delta = self._quantize_delta_tensor(delta, target_dtype=param.data.dtype)
+            param.data = param.data + delta
             # === End Adaptive h ===
 
         return model, random_vector
@@ -1914,8 +2358,11 @@ class Trainer(LinearHeadTrainer):
                     z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
                     random_vector[name] = z
                 # === Begin Adaptive h (Berahas et al.) ===
-                eps = float(self.adaptive_h) if getattr(self.args, "use_adaptive_h", False) else float(self.args.zero_order_eps)
-                param.data = param.data + scaling_factor * z * eps
+                eps = float(self._get_training_step_size())
+                delta = z * (float(scaling_factor) * eps)
+                if self._should_quantize_training_perturbation():
+                    delta = self._quantize_delta_tensor(delta, target_dtype=param.data.dtype)
+                param.data = param.data + delta
                 # === End Adaptive h ===
 
         return model, random_vector
@@ -1962,7 +2409,7 @@ class Trainer(LinearHeadTrainer):
                     model, z = self.perturb_single_layer(model, layer_name=layer, random_vector=z, scaling_factor=-2)
                     loss2 = self.zo_forward(model, inputs)
 
-                eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
+                eps = self._get_training_step_size()
                 projected_grad = (loss1 - loss2) / (2 * eps)
                 self.cs[layer] = torch.abs(projected_grad)
 
@@ -2223,27 +2670,19 @@ class Trainer(LinearHeadTrainer):
             )
         else:
             self._grad_norm_csv_path = None
+        self._setup_h_estimation_csv()
         _csv_pending = None  # 暂存本 step 的训练度量，待是否有 eval 再一起写入
         self.state.global_step = 0
         start_time = time.time()
         self.state.zo_forward_step = 0
-        # === Begin Adaptive h (Berahas et al.) ===
-        if getattr(self.args, "use_adaptive_h", False):
-            beta = float(getattr(self.args, "adaptive_h_ema_beta", 0.1))
-            nb = int(getattr(self.args, "adaptive_h_estimate_num_batches", 4))
-            nd = int(getattr(self.args, "adaptive_h_estimate_num_directions", 3))
-            reduce = getattr(self.args, "adaptive_h_estimate_reduce", "mean")
-            h_min = float(getattr(self.args, "adaptive_h_min", 1e-5))
-            h_max = float(getattr(self.args, "adaptive_h_max", 0.5))
-
-            h0 = self._get_init_h()
-            h0 = float(min(h_max, max(h_min, h0)))
-            self.adaptive_h = float(h0)
-            previous_adaptive_h = float(h0)
-            logger.info(f"[adaptive h][init] h0={h0:.3e}, beta={beta}")
-        else:
-            previous_adaptive_h = getattr(self, "adaptive_h", 1e-4)
-        # === End Adaptive h ===
+        self._init_h_estimation_state()
+        logger.info(
+            "[h_estimation][init] h0=%.3e active_source=%s additive=%s two_point=%s",
+            float(self._get_init_h()),
+            self._get_active_h_source(),
+            bool(self._should_compute_additive_h()),
+            bool(self._should_compute_two_point_h()),
+        )
         self.epoch = 0
         epochs_trained = 0
         steps_trained_in_current_epoch = 0
@@ -2305,7 +2744,7 @@ class Trainer(LinearHeadTrainer):
                     steps_trained_in_current_epoch -= 1
                     continue
                 # --- Rolling probe buffer for adaptive h estimation (and for h-probes when enabled) ---
-                if getattr(self.args, "use_adaptive_h", False) or self._hprobe_enabled():
+                if self._should_compute_additive_h() or self._should_compute_two_point_h() or self._hprobe_enabled():
                     self._update_h_probe_buffer(inputs)
                 # --- h-probes (Probe 1/2/3): stability / delta-loss floor / one-step gain ---
                 self._hprobe_maybe_run(model, inputs)
@@ -2385,7 +2824,7 @@ class Trainer(LinearHeadTrainer):
                                     logger.warning("NaN encountered in loss during ZO forward step.")
 
                                 # === Begin Adaptive h (Berahas et al.) ===
-                                eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
+                                eps = self._get_training_step_size()
                                 if not getattr(self.args, "zo_use_true_directional_derivative", False):
                                     projected_grad = self._zo_fd_projected_grad(loss1, loss2, eps)
                                 # Debugging: check for NaN or Inf in projected_grad
@@ -2458,7 +2897,7 @@ class Trainer(LinearHeadTrainer):
                                 logger.warning("NaN encountered in loss during ZO forward step.")
 
                             # === Begin Adaptive h (Berahas et al.) ===
-                            eps = self.adaptive_h if getattr(self.args, "use_adaptive_h", False) else self.args.zero_order_eps
+                            eps = self._get_training_step_size()
                             if not getattr(self.args, "zo_use_true_directional_derivative", False):
                                 # === Original Code ===
                                 projected_grad = self._zo_fd_projected_grad(loss1, loss2, eps)
@@ -2737,50 +3176,27 @@ class Trainer(LinearHeadTrainer):
                                 "train_acc": (None if train_acc_csv is None else float(train_acc_csv)),
                             }
 
-                # === Begin Adaptive h: update h every update_noise_every steps ===
+                additive_refreshed = False
                 if (
-                    getattr(self.args, "use_adaptive_h", False)
+                    self._should_compute_additive_h()
                     and self.state.global_step > 0
                     and (self.state.global_step % update_noise_every == 0)
                 ):
-                    beta = float(getattr(self.args, "adaptive_h_ema_beta", 0.1))
-                    nb = int(getattr(self.args, "adaptive_h_estimate_num_batches", 4))
-                    buf_size = int(getattr(self.args, "adaptive_h_probe_buffer_size", 64))
-                    nd = int(getattr(self.args, "adaptive_h_estimate_num_directions", 3))
-                    reduce = getattr(self.args, "adaptive_h_estimate_reduce", "mean")
-                    h_min = float(getattr(self.args, "adaptive_h_min", 1e-5))
-                    h_max = float(getattr(self.args, "adaptive_h_max", 0.5))
+                    self._refresh_additive_h_estimation(model, train_dataloader, inputs)
+                    additive_refreshed = True
 
-                    inputs_list = self._get_h_estimation_inputs(train_dataloader, inputs, nb)
-                    h_raw, eps_est, nu3_est = self.estimate_adaptive_h_multi(
-                        model, self.compute_loss, inputs_list,
-                        layer_name=None, num_directions=nd,
-                        reduce=reduce, h_min=h_min, h_max=h_max
-                    )
-                    # If all directions were dropped (or estimate invalid), freeze h (do not update),
-                    # but do NOT skip the rest of the training loop.
-                    if (not math.isfinite(h_raw)) or (h_raw <= 0.0):
-                        logger.warning(
-                            f"[adaptive h][skip] step={self.state.global_step} h_raw invalid -> keep h_ema={float(self.adaptive_h):.3e} "
-                            f"(nb={nb}, nd={nd}, reduce={reduce})"
-                        )
-                    else:
-                        # Apply alpha (<1) to downweight truncation error: eps* scales by alpha^{-1/6}
-                        alpha = float(getattr(self.args, "h_trunc_alpha", 1.0))
-                        if math.isfinite(alpha) and alpha > 0.0:
-                            h_raw = float(h_raw) * (alpha ** (-1.0 / 6.0))
+                two_point_every = max(1, int(getattr(self.args, "two_point_h_refresh_every", update_noise_every)))
+                two_point_refreshed = False
+                if (
+                    self._should_compute_two_point_h()
+                    and self.state.global_step > 0
+                    and (self.state.global_step % two_point_every == 0)
+                ):
+                    self._refresh_two_point_h_estimation(model, inputs)
+                    two_point_refreshed = True
 
-                        h_sm = self._smooth_h_log_ema(previous_adaptive_h, h_raw, beta, h_min, h_max)
-                        self.adaptive_h = float(h_sm)
-                        previous_adaptive_h = float(h_sm)
-                        self.epsilon_f = eps_est
-                        self.nu3 = nu3_est
-                        logger.info(
-                            f"[adaptive h][update] step={self.state.global_step} "
-                            f"h_raw={h_raw:.3e} -> h_ema={h_sm:.3e} "
-                            f"(eps≈{eps_est:.2e}, nu3≈{nu3_est:.2e}, nb={nb}, buf={buf_size}, nd={nd}, reduce={reduce})"
-                        )
-                # === End Adaptive h update ===
+                if additive_refreshed or two_point_refreshed:
+                    self._log_joint_h_estimation_step()
 
                 if self.args.max_steps > 0 and self.state.global_step > self.args.max_steps or (self.args.max_zo_forward_steps > 0 and self.state.zo_forward_step > self.args.max_zo_forward_steps):
                     epoch_iterator.close()
