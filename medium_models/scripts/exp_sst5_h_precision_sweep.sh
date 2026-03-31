@@ -29,25 +29,31 @@ SWEEP_NAME=${SWEEP_NAME:-${TASK}-roberta-large-full-fp16-h-sweep}
 EXTRA_TAG=${EXTRA_TAG:-full-fp16-h-sweep}
 SUMMARY_FILE=${SUMMARY_FILE:-${RESULT_ROOT}/${SWEEP_NAME}/summary.jsonl}
 TASK_INDEX=${TASK_INDEX:-}
+FORCE_ALL_CASES=${FORCE_ALL_CASES:-0}
+EPS_LIST_OVERRIDE=${EPS_LIST_OVERRIDE:-}
 EXTRA_PY_ARGS=("$@")
 
-EPS_LIST=(
-    1e-9
-    3e-9
-    1e-8
-    3e-8
-    1e-7
-    3e-7
-    1e-6
-    3e-6
-    1e-5
-    3e-5
-    1e-4
-    3e-4
-    1e-3
-    3e-3
-    1e-2
-)
+if [[ -n "${EPS_LIST_OVERRIDE}" ]]; then
+    read -r -a EPS_LIST <<< "${EPS_LIST_OVERRIDE}"
+else
+    EPS_LIST=(
+        1e-9
+        3e-9
+        1e-8
+        3e-8
+        1e-7
+        3e-7
+        1e-6
+        3e-6
+        1e-5
+        3e-5
+        1e-4
+        3e-4
+        1e-3
+        3e-3
+        1e-2
+    )
+fi
 
 echo "TASK=${TASK} MODEL=${MODEL} K=${K}"
 echo "DATASET_MODE=${DATASET_MODE} DATA_SEED=${DATA_SEED}"
@@ -57,6 +63,8 @@ echo "ZO_PROBE_EVERY=${ZO_PROBE_EVERY} ZO_PROBE_NUM_SEEDS=${ZO_PROBE_NUM_SEEDS}"
 echo "PRECISIONS=${PRECISIONS}"
 echo "SEEDS=${SEEDS}"
 echo "SUMMARY_FILE=${SUMMARY_FILE}"
+echo "FORCE_ALL_CASES=${FORCE_ALL_CASES}"
+echo "EPS_LIST=${EPS_LIST[*]}"
 
 read -r -a PREC_ARRAY <<< "${PRECISIONS}"
 read -r -a SEED_ARRAY <<< "${SEEDS}"
@@ -158,9 +166,12 @@ run_one_case() {
     append_case_summary "${run_summary_path}" "${prec}" "${eps}" "${seed}"
 }
 
-array_idx="${TASK_INDEX}"
-if [[ -z "${array_idx}" && -n "${SLURM_ARRAY_TASK_ID:-}" ]]; then
-    array_idx="${SLURM_ARRAY_TASK_ID}"
+array_idx=""
+if [[ "${FORCE_ALL_CASES}" != "1" ]]; then
+    array_idx="${TASK_INDEX}"
+    if [[ -z "${array_idx}" && -n "${SLURM_ARRAY_TASK_ID:-}" ]]; then
+        array_idx="${SLURM_ARRAY_TASK_ID}"
+    fi
 fi
 
 if [[ -n "${array_idx}" ]]; then

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=sst5_bs32_full_fp16_h_sweep_16
+#SBATCH --job-name=mnli_bs32_full_fp16_h_sweep_16
 #SBATCH --partition=gpu_p
 #SBATCH --array=0-1%2
 #SBATCH --ntasks=1
@@ -18,14 +18,14 @@ ml jq
 cd /home/jy03364/MeZO/medium_models
 mkdir -p jobs
 
-export TASK=sst-5
+export TASK=MNLI
 export MODEL=roberta-large
 export K=16
 export SEEDS="16"
 export DATA_SEED=16
 export DATASET_MODE=full
 
-TASK_WORKSPACE="/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/h_precision_sweep_16/workspace"
+TASK_WORKSPACE="/home/jy03364/MeZO/medium_models/sh_file/MNLI_bs8/full_fp16_h_sweep_16_workspace"
 mkdir -p "${TASK_WORKSPACE}/result" "${TASK_WORKSPACE}/launch_meta"
 
 export BS=32
@@ -42,7 +42,7 @@ export ZO_PROBE_NUM_SEEDS=16
 export ZO_PROBE_LOG_CSV=True
 export PRECISIONS="fp16"
 
-export SWEEP_NAME="sst-5-bs32-full-fp16-h-sweep-seed16"
+export SWEEP_NAME="MNLI-bs32-full-fp16-h-sweep-seed16"
 export RESULT_ROOT="${TASK_WORKSPACE}/result"
 export SUMMARY_FILE="${RESULT_ROOT}/${SWEEP_NAME}/summary.jsonl"
 export FORCE_ALL_CASES=1
