@@ -1,0 +1,7 @@
+task=SST-2
+bs=32
+seed=16
+data_seed=16
+dataset_mode=full
+active_h_source=fixed
+fixed_h=1e-3

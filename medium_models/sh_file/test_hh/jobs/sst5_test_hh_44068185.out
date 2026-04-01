@@ -1,0 +1,1244 @@
+TASK: sst-5
+K: 16
+Seed: 16
+Data seed: 16
+Dataset mode: full
+BS: 32
+LR: 1e-6
+EPS: 1e-3
+Step: 100; Eval step: 100
+Using adaptive h: False
+Dataloader shuffle: False
+Grid search tag: seed16-bs32-lr1e-6-eps1e-3-wd0-step100-evalstep100
+Tag: k16-roberta-large-mezo-test-hh-fp16-fixed1e-3
+Result root: /home/jy03364/MeZO/medium_models/sh_file/test_hh/workspaces/sst5/result
+Job name: sst5_test_hh_fp16
+Output dir: /home/jy03364/MeZO/medium_models/sh_file/test_hh/workspaces/sst5/result/sst5_test_hh_fp16/seed16
+Dataset mode: full
+Data root: data/k-shot-1k-test
+GPU数量: 1
+03/31/2026 20:01:18 - WARNING - __main__ -   Process rank: -1, device: cuda:0, n_gpu: 1, distributed training: False, 16-bits training: False
+03/31/2026 20:01:18 - INFO - __main__ -   Training/evaluation parameters DynamicTrainingArguments(
+_n_gpu=1,
+accelerator_config={'split_batches': False, 'dispatch_batches': None, 'even_batches': True, 'use_seedable_sampler': True, 'non_blocking': False, 'gradient_accumulation_kwargs': None, 'use_configured_state': False},
+adafactor=False,
+adam_beta1=0.9,
+adam_beta2=0.999,
+adam_epsilon=1e-08,
+adaptive_h_ema_beta=0.1,
+adaptive_h_estimate_num_batches=1,
+adaptive_h_estimate_num_directions=1,
+adaptive_h_estimate_reduce=mean,
+adaptive_h_max=0.01,
+adaptive_h_min=1e-08,
+adaptive_h_probe_buffer_size=64,
+adjust_for_init=False,
+array_id=-1,
+auto_find_batch_size=False,
+average_tokens_across_devices=False,
+batch_eval_metrics=False,
+bf16=False,
+bf16_full_eval=False,
+binary_classification=False,
+change_grad_estimate=False,
+data_seed=16,
+dataloader_drop_last=False,
+dataloader_num_workers=0,
+dataloader_persistent_workers=False,
+dataloader_pin_memory=True,
+dataloader_prefetch_factor=None,
+dataloader_shuffle=False,
+ddp_backend=None,
+ddp_broadcast_buffers=None,
+ddp_bucket_cap_mb=None,
+ddp_find_unused_parameters=None,
+ddp_timeout=1800,
+debug=[],
+deepspeed=None,
+dh_h_growth=2.0,
+dh_max_trials=10,
+dh_test_h=0.01,
+disable_tqdm=False,
+do_eval=True,
+do_predict=True,
+do_train=True,
+efficient_zero_order=True,
+efficient_zero_order_fp16=False,
+enable_additive_h_estimation=True,
+enable_two_point_h_estimation=True,
+eval_accumulation_steps=None,
+eval_delay=0,
+eval_do_concat_batches=True,
+eval_on_start=False,
+eval_steps=100.0,
+eval_strategy=IntervalStrategy.NO,
+eval_use_gather_object=False,
+evaluate_during_training=True,
+exclude_embeddings=False,
+exclude_first_layers=-1,
+exclude_head=False,
+f0_scaling=1.0,
+fix_layers=0,
+fp16=False,
+fp16_backend=auto,
+fp16_full_eval=False,
+fp16_opt_level=O1,
+from_linearhead=False,
+fsdp=[],
+fsdp_config={'min_num_params': 0, 'xla': False, 'xla_fsdp_v2': False, 'xla_fsdp_grad_ckpt': False},
+fsdp_min_num_params=0,
+fsdp_transformer_layer_cls_to_wrap=None,
+full_determinism=False,
+gradient_accumulation_steps=1,
+gradient_checkpointing=False,
+gradient_checkpointing_kwargs=None,
+greater_is_better=None,
+group_by_length=False,
+h_estimation_active_source=fixed,
+h_trunc_alpha=1.0,
+half_precision_backend=auto,
+head_tuning=False,
+hf_inference_model=False,
+hub_always_push=False,
+hub_model_id=None,
+hub_private_repo=None,
+hub_revision=None,
+hub_strategy=HubStrategy.EVERY_SAVE,
+hub_token=<HUB_TOKEN>,
+ignore_data_skip=False,
+include_for_metrics=[],
+include_inputs_for_metrics=False,
+include_num_input_tokens_seen=False,
+include_tokens_per_second=False,
+initial_h=0.001,
+jit_mode_eval=False,
+kernel_formula=sgd,
+kernel_gamma=1.0,
+kernel_regularization=0.0,
+kernel_solver=logistic,
+label_names=None,
+label_smoothing_factor=0.0,
+layer_wise_optim=False,
+learning_rate=1e-06,
+length_column_name=length,
+liger_kernel_config=None,
+load_best_model_at_end=False,
+load_kernels=None,
+local_rank=-1,
+log_file=log-USE_H0-USE_C0,
+log_level=passive,
+log_level_replica=warning,
+log_on_each_node=True,
+logging_dir=/home/jy03364/MeZO/medium_models/sh_file/test_hh/workspaces/sst5/result/sst5_test_hh_fp16/seed16/runs/Mar31_20-01-18_ra7-3,
+logging_first_step=False,
+logging_nan_inf_filter=True,
+logging_steps=1.0,
+logging_strategy=IntervalStrategy.STEPS,
+lp_early_stopping=False,
+lr_scheduler_kwargs={},
+lr_scheduler_type=SchedulerType.CONSTANT,
+max_grad_norm=1.0,
+max_steps=100,
+max_zo_forward_steps=0,
+mc_tol=0.1,
+metric_for_best_model=None,
+model_id=-1,
+mp_parameters=,
+neftune_noise_alpha=None,
+no_cuda=False,
+no_predict=False,
+no_reparam=False,
+no_train=False,
+norm_running_update=False,
+nu3_retry=3,
+num_hvp_vecs=128,
+num_prefix=10,
+num_train_epochs=3.0,
+only_biases=False,
+optim=OptimizerNames.ADAMW_TORCH,
+optim_args=None,
+optim_target_modules=None,
+optimize_acc=False,
+optimizer=sgd,
+optimizer_variant=,
+output_dir=/home/jy03364/MeZO/medium_models/sh_file/test_hh/workspaces/sst5/result/sst5_test_hh_fp16/seed16,
+overwrite_kernels=False,
+overwrite_output_dir=True,
+parallelism_config=None,
+past_index=-1,
+per_device_eval_batch_size=4,
+per_device_train_batch_size=32,
+prediction_loss_only=False,
+prefix_init_by_real_act=False,
+prefix_tuning=False,
+prob_as_feature=False,
+push_to_hub=False,
+push_to_hub_model_id=None,
+push_to_hub_organization=None,
+push_to_hub_token=<PUSH_TO_HUB_TOKEN>,
+random_model_init=False,
+ray_scope=last,
+recompute_norms=False,
+remove_unused_columns=True,
+report_to=[],
+restore_callback_states_from_checkpoint=False,
+resume_from_checkpoint=None,
+run_name=None,
+save_at_last=True,
+save_logit=False,
+save_logit_dir=None,
+save_on_each_node=False,
+save_only_model=False,
+save_safetensors=True,
+save_steps=500,
+save_strategy=SaveStrategy.STEPS,
+save_total_limit=None,
+scale_lr_with_samples=False,
+scale_norm_by_num_params=False,
+seed=16,
+skip_memory_metrics=True,
+sweep=False,
+sync_embedding_layers=False,
+tf32=None,
+tie_emb=False,
+torch_compile=False,
+torch_compile_backend=None,
+torch_compile_mode=None,
+torch_empty_cache_steps=None,
+torchdynamo=None,
+tpu_metrics_debug=False,
+tpu_num_cores=None,
+trainer=standard,
+two_point_h_beta=0.5,
+two_point_h_c2=1.0,
+two_point_h_delta_sample_size=2048,
+two_point_h_eps_num=1e-12,
+two_point_h_fixed_probe_batch=True,
+two_point_h_log_csv=True,
+two_point_h_max=0.01,
+two_point_h_min=1e-08,
+two_point_h_num_directions_g=4,
+two_point_h_num_directions_l=4,
+two_point_h_q_l=0.5,
+two_point_h_refresh_every=1,
+two_point_h_window_delta=3,
+two_point_h_window_g=5,
+two_point_h_window_l=5,
+untie_emb=False,
+update_noise_every=1,
+use_adaptive_h=False,
+use_c_scale=False,
+use_cpu=False,
+use_ipex=False,
+use_legacy_prediction_loop=False,
+use_liger_kernel=False,
+use_mps_device=False,
+use_zo_grad_est=False,
+warmup_ratio=0.0,
+warmup_steps=0,
+weight_decay=0.0,
+zero_order_clip_grad=False,
+zero_order_eps=0.001,
+zero_order_optim=True,
+zero_order_sample=1,
+zero_order_sample_scheduler=None,
+zero_order_use_trainer_optim=False,
+zo_by_layer=False,
+zo_probe_every=0,
+zo_probe_log_csv=False,
+zo_probe_num_seeds=16,
+zo_two_point_precision=fp16,
+zo_use_true_directional_derivative=False,
+zo_variant=None,
+)
+03/31/2026 20:01:18 - INFO - __main__ -   [zo-config] zo_two_point_precision=fp16 | zero_order_eps=0.001 | zo_use_true_directional_derivative=False
+03/31/2026 20:01:18 - INFO - __main__ -   Task name: sst-5, number of labels: 5, output mode: classification
+03/31/2026 20:01:18 - INFO - __main__ -   [data] dataset_mode requested=full resolved=full
+03/31/2026 20:01:18 - INFO - __main__ -   [data] task_dir=sst-5 data_seed=16
+03/31/2026 20:01:18 - INFO - __main__ -   [data] auto_download=0 original_data_root=/home/jy03364/MeZO/medium_models/data/original
+03/31/2026 20:01:18 - INFO - __main__ -   [data] auto_generate=0 target=/home/jy03364/MeZO/medium_models/data/k-shot-1k-test/sst-5/full-16
+03/31/2026 20:01:18 - INFO - __main__ -   [data] resolved_data_dir=/home/jy03364/MeZO/medium_models/data/k-shot-1k-test/sst-5/full-16
+03/31/2026 20:01:19 - WARNING - src.models -   By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+03/31/2026 20:01:19 - INFO - src.dataset -   Label 0 to word Ġterrible (6587)
+03/31/2026 20:01:19 - INFO - src.dataset -   Label 1 to word Ġbad (1099)
+03/31/2026 20:01:19 - INFO - src.dataset -   Label 2 to word Ġokay (8578)
+03/31/2026 20:01:19 - INFO - src.dataset -   Label 3 to word Ġgood (205)
+03/31/2026 20:01:19 - INFO - src.dataset -   Label 4 to word Ġgreat (372)
+03/31/2026 20:01:19 - INFO - src.dataset -   Total num_sample for mode train: 1
+03/31/2026 20:01:19 - INFO - src.dataset -   Creating/loading examples from dataset file at /home/jy03364/MeZO/medium_models/data/k-shot-1k-test/sst-5/full-16
+03/31/2026 20:01:19 - INFO - src.dataset -   [FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+03/31/2026 20:01:19 - INFO - src.dataset -   Creating features from dataset file at /home/jy03364/MeZO/medium_models/data/k-shot-1k-test/sst-5/full-16
+03/31/2026 20:01:19 - INFO - src.dataset -   Label 0 to word Ġterrible (6587)
+03/31/2026 20:01:19 - INFO - src.dataset -   Label 1 to word Ġbad (1099)
+03/31/2026 20:01:19 - INFO - src.dataset -   Label 2 to word Ġokay (8578)
+03/31/2026 20:01:19 - INFO - src.dataset -   Label 3 to word Ġgood (205)
+03/31/2026 20:01:19 - INFO - src.dataset -   Label 4 to word Ġgreat (372)
+03/31/2026 20:01:19 - INFO - src.dataset -   Total num_sample for mode dev: 1
+03/31/2026 20:01:19 - INFO - src.dataset -   Creating/loading examples from dataset file at /home/jy03364/MeZO/medium_models/data/k-shot-1k-test/sst-5/full-16
+/home/jy03364/MeZO/medium_models/src/dataset.py:363: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  self.support_examples, self.query_examples = torch.load(cached_features_file)
+03/31/2026 20:01:19 - INFO - src.dataset -   Loading features from cached file /home/jy03364/MeZO/medium_models/data/k-shot-1k-test/sst-5/full-16/cached_dev_RobertaTokenizerFast-roberta_128_sst-5 [took 0.012 s]
+03/31/2026 20:01:19 - INFO - src.dataset -   *** Example ***
+03/31/2026 20:01:19 - INFO - src.dataset -   guid: dev-0
+03/31/2026 20:01:19 - INFO - src.dataset -   features: OurInputFeatures(input_ids=[0, 627, 936, 19, 4133, 59, 30859, 16, 51, 33, 10, 16699, 7, 9215, 88, 1368, 1638, 783, 479, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=1, mask_pos=[21], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+03/31/2026 20:01:19 - INFO - src.dataset -   text: <s>the problem with movies about angels is they have a tendency to slip into hokum . It was<mask>.</s>
+03/31/2026 20:01:19 - INFO - src.dataset -   Label 0 to word Ġterrible (6587)
+03/31/2026 20:01:19 - INFO - src.dataset -   Label 1 to word Ġbad (1099)
+03/31/2026 20:01:19 - INFO - src.dataset -   Label 2 to word Ġokay (8578)
+03/31/2026 20:01:19 - INFO - src.dataset -   Label 3 to word Ġgood (205)
+03/31/2026 20:01:19 - INFO - src.dataset -   Label 4 to word Ġgreat (372)
+03/31/2026 20:01:19 - INFO - src.dataset -   Total num_sample for mode test: 1
+03/31/2026 20:01:19 - INFO - src.dataset -   Creating/loading examples from dataset file at /home/jy03364/MeZO/medium_models/data/k-shot-1k-test/sst-5/full-16
+03/31/2026 20:01:19 - INFO - src.dataset -   Loading features from cached file /home/jy03364/MeZO/medium_models/data/k-shot-1k-test/sst-5/full-16/cached_test_RobertaTokenizerFast-roberta_128_sst-5 [took 0.013 s]
+03/31/2026 20:01:19 - INFO - src.dataset -   *** Example ***
+03/31/2026 20:01:19 - INFO - src.dataset -   guid: test-0
+03/31/2026 20:01:19 - INFO - src.dataset -   features: OurInputFeatures(input_ids=[0, 2362, 2079, 2156, 117, 1423, 257, 2258, 2156, 45, 203, 9, 932, 479, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=1, mask_pos=[16], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+03/31/2026 20:01:19 - INFO - src.dataset -   text: <s>no movement , no yuks , not much of anything . It was<mask>.</s>
+03/31/2026 20:01:20 - INFO - src.trainer -   [dataloader][debug] self class=Trainer, get_train_dataloader=<bound method Trainer.get_train_dataloader of <src.trainer.Trainer object at 0x1459e55c80e0>>
+03/31/2026 20:01:20 - INFO - src.trainer -   [dataloader][override] Trainer.get_train_dataloader active. shuffle_raw=False type=bool -> shuffle=False; data_seed=16 seed=16 local_rank=-1
+03/31/2026 20:01:20 - INFO - src.trainer -   [dataloader][override] selected sampler=SequentialSampler
+03/31/2026 20:01:20 - INFO - src.trainer -   [dataloader] sampler=SequentialSampler, batch_sampler=BatchSampler
+03/31/2026 20:01:20 - INFO - src.trainer -   [dataloader] training uses SequentialSampler (no shuffle).
+03/31/2026 20:01:20 - INFO - src.trainer -   [dataloader] args.dataloader_shuffle=False
+03/31/2026 20:01:20 - INFO - src.trainer -   [dataloader] args.data_seed=16 args.seed=16
+03/31/2026 20:01:20 - INFO - src.trainer -   ***** Running training *****
+03/31/2026 20:01:20 - INFO - src.trainer -     Num examples = 7690
+03/31/2026 20:01:20 - INFO - src.trainer -     Num Epochs = 1
+03/31/2026 20:01:20 - INFO - src.trainer -     Instantaneous batch size per device = 32
+03/31/2026 20:01:20 - INFO - src.trainer -     Total train batch size (w. parallel, distributed & accumulation) = 32
+03/31/2026 20:01:20 - INFO - src.trainer -     Gradient Accumulation steps = 1
+03/31/2026 20:01:20 - INFO - src.trainer -     Total optimization steps = 100
+03/31/2026 20:01:20 - INFO - src.trainer -   [zo-config] zo_two_point_precision=fp16 | zero_order_eps=0.001 | zo_use_true_directional_derivative=False
+03/31/2026 20:01:20 - INFO - src.trainer -   [h_estimation][init] h0=1.000e-03 active_source=fixed additive=True two_point=True
+You're using a RobertaTokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+/home/jy03364/MeZO/medium_models/src/trainer.py:1978: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  return autocast(dtype=torch.float16)
+03/31/2026 20:01:21 - INFO - src.trainer -   {'loss': 1.594512939453125, 'learning_rate': 1e-06, 'global_step': 0, 'zo_forward_step': 2, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 0, 'eps': 0.001}
+03/31/2026 20:01:21 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:21 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.0001363578642804487
+03/31/2026 20:01:21 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=1.000000e-03, Delta(h)=2.288818e-03, Delta/eps=1.678538e+01, D(h)=3.817749e-02 (>= 10.0? True), prox+=1.104931e-02, prox-=1.259786e-02 (<= 0.1? True)
+03/31/2026 20:01:21 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.000000e-03, nu3=3.623962e+06, Δ3=7.247925e-03
+03/31/2026 20:01:21 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=6.297302e-01, Delta/eps=4.618217e+03, D(h)=6.297302e-01, snr_ok=True, prox_ok=False, prox+=9.208063e-02, prox-=2.252100e-01, nu3_test=3.811111e+05, Δ3_test=7.622223e-01
+03/31/2026 20:01:21 - INFO - src.trainer -   [additive error estimation][update] step=1 h_raw=4.833e-04 -> h=9.299e-04 (eps≈1.36e-04, nu3≈3.62e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:22 - INFO - src.trainer -   [two-point simple estimation][update] step=1 h_tilde=1.478e-04 -> h=3.844e-04 (Delta≈4.35e-05, G≈1.09e+01, L≈1.32e-05, h2=6.59e-03)
+03/31/2026 20:01:22 - INFO - src.trainer -   {'loss': 1.6322479248046875, 'learning_rate': 1e-06, 'global_step': 1, 'zo_forward_step': 43, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 1, 'eps': 0.001}
+03/31/2026 20:01:22 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:22 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00014854152280400156
+03/31/2026 20:01:22 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=9.298665e-04, Delta(h)=7.476807e-03, Delta/eps=5.033479e+01, D(h)=1.458740e-02 (>= 10.0? True), prox+=2.140698e-03, prox-=6.598762e-03 (<= 0.1? True)
+03/31/2026 20:01:22 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=9.298665e-04, nu3=3.131427e+05, Δ3=5.035400e-04
+03/31/2026 20:01:22 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=5.447388e-02, Delta/eps=3.667249e+02, D(h)=6.036377e-02, snr_ok=True, prox_ok=True, prox+=3.457273e-02, prox-=1.770058e-03, nu3_test=2.029953e+05, Δ3_test=4.059906e-01
+03/31/2026 20:01:22 - INFO - src.trainer -   [additive error estimation][update] step=2 h_raw=1.125e-03 -> h=9.477e-04 (eps≈1.49e-04, nu3≈3.13e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:23 - INFO - src.trainer -   [two-point simple estimation][update] step=2 h_tilde=1.302e-04 -> h=2.238e-04 (Delta≈4.39e-05, G≈7.31e+00, L≈1.16e-05, h2=6.59e-03)
+03/31/2026 20:01:23 - INFO - src.trainer -   {'loss': 1.415924072265625, 'learning_rate': 1e-06, 'global_step': 2, 'zo_forward_step': 84, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 2, 'eps': 0.001}
+03/31/2026 20:01:23 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:23 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=5.068429837383265e-05
+03/31/2026 20:01:23 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=9.477332e-04, Delta(h)=2.014160e-03, Delta/eps=3.973933e+01, D(h)=1.416016e-02 (>= 10.0? True), prox+=4.225995e-03, prox-=5.596089e-03 (<= 0.1? True)
+03/31/2026 20:01:24 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=9.477332e-04, nu3=1.738735e+06, Δ3=2.960205e-03
+03/31/2026 20:01:24 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.763123e-01, Delta/eps=7.424632e+03, D(h)=3.763123e-01, snr_ok=True, prox_ok=False, prox+=1.213826e-01, prox-=1.100917e-01, nu3_test=1.456985e+05, Δ3_test=2.913971e-01
+03/31/2026 20:01:24 - INFO - src.trainer -   [additive error estimation][update] step=3 h_raw=4.439e-04 -> h=8.785e-04 (eps≈5.07e-05, nu3≈1.74e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:24 - INFO - src.trainer -   [two-point simple estimation][update] step=3 h_tilde=1.492e-04 -> h=1.827e-04 (Delta≈4.41e-05, G≈8.61e+00, L≈1.05e-05, h2=6.63e-03)
+03/31/2026 20:01:24 - INFO - src.trainer -   {'loss': 1.5830230712890625, 'learning_rate': 1e-06, 'global_step': 3, 'zo_forward_step': 125, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 4, 'eps': 0.001}
+03/31/2026 20:01:24 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:25 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=3.9765665108011604e-05
+03/31/2026 20:01:25 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=8.785022e-04, Delta(h)=2.731323e-03, Delta/eps=6.868547e+01, D(h)=3.463745e-03 (>= 10.0? True), prox+=1.949786e-03, prox-=2.309669e-04 (<= 0.1? True)
+03/31/2026 20:01:25 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=8.785022e-04, nu3=4.152292e+06, Δ3=5.630493e-03
+03/31/2026 20:01:25 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.058655e-01, Delta/eps=2.662233e+03, D(h)=1.549377e-01, snr_ok=True, prox_ok=True, prox+=7.599349e-02, prox-=1.547478e-02, nu3_test=2.350883e+05, Δ3_test=4.701767e-01
+03/31/2026 20:01:25 - INFO - src.trainer -   [additive error estimation][update] step=4 h_raw=3.063e-04 -> h=7.906e-04 (eps≈3.98e-05, nu3≈4.15e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:26 - INFO - src.trainer -   [two-point simple estimation][update] step=4 h_tilde=1.470e-04 -> h=1.639e-04 (Delta≈4.43e-05, G≈8.12e+00, L≈1.02e-05, h2=6.64e-03)
+03/31/2026 20:01:26 - INFO - src.trainer -   {'loss': 1.5148162841796875, 'learning_rate': 1e-06, 'global_step': 4, 'zo_forward_step': 166, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 5, 'eps': 0.001}
+03/31/2026 20:01:26 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:26 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=8.921282140048467e-05
+03/31/2026 20:01:26 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=7.906421e-04, Delta(h)=6.256104e-04, Delta/eps=7.012561e+00, D(h)=2.165222e-02 (>= 10.0? False), prox+=7.345838e-03, prox-=6.984571e-03 (<= 0.1? True)
+03/31/2026 20:01:26 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.581284e-03, Delta(h)=1.129150e-03, Delta/eps=1.265682e+01, D(h)=4.327393e-02 (>= 10.0? True), prox+=1.453532e-02, prox-=1.399955e-02 (<= 0.1? True)
+03/31/2026 20:01:26 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.581284e-03, nu3=7.679683e+05, Δ3=6.072998e-03
+03/31/2026 20:01:26 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.823425e-01, Delta/eps=2.043905e+03, D(h)=1.823425e-01, snr_ok=True, prox_ok=True, prox+=8.556120e-02, prox-=2.683346e-02, nu3_test=9.884644e+04, Δ3_test=1.976929e-01
+03/31/2026 20:01:26 - INFO - src.trainer -   [additive error estimation][update] step=5 h_raw=7.037e-04 -> h=7.815e-04 (eps≈8.92e-05, nu3≈7.68e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:27 - INFO - src.trainer -   [two-point simple estimation][update] step=5 h_tilde=1.687e-04 -> h=1.663e-04 (Delta≈4.49e-05, G≈1.03e+01, L≈9.96e-06, h2=6.66e-03)
+03/31/2026 20:01:27 - INFO - src.trainer -   {'loss': 1.7451171875, 'learning_rate': 1e-06, 'global_step': 5, 'zo_forward_step': 209, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 6, 'eps': 0.001}
+03/31/2026 20:01:27 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:27 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=9.806072395666277e-05
+03/31/2026 20:01:27 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=7.814877e-04, Delta(h)=6.149292e-03, Delta/eps=6.270902e+01, D(h)=6.149292e-03 (>= 10.0? True), prox+=2.626763e-04, prox-=3.256163e-03 (<= 0.1? True)
+03/31/2026 20:01:27 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=7.814877e-04, nu3=9.575258e+06, Δ3=9.140015e-03
+03/31/2026 20:01:28 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.512146e-02, Delta/eps=1.542051e+02, D(h)=9.523010e-02, snr_ok=True, prox_ok=True, prox+=2.299022e-02, prox-=3.069740e-02, nu3_test=3.777313e+04, Δ3_test=7.554626e-02
+03/31/2026 20:01:28 - INFO - src.trainer -   [additive error estimation][update] step=6 h_raw=3.132e-04 -> h=7.132e-04 (eps≈9.81e-05, nu3≈9.58e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:28 - INFO - src.trainer -   [two-point simple estimation][update] step=6 h_tilde=1.776e-04 -> h=1.719e-04 (Delta≈4.49e-05, G≈1.14e+01, L≈9.95e-06, h2=6.70e-03)
+03/31/2026 20:01:28 - INFO - src.trainer -   {'loss': 1.5649261474609375, 'learning_rate': 1e-06, 'global_step': 6, 'zo_forward_step': 250, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 8, 'eps': 0.001}
+03/31/2026 20:01:28 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:29 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=5.2452665383593484e-05
+03/31/2026 20:01:29 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=7.132013e-04, Delta(h)=1.327515e-03, Delta/eps=2.530881e+01, D(h)=3.890991e-03 (>= 10.0? True), prox+=1.665498e-03, prox-=8.174705e-04 (<= 0.1? True)
+03/31/2026 20:01:29 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=7.132013e-04, nu3=3.406973e+06, Δ3=2.471924e-03
+03/31/2026 20:01:29 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=6.318207e-01, Delta/eps=1.204554e+04, D(h)=6.318207e-01, snr_ok=True, prox_ok=False, prox+=2.085411e-01, prox-=1.226565e-01, nu3_test=2.159042e+05, Δ3_test=4.318085e-01
+03/31/2026 20:01:29 - INFO - src.trainer -   [additive error estimation][update] step=7 h_raw=3.588e-04 -> h=6.658e-04 (eps≈5.25e-05, nu3≈3.41e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:30 - INFO - src.trainer -   [two-point simple estimation][update] step=7 h_tilde=2.172e-04 -> h=1.932e-04 (Delta≈4.49e-05, G≈1.28e+01, L≈7.48e-06, h2=6.70e-03)
+03/31/2026 20:01:30 - INFO - src.trainer -   {'loss': 1.4318389892578125, 'learning_rate': 1e-06, 'global_step': 7, 'zo_forward_step': 291, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 9, 'eps': 0.001}
+03/31/2026 20:01:30 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:30 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=7.931146127377836e-05
+03/31/2026 20:01:30 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=6.658477e-04, Delta(h)=4.577637e-04, Delta/eps=5.771722e+00, D(h)=4.760742e-03 (>= 10.0? False), prox+=1.814651e-03, prox-=1.499011e-03 (<= 0.1? True)
+03/31/2026 20:01:30 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.331695e-03, Delta(h)=5.950928e-04, Delta/eps=7.503238e+00, D(h)=8.590698e-03 (>= 10.0? False), prox+=3.189810e-03, prox-=2.785397e-03 (<= 0.1? True)
+03/31/2026 20:01:30 - INFO - src.trainer -   [estimate_nu3][dh-trial-2] layer=ALL h=2.663391e-03, Delta(h)=8.666992e-03, Delta/eps=1.092779e+02, D(h)=1.708984e-02 (>= 10.0? True), prox+=8.893010e-03, prox-=2.934235e-03 (<= 0.1? True)
+03/31/2026 20:01:30 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=2.663391e-03, nu3=6.836634e+05, Δ3=2.583313e-02
+03/31/2026 20:01:30 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=9.114075e-01, Delta/eps=1.149150e+04, D(h)=9.114075e-01, snr_ok=True, prox_ok=False, prox+=2.173761e-01, prox-=2.632181e-01, nu3_test=2.177658e+05, Δ3_test=4.355316e-01
+03/31/2026 20:01:30 - INFO - src.trainer -   [additive error estimation][update] step=8 h_raw=7.034e-04 -> h=6.695e-04 (eps≈7.93e-05, nu3≈6.84e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:31 - INFO - src.trainer -   [two-point simple estimation][update] step=8 h_tilde=2.279e-04 -> h=2.098e-04 (Delta≈4.42e-05, G≈1.44e+01, L≈7.48e-06, h2=6.70e-03)
+03/31/2026 20:01:31 - INFO - src.trainer -   {'loss': 1.57830810546875, 'learning_rate': 1e-06, 'global_step': 8, 'zo_forward_step': 336, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 10, 'eps': 0.001}
+03/31/2026 20:01:31 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:31 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00020986151744065233
+03/31/2026 20:01:32 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=6.695113e-04, Delta(h)=1.220703e-04, Delta/eps=5.816708e-01, D(h)=6.286621e-03 (>= 10.0? False), prox+=2.038123e-03, prox-=1.956644e-03 (<= 0.1? True)
+03/31/2026 20:01:32 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.339023e-03, Delta(h)=9.155273e-04, Delta/eps=4.362531e+00, D(h)=1.550293e-02 (>= 10.0? False), prox+=5.221476e-03, prox-=4.617733e-03 (<= 0.1? True)
+03/31/2026 20:01:32 - INFO - src.trainer -   [estimate_nu3][dh-trial-2] layer=ALL h=2.678045e-03, Delta(h)=4.455566e-03, Delta/eps=2.123098e+01, D(h)=4.013062e-02 (>= 10.0? True), prox+=1.134555e-02, prox-=1.398126e-02 (<= 0.1? True)
+03/31/2026 20:01:32 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=2.678045e-03, nu3=1.090382e+06, Δ3=4.188538e-02
+03/31/2026 20:01:32 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.053467e-01, Delta/eps=5.019819e+02, D(h)=1.529236e-01, snr_ok=True, prox_ok=True, prox+=7.590203e-02, prox-=1.513063e-02, nu3_test=1.603775e+05, Δ3_test=3.207550e-01
+03/31/2026 20:01:32 - INFO - src.trainer -   [additive error estimation][update] step=9 h_raw=8.327e-04 -> h=6.843e-04 (eps≈2.10e-04, nu3≈1.09e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:32 - INFO - src.trainer -   [two-point simple estimation][update] step=9 h_tilde=2.607e-04 -> h=2.339e-04 (Delta≈4.56e-05, G≈1.52e+01, L≈6.24e-06, h2=6.65e-03)
+03/31/2026 20:01:33 - INFO - src.trainer -   {'loss': 1.7360076904296875, 'learning_rate': 1e-06, 'global_step': 9, 'zo_forward_step': 381, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 12, 'eps': 0.001}
+03/31/2026 20:01:33 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:33 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00011911795614154724
+03/31/2026 20:01:33 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=6.842760e-04, Delta(h)=7.537842e-03, Delta/eps=6.328048e+01, D(h)=4.241943e-02 (>= 10.0? True), prox+=1.016280e-02, prox-=1.434631e-02 (<= 0.1? True)
+03/31/2026 20:01:33 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=6.842760e-04, nu3=4.667155e+06, Δ3=2.990723e-03
+03/31/2026 20:01:33 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.135162e-01, Delta/eps=1.792477e+03, D(h)=2.135162e-01, snr_ok=True, prox_ok=True, prox+=7.200733e-02, prox-=4.472757e-02, nu3_test=1.208763e+05, Δ3_test=2.417526e-01
+03/31/2026 20:01:33 - INFO - src.trainer -   [additive error estimation][update] step=10 h_raw=4.246e-04 -> h=6.524e-04 (eps≈1.19e-04, nu3≈4.67e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:34 - INFO - src.trainer -   [two-point simple estimation][update] step=10 h_tilde=2.566e-04 -> h=2.450e-04 (Delta≈4.50e-05, G≈1.46e+01, L≈6.13e-06, h2=6.75e-03)
+03/31/2026 20:01:34 - INFO - src.trainer -   {'loss': 1.67926025390625, 'learning_rate': 1e-06, 'global_step': 10, 'zo_forward_step': 422, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 13, 'eps': 0.001}
+03/31/2026 20:01:34 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:34 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=8.029613050358284e-05
+03/31/2026 20:01:34 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=6.523936e-04, Delta(h)=1.190186e-03, Delta/eps=1.482245e+01, D(h)=1.113892e-02 (>= 10.0? True), prox+=2.978039e-03, prox-=3.677006e-03 (<= 0.1? True)
+03/31/2026 20:01:34 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=6.523936e-04, nu3=1.758494e+06, Δ3=9.765625e-04
+03/31/2026 20:01:34 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=9.585571e-02, Delta/eps=1.193777e+03, D(h)=1.847839e-01, snr_ok=True, prox_ok=True, prox+=2.592942e-02, prox-=8.400628e-02, nu3_test=8.179474e+04, Δ3_test=1.635895e-01
+03/31/2026 20:01:34 - INFO - src.trainer -   [additive error estimation][update] step=11 h_raw=5.155e-04 -> h=6.372e-04 (eps≈8.03e-05, nu3≈1.76e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:35 - INFO - src.trainer -   [two-point simple estimation][update] step=11 h_tilde=2.533e-04 -> h=2.491e-04 (Delta≈4.50e-05, G≈1.45e+01, L≈6.24e-06, h2=6.71e-03)
+03/31/2026 20:01:35 - INFO - src.trainer -   {'loss': 1.6031494140625, 'learning_rate': 1e-06, 'global_step': 11, 'zo_forward_step': 463, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 14, 'eps': 0.001}
+03/31/2026 20:01:35 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:35 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=9.568732968208708e-05
+03/31/2026 20:01:36 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=6.372080e-04, Delta(h)=1.312256e-03, Delta/eps=1.371400e+01, D(h)=2.905273e-02 (>= 10.0? True), prox+=8.557710e-03, prox-=9.448206e-03 (<= 0.1? True)
+03/31/2026 20:01:36 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=6.372080e-04, nu3=1.070417e+07, Δ3=5.538940e-03
+03/31/2026 20:01:36 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.307800e-01, Delta/eps=3.456884e+03, D(h)=3.307800e-01, snr_ok=True, prox_ok=False, prox+=4.285351e-02, prox-=1.387294e-01, nu3_test=5.585480e+04, Δ3_test=1.117096e-01
+03/31/2026 20:01:36 - INFO - src.trainer -   [additive error estimation][update] step=12 h_raw=2.993e-04 -> h=5.908e-04 (eps≈9.57e-05, nu3≈1.07e+07, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:36 - INFO - src.trainer -   [two-point simple estimation][update] step=12 h_tilde=2.289e-04 -> h=2.388e-04 (Delta≈4.28e-05, G≈1.48e+01, L≈7.41e-06, h2=6.71e-03)
+03/31/2026 20:01:36 - INFO - src.trainer -   {'loss': 1.6156463623046875, 'learning_rate': 1e-06, 'global_step': 12, 'zo_forward_step': 504, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 16, 'eps': 0.001}
+03/31/2026 20:01:37 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:37 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00019668454805370564
+03/31/2026 20:01:37 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.908364e-04, Delta(h)=2.319336e-03, Delta/eps=1.179216e+01, D(h)=1.162720e-02 (>= 10.0? True), prox+=4.300974e-03, prox-=2.882852e-03 (<= 0.1? True)
+03/31/2026 20:01:37 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.908364e-04, nu3=1.590585e+06, Δ3=6.561279e-04
+03/31/2026 20:01:37 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.707916e-01, Delta/eps=8.683530e+02, D(h)=2.151337e-01, snr_ok=True, prox_ok=False, prox+=1.067678e-01, prox-=1.373372e-02, nu3_test=1.484337e+05, Δ3_test=2.968674e-01
+03/31/2026 20:01:37 - INFO - src.trainer -   [additive error estimation][update] step=13 h_raw=7.185e-04 -> h=6.025e-04 (eps≈1.97e-04, nu3≈1.59e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:38 - INFO - src.trainer -   [two-point simple estimation][update] step=13 h_tilde=2.169e-04 -> h=2.276e-04 (Delta≈4.28e-05, G≈1.32e+01, L≈7.35e-06, h2=6.55e-03)
+03/31/2026 20:01:38 - INFO - src.trainer -   {'loss': 1.7003631591796875, 'learning_rate': 1e-06, 'global_step': 13, 'zo_forward_step': 545, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 17, 'eps': 0.001}
+03/31/2026 20:01:38 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:38 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=6.461756373354999e-05
+03/31/2026 20:01:38 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=6.025110e-04, Delta(h)=4.028320e-03, Delta/eps=6.234095e+01, D(h)=1.171875e-02 (>= 10.0? True), prox+=4.629547e-03, prox-=2.255841e-03 (<= 0.1? True)
+03/31/2026 20:01:38 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=6.025110e-04, nu3=2.964927e+06, Δ3=1.296997e-03
+03/31/2026 20:01:38 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.538300e-01, Delta/eps=3.928188e+03, D(h)=2.538300e-01, snr_ok=True, prox_ok=True, prox+=4.844920e-02, prox-=8.952932e-02, nu3_test=1.083069e+05, Δ3_test=2.166138e-01
+03/31/2026 20:01:38 - INFO - src.trainer -   [additive error estimation][update] step=14 h_raw=4.029e-04 -> h=5.787e-04 (eps≈6.46e-05, nu3≈2.96e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:39 - INFO - src.trainer -   [two-point simple estimation][update] step=14 h_tilde=2.302e-04 -> h=2.289e-04 (Delta≈4.28e-05, G≈1.49e+01, L≈7.41e-06, h2=6.55e-03)
+03/31/2026 20:01:39 - INFO - src.trainer -   {'loss': 1.5333404541015625, 'learning_rate': 1e-06, 'global_step': 14, 'zo_forward_step': 586, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 18, 'eps': 0.001}
+03/31/2026 20:01:39 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:39 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=6.852312004245748e-05
+03/31/2026 20:01:39 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.787403e-04, Delta(h)=4.119873e-04, Delta/eps=6.012384e+00, D(h)=5.294800e-03 (>= 10.0? False), prox+=1.572064e-03, prox-=1.840243e-03 (<= 0.1? True)
+03/31/2026 20:01:39 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.157481e-03, Delta(h)=1.525879e-04, Delta/eps=2.226809e+00, D(h)=1.046753e-02 (>= 10.0? False), prox+=3.412936e-03, prox-=3.326215e-03 (<= 0.1? True)
+03/31/2026 20:01:39 - INFO - src.trainer -   [estimate_nu3][dh-trial-2] layer=ALL h=2.314961e-03, Delta(h)=9.613037e-03, Delta/eps=1.402890e+02, D(h)=1.394653e-02 (>= 10.0? True), prox+=7.539872e-03, prox-=1.397404e-03 (<= 0.1? True)
+03/31/2026 20:01:40 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=2.314961e-03, nu3=6.309664e+05, Δ3=1.565552e-02
+03/31/2026 20:01:40 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=8.671570e-02, Delta/eps=1.265495e+03, D(h)=8.671570e-02, snr_ok=True, prox_ok=True, prox+=3.486627e-02, prox-=1.941541e-02, nu3_test=9.486389e+04, Δ3_test=1.897278e-01
+03/31/2026 20:01:40 - INFO - src.trainer -   [additive error estimation][update] step=15 h_raw=6.881e-04 -> h=5.888e-04 (eps≈6.85e-05, nu3≈6.31e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:40 - INFO - src.trainer -   [two-point simple estimation][update] step=15 h_tilde=2.166e-04 -> h=2.227e-04 (Delta≈4.45e-05, G≈1.38e+01, L≈8.05e-06, h2=6.55e-03)
+03/31/2026 20:01:40 - INFO - src.trainer -   {'loss': 2.016204833984375, 'learning_rate': 1e-06, 'global_step': 15, 'zo_forward_step': 631, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 20, 'eps': 0.001}
+03/31/2026 20:01:40 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:41 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.0001358803519341625
+03/31/2026 20:01:41 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.888442e-04, Delta(h)=2.014160e-03, Delta/eps=1.482304e+01, D(h)=2.014160e-03 (>= 10.0? True), prox+=7.289082e-04, prox-=2.946650e-04 (<= 0.1? True)
+03/31/2026 20:01:41 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.888442e-04, nu3=6.277664e+06, Δ3=2.563477e-03
+03/31/2026 20:01:41 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=4.394836e-01, Delta/eps=3.234343e+03, D(h)=4.394836e-01, snr_ok=True, prox_ok=False, prox+=8.430521e-02, prox-=1.390354e-01, nu3_test=1.344643e+05, Δ3_test=2.689285e-01
+03/31/2026 20:01:41 - INFO - src.trainer -   [additive error estimation][update] step=16 h_raw=4.019e-04 -> h=5.668e-04 (eps≈1.36e-04, nu3≈6.28e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:42 - INFO - src.trainer -   [two-point simple estimation][update] step=16 h_tilde=2.073e-04 -> h=2.149e-04 (Delta≈4.45e-05, G≈1.17e+01, L≈7.41e-06, h2=6.67e-03)
+03/31/2026 20:01:42 - INFO - src.trainer -   {'loss': 1.5908050537109375, 'learning_rate': 1e-06, 'global_step': 16, 'zo_forward_step': 672, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 21, 'eps': 0.001}
+03/31/2026 20:01:42 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:42 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.0001214887754168736
+03/31/2026 20:01:42 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.667824e-04, Delta(h)=1.632690e-03, Delta/eps=1.343902e+01, D(h)=2.952576e-02 (>= 10.0? True), prox+=8.672714e-03, prox-=9.595053e-03 (<= 0.1? True)
+03/31/2026 20:01:42 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.667824e-04, nu3=2.388448e+06, Δ3=8.697510e-04
+03/31/2026 20:01:42 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.554169e-01, Delta/eps=2.102391e+03, D(h)=2.554169e-01, snr_ok=True, prox_ok=False, prox+=1.286791e-01, prox-=1.102634e-02, nu3_test=1.317215e+05, Δ3_test=2.634430e-01
+03/31/2026 20:01:42 - INFO - src.trainer -   [additive error estimation][update] step=17 h_raw=5.344e-04 -> h=5.635e-04 (eps≈1.21e-04, nu3≈2.39e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:43 - INFO - src.trainer -   [two-point simple estimation][update] step=17 h_tilde=2.177e-04 -> h=2.162e-04 (Delta≈4.45e-05, G≈1.28e+01, L≈7.35e-06, h2=6.67e-03)
+03/31/2026 20:01:43 - INFO - src.trainer -   {'loss': 1.81341552734375, 'learning_rate': 1e-06, 'global_step': 17, 'zo_forward_step': 713, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 22, 'eps': 0.001}
+03/31/2026 20:01:43 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:43 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=2.8884421517945728e-05
+03/31/2026 20:01:43 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.634553e-04, Delta(h)=4.425049e-04, Delta/eps=1.531985e+01, D(h)=4.425049e-04 (>= 10.0? True), prox+=8.538106e-05, prox-=1.622115e-04 (<= 0.1? True)
+03/31/2026 20:01:43 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.634553e-04, nu3=6.354742e+06, Δ3=2.273560e-03
+03/31/2026 20:01:44 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=9.260559e-02, Delta/eps=3.206074e+03, D(h)=1.136627e-01, snr_ok=True, prox_ok=True, prox+=5.771398e-02, prox-=5.857286e-03, nu3_test=1.703720e+05, Δ3_test=3.407440e-01
+03/31/2026 20:01:44 - INFO - src.trainer -   [additive error estimation][update] step=18 h_raw=2.389e-04 -> h=5.171e-04 (eps≈2.89e-05, nu3≈6.35e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:44 - INFO - src.trainer -   [two-point simple estimation][update] step=18 h_tilde=2.627e-04 -> h=2.383e-04 (Delta≈4.61e-05, G≈1.25e+01, L≈5.13e-06, h2=6.67e-03)
+03/31/2026 20:01:44 - INFO - src.trainer -   {'loss': 1.6717376708984375, 'learning_rate': 1e-06, 'global_step': 18, 'zo_forward_step': 754, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 24, 'eps': 0.001}
+03/31/2026 20:01:44 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:45 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=1.9600269437660414e-05
+03/31/2026 20:01:45 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.171261e-04, Delta(h)=1.815796e-03, Delta/eps=9.264137e+01, D(h)=2.720642e-02 (>= 10.0? True), prox+=8.643647e-03, prox-=7.627989e-03 (<= 0.1? True)
+03/31/2026 20:01:45 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.171261e-04, nu3=9.930550e+05, Δ3=2.746582e-04
+03/31/2026 20:01:45 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=7.263184e-03, Delta/eps=3.705655e+02, D(h)=4.205322e-02, snr_ok=True, prox_ok=True, prox+=1.045181e-02, prox-=1.459960e-02, nu3_test=1.857910e+05, Δ3_test=3.715820e-01
+03/31/2026 20:01:45 - INFO - src.trainer -   [additive error estimation][update] step=19 h_raw=3.898e-04 -> h=5.027e-04 (eps≈1.96e-05, nu3≈9.93e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:45 - INFO - src.trainer -   [two-point simple estimation][update] step=19 h_tilde=2.347e-04 -> h=2.365e-04 (Delta≈4.28e-05, G≈1.08e+01, L≈5.13e-06, h2=6.79e-03)
+03/31/2026 20:01:46 - INFO - src.trainer -   {'loss': 1.7794036865234375, 'learning_rate': 1e-06, 'global_step': 19, 'zo_forward_step': 795, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 25, 'eps': 0.001}
+03/31/2026 20:01:46 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:46 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00016857912181915817
+03/31/2026 20:01:46 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.027095e-04, Delta(h)=6.866455e-04, Delta/eps=4.073135e+00, D(h)=2.229309e-02 (>= 10.0? False), prox+=6.118269e-03, prox-=6.465073e-03 (<= 0.1? True)
+03/31/2026 20:01:46 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.005419e-03, Delta(h)=1.113892e-03, Delta/eps=6.607530e+00, D(h)=4.478455e-02 (>= 10.0? False), prox+=1.236616e-02, prox-=1.283025e-02 (<= 0.1? True)
+03/31/2026 20:01:46 - INFO - src.trainer -   [estimate_nu3][dh-trial-2] layer=ALL h=2.010838e-03, Delta(h)=1.464844e-03, Delta/eps=8.689354e+00, D(h)=9.365845e-02 (>= 10.0? False), prox+=2.610634e-02, prox-=2.622943e-02 (<= 0.1? True)
+03/31/2026 20:01:46 - INFO - src.trainer -   [estimate_nu3][dh-trial-3] layer=ALL h=4.021676e-03, Delta(h)=2.645874e-02, Delta/eps=1.569515e+02, D(h)=1.901245e-01 (>= 10.0? True), prox+=6.132960e-02, prox-=4.429230e-02 (<= 0.1? True)
+03/31/2026 20:01:46 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=4.021676e-03, nu3=1.471664e+06, Δ3=1.914520e-01
+03/31/2026 20:01:46 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.047577e-01, Delta/eps=1.214609e+03, D(h)=2.168427e-01, snr_ok=True, prox_ok=False, prox+=3.410412e-03, prox-=1.193840e-01, nu3_test=1.735535e+05, Δ3_test=3.471069e-01
+03/31/2026 20:01:46 - INFO - src.trainer -   [additive error estimation][update] step=20 h_raw=7.004e-04 -> h=5.197e-04 (eps≈1.69e-04, nu3≈1.47e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:47 - INFO - src.trainer -   [two-point simple estimation][update] step=20 h_tilde=2.655e-04 -> h=2.506e-04 (Delta≈4.61e-05, G≈1.19e+01, L≈4.76e-06, h2=6.54e-03)
+03/31/2026 20:01:47 - INFO - src.trainer -   {'loss': 1.6359405517578125, 'learning_rate': 1e-06, 'global_step': 20, 'zo_forward_step': 842, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 26, 'eps': 0.001}
+03/31/2026 20:01:47 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:47 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00016209545994980606
+03/31/2026 20:01:47 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.196640e-04, Delta(h)=2.059937e-03, Delta/eps=1.270817e+01, D(h)=4.592896e-03 (>= 10.0? True), prox+=7.666657e-04, prox-=2.015197e-03 (<= 0.1? True)
+03/31/2026 20:01:47 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.196640e-04, nu3=1.576595e+06, Δ3=4.425049e-04
+03/31/2026 20:01:48 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=7.328796e-02, Delta/eps=4.521284e+02, D(h)=2.220612e-01, snr_ok=True, prox_ok=True, prox+=4.506462e-02, prox-=8.211716e-02, nu3_test=1.422806e+05, Δ3_test=2.845612e-01
+03/31/2026 20:01:48 - INFO - src.trainer -   [additive error estimation][update] step=21 h_raw=6.757e-04 -> h=5.335e-04 (eps≈1.62e-04, nu3≈1.58e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:48 - INFO - src.trainer -   [two-point simple estimation][update] step=21 h_tilde=3.184e-04 -> h=2.824e-04 (Delta≈4.70e-05, G≈1.44e+01, L≈4.08e-06, h2=6.79e-03)
+03/31/2026 20:01:48 - INFO - src.trainer -   {'loss': 1.5622100830078125, 'learning_rate': 1e-06, 'global_step': 21, 'zo_forward_step': 883, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 28, 'eps': 0.001}
+03/31/2026 20:01:48 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:49 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=9.750513464701749e-05
+03/31/2026 20:01:49 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.334857e-04, Delta(h)=1.068115e-04, Delta/eps=1.095445e+00, D(h)=9.902954e-03 (>= 10.0? False), prox+=3.203313e-03, prox-=3.125152e-03 (<= 0.1? True)
+03/31/2026 20:01:49 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.066971e-03, Delta(h)=6.561279e-04, Delta/eps=6.729163e+00, D(h)=2.012634e-02 (>= 10.0? False), prox+=6.650780e-03, prox-=6.192251e-03 (<= 0.1? True)
+03/31/2026 20:01:49 - INFO - src.trainer -   [estimate_nu3][dh-trial-2] layer=ALL h=2.133943e-03, Delta(h)=4.470825e-03, Delta/eps=4.585220e+01, D(h)=4.457092e-02 (>= 10.0? True), prox+=1.283278e-02, prox-=1.545177e-02 (<= 0.1? True)
+03/31/2026 20:01:49 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=2.133943e-03, nu3=8.416599e+05, Δ3=1.635742e-02
+03/31/2026 20:01:49 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=7.296753e-02, Delta/eps=7.483455e+02, D(h)=1.875916e-01, snr_ok=True, prox_ok=True, prox+=3.668184e-02, prox-=7.696607e-02, nu3_test=4.080429e+05, Δ3_test=8.160858e-01
+03/31/2026 20:01:49 - INFO - src.trainer -   [additive error estimation][update] step=22 h_raw=7.031e-04 -> h=5.484e-04 (eps≈9.75e-05, nu3≈8.42e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:50 - INFO - src.trainer -   [two-point simple estimation][update] step=22 h_tilde=3.293e-04 -> h=3.050e-04 (Delta≈4.74e-05, G≈1.40e+01, L≈3.75e-06, h2=6.85e-03)
+03/31/2026 20:01:50 - INFO - src.trainer -   {'loss': 1.854278564453125, 'learning_rate': 1e-06, 'global_step': 22, 'zo_forward_step': 928, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 29, 'eps': 0.001}
+03/31/2026 20:01:50 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:50 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=3.964349687733942e-05
+03/31/2026 20:01:50 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.484170e-04, Delta(h)=3.189087e-03, Delta/eps=8.044414e+01, D(h)=7.980347e-03 (>= 10.0? True), prox+=3.024418e-03, prox-=1.301295e-03 (<= 0.1? True)
+03/31/2026 20:01:50 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.484170e-04, nu3=2.035214e+06, Δ3=6.713867e-04
+03/31/2026 20:01:50 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.940674e-01, Delta/eps=7.417796e+03, D(h)=2.940674e-01, snr_ok=True, prox_ok=False, prox+=1.094000e-01, prox-=5.033610e-02, nu3_test=8.297348e+04, Δ3_test=1.659470e-01
+03/31/2026 20:01:50 - INFO - src.trainer -   [additive error estimation][update] step=23 h_raw=3.881e-04 -> h=5.298e-04 (eps≈3.96e-05, nu3≈2.04e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:51 - INFO - src.trainer -   [two-point simple estimation][update] step=23 h_tilde=3.217e-04 -> h=3.132e-04 (Delta≈4.74e-05, G≈1.33e+01, L≈3.75e-06, h2=6.89e-03)
+03/31/2026 20:01:51 - INFO - src.trainer -   {'loss': 1.6190032958984375, 'learning_rate': 1e-06, 'global_step': 23, 'zo_forward_step': 969, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 30, 'eps': 0.001}
+03/31/2026 20:01:51 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:51 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=9.738566741655378e-05
+03/31/2026 20:01:51 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.297723e-04, Delta(h)=2.258301e-03, Delta/eps=2.318925e+01, D(h)=2.258301e-03 (>= 10.0? True), prox+=1.367808e-03, prox-=2.833744e-05 (<= 0.1? True)
+03/31/2026 20:01:51 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.297723e-04, nu3=8.979671e+06, Δ3=2.670288e-03
+03/31/2026 20:01:52 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=4.480438e-01, Delta/eps=4.600716e+03, D(h)=4.480438e-01, snr_ok=True, prox_ok=False, prox+=1.627598e-01, prox-=7.660907e-02, nu3_test=2.195282e+05, Δ3_test=4.390564e-01
+03/31/2026 20:01:52 - INFO - src.trainer -   [additive error estimation][update] step=24 h_raw=3.192e-04 -> h=5.036e-04 (eps≈9.74e-05, nu3≈8.98e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:52 - INFO - src.trainer -   [two-point simple estimation][update] step=24 h_tilde=3.071e-04 -> h=3.101e-04 (Delta≈4.55e-05, G≈1.27e+01, L≈3.75e-06, h2=6.89e-03)
+03/31/2026 20:01:52 - INFO - src.trainer -   {'loss': 1.7650146484375, 'learning_rate': 1e-06, 'global_step': 24, 'zo_forward_step': 1010, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 32, 'eps': 0.001}
+03/31/2026 20:01:52 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:53 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00012144884221544741
+03/31/2026 20:01:53 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.036075e-04, Delta(h)=2.075195e-03, Delta/eps=1.708699e+01, D(h)=2.075195e-03 (>= 10.0? True), prox+=7.767929e-05, prox-=1.096141e-03 (<= 0.1? True)
+03/31/2026 20:01:53 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.036075e-04, nu3=5.495427e+06, Δ3=1.403809e-03
+03/31/2026 20:01:53 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.104187e-01, Delta/eps=1.732571e+03, D(h)=2.104187e-01, snr_ok=True, prox_ok=False, prox+=1.031236e-01, prox-=1.589836e-02, nu3_test=1.375275e+05, Δ3_test=2.750549e-01
+03/31/2026 20:01:53 - INFO - src.trainer -   [additive error estimation][update] step=25 h_raw=4.047e-04 -> h=4.927e-04 (eps≈1.21e-04, nu3≈5.50e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:53 - INFO - src.trainer -   [two-point simple estimation][update] step=25 h_tilde=2.782e-04 -> h=2.937e-04 (Delta≈4.52e-05, G≈1.09e+01, L≈3.91e-06, h2=6.74e-03)
+03/31/2026 20:01:54 - INFO - src.trainer -   {'loss': 1.679931640625, 'learning_rate': 1e-06, 'global_step': 25, 'zo_forward_step': 1051, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 33, 'eps': 0.001}
+03/31/2026 20:01:54 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:54 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00012800568951082243
+03/31/2026 20:01:54 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=4.927198e-04, Delta(h)=3.662109e-04, Delta/eps=2.860896e+00, D(h)=4.153442e-02 (>= 10.0? False), prox+=1.236004e-02, prox-=1.242365e-02 (<= 0.1? True)
+03/31/2026 20:01:54 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=9.854397e-04, Delta(h)=2.716064e-03, Delta/eps=2.121831e+01, D(h)=8.053589e-02 (>= 10.0? True), prox+=2.336406e-02, prox-=2.438545e-02 (<= 0.1? True)
+03/31/2026 20:01:54 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=9.854397e-04, nu3=5.070573e+06, Δ3=9.704590e-03
+03/31/2026 20:01:54 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.778717e-01, Delta/eps=1.389561e+03, D(h)=1.778717e-01, snr_ok=True, prox_ok=True, prox+=8.710184e-03, prox-=8.926903e-02, nu3_test=2.039185e+05, Δ3_test=4.078369e-01
+03/31/2026 20:01:54 - INFO - src.trainer -   [additive error estimation][update] step=26 h_raw=4.231e-04 -> h=4.853e-04 (eps≈1.28e-04, nu3≈5.07e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:55 - INFO - src.trainer -   [two-point simple estimation][update] step=26 h_tilde=2.319e-04 -> h=2.610e-04 (Delta≈4.52e-05, G≈9.34e+00, L≈4.81e-06, h2=6.72e-03)
+03/31/2026 20:01:55 - INFO - src.trainer -   {'loss': 1.6651458740234375, 'learning_rate': 1e-06, 'global_step': 26, 'zo_forward_step': 1094, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 34, 'eps': 0.001}
+03/31/2026 20:01:55 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:55 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=9.05940405810388e-05
+03/31/2026 20:01:55 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=4.852697e-04, Delta(h)=0.000000e+00, Delta/eps=0.000000e+00, D(h)=6.011963e-03 (>= 10.0? False), prox+=1.804426e-03, prox-=1.807688e-03 (<= 0.1? True)
+03/31/2026 20:01:55 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=9.705394e-04, Delta(h)=9.613037e-04, Delta/eps=1.061111e+01, D(h)=1.094055e-02 (>= 10.0? True), prox+=3.565910e-03, prox-=3.000578e-03 (<= 0.1? True)
+03/31/2026 20:01:55 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=9.705394e-04, nu3=2.854149e+06, Δ3=5.218506e-03
+03/31/2026 20:01:56 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.039886e-01, Delta/eps=1.147853e+03, D(h)=1.068268e-01, snr_ok=True, prox_ok=True, prox+=8.533754e-04, prox-=5.960979e-02, nu3_test=1.319122e+05, Δ3_test=2.638245e-01
+03/31/2026 20:01:56 - INFO - src.trainer -   [additive error estimation][update] step=27 h_raw=4.566e-04 -> h=4.823e-04 (eps≈9.06e-05, nu3≈2.85e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:56 - INFO - src.trainer -   [two-point simple estimation][update] step=27 h_tilde=2.137e-04 -> h=2.362e-04 (Delta≈4.52e-05, G≈1.20e+01, L≈7.25e-06, h2=6.72e-03)
+03/31/2026 20:01:56 - INFO - src.trainer -   {'loss': 1.3077850341796875, 'learning_rate': 1e-06, 'global_step': 27, 'zo_forward_step': 1137, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 36, 'eps': 0.001}
+03/31/2026 20:01:56 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:57 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.0001445899427510562
+03/31/2026 20:01:57 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=4.823286e-04, Delta(h)=2.365112e-03, Delta/eps=1.635738e+01, D(h)=2.365112e-03 (>= 10.0? True), prox+=8.391962e-04, prox-=9.425612e-04 (<= 0.1? True)
+03/31/2026 20:01:57 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=4.823286e-04, nu3=2.651708e+06, Δ3=5.950928e-04
+03/31/2026 20:01:57 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.132935e-01, Delta/eps=2.166772e+03, D(h)=3.132935e-01, snr_ok=True, prox_ok=False, prox+=3.647248e-02, prox-=1.655386e-01, nu3_test=6.427383e+04, Δ3_test=1.285477e-01
+03/31/2026 20:01:57 - INFO - src.trainer -   [additive error estimation][update] step=28 h_raw=5.469e-04 -> h=4.884e-04 (eps≈1.45e-04, nu3≈2.65e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:57 - INFO - src.trainer -   [two-point simple estimation][update] step=28 h_tilde=2.856e-04 -> h=2.597e-04 (Delta≈4.48e-05, G≈1.43e+01, L≈4.81e-06, h2=6.72e-03)
+03/31/2026 20:01:58 - INFO - src.trainer -   {'loss': 1.58447265625, 'learning_rate': 1e-06, 'global_step': 28, 'zo_forward_step': 1178, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 37, 'eps': 0.001}
+03/31/2026 20:01:58 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:58 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.0001244004693782431
+03/31/2026 20:01:58 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=4.884272e-04, Delta(h)=8.697510e-04, Delta/eps=6.991541e+00, D(h)=8.926392e-03 (>= 10.0? False), prox+=2.549468e-03, prox-=3.090342e-03 (<= 0.1? True)
+03/31/2026 20:01:58 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=9.768543e-04, Delta(h)=2.548218e-03, Delta/eps=2.048399e+01, D(h)=1.649475e-02 (>= 10.0? True), prox+=4.413284e-03, prox-=5.989921e-03 (<= 0.1? True)
+03/31/2026 20:01:58 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=9.768543e-04, nu3=3.953191e+06, Δ3=7.369995e-03
+03/31/2026 20:01:58 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.420502e-01, Delta/eps=1.945734e+03, D(h)=2.420502e-01, snr_ok=True, prox_ok=True, prox+=4.623702e-02, prox-=9.478644e-02, nu3_test=2.108765e+04, Δ3_test=4.217529e-02
+03/31/2026 20:01:58 - INFO - src.trainer -   [additive error estimation][update] step=29 h_raw=4.553e-04 -> h=4.850e-04 (eps≈1.24e-04, nu3≈3.95e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:01:59 - INFO - src.trainer -   [two-point simple estimation][update] step=29 h_tilde=2.784e-04 -> h=2.689e-04 (Delta≈4.46e-05, G≈1.36e+01, L≈4.81e-06, h2=6.69e-03)
+03/31/2026 20:01:59 - INFO - src.trainer -   {'loss': 1.7029876708984375, 'learning_rate': 1e-06, 'global_step': 29, 'zo_forward_step': 1221, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 38, 'eps': 0.001}
+03/31/2026 20:01:59 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:01:59 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=7.625578879832923e-05
+03/31/2026 20:01:59 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=4.850126e-04, Delta(h)=1.373291e-03, Delta/eps=1.800901e+01, D(h)=5.401611e-03 (>= 10.0? True), prox+=1.184334e-03, prox-=1.987876e-03 (<= 0.1? True)
+03/31/2026 20:01:59 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=4.850126e-04, nu3=1.578131e+07, Δ3=3.601074e-03
+03/31/2026 20:02:00 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.992340e-01, Delta/eps=2.612707e+03, D(h)=1.992340e-01, snr_ok=True, prox_ok=True, prox+=5.785295e-02, prox-=5.929747e-02, nu3_test=8.026123e+04, Δ3_test=1.605225e-01
+03/31/2026 20:02:00 - INFO - src.trainer -   [additive error estimation][update] step=30 h_raw=2.438e-04 -> h=4.528e-04 (eps≈7.63e-05, nu3≈1.58e+07, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:00 - INFO - src.trainer -   [two-point simple estimation][update] step=30 h_tilde=2.957e-04 -> h=2.820e-04 (Delta≈4.44e-05, G≈1.57e+01, L≈4.88e-06, h2=6.68e-03)
+03/31/2026 20:02:00 - INFO - src.trainer -   {'loss': 1.535980224609375, 'learning_rate': 1e-06, 'global_step': 30, 'zo_forward_step': 1262, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 40, 'eps': 0.001}
+03/31/2026 20:02:00 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:00 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00012005897341531082
+03/31/2026 20:02:01 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=4.527788e-04, Delta(h)=4.425049e-04, Delta/eps=3.685729e+00, D(h)=4.396057e-02 (>= 10.0? False), prox+=1.448900e-02, prox-=1.400139e-02 (<= 0.1? True)
+03/31/2026 20:02:01 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=9.055576e-04, Delta(h)=3.662109e-03, Delta/eps=3.050259e+01, D(h)=8.731079e-02 (>= 10.0? True), prox+=2.968503e-02, prox-=2.656986e-02 (<= 0.1? True)
+03/31/2026 20:02:01 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=9.055576e-04, nu3=4.643872e+06, Δ3=6.896973e-03
+03/31/2026 20:02:01 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=8.136749e-02, Delta/eps=6.777294e+02, D(h)=2.452927e-01, snr_ok=True, prox_ok=True, prox+=5.348981e-02, prox-=9.632396e-02, nu3_test=8.699989e+04, Δ3_test=1.739998e-01
+03/31/2026 20:02:01 - INFO - src.trainer -   [additive error estimation][update] step=31 h_raw=4.265e-04 -> h=4.501e-04 (eps≈1.20e-04, nu3≈4.64e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:01 - INFO - src.trainer -   [two-point simple estimation][update] step=31 h_tilde=2.953e-04 -> h=2.885e-04 (Delta≈4.31e-05, G≈1.61e+01, L≈4.88e-06, h2=6.67e-03)
+03/31/2026 20:02:02 - INFO - src.trainer -   {'loss': 1.8100738525390625, 'learning_rate': 1e-06, 'global_step': 31, 'zo_forward_step': 1305, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 41, 'eps': 0.001}
+03/31/2026 20:02:02 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:02 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00023187586417255644
+03/31/2026 20:02:02 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=4.500755e-04, Delta(h)=1.754761e-03, Delta/eps=7.567673e+00, D(h)=2.479553e-02 (>= 10.0? False), prox+=7.421055e-03, prox-=6.398902e-03 (<= 0.1? True)
+03/31/2026 20:02:02 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=9.001509e-04, Delta(h)=5.920410e-03, Delta/eps=2.553267e+01, D(h)=5.041504e-02 (>= 10.0? True), prox+=1.574629e-02, prox-=1.228389e-02 (<= 0.1? True)
+03/31/2026 20:02:02 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=9.001509e-04, nu3=1.359839e+05, Δ3=1.983643e-04
+03/31/2026 20:02:02 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.977692e-01, Delta/eps=8.529097e+02, D(h)=1.977692e-01, snr_ok=True, prox_ok=True, prox+=9.782145e-02, prox-=1.273521e-02, nu3_test=2.161980e+05, Δ3_test=4.323959e-01
+03/31/2026 20:02:02 - INFO - src.trainer -   [additive error estimation][update] step=32 h_raw=1.723e-03 -> h=5.147e-04 (eps≈2.32e-04, nu3≈1.36e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:03 - INFO - src.trainer -   [two-point simple estimation][update] step=32 h_tilde=2.690e-04 -> h=2.786e-04 (Delta≈4.44e-05, G≈1.30e+01, L≈4.88e-06, h2=6.57e-03)
+03/31/2026 20:02:03 - INFO - src.trainer -   {'loss': 1.634002685546875, 'learning_rate': 1e-06, 'global_step': 32, 'zo_forward_step': 1348, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 42, 'eps': 0.001}
+03/31/2026 20:02:03 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:03 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00014048586249296765
+03/31/2026 20:02:03 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.147382e-04, Delta(h)=1.556396e-03, Delta/eps=1.107867e+01, D(h)=4.852295e-03 (>= 10.0? True), prox+=1.009101e-03, prox-=1.964122e-03 (<= 0.1? True)
+03/31/2026 20:02:03 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.147382e-04, nu3=3.692111e+06, Δ3=1.007080e-03
+03/31/2026 20:02:04 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.285767e-01, Delta/eps=1.627044e+03, D(h)=2.285767e-01, snr_ok=True, prox_ok=True, prox+=8.056791e-02, prox-=4.986270e-02, nu3_test=1.303101e+04, Δ3_test=2.606201e-02
+03/31/2026 20:02:04 - INFO - src.trainer -   [additive error estimation][update] step=33 h_raw=4.851e-04 -> h=5.117e-04 (eps≈1.40e-04, nu3≈3.69e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:04 - INFO - src.trainer -   [two-point simple estimation][update] step=33 h_tilde=2.122e-04 -> h=2.431e-04 (Delta≈4.42e-05, G≈1.10e+01, L≈6.59e-06, h2=6.67e-03)
+03/31/2026 20:02:04 - INFO - src.trainer -   {'loss': 1.5908355712890625, 'learning_rate': 1e-06, 'global_step': 33, 'zo_forward_step': 1389, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 43, 'eps': 0.001}
+03/31/2026 20:02:04 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:04 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=9.895690385722968e-05
+03/31/2026 20:02:05 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.116941e-04, Delta(h)=2.212524e-03, Delta/eps=2.235846e+01, D(h)=9.109497e-03 (>= 10.0? True), prox+=2.161728e-03, prox-=3.536129e-03 (<= 0.1? True)
+03/31/2026 20:02:05 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.116941e-04, nu3=1.651417e+06, Δ3=4.425049e-04
+03/31/2026 20:02:05 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.028748e-01, Delta/eps=1.039591e+03, D(h)=1.582336e-01, snr_ok=True, prox_ok=True, prox+=7.564853e-02, prox-=1.735121e-02, nu3_test=2.758026e+05, Δ3_test=5.516052e-01
+03/31/2026 20:02:05 - INFO - src.trainer -   [additive error estimation][update] step=34 h_raw=5.644e-04 -> h=5.167e-04 (eps≈9.90e-05, nu3≈1.65e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:05 - INFO - src.trainer -   [two-point simple estimation][update] step=34 h_tilde=2.372e-04 -> h=2.402e-04 (Delta≈4.59e-05, G≈1.32e+01, L≈6.59e-06, h2=6.65e-03)
+03/31/2026 20:02:05 - INFO - src.trainer -   {'loss': 1.678070068359375, 'learning_rate': 1e-06, 'global_step': 34, 'zo_forward_step': 1430, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 45, 'eps': 0.001}
+03/31/2026 20:02:05 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:06 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.0001854795618261565
+03/31/2026 20:02:06 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.167333e-04, Delta(h)=5.798340e-04, Delta/eps=3.126134e+00, D(h)=5.706787e-03 (>= 10.0? False), prox+=1.886792e-03, prox-=1.536379e-03 (<= 0.1? True)
+03/31/2026 20:02:06 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.033467e-03, Delta(h)=2.197266e-03, Delta/eps=1.184640e+01, D(h)=1.104736e-02 (>= 10.0? True), prox+=3.975087e-03, prox-=2.649128e-03 (<= 0.1? True)
+03/31/2026 20:02:06 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.033467e-03, nu3=1.223416e+06, Δ3=2.700806e-03
+03/31/2026 20:02:06 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.320801e-01, Delta/eps=7.121004e+02, D(h)=2.522583e-01, snr_ok=True, prox_ok=False, prox+=3.606888e-02, prox-=1.034211e-01, nu3_test=2.935257e+05, Δ3_test=5.870514e-01
+03/31/2026 20:02:06 - INFO - src.trainer -   [additive error estimation][update] step=35 h_raw=7.690e-04 -> h=5.377e-04 (eps≈1.85e-04, nu3≈1.22e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:07 - INFO - src.trainer -   [two-point simple estimation][update] step=35 h_tilde=2.257e-04 -> h=2.328e-04 (Delta≈4.59e-05, G≈1.19e+01, L≈6.59e-06, h2=6.78e-03)
+03/31/2026 20:02:07 - INFO - src.trainer -   {'loss': 1.661041259765625, 'learning_rate': 1e-06, 'global_step': 35, 'zo_forward_step': 1473, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 46, 'eps': 0.001}
+03/31/2026 20:02:07 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:07 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00012551841918185492
+03/31/2026 20:02:07 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.376932e-04, Delta(h)=1.403809e-03, Delta/eps=1.118408e+01, D(h)=1.403809e-03 (>= 10.0? True), prox+=6.609628e-04, prox-=1.836008e-04 (<= 0.1? True)
+03/31/2026 20:02:07 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.376932e-04, nu3=1.325105e+06, Δ3=4.119873e-04
+03/31/2026 20:02:07 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=8.705139e-02, Delta/eps=6.935348e+02, D(h)=2.279205e-01, snr_ok=True, prox_ok=True, prox+=4.237506e-02, prox-=8.654709e-02, nu3_test=3.108902e+05, Δ3_test=6.217804e-01
+03/31/2026 20:02:07 - INFO - src.trainer -   [additive error estimation][update] step=36 h_raw=6.574e-04 -> h=5.486e-04 (eps≈1.26e-04, nu3≈1.33e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:08 - INFO - src.trainer -   [two-point simple estimation][update] step=36 h_tilde=2.615e-04 -> h=2.467e-04 (Delta≈4.59e-05, G≈1.29e+01, L≈5.30e-06, h2=6.78e-03)
+03/31/2026 20:02:08 - INFO - src.trainer -   {'loss': 1.640533447265625, 'learning_rate': 1e-06, 'global_step': 36, 'zo_forward_step': 1514, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 47, 'eps': 0.001}
+03/31/2026 20:02:08 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:08 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00011251740420343494
+03/31/2026 20:02:08 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.486142e-04, Delta(h)=1.159668e-03, Delta/eps=1.030657e+01, D(h)=1.953125e-02 (>= 10.0? True), prox+=5.631905e-03, prox-=6.302931e-03 (<= 0.1? True)
+03/31/2026 20:02:09 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.486142e-04, nu3=5.082550e+05, Δ3=1.678467e-04
+03/31/2026 20:02:09 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.498718e-01, Delta/eps=1.331988e+03, D(h)=1.498718e-01, snr_ok=True, prox_ok=True, prox+=4.565016e-02, prox-=4.219534e-02, nu3_test=1.111526e+05, Δ3_test=2.223053e-01
+03/31/2026 20:02:09 - INFO - src.trainer -   [additive error estimation][update] step=37 h_raw=8.725e-04 -> h=5.747e-04 (eps≈1.13e-04, nu3≈5.08e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:09 - INFO - src.trainer -   [two-point simple estimation][update] step=37 h_tilde=2.923e-04 -> h=2.686e-04 (Delta≈4.54e-05, G≈1.35e+01, L≈4.39e-06, h2=6.78e-03)
+03/31/2026 20:02:09 - INFO - src.trainer -   {'loss': 1.7407684326171875, 'learning_rate': 1e-06, 'global_step': 37, 'zo_forward_step': 1555, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 49, 'eps': 0.001}
+03/31/2026 20:02:09 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:10 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00016016883723099469
+03/31/2026 20:02:10 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.746662e-04, Delta(h)=2.716064e-03, Delta/eps=1.695751e+01, D(h)=4.882812e-03 (>= 10.0? True), prox+=6.200548e-04, prox-=2.169840e-03 (<= 0.1? True)
+03/31/2026 20:02:10 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.746662e-04, nu3=5.467415e+06, Δ3=2.075195e-03
+03/31/2026 20:02:10 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=5.685425e-02, Delta/eps=3.549645e+02, D(h)=1.355286e-01, snr_ok=True, prox_ok=True, prox+=5.218111e-02, prox-=2.251410e-02, nu3_test=2.281189e+05, Δ3_test=4.562378e-01
+03/31/2026 20:02:10 - INFO - src.trainer -   [additive error estimation][update] step=38 h_raw=4.446e-04 -> h=5.601e-04 (eps≈1.60e-04, nu3≈5.47e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:11 - INFO - src.trainer -   [two-point simple estimation][update] step=38 h_tilde=2.729e-04 -> h=2.707e-04 (Delta≈4.29e-05, G≈1.24e+01, L≈4.39e-06, h2=6.74e-03)
+03/31/2026 20:02:11 - INFO - src.trainer -   {'loss': 1.6266021728515625, 'learning_rate': 1e-06, 'global_step': 38, 'zo_forward_step': 1596, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 50, 'eps': 0.001}
+03/31/2026 20:02:11 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:11 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=9.701638402717182e-05
+03/31/2026 20:02:11 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.601074e-04, Delta(h)=3.662109e-04, Delta/eps=3.774733e+00, D(h)=1.641846e-02 (>= 10.0? False), prox+=4.905893e-03, prox-=5.155026e-03 (<= 0.1? True)
+03/31/2026 20:02:11 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.120215e-03, Delta(h)=3.204346e-04, Delta/eps=3.302891e+00, D(h)=3.111267e-02 (>= 10.0? False), prox+=9.561649e-03, prox-=9.457129e-03 (<= 0.1? True)
+03/31/2026 20:02:11 - INFO - src.trainer -   [estimate_nu3][dh-trial-2] layer=ALL h=2.240430e-03, Delta(h)=9.918213e-03, Delta/eps=1.022323e+02, D(h)=5.453491e-02 (>= 10.0? True), prox+=1.941105e-02, prox-=1.370300e-02 (<= 0.1? True)
+03/31/2026 20:02:11 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=2.240430e-03, nu3=2.503355e+05, Δ3=5.630493e-03
+03/31/2026 20:02:11 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.096771e-01, Delta/eps=3.192009e+03, D(h)=3.096771e-01, snr_ok=True, prox_ok=False, prox+=6.142126e-02, prox-=1.109370e-01, nu3_test=1.626587e+04, Δ3_test=3.253174e-02
+03/31/2026 20:02:11 - INFO - src.trainer -   [additive error estimation][update] step=39 h_raw=1.052e-03 -> h=5.965e-04 (eps≈9.70e-05, nu3≈2.50e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:12 - INFO - src.trainer -   [two-point simple estimation][update] step=39 h_tilde=2.488e-04 -> h=2.595e-04 (Delta≈4.29e-05, G≈1.03e+01, L≈4.39e-06, h2=6.55e-03)
+03/31/2026 20:02:12 - INFO - src.trainer -   {'loss': 1.6970977783203125, 'learning_rate': 1e-06, 'global_step': 39, 'zo_forward_step': 1641, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 51, 'eps': 0.001}
+03/31/2026 20:02:12 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:12 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00011799691729236575
+03/31/2026 20:02:12 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.965209e-04, Delta(h)=4.562378e-03, Delta/eps=3.866523e+01, D(h)=4.197693e-02 (>= 10.0? True), prox+=1.105879e-02, prox-=1.356919e-02 (<= 0.1? True)
+03/31/2026 20:02:12 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.965209e-04, nu3=7.583952e+06, Δ3=3.219604e-03
+03/31/2026 20:02:13 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.133423e-01, Delta/eps=9.605529e+02, D(h)=1.490173e-01, snr_ok=True, prox_ok=True, prox+=1.054464e-02, prox-=7.196611e-02, nu3_test=1.468658e+04, Δ3_test=2.937317e-02
+03/31/2026 20:02:13 - INFO - src.trainer -   [additive error estimation][update] step=40 h_raw=3.601e-04 -> h=5.672e-04 (eps≈1.18e-04, nu3≈7.58e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:13 - INFO - src.trainer -   [two-point simple estimation][update] step=40 h_tilde=2.373e-04 -> h=2.482e-04 (Delta≈4.43e-05, G≈1.04e+01, L≈4.99e-06, h2=6.55e-03)
+03/31/2026 20:02:13 - INFO - src.trainer -   {'loss': 1.7928314208984375, 'learning_rate': 1e-06, 'global_step': 40, 'zo_forward_step': 1682, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 53, 'eps': 0.001}
+03/31/2026 20:02:13 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:14 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00016771369058234703
+03/31/2026 20:02:14 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.671522e-04, Delta(h)=1.785278e-03, Delta/eps=1.064480e+01, D(h)=9.231567e-03 (>= 10.0? True), prox+=3.075481e-03, prox-=2.074407e-03 (<= 0.1? True)
+03/31/2026 20:02:14 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.671522e-04, nu3=5.018483e+05, Δ3=1.831055e-04
+03/31/2026 20:02:14 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.468567e-01, Delta/eps=1.471893e+03, D(h)=2.468567e-01, snr_ok=True, prox_ok=False, prox+=3.143636e-02, prox-=1.063895e-01, nu3_test=9.543610e+04, Δ3_test=1.908722e-01
+03/31/2026 20:02:14 - INFO - src.trainer -   [additive error estimation][update] step=41 h_raw=1.001e-03 -> h=6.003e-04 (eps≈1.68e-04, nu3≈5.02e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:15 - INFO - src.trainer -   [two-point simple estimation][update] step=41 h_tilde=1.838e-04 -> h=2.136e-04 (Delta≈4.49e-05, G≈8.42e+00, L≈6.87e-06, h2=6.65e-03)
+03/31/2026 20:02:15 - INFO - src.trainer -   {'loss': 1.6880035400390625, 'learning_rate': 1e-06, 'global_step': 41, 'zo_forward_step': 1723, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 54, 'eps': 0.001}
+03/31/2026 20:02:15 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:15 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00047414093683207086
+03/31/2026 20:02:15 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=6.002980e-04, Delta(h)=1.281738e-03, Delta/eps=2.703285e+00, D(h)=8.117676e-03 (>= 10.0? False), prox+=2.048805e-03, prox-=2.822891e-03 (<= 0.1? True)
+03/31/2026 20:02:15 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.200596e-03, Delta(h)=3.540039e-03, Delta/eps=7.466217e+00, D(h)=1.345825e-02 (>= 10.0? False), prox+=2.969854e-03, prox-=5.105034e-03 (<= 0.1? True)
+03/31/2026 20:02:15 - INFO - src.trainer -   [estimate_nu3][dh-trial-2] layer=ALL h=2.401192e-03, Delta(h)=1.667786e-02, Delta/eps=3.517489e+01, D(h)=1.667786e-02 (>= 10.0? True), prox+=4.674268e-04, prox-=9.550170e-03 (<= 0.1? True)
+03/31/2026 20:02:15 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=2.401192e-03, nu3=4.303882e+05, Δ3=1.191711e-02
+03/31/2026 20:02:15 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.131592e-01, Delta/eps=2.386615e+02, D(h)=1.131592e-01, snr_ok=True, prox_ok=True, prox+=2.475911e-02, prox-=4.084252e-02, nu3_test=4.089355e+04, Δ3_test=8.178711e-02
+03/31/2026 20:02:15 - INFO - src.trainer -   [additive error estimation][update] step=42 h_raw=1.490e-03 -> h=6.574e-04 (eps≈4.74e-04, nu3≈4.30e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:16 - INFO - src.trainer -   [two-point simple estimation][update] step=42 h_tilde=1.695e-04 -> h=1.903e-04 (Delta≈4.49e-05, G≈8.13e+00, L≈7.79e-06, h2=6.70e-03)
+03/31/2026 20:02:16 - INFO - src.trainer -   {'loss': 1.596343994140625, 'learning_rate': 1e-06, 'global_step': 42, 'zo_forward_step': 1768, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 55, 'eps': 0.001}
+03/31/2026 20:02:16 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:16 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00016077942098313103
+03/31/2026 20:02:16 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=6.574093e-04, Delta(h)=1.647949e-03, Delta/eps=1.024975e+01, D(h)=1.898193e-02 (>= 10.0? True), prox+=6.342237e-03, prox-=5.300733e-03 (<= 0.1? True)
+03/31/2026 20:02:16 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=6.574093e-04, nu3=1.691699e+06, Δ3=9.613037e-04
+03/31/2026 20:02:17 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.617859e-02, Delta/eps=2.250200e+02, D(h)=1.473541e-01, snr_ok=True, prox_ok=True, prox+=5.340983e-02, prox-=3.417865e-02, nu3_test=1.100578e+05, Δ3_test=2.201157e-01
+03/31/2026 20:02:17 - INFO - src.trainer -   [additive error estimation][update] step=43 h_raw=6.582e-04 -> h=6.575e-04 (eps≈1.61e-04, nu3≈1.69e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:17 - INFO - src.trainer -   [two-point simple estimation][update] step=43 h_tilde=1.652e-04 -> h=1.773e-04 (Delta≈4.38e-05, G≈1.01e+01, L≈9.96e-06, h2=6.70e-03)
+03/31/2026 20:02:17 - INFO - src.trainer -   {'loss': 1.5765838623046875, 'learning_rate': 1e-06, 'global_step': 43, 'zo_forward_step': 1809, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 57, 'eps': 0.001}
+03/31/2026 20:02:17 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:18 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00024077157174194375
+03/31/2026 20:02:18 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=6.574860e-04, Delta(h)=3.280640e-03, Delta/eps=1.362553e+01, D(h)=1.152039e-02 (>= 10.0? True), prox+=4.697655e-03, prox-=2.627533e-03 (<= 0.1? True)
+03/31/2026 20:02:18 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=6.574860e-04, nu3=2.201123e+06, Δ3=1.251221e-03
+03/31/2026 20:02:18 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=5.389709e-01, Delta/eps=2.238516e+03, D(h)=5.389709e-01, snr_ok=True, prox_ok=False, prox+=1.562425e-02, prox-=2.469128e-01, nu3_test=1.741028e+05, Δ3_test=3.482056e-01
+03/31/2026 20:02:18 - INFO - src.trainer -   [additive error estimation][update] step=44 h_raw=6.898e-04 -> h=6.606e-04 (eps≈2.41e-04, nu3≈2.20e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:18 - INFO - src.trainer -   [two-point simple estimation][update] step=44 h_tilde=1.943e-04 -> h=1.856e-04 (Delta≈4.38e-05, G≈1.40e+01, L≈9.96e-06, h2=6.62e-03)
+03/31/2026 20:02:19 - INFO - src.trainer -   {'loss': 1.529510498046875, 'learning_rate': 1e-06, 'global_step': 44, 'zo_forward_step': 1850, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 58, 'eps': 0.001}
+03/31/2026 20:02:19 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:19 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.0001385108119862087
+03/31/2026 20:02:19 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=6.606437e-04, Delta(h)=4.882812e-03, Delta/eps=3.525221e+01, D(h)=1.171875e-02 (>= 10.0? True), prox+=2.203705e-03, prox-=5.323365e-03 (<= 0.1? True)
+03/31/2026 20:02:19 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=6.606437e-04, nu3=8.731767e+05, Δ3=5.035400e-04
+03/31/2026 20:02:19 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=7.156525e-01, Delta/eps=5.166762e+03, D(h)=7.156525e-01, snr_ok=True, prox_ok=False, prox+=2.607760e-01, prox-=9.799450e-02, nu3_test=5.550003e+05, Δ3_test=1.110001e+00
+03/31/2026 20:02:19 - INFO - src.trainer -   [additive error estimation][update] step=45 h_raw=7.807e-04 -> h=6.718e-04 (eps≈1.39e-04, nu3≈8.73e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:20 - INFO - src.trainer -   [two-point simple estimation][update] step=45 h_tilde=2.136e-04 -> h=1.991e-04 (Delta≈4.41e-05, G≈1.68e+01, L≈9.96e-06, h2=6.62e-03)
+03/31/2026 20:02:20 - INFO - src.trainer -   {'loss': 1.5883941650390625, 'learning_rate': 1e-06, 'global_step': 45, 'zo_forward_step': 1891, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 59, 'eps': 0.001}
+03/31/2026 20:02:20 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:20 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=4.918839739853761e-05
+03/31/2026 20:02:20 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=6.717701e-04, Delta(h)=1.037598e-03, Delta/eps=2.109436e+01, D(h)=1.922607e-02 (>= 10.0? True), prox+=5.683498e-03, prox-=6.292109e-03 (<= 0.1? True)
+03/31/2026 20:02:20 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=6.717701e-04, nu3=1.109856e+07, Δ3=6.729126e-03
+03/31/2026 20:02:20 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=8.273773e-01, Delta/eps=1.682058e+04, D(h)=8.273773e-01, snr_ok=True, prox_ok=False, prox+=2.083988e-01, prox-=2.024323e-01, nu3_test=8.010864e+03, Δ3_test=1.602173e-02
+03/31/2026 20:02:20 - INFO - src.trainer -   [additive error estimation][update] step=46 h_raw=2.369e-04 -> h=6.053e-04 (eps≈4.92e-05, nu3≈1.11e+07, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:21 - INFO - src.trainer -   [two-point simple estimation][update] step=46 h_tilde=2.251e-04 -> h=2.117e-04 (Delta≈4.41e-05, G≈1.86e+01, L≈9.96e-06, h2=6.64e-03)
+03/31/2026 20:02:21 - INFO - src.trainer -   {'loss': 1.5797576904296875, 'learning_rate': 1e-06, 'global_step': 46, 'zo_forward_step': 1932, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 60, 'eps': 0.001}
+03/31/2026 20:02:21 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:21 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00017833318723040536
+03/31/2026 20:02:21 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=6.052793e-04, Delta(h)=4.577637e-04, Delta/eps=2.566901e+00, D(h)=6.713867e-03 (>= 10.0? False), prox+=2.269194e-03, prox-=1.975599e-03 (<= 0.1? True)
+03/31/2026 20:02:22 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.210559e-03, Delta(h)=1.953125e-03, Delta/eps=1.095211e+01, D(h)=1.544189e-02 (>= 10.0? True), prox+=4.268016e-03, prox-=5.473874e-03 (<= 0.1? True)
+03/31/2026 20:02:22 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.210559e-03, nu3=4.261930e+06, Δ3=1.512146e-02
+03/31/2026 20:02:22 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=9.542847e-02, Delta/eps=5.351133e+02, D(h)=1.953735e-01, snr_ok=True, prox_ok=True, prox+=8.426032e-02, prox-=3.162387e-02, nu3_test=8.261108e+04, Δ3_test=1.652222e-01
+03/31/2026 20:02:22 - INFO - src.trainer -   [additive error estimation][update] step=47 h_raw=5.007e-04 -> h=5.939e-04 (eps≈1.78e-04, nu3≈4.26e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:22 - INFO - src.trainer -   [two-point simple estimation][update] step=47 h_tilde=2.245e-04 -> h=2.180e-04 (Delta≈4.53e-05, G≈1.81e+01, L≈9.96e-06, h2=6.64e-03)
+03/31/2026 20:02:22 - INFO - src.trainer -   {'loss': 1.5494232177734375, 'learning_rate': 1e-06, 'global_step': 47, 'zo_forward_step': 1975, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 62, 'eps': 0.001}
+03/31/2026 20:02:22 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:23 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.0001005904156573797
+03/31/2026 20:02:23 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.939070e-04, Delta(h)=1.617432e-03, Delta/eps=1.607938e+01, D(h)=2.139282e-02 (>= 10.0? True), prox+=7.427620e-03, prox-=6.342929e-03 (<= 0.1? True)
+03/31/2026 20:02:23 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.939070e-04, nu3=1.056167e+06, Δ3=4.425049e-04
+03/31/2026 20:02:23 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.692322e-01, Delta/eps=3.670650e+03, D(h)=3.692322e-01, snr_ok=True, prox_ok=False, prox+=1.207722e-01, prox-=9.174443e-02, nu3_test=6.572723e+03, Δ3_test=1.314545e-02
+03/31/2026 20:02:23 - INFO - src.trainer -   [additive error estimation][update] step=48 h_raw=6.586e-04 -> h=6.001e-04 (eps≈1.01e-04, nu3≈1.06e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:24 - INFO - src.trainer -   [two-point simple estimation][update] step=48 h_tilde=2.111e-04 -> h=2.145e-04 (Delta≈4.48e-05, G≈1.72e+01, L≈1.06e-05, h2=6.73e-03)
+03/31/2026 20:02:24 - INFO - src.trainer -   {'loss': 1.51324462890625, 'learning_rate': 1e-06, 'global_step': 48, 'zo_forward_step': 2016, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 63, 'eps': 0.001}
+03/31/2026 20:02:24 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:24 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=7.925027831221246e-05
+03/31/2026 20:02:24 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=6.000832e-04, Delta(h)=1.205444e-03, Delta/eps=1.521060e+01, D(h)=1.771545e-02 (>= 10.0? True), prox+=5.395379e-03, prox-=6.216785e-03 (<= 0.1? True)
+03/31/2026 20:02:24 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=6.000832e-04, nu3=1.482876e+06, Δ3=6.408691e-04
+03/31/2026 20:02:24 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=6.797791e-01, Delta/eps=8.577624e+03, D(h)=6.797791e-01, snr_ok=True, prox_ok=False, prox+=1.324507e-01, prox-=2.272227e-01, nu3_test=2.478409e+05, Δ3_test=4.956818e-01
+03/31/2026 20:02:24 - INFO - src.trainer -   [additive error estimation][update] step=49 h_raw=5.433e-04 -> h=5.941e-04 (eps≈7.93e-05, nu3≈1.48e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:25 - INFO - src.trainer -   [two-point simple estimation][update] step=49 h_tilde=1.960e-04 -> h=2.051e-04 (Delta≈4.48e-05, G≈1.49e+01, L≈1.06e-05, h2=6.70e-03)
+03/31/2026 20:02:25 - INFO - src.trainer -   {'loss': 1.7054290771484375, 'learning_rate': 1e-06, 'global_step': 49, 'zo_forward_step': 2057, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 64, 'eps': 0.001}
+03/31/2026 20:02:25 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:25 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=9.782300063979863e-05
+03/31/2026 20:02:25 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.941429e-04, Delta(h)=1.251221e-03, Delta/eps=1.279066e+01, D(h)=8.087158e-03 (>= 10.0? True), prox+=2.698698e-03, prox-=1.971623e-03 (<= 0.1? True)
+03/31/2026 20:02:25 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.941429e-04, nu3=1.855186e+06, Δ3=7.781982e-04
+03/31/2026 20:02:26 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.133270e-01, Delta/eps=1.158491e+03, D(h)=1.133270e-01, snr_ok=True, prox_ok=True, prox+=3.233570e-02, prox-=3.108711e-02, nu3_test=1.226120e+05, Δ3_test=2.452240e-01
+03/31/2026 20:02:26 - INFO - src.trainer -   [additive error estimation][update] step=50 h_raw=5.408e-04 -> h=5.886e-04 (eps≈9.78e-05, nu3≈1.86e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:26 - INFO - src.trainer -   [two-point simple estimation][update] step=50 h_tilde=1.754e-04 -> h=1.896e-04 (Delta≈4.48e-05, G≈1.19e+01, L≈1.06e-05, h2=6.70e-03)
+03/31/2026 20:02:26 - INFO - src.trainer -   {'loss': 1.63043212890625, 'learning_rate': 1e-06, 'global_step': 50, 'zo_forward_step': 2098, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 66, 'eps': 0.001}
+03/31/2026 20:02:26 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:27 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00014040988124555697
+03/31/2026 20:02:27 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.885829e-04, Delta(h)=1.602173e-03, Delta/eps=1.141068e+01, D(h)=2.574158e-02 (>= 10.0? True), prox+=8.383234e-03, prox-=7.346454e-03 (<= 0.1? True)
+03/31/2026 20:02:27 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.885829e-04, nu3=6.136363e+06, Δ3=2.502441e-03
+03/31/2026 20:02:27 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.746582e-04, Delta/eps=1.956117e+00, D(h)=1.447449e-01, snr_ok=False, prox_ok=True, prox+=4.446108e-02, prox-=4.241403e-02, nu3_test=2.769241e+05, Δ3_test=5.538483e-01
+03/31/2026 20:02:27 - INFO - src.trainer -   [additive error estimation][update] step=51 h_raw=4.095e-04 -> h=5.676e-04 (eps≈1.40e-04, nu3≈6.14e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:28 - INFO - src.trainer -   [two-point simple estimation][update] step=51 h_tilde=1.643e-04 -> h=1.765e-04 (Delta≈4.51e-05, G≈1.05e+01, L≈1.07e-05, h2=6.70e-03)
+03/31/2026 20:02:28 - INFO - src.trainer -   {'loss': 1.6883544921875, 'learning_rate': 1e-06, 'global_step': 51, 'zo_forward_step': 2139, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 67, 'eps': 0.001}
+03/31/2026 20:02:28 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:28 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00011530234062080421
+03/31/2026 20:02:28 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.676062e-04, Delta(h)=3.265381e-03, Delta/eps=2.832016e+01, D(h)=9.948730e-03 (>= 10.0? True), prox+=2.032275e-03, prox-=4.002070e-03 (<= 0.1? True)
+03/31/2026 20:02:28 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.676062e-04, nu3=3.212472e+06, Δ3=1.174927e-03
+03/31/2026 20:02:28 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.782349e-01, Delta/eps=3.280375e+03, D(h)=3.782349e-01, snr_ok=True, prox_ok=False, prox+=7.772034e-02, prox-=1.272151e-01, nu3_test=1.986008e+05, Δ3_test=3.972015e-01
+03/31/2026 20:02:28 - INFO - src.trainer -   [additive error estimation][update] step=52 h_raw=4.757e-04 -> h=5.577e-04 (eps≈1.15e-04, nu3≈3.21e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:29 - INFO - src.trainer -   [two-point simple estimation][update] step=52 h_tilde=1.698e-04 -> h=1.731e-04 (Delta≈4.51e-05, G≈1.12e+01, L≈1.07e-05, h2=6.71e-03)
+03/31/2026 20:02:29 - INFO - src.trainer -   {'loss': 1.705474853515625, 'learning_rate': 1e-06, 'global_step': 52, 'zo_forward_step': 2180, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 68, 'eps': 0.001}
+03/31/2026 20:02:29 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:29 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=6.596963529506268e-05
+03/31/2026 20:02:29 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.576732e-04, Delta(h)=2.288818e-04, Delta/eps=3.469503e+00, D(h)=6.607056e-03 (>= 10.0? False), prox+=1.869560e-03, prox-=2.007492e-03 (<= 0.1? True)
+03/31/2026 20:02:29 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.115346e-03, Delta(h)=2.105713e-03, Delta/eps=3.191943e+01, D(h)=1.083374e-02 (>= 10.0? True), prox+=2.556585e-03, prox-=3.799896e-03 (<= 0.1? True)
+03/31/2026 20:02:30 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.115346e-03, nu3=4.063547e+06, Δ3=1.127625e-02
+03/31/2026 20:02:30 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.620087e-01, Delta/eps=3.971656e+03, D(h)=2.620087e-01, snr_ok=True, prox_ok=True, prox+=5.098786e-02, prox-=9.104091e-02, nu3_test=5.012512e+03, Δ3_test=1.002502e-02
+03/31/2026 20:02:30 - INFO - src.trainer -   [additive error estimation][update] step=53 h_raw=3.652e-04 -> h=5.346e-04 (eps≈6.60e-05, nu3≈4.06e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:30 - INFO - src.trainer -   [two-point simple estimation][update] step=53 h_tilde=1.821e-04 -> h=1.776e-04 (Delta≈4.49e-05, G≈1.13e+01, L≈9.36e-06, h2=6.71e-03)
+03/31/2026 20:02:30 - INFO - src.trainer -   {'loss': 1.5894927978515625, 'learning_rate': 1e-06, 'global_step': 53, 'zo_forward_step': 2223, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 70, 'eps': 0.001}
+03/31/2026 20:02:30 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:31 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=7.868516293323125e-05
+03/31/2026 20:02:31 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.345567e-04, Delta(h)=1.907349e-03, Delta/eps=2.424026e+01, D(h)=1.161194e-02 (>= 10.0? True), prox+=3.039862e-03, prox-=4.247689e-03 (<= 0.1? True)
+03/31/2026 20:02:31 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.345567e-04, nu3=3.696072e+06, Δ3=1.129150e-03
+03/31/2026 20:02:31 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.271484e-02, Delta/eps=4.157689e+02, D(h)=4.733276e-02, snr_ok=True, prox_ok=True, prox+=4.592874e-03, prox-=2.453351e-02, nu3_test=5.061340e+04, Δ3_test=1.012268e-01
+03/31/2026 20:02:31 - INFO - src.trainer -   [additive error estimation][update] step=54 h_raw=3.997e-04 -> h=5.192e-04 (eps≈7.87e-05, nu3≈3.70e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:32 - INFO - src.trainer -   [two-point simple estimation][update] step=54 h_tilde=2.662e-04 -> h=2.174e-04 (Delta≈4.44e-05, G≈1.32e+01, L≈5.06e-06, h2=6.70e-03)
+03/31/2026 20:02:32 - INFO - src.trainer -   {'loss': 1.7567596435546875, 'learning_rate': 1e-06, 'global_step': 54, 'zo_forward_step': 2264, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 71, 'eps': 0.001}
+03/31/2026 20:02:32 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:32 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=9.251197981690529e-05
+03/31/2026 20:02:32 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.192424e-04, Delta(h)=2.670288e-03, Delta/eps=2.886424e+01, D(h)=8.163452e-03 (>= 10.0? True), prox+=1.567221e-03, prox-=3.081383e-03 (<= 0.1? True)
+03/31/2026 20:02:32 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.192424e-04, nu3=7.302714e+06, Δ3=2.044678e-03
+03/31/2026 20:02:32 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.124573e-01, Delta/eps=1.215597e+03, D(h)=2.369995e-01, snr_ok=True, prox_ok=True, prox+=3.553238e-02, prox-=9.066221e-02, nu3_test=2.007637e+05, Δ3_test=4.015274e-01
+03/31/2026 20:02:32 - INFO - src.trainer -   [additive error estimation][update] step=55 h_raw=3.362e-04 -> h=4.972e-04 (eps≈9.25e-05, nu3≈7.30e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:33 - INFO - src.trainer -   [two-point simple estimation][update] step=55 h_tilde=2.999e-04 -> h=2.554e-04 (Delta≈4.44e-05, G≈1.36e+01, L≈4.10e-06, h2=6.66e-03)
+03/31/2026 20:02:33 - INFO - src.trainer -   {'loss': 1.5665435791015625, 'learning_rate': 1e-06, 'global_step': 55, 'zo_forward_step': 2305, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 72, 'eps': 0.001}
+03/31/2026 20:02:33 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:33 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=7.175958288255363e-05
+03/31/2026 20:02:33 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=4.971579e-04, Delta(h)=1.007080e-03, Delta/eps=1.403408e+01, D(h)=1.983643e-03 (>= 10.0? True), prox+=3.140210e-04, prox-=9.607655e-04 (<= 0.1? True)
+03/31/2026 20:02:33 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=4.971579e-04, nu3=1.614286e+06, Δ3=3.967285e-04
+03/31/2026 20:02:34 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.821350e-02, Delta/eps=3.931670e+02, D(h)=6.083679e-02, snr_ok=True, prox_ok=True, prox+=2.783767e-02, prox-=1.049027e-02, nu3_test=3.562927e+04, Δ3_test=7.125854e-02
+03/31/2026 20:02:34 - INFO - src.trainer -   [additive error estimation][update] step=56 h_raw=5.109e-04 -> h=4.985e-04 (eps≈7.18e-05, nu3≈1.61e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:34 - INFO - src.trainer -   [two-point simple estimation][update] step=56 h_tilde=2.967e-04 -> h=2.753e-04 (Delta≈4.39e-05, G≈1.34e+01, L≈4.10e-06, h2=6.66e-03)
+03/31/2026 20:02:34 - INFO - src.trainer -   {'loss': 1.623992919921875, 'learning_rate': 1e-06, 'global_step': 56, 'zo_forward_step': 2346, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 74, 'eps': 0.001}
+03/31/2026 20:02:34 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:35 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00013107616582083793
+03/31/2026 20:02:35 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=4.985158e-04, Delta(h)=2.212524e-03, Delta/eps=1.687969e+01, D(h)=1.109314e-02 (>= 10.0? True), prox+=4.120126e-03, prox-=2.761278e-03 (<= 0.1? True)
+03/31/2026 20:02:35 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=4.985158e-04, nu3=4.310735e+05, Δ3=1.068115e-04
+03/31/2026 20:02:35 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.205261e-01, Delta/eps=2.445343e+03, D(h)=4.606628e-01, snr_ok=True, prox_ok=False, prox+=4.357315e-02, prox-=1.954284e-01, nu3_test=2.500305e+05, Δ3_test=5.000610e-01
+03/31/2026 20:02:35 - INFO - src.trainer -   [additive error estimation][update] step=57 h_raw=9.698e-04 -> h=5.328e-04 (eps≈1.31e-04, nu3≈4.31e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:35 - INFO - src.trainer -   [two-point simple estimation][update] step=57 h_tilde=3.178e-04 -> h=2.958e-04 (Delta≈4.39e-05, G≈1.46e+01, L≈3.87e-06, h2=6.62e-03)
+03/31/2026 20:02:36 - INFO - src.trainer -   {'loss': 1.440185546875, 'learning_rate': 1e-06, 'global_step': 57, 'zo_forward_step': 2387, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 75, 'eps': 0.001}
+03/31/2026 20:02:36 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:36 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=7.524403731536869e-05
+03/31/2026 20:02:36 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.328204e-04, Delta(h)=4.119873e-04, Delta/eps=5.475348e+00, D(h)=9.963989e-03 (>= 10.0? False), prox+=3.302175e-03, prox-=3.574207e-03 (<= 0.1? True)
+03/31/2026 20:02:36 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.065641e-03, Delta(h)=3.051758e-05, Delta/eps=4.055813e-01, D(h)=1.916504e-02 (>= 10.0? False), prox+=6.614901e-03, prox-=6.592255e-03 (<= 0.1? True)
+03/31/2026 20:02:36 - INFO - src.trainer -   [estimate_nu3][dh-trial-2] layer=ALL h=2.131281e-03, Delta(h)=3.280640e-03, Delta/eps=4.359999e+01, D(h)=2.995300e-02 (>= 10.0? True), prox+=9.220771e-03, prox-=1.135854e-02 (<= 0.1? True)
+03/31/2026 20:02:36 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=2.131281e-03, nu3=1.817301e+06, Δ3=3.518677e-02
+03/31/2026 20:02:36 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=4.684906e-01, Delta/eps=6.226282e+03, D(h)=4.684906e-01, snr_ok=True, prox_ok=False, prox+=1.600411e-01, prox-=1.176870e-01, nu3_test=4.559326e+04, Δ3_test=9.118652e-02
+03/31/2026 20:02:36 - INFO - src.trainer -   [additive error estimation][update] step=58 h_raw=4.989e-04 -> h=5.293e-04 (eps≈7.52e-05, nu3≈1.82e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:37 - INFO - src.trainer -   [two-point simple estimation][update] step=58 h_tilde=3.267e-04 -> h=3.108e-04 (Delta≈4.47e-05, G≈1.60e+01, L≈4.10e-06, h2=6.62e-03)
+03/31/2026 20:02:37 - INFO - src.trainer -   {'loss': 1.5525054931640625, 'learning_rate': 1e-06, 'global_step': 58, 'zo_forward_step': 2432, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 76, 'eps': 0.001}
+03/31/2026 20:02:37 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:37 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00040209153056642097
+03/31/2026 20:02:37 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.293322e-04, Delta(h)=2.838135e-03, Delta/eps=7.058430e+00, D(h)=9.704590e-03 (>= 10.0? False), prox+=2.204542e-03, prox-=4.010813e-03 (<= 0.1? True)
+03/31/2026 20:02:37 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.058664e-03, Delta(h)=8.300781e-03, Delta/eps=2.064401e+01, D(h)=2.102661e-02 (>= 10.0? True), prox+=4.085752e-03, prox-=9.328014e-03 (<= 0.1? True)
+03/31/2026 20:02:37 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.058664e-03, nu3=6.815867e+05, Δ3=1.617432e-03
+03/31/2026 20:02:38 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=6.676025e-01, Delta/eps=1.660325e+03, D(h)=6.676025e-01, snr_ok=True, prox_ok=False, prox+=9.017811e-02, prox-=2.478740e-01, nu3_test=4.868622e+05, Δ3_test=9.737244e-01
+03/31/2026 20:02:38 - INFO - src.trainer -   [additive error estimation][update] step=59 h_raw=1.210e-03 -> h=5.749e-04 (eps≈4.02e-04, nu3≈6.82e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:38 - INFO - src.trainer -   [two-point simple estimation][update] step=59 h_tilde=2.690e-04 -> h=2.891e-04 (Delta≈4.47e-05, G≈1.26e+01, L≈4.77e-06, h2=6.69e-03)
+03/31/2026 20:02:38 - INFO - src.trainer -   {'loss': 1.7125244140625, 'learning_rate': 1e-06, 'global_step': 59, 'zo_forward_step': 2475, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 78, 'eps': 0.001}
+03/31/2026 20:02:38 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:39 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=6.090786694304486e-05
+03/31/2026 20:02:39 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.749362e-04, Delta(h)=1.235962e-03, Delta/eps=2.029232e+01, D(h)=1.158142e-02 (>= 10.0? True), prox+=3.030574e-03, prox-=3.766107e-03 (<= 0.1? True)
+03/31/2026 20:02:39 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.749362e-04, nu3=8.390300e+06, Δ3=3.189087e-03
+03/31/2026 20:02:39 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.044159e-01, Delta/eps=1.714325e+03, D(h)=1.044159e-01, snr_ok=True, prox_ok=True, prox+=4.724671e-02, prox-=1.411393e-02, nu3_test=5.442810e+04, Δ3_test=1.088562e-01
+03/31/2026 20:02:39 - INFO - src.trainer -   [additive error estimation][update] step=60 h_raw=2.793e-04 -> h=5.349e-04 (eps≈6.09e-05, nu3≈8.39e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:40 - INFO - src.trainer -   [two-point simple estimation][update] step=60 h_tilde=2.057e-04 -> h=2.439e-04 (Delta≈4.28e-05, G≈1.21e+01, L≈7.47e-06, h2=6.69e-03)
+03/31/2026 20:02:40 - INFO - src.trainer -   {'loss': 1.749542236328125, 'learning_rate': 1e-06, 'global_step': 60, 'zo_forward_step': 2516, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 79, 'eps': 0.001}
+03/31/2026 20:02:40 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:40 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=5.727976798273348e-05
+03/31/2026 20:02:40 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.348823e-04, Delta(h)=1.083374e-03, Delta/eps=1.891373e+01, D(h)=5.538940e-03 (>= 10.0? True), prox+=1.884842e-03, prox-=1.270537e-03 (<= 0.1? True)
+03/31/2026 20:02:40 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.348823e-04, nu3=1.545529e+06, Δ3=4.730225e-04
+03/31/2026 20:02:40 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=4.750061e-02, Delta/eps=8.292738e+02, D(h)=7.664490e-02, snr_ok=True, prox_ok=True, prox+=3.540100e-02, prox-=8.242209e-03, nu3_test=7.159424e+04, Δ3_test=1.431885e-01
+03/31/2026 20:02:40 - INFO - src.trainer -   [additive error estimation][update] step=61 h_raw=4.809e-04 -> h=5.292e-04 (eps≈5.73e-05, nu3≈1.55e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:41 - INFO - src.trainer -   [two-point simple estimation][update] step=61 h_tilde=2.192e-04 -> h=2.312e-04 (Delta≈4.28e-05, G≈1.37e+01, L≈7.47e-06, h2=6.54e-03)
+03/31/2026 20:02:41 - INFO - src.trainer -   {'loss': 1.705963134765625, 'learning_rate': 1e-06, 'global_step': 61, 'zo_forward_step': 2557, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 80, 'eps': 0.001}
+03/31/2026 20:02:41 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:41 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=9.386532696866923e-05
+03/31/2026 20:02:41 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.292172e-04, Delta(h)=9.918213e-04, Delta/eps=1.056643e+01, D(h)=1.527405e-02 (>= 10.0? True), prox+=4.838505e-03, prox-=4.230470e-03 (<= 0.1? True)
+03/31/2026 20:02:41 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.292172e-04, nu3=4.117924e+06, Δ3=1.220703e-03
+03/31/2026 20:02:42 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.295166e-01, Delta/eps=1.379813e+03, D(h)=1.405029e-01, snr_ok=True, prox_ok=True, prox+=7.434919e-02, prox-=3.268033e-03, nu3_test=2.276993e+04, Δ3_test=4.553986e-02
+03/31/2026 20:02:42 - INFO - src.trainer -   [additive error estimation][update] step=62 h_raw=4.089e-04 -> h=5.157e-04 (eps≈9.39e-05, nu3≈4.12e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:42 - INFO - src.trainer -   [two-point simple estimation][update] step=62 h_tilde=2.044e-04 -> h=2.174e-04 (Delta≈4.39e-05, G≈1.22e+01, L≈7.83e-06, h2=6.54e-03)
+03/31/2026 20:02:42 - INFO - src.trainer -   {'loss': 1.616546630859375, 'learning_rate': 1e-06, 'global_step': 62, 'zo_forward_step': 2598, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 81, 'eps': 0.001}
+03/31/2026 20:02:42 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:42 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00031769504838537963
+03/31/2026 20:02:43 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.157455e-04, Delta(h)=2.227783e-03, Delta/eps=7.012332e+00, D(h)=1.766968e-02 (>= 10.0? False), prox+=6.185137e-03, prox-=4.829996e-03 (<= 0.1? True)
+03/31/2026 20:02:43 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.031491e-03, Delta(h)=8.728027e-03, Delta/eps=2.747297e+01, D(h)=3.454590e-02 (>= 10.0? True), prox+=1.335468e-02, prox-=8.075447e-03 (<= 0.1? True)
+03/31/2026 20:02:43 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.031491e-03, nu3=1.619756e+06, Δ3=3.555298e-03
+03/31/2026 20:02:43 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.914597e-01, Delta/eps=6.026523e+02, D(h)=1.914597e-01, snr_ok=True, prox_ok=True, prox+=1.200547e-02, prox-=9.716339e-02, nu3_test=4.119873e+04, Δ3_test=8.239746e-02
+03/31/2026 20:02:43 - INFO - src.trainer -   [additive error estimation][update] step=63 h_raw=8.380e-04 -> h=5.414e-04 (eps≈3.18e-04, nu3≈1.62e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:43 - INFO - src.trainer -   [two-point simple estimation][update] step=63 h_tilde=2.034e-04 -> h=2.103e-04 (Delta≈4.50e-05, G≈1.29e+01, L≈8.61e-06, h2=6.62e-03)
+03/31/2026 20:02:44 - INFO - src.trainer -   {'loss': 1.6857452392578125, 'learning_rate': 1e-06, 'global_step': 63, 'zo_forward_step': 2641, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 83, 'eps': 0.001}
+03/31/2026 20:02:44 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:44 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=4.1718210188270004e-05
+03/31/2026 20:02:44 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.413955e-04, Delta(h)=3.814697e-04, Delta/eps=9.143962e+00, D(h)=1.359558e-02 (>= 10.0? False), prox+=3.963024e-03, prox-=4.174338e-03 (<= 0.1? True)
+03/31/2026 20:02:44 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.082791e-03, Delta(h)=4.348755e-03, Delta/eps=1.042412e+02, D(h)=2.342224e-02 (>= 10.0? True), prox+=5.720300e-03, prox-=8.259962e-03 (<= 0.1? True)
+03/31/2026 20:02:44 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.082791e-03, nu3=3.028912e+06, Δ3=7.690430e-03
+03/31/2026 20:02:44 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=7.215881e-02, Delta/eps=1.729672e+03, D(h)=7.215881e-02, snr_ok=True, prox_ok=True, prox+=9.144111e-04, prox-=4.064484e-02, nu3_test=1.098328e+05, Δ3_test=2.196655e-01
+03/31/2026 20:02:44 - INFO - src.trainer -   [additive error estimation][update] step=64 h_raw=3.457e-04 -> h=5.176e-04 (eps≈4.17e-05, nu3≈3.03e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:45 - INFO - src.trainer -   [two-point simple estimation][update] step=64 h_tilde=2.144e-04 -> h=2.123e-04 (Delta≈4.39e-05, G≈1.49e+01, L≈8.73e-06, h2=6.71e-03)
+03/31/2026 20:02:45 - INFO - src.trainer -   {'loss': 1.7279052734375, 'learning_rate': 1e-06, 'global_step': 64, 'zo_forward_step': 2684, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 84, 'eps': 0.001}
+03/31/2026 20:02:45 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:45 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=7.094379756998598e-05
+03/31/2026 20:02:45 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.176488e-04, Delta(h)=1.129150e-03, Delta/eps=1.591613e+01, D(h)=1.483154e-02 (>= 10.0? True), prox+=4.000249e-03, prox-=4.637923e-03 (<= 0.1? True)
+03/31/2026 20:02:45 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.176488e-04, nu3=6.050303e+05, Δ3=1.678467e-04
+03/31/2026 20:02:46 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.454468e-01, Delta/eps=2.050169e+03, D(h)=1.454468e-01, snr_ok=True, prox_ok=True, prox+=7.603689e-03, prox-=7.171980e-02, nu3_test=1.668472e+05, Δ3_test=3.336945e-01
+03/31/2026 20:02:46 - INFO - src.trainer -   [additive error estimation][update] step=65 h_raw=7.059e-04 -> h=5.340e-04 (eps≈7.09e-05, nu3≈6.05e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:46 - INFO - src.trainer -   [two-point simple estimation][update] step=65 h_tilde=2.142e-04 -> h=2.132e-04 (Delta≈4.52e-05, G≈1.45e+01, L≈8.73e-06, h2=6.62e-03)
+03/31/2026 20:02:46 - INFO - src.trainer -   {'loss': 1.889007568359375, 'learning_rate': 1e-06, 'global_step': 65, 'zo_forward_step': 2725, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 85, 'eps': 0.001}
+03/31/2026 20:02:46 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:46 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00011217199309153721
+03/31/2026 20:02:47 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.339578e-04, Delta(h)=1.464844e-03, Delta/eps=1.305891e+01, D(h)=2.227783e-03 (>= 10.0? True), prox+=9.734905e-04, prox-=2.013304e-04 (<= 0.1? True)
+03/31/2026 20:02:47 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.339578e-04, nu3=3.508062e+05, Δ3=1.068115e-04
+03/31/2026 20:02:47 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.621552e-01, Delta/eps=1.445594e+03, D(h)=1.621552e-01, snr_ok=True, prox_ok=True, prox+=5.029233e-02, prox-=3.528919e-02, nu3_test=7.183838e+04, Δ3_test=1.436768e-01
+03/31/2026 20:02:47 - INFO - src.trainer -   [additive error estimation][update] step=66 h_raw=9.862e-04 -> h=5.677e-04 (eps≈1.12e-04, nu3≈3.51e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:47 - INFO - src.trainer -   [two-point simple estimation][update] step=66 h_tilde=2.080e-04 -> h=2.106e-04 (Delta≈4.47e-05, G≈1.36e+01, L≈8.61e-06, h2=6.72e-03)
+03/31/2026 20:02:47 - INFO - src.trainer -   {'loss': 1.4988861083984375, 'learning_rate': 1e-06, 'global_step': 66, 'zo_forward_step': 2766, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 87, 'eps': 0.001}
+03/31/2026 20:02:48 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:48 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=6.157320018344434e-05
+03/31/2026 20:02:48 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.677462e-04, Delta(h)=3.875732e-03, Delta/eps=6.294512e+01, D(h)=1.196289e-02 (>= 10.0? True), prox+=2.707397e-03, prox-=5.316806e-03 (<= 0.1? True)
+03/31/2026 20:02:48 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.677462e-04, nu3=2.084478e+05, Δ3=7.629395e-05
+03/31/2026 20:02:48 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.649902e-02, Delta/eps=5.927745e+02, D(h)=3.649902e-02, snr_ok=True, prox_ok=True, prox+=9.045134e-03, prox-=1.514387e-02, nu3_test=1.284027e+04, Δ3_test=2.568054e-02
+03/31/2026 20:02:48 - INFO - src.trainer -   [additive error estimation][update] step=67 h_raw=9.605e-04 -> h=5.984e-04 (eps≈6.16e-05, nu3≈2.08e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:49 - INFO - src.trainer -   [two-point simple estimation][update] step=67 h_tilde=2.170e-04 -> h=2.138e-04 (Delta≈4.47e-05, G≈1.48e+01, L≈8.61e-06, h2=6.68e-03)
+03/31/2026 20:02:49 - INFO - src.trainer -   {'loss': 1.7830047607421875, 'learning_rate': 1e-06, 'global_step': 67, 'zo_forward_step': 2807, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 88, 'eps': 0.001}
+03/31/2026 20:02:49 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:49 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=7.857412148764444e-05
+03/31/2026 20:02:49 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.983969e-04, Delta(h)=1.327515e-03, Delta/eps=1.689506e+01, D(h)=4.684448e-03 (>= 10.0? True), prox+=1.687742e-03, prox-=9.439872e-04 (<= 0.1? True)
+03/31/2026 20:02:49 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.983969e-04, nu3=5.020434e+06, Δ3=2.151489e-03
+03/31/2026 20:02:49 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.767578e-01, Delta/eps=2.249568e+03, D(h)=3.043518e-01, snr_ok=True, prox_ok=False, prox+=1.191682e-01, prox-=3.588010e-02, nu3_test=1.034012e+05, Δ3_test=2.068024e-01
+03/31/2026 20:02:49 - INFO - src.trainer -   [additive error estimation][update] step=68 h_raw=3.608e-04 -> h=5.689e-04 (eps≈7.86e-05, nu3≈5.02e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:50 - INFO - src.trainer -   [two-point simple estimation][update] step=68 h_tilde=1.822e-04 -> h=1.973e-04 (Delta≈4.44e-05, G≈1.35e+01, L≈1.10e-05, h2=6.68e-03)
+03/31/2026 20:02:50 - INFO - src.trainer -   {'loss': 1.531829833984375, 'learning_rate': 1e-06, 'global_step': 68, 'zo_forward_step': 2848, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 89, 'eps': 0.001}
+03/31/2026 20:02:50 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:50 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=5.894910819116778e-05
+03/31/2026 20:02:50 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.688691e-04, Delta(h)=5.645752e-04, Delta/eps=9.577332e+00, D(h)=1.167297e-02 (>= 10.0? False), prox+=3.999162e-03, prox-=3.617032e-03 (<= 0.1? True)
+03/31/2026 20:02:50 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.137738e-03, Delta(h)=9.918213e-04, Delta/eps=1.682504e+01, D(h)=2.314758e-02 (>= 10.0? True), prox+=7.240379e-03, prox-=7.826879e-03 (<= 0.1? True)
+03/31/2026 20:02:51 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.137738e-03, nu3=2.123962e+06, Δ3=6.256104e-03
+03/31/2026 20:02:51 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.663635e-01, Delta/eps=6.214912e+03, D(h)=3.663635e-01, snr_ok=True, prox_ok=False, prox+=6.403375e-02, prox-=1.460556e-01, nu3_test=1.807861e+05, Δ3_test=3.615723e-01
+03/31/2026 20:02:51 - INFO - src.trainer -   [additive error estimation][update] step=69 h_raw=4.367e-04 -> h=5.540e-04 (eps≈5.89e-05, nu3≈2.12e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:51 - INFO - src.trainer -   [two-point simple estimation][update] step=69 h_tilde=2.265e-04 -> h=2.114e-04 (Delta≈4.43e-05, G≈1.44e+01, L≈7.61e-06, h2=6.66e-03)
+03/31/2026 20:02:51 - INFO - src.trainer -   {'loss': 1.6782073974609375, 'learning_rate': 1e-06, 'global_step': 69, 'zo_forward_step': 2891, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 91, 'eps': 0.001}
+03/31/2026 20:02:51 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:52 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=4.7828454646781855e-05
+03/31/2026 20:02:52 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.540210e-04, Delta(h)=4.684448e-03, Delta/eps=9.794271e+01, D(h)=1.789856e-02 (>= 10.0? True), prox+=6.756942e-03, prox-=3.938154e-03 (<= 0.1? True)
+03/31/2026 20:02:52 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.540210e-04, nu3=4.935194e+06, Δ3=1.678467e-03
+03/31/2026 20:02:52 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.642273e-02, Delta/eps=7.615285e+02, D(h)=8.564758e-02, snr_ok=True, prox_ok=True, prox+=1.472831e-02, prox-=3.523701e-02, nu3_test=8.135223e+04, Δ3_test=1.627045e-01
+03/31/2026 20:02:52 - INFO - src.trainer -   [additive error estimation][update] step=70 h_raw=3.075e-04 -> h=5.223e-04 (eps≈4.78e-05, nu3≈4.94e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:53 - INFO - src.trainer -   [two-point simple estimation][update] step=70 h_tilde=2.380e-04 -> h=2.243e-04 (Delta≈4.44e-05, G≈1.58e+01, L≈7.61e-06, h2=6.65e-03)
+03/31/2026 20:02:53 - INFO - src.trainer -   {'loss': 1.4334259033203125, 'learning_rate': 1e-06, 'global_step': 70, 'zo_forward_step': 2932, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 92, 'eps': 0.001}
+03/31/2026 20:02:53 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:53 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=8.678750671728439e-05
+03/31/2026 20:02:53 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.223445e-04, Delta(h)=7.934570e-04, Delta/eps=9.142526e+00, D(h)=8.178711e-03 (>= 10.0? False), prox+=3.121218e-03, prox-=2.577210e-03 (<= 0.1? True)
+03/31/2026 20:02:53 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.044689e-03, Delta(h)=1.785278e-03, Delta/eps=2.057068e+01, D(h)=1.567078e-02 (>= 10.0? True), prox+=6.054704e-03, prox-=4.845580e-03 (<= 0.1? True)
+03/31/2026 20:02:53 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.044689e-03, nu3=1.605981e+06, Δ3=3.662109e-03
+03/31/2026 20:02:53 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.878784e-01, Delta/eps=4.469289e+03, D(h)=3.878784e-01, snr_ok=True, prox_ok=False, prox+=6.101878e-02, prox-=1.706266e-01, nu3_test=1.204681e+04, Δ3_test=2.409363e-02
+03/31/2026 20:02:53 - INFO - src.trainer -   [additive error estimation][update] step=71 h_raw=5.453e-04 -> h=5.246e-04 (eps≈8.68e-05, nu3≈1.61e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:54 - INFO - src.trainer -   [two-point simple estimation][update] step=71 h_tilde=1.995e-04 -> h=2.115e-04 (Delta≈4.72e-05, G≈1.52e+01, L≈1.10e-05, h2=6.66e-03)
+03/31/2026 20:02:54 - INFO - src.trainer -   {'loss': 1.4459075927734375, 'learning_rate': 1e-06, 'global_step': 71, 'zo_forward_step': 2975, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 93, 'eps': 0.001}
+03/31/2026 20:02:54 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:54 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=6.561575003177824e-05
+03/31/2026 20:02:54 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.245931e-04, Delta(h)=1.129150e-03, Delta/eps=1.720853e+01, D(h)=1.742554e-02 (>= 10.0? True), prox+=5.654144e-03, prox-=6.396499e-03 (<= 0.1? True)
+03/31/2026 20:02:54 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.245931e-04, nu3=6.500211e+06, Δ3=1.876831e-03
+03/31/2026 20:02:55 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.708191e-01, Delta/eps=5.651373e+03, D(h)=3.708191e-01, snr_ok=True, prox_ok=False, prox+=1.024737e-01, prox-=1.252188e-01, nu3_test=3.112793e+03, Δ3_test=6.225586e-03
+03/31/2026 20:02:55 - INFO - src.trainer -   [additive error estimation][update] step=72 h_raw=3.117e-04 -> h=4.980e-04 (eps≈6.56e-05, nu3≈6.50e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:55 - INFO - src.trainer -   [two-point simple estimation][update] step=72 h_tilde=2.260e-04 -> h=2.187e-04 (Delta≈4.72e-05, G≈1.34e+01, L≈7.61e-06, h2=6.87e-03)
+03/31/2026 20:02:55 - INFO - src.trainer -   {'loss': 1.4945831298828125, 'learning_rate': 1e-06, 'global_step': 72, 'zo_forward_step': 3016, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 95, 'eps': 0.001}
+03/31/2026 20:02:55 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:56 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00013017008140087477
+03/31/2026 20:02:56 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=4.979821e-04, Delta(h)=1.968384e-03, Delta/eps=1.512163e+01, D(h)=5.508423e-03 (>= 10.0? True), prox+=2.492320e-03, prox-=1.182985e-03 (<= 0.1? True)
+03/31/2026 20:02:56 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=4.979821e-04, nu3=1.037906e+07, Δ3=2.563477e-03
+03/31/2026 20:02:56 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=8.721924e-02, Delta/eps=6.700406e+02, D(h)=8.721924e-02, snr_ok=True, prox_ok=True, prox+=3.873226e-02, prox-=1.768147e-02, nu3_test=2.144737e+05, Δ3_test=4.289474e-01
+03/31/2026 20:02:56 - INFO - src.trainer -   [additive error estimation][update] step=73 h_raw=3.351e-04 -> h=4.786e-04 (eps≈1.30e-04, nu3≈1.04e+07, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:56 - INFO - src.trainer -   [two-point simple estimation][update] step=73 h_tilde=2.744e-04 -> h=2.449e-04 (Delta≈4.36e-05, G≈1.32e+01, L≈4.68e-06, h2=6.87e-03)
+03/31/2026 20:02:57 - INFO - src.trainer -   {'loss': 1.6808929443359375, 'learning_rate': 1e-06, 'global_step': 73, 'zo_forward_step': 3057, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 96, 'eps': 0.001}
+03/31/2026 20:02:57 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:57 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00011377778248478545
+03/31/2026 20:02:57 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=4.786391e-04, Delta(h)=1.480103e-03, Delta/eps=1.300871e+01, D(h)=3.524780e-03 (>= 10.0? True), prox+=6.162393e-04, prox-=1.509337e-03 (<= 0.1? True)
+03/31/2026 20:02:57 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=4.786391e-04, nu3=6.957698e+04, Δ3=1.525879e-05
+03/31/2026 20:02:57 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=5.905151e-03, Delta/eps=5.190074e+01, D(h)=1.998138e-01, snr_ok=True, prox_ok=True, prox+=5.841522e-02, prox-=5.847759e-02, nu3_test=1.079712e+05, Δ3_test=2.159424e-01
+03/31/2026 20:02:57 - INFO - src.trainer -   [additive error estimation][update] step=74 h_raw=1.699e-03 -> h=5.433e-04 (eps≈1.14e-04, nu3≈6.96e+04, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:58 - INFO - src.trainer -   [two-point simple estimation][update] step=74 h_tilde=2.706e-04 -> h=2.574e-04 (Delta≈4.21e-05, G≈1.06e+01, L≈3.74e-06, h2=6.61e-03)
+03/31/2026 20:02:58 - INFO - src.trainer -   {'loss': 1.6709136962890625, 'learning_rate': 1e-06, 'global_step': 74, 'zo_forward_step': 3098, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 97, 'eps': 0.001}
+03/31/2026 20:02:58 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:58 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00014709108593499417
+03/31/2026 20:02:58 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.432893e-04, Delta(h)=7.171631e-04, Delta/eps=4.875639e+00, D(h)=2.311707e-02 (>= 10.0? False), prox+=7.050136e-03, prox-=6.672909e-03 (<= 0.1? True)
+03/31/2026 20:02:58 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.086579e-03, Delta(h)=2.593994e-04, Delta/eps=1.763529e+00, D(h)=4.524231e-02 (>= 10.0? False), prox+=1.337364e-02, prox-=1.340037e-02 (<= 0.1? True)
+03/31/2026 20:02:58 - INFO - src.trainer -   [estimate_nu3][dh-trial-2] layer=ALL h=2.173157e-03, Delta(h)=4.760742e-03, Delta/eps=3.236595e+01, D(h)=8.712769e-02 (>= 10.0? True), prox+=2.664413e-02, prox-=2.453703e-02 (<= 0.1? True)
+03/31/2026 20:02:58 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=2.173157e-03, nu3=2.689585e+06, Δ3=5.520630e-02
+03/31/2026 20:02:59 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.821350e-02, Delta/eps=1.918097e+02, D(h)=3.300476e-02, snr_ok=True, prox_ok=True, prox+=1.425277e-03, prox-=1.823686e-02, nu3_test=8.951950e+04, Δ3_test=1.790390e-01
+03/31/2026 20:02:59 - INFO - src.trainer -   [additive error estimation][update] step=75 h_raw=5.474e-04 -> h=5.437e-04 (eps≈1.47e-04, nu3≈2.69e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:02:59 - INFO - src.trainer -   [two-point simple estimation][update] step=75 h_tilde=2.647e-04 -> h=2.611e-04 (Delta≈4.21e-05, G≈1.27e+01, L≈4.68e-06, h2=6.49e-03)
+03/31/2026 20:02:59 - INFO - src.trainer -   {'loss': 1.6705474853515625, 'learning_rate': 1e-06, 'global_step': 75, 'zo_forward_step': 3143, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 99, 'eps': 0.001}
+03/31/2026 20:02:59 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:02:59 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=6.945124069707226e-05
+03/31/2026 20:03:00 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.437034e-04, Delta(h)=2.609253e-03, Delta/eps=3.756957e+01, D(h)=9.841919e-03 (>= 10.0? True), prox+=2.172677e-03, prox-=3.726368e-03 (<= 0.1? True)
+03/31/2026 20:03:00 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.437034e-04, nu3=4.272148e+06, Δ3=1.373291e-03
+03/31/2026 20:03:00 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.270508e-01, Delta/eps=3.269211e+03, D(h)=2.270508e-01, snr_ok=True, prox_ok=False, prox+=2.244009e-02, prox-=1.018953e-01, nu3_test=2.557602e+05, Δ3_test=5.115204e-01
+03/31/2026 20:03:00 - INFO - src.trainer -   [additive error estimation][update] step=76 h_raw=3.654e-04 -> h=5.225e-04 (eps≈6.95e-05, nu3≈4.27e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:00 - INFO - src.trainer -   [two-point simple estimation][update] step=76 h_tilde=2.850e-04 -> h=2.728e-04 (Delta≈4.47e-05, G≈1.39e+01, L≈4.68e-06, h2=6.49e-03)
+03/31/2026 20:03:01 - INFO - src.trainer -   {'loss': 1.5645294189453125, 'learning_rate': 1e-06, 'global_step': 76, 'zo_forward_step': 3184, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 100, 'eps': 0.001}
+03/31/2026 20:03:01 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:01 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00013284789343065746
+03/31/2026 20:03:01 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.225137e-04, Delta(h)=2.761841e-03, Delta/eps=2.078950e+01, D(h)=6.057739e-03 (>= 10.0? True), prox+=2.796350e-03, prox-=1.047933e-03 (<= 0.1? True)
+03/31/2026 20:03:01 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.225137e-04, nu3=5.455030e+06, Δ3=1.556396e-03
+03/31/2026 20:03:01 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.810059e-01, Delta/eps=2.115245e+03, D(h)=2.810059e-01, snr_ok=True, prox_ok=False, prox+=1.153648e-01, prox-=4.605872e-02, nu3_test=3.488007e+05, Δ3_test=6.976013e-01
+03/31/2026 20:03:01 - INFO - src.trainer -   [additive error estimation][update] step=77 h_raw=4.180e-04 -> h=5.110e-04 (eps≈1.33e-04, nu3≈5.46e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:02 - INFO - src.trainer -   [two-point simple estimation][update] step=77 h_tilde=2.723e-04 -> h=2.725e-04 (Delta≈4.48e-05, G≈1.41e+01, L≈5.23e-06, h2=6.68e-03)
+03/31/2026 20:03:02 - INFO - src.trainer -   {'loss': 1.64031982421875, 'learning_rate': 1e-06, 'global_step': 77, 'zo_forward_step': 3225, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 101, 'eps': 0.001}
+03/31/2026 20:03:02 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:02 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=5.802019524408892e-05
+03/31/2026 20:03:02 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.109878e-04, Delta(h)=1.068115e-04, Delta/eps=1.840937e+00, D(h)=6.973267e-03 (>= 10.0? False), prox+=2.130023e-03, prox-=2.061497e-03 (<= 0.1? True)
+03/31/2026 20:03:02 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.021976e-03, Delta(h)=1.678467e-04, Delta/eps=2.892901e+00, D(h)=1.512146e-02 (>= 10.0? False), prox+=4.599748e-03, prox-=4.478608e-03 (<= 0.1? True)
+03/31/2026 20:03:02 - INFO - src.trainer -   [estimate_nu3][dh-trial-2] layer=ALL h=2.043951e-03, Delta(h)=5.340576e-04, Delta/eps=9.204685e+00, D(h)=3.016663e-02 (>= 10.0? False), prox+=9.236221e-03, prox-=8.836109e-03 (<= 0.1? True)
+03/31/2026 20:03:02 - INFO - src.trainer -   [estimate_nu3][dh-trial-3] layer=ALL h=4.087903e-03, Delta(h)=1.306152e-02, Delta/eps=2.251203e+02, D(h)=4.061890e-02 (>= 10.0? True), prox+=1.614962e-02, prox-=8.222396e-03 (<= 0.1? True)
+03/31/2026 20:03:02 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=4.087903e-03, nu3=1.876280e+04, Δ3=2.563477e-03
+03/31/2026 20:03:03 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.478882e-01, Delta/eps=2.548909e+03, D(h)=1.478882e-01, snr_ok=True, prox_ok=True, prox+=3.780102e-02, prox-=4.734458e-02, nu3_test=1.861019e+05, Δ3_test=3.722038e-01
+03/31/2026 20:03:03 - INFO - src.trainer -   [additive error estimation][update] step=78 h_raw=2.101e-03 -> h=5.886e-04 (eps≈5.80e-05, nu3≈1.88e+04, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:03 - INFO - src.trainer -   [two-point simple estimation][update] step=78 h_tilde=1.977e-04 -> h=2.321e-04 (Delta≈4.47e-05, G≈1.36e+01, L≈9.55e-06, h2=6.70e-03)
+03/31/2026 20:03:03 - INFO - src.trainer -   {'loss': 1.5704498291015625, 'learning_rate': 1e-06, 'global_step': 78, 'zo_forward_step': 3272, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 103, 'eps': 0.001}
+03/31/2026 20:03:03 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:04 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00013799154372699427
+03/31/2026 20:03:04 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.885946e-04, Delta(h)=1.007080e-03, Delta/eps=7.298129e+00, D(h)=6.866455e-03 (>= 10.0? False), prox+=2.511340e-03, prox-=1.873609e-03 (<= 0.1? True)
+03/31/2026 20:03:04 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.177189e-03, Delta(h)=3.555298e-03, Delta/eps=2.576461e+01, D(h)=1.213074e-02 (>= 10.0? True), prox+=4.990776e-03, prox-=2.742105e-03 (<= 0.1? True)
+03/31/2026 20:03:04 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.177189e-03, nu3=2.628377e+06, Δ3=8.575439e-03
+03/31/2026 20:03:04 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=6.454620e-01, Delta/eps=4.677548e+03, D(h)=6.454620e-01, snr_ok=True, prox_ok=False, prox+=2.120928e-01, prox-=1.255717e-01, nu3_test=3.204346e+03, Δ3_test=6.408691e-03
+03/31/2026 20:03:04 - INFO - src.trainer -   [additive error estimation][update] step=79 h_raw=5.400e-04 -> h=5.835e-04 (eps≈1.38e-04, nu3≈2.63e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:05 - INFO - src.trainer -   [two-point simple estimation][update] step=79 h_tilde=2.060e-04 -> h=2.186e-04 (Delta≈4.50e-05, G≈1.47e+01, L≈9.55e-06, h2=6.68e-03)
+03/31/2026 20:03:05 - INFO - src.trainer -   {'loss': 1.8194122314453125, 'learning_rate': 1e-06, 'global_step': 79, 'zo_forward_step': 3315, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 104, 'eps': 0.001}
+03/31/2026 20:03:05 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:05 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00013925125531082217
+03/31/2026 20:03:05 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.835492e-04, Delta(h)=1.251221e-03, Delta/eps=8.985346e+00, D(h)=2.468872e-02 (>= 10.0? False), prox+=6.382448e-03, prox-=7.014359e-03 (<= 0.1? True)
+03/31/2026 20:03:05 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.167098e-03, Delta(h)=3.860474e-03, Delta/eps=2.772308e+01, D(h)=4.808044e-02 (>= 10.0? True), prox+=1.204188e-02, prox-=1.394716e-02 (<= 0.1? True)
+03/31/2026 20:03:05 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.167098e-03, nu3=2.202826e+06, Δ3=7.003784e-03
+03/31/2026 20:03:05 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.198242e-01, Delta/eps=2.296742e+03, D(h)=3.198242e-01, snr_ok=True, prox_ok=False, prox+=5.095986e-02, prox-=1.232278e-01, nu3_test=1.544418e+05, Δ3_test=3.088837e-01
+03/31/2026 20:03:05 - INFO - src.trainer -   [additive error estimation][update] step=80 h_raw=5.745e-04 -> h=5.826e-04 (eps≈1.39e-04, nu3≈2.20e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:06 - INFO - src.trainer -   [two-point simple estimation][update] step=80 h_tilde=1.873e-04 -> h=2.024e-04 (Delta≈4.51e-05, G≈1.27e+01, L≈1.00e-05, h2=6.71e-03)
+03/31/2026 20:03:06 - INFO - src.trainer -   {'loss': 1.6240692138671875, 'learning_rate': 1e-06, 'global_step': 80, 'zo_forward_step': 3358, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 105, 'eps': 0.001}
+03/31/2026 20:03:06 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:06 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00015018478153251287
+03/31/2026 20:03:06 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.826411e-04, Delta(h)=4.623413e-03, Delta/eps=3.078483e+01, D(h)=9.536743e-03 (>= 10.0? True), prox+=4.275749e-03, prox-=1.481413e-03 (<= 0.1? True)
+03/31/2026 20:03:06 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.826411e-04, nu3=1.195772e+06, Δ3=4.730225e-04
+03/31/2026 20:03:07 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.865601e-02, Delta/eps=1.908050e+02, D(h)=2.005615e-01, snr_ok=True, prox_ok=True, prox+=5.190796e-02, prox-=6.473326e-02, nu3_test=2.652302e+05, Δ3_test=5.304604e-01
+03/31/2026 20:03:07 - INFO - src.trainer -   [additive error estimation][update] step=81 h_raw=7.223e-04 -> h=5.953e-04 (eps≈1.50e-04, nu3≈1.20e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:07 - INFO - src.trainer -   [two-point simple estimation][update] step=81 h_tilde=1.867e-04 -> h=1.944e-04 (Delta≈4.51e-05, G≈1.26e+01, L≈1.00e-05, h2=6.72e-03)
+03/31/2026 20:03:07 - INFO - src.trainer -   {'loss': 1.688507080078125, 'learning_rate': 1e-06, 'global_step': 81, 'zo_forward_step': 3399, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 107, 'eps': 0.001}
+03/31/2026 20:03:07 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:08 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=6.1003358823382416e-05
+03/31/2026 20:03:08 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.952932e-04, Delta(h)=1.235962e-03, Delta/eps=2.026056e+01, D(h)=4.257202e-03 (>= 10.0? True), prox+=8.847659e-04, prox-=1.610090e-03 (<= 0.1? True)
+03/31/2026 20:03:08 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.952932e-04, nu3=3.942065e+06, Δ3=1.663208e-03
+03/31/2026 20:03:08 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.220703e-04, Delta/eps=2.001042e+00, D(h)=4.293823e-02, snr_ok=False, prox_ok=True, prox+=1.262132e-02, prox-=1.239421e-02, nu3_test=3.693390e+04, Δ3_test=7.386780e-02
+03/31/2026 20:03:08 - INFO - src.trainer -   [additive error estimation][update] step=82 h_raw=3.594e-04 -> h=5.660e-04 (eps≈6.10e-05, nu3≈3.94e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:08 - INFO - src.trainer -   [two-point simple estimation][update] step=82 h_tilde=1.821e-04 -> h=1.882e-04 (Delta≈4.45e-05, G≈1.21e+01, L≈9.92e-06, h2=6.72e-03)
+03/31/2026 20:03:09 - INFO - src.trainer -   {'loss': 1.6835784912109375, 'learning_rate': 1e-06, 'global_step': 82, 'zo_forward_step': 3440, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 108, 'eps': 0.001}
+03/31/2026 20:03:09 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:09 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00011676546767472757
+03/31/2026 20:03:09 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.659997e-04, Delta(h)=2.899170e-03, Delta/eps=2.482900e+01, D(h)=8.880615e-03 (>= 10.0? True), prox+=1.770343e-03, prox-=3.474379e-03 (<= 0.1? True)
+03/31/2026 20:03:09 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.659997e-04, nu3=4.670511e+06, Δ3=1.693726e-03
+03/31/2026 20:03:09 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.014160e-01, Delta/eps=1.724962e+03, D(h)=2.014160e-01, snr_ok=True, prox_ok=True, prox+=6.759363e-02, prox-=4.464694e-02, nu3_test=9.491730e+04, Δ3_test=1.898346e-01
+03/31/2026 20:03:09 - INFO - src.trainer -   [additive error estimation][update] step=83 h_raw=4.217e-04 -> h=5.496e-04 (eps≈1.17e-04, nu3≈4.67e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:10 - INFO - src.trainer -   [two-point simple estimation][update] step=83 h_tilde=2.132e-04 -> h=2.003e-04 (Delta≈4.38e-05, G≈1.24e+01, L≈7.31e-06, h2=6.67e-03)
+03/31/2026 20:03:10 - INFO - src.trainer -   {'loss': 1.558807373046875, 'learning_rate': 1e-06, 'global_step': 83, 'zo_forward_step': 3481, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 109, 'eps': 0.001}
+03/31/2026 20:03:10 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:10 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00012154465985734638
+03/31/2026 20:03:10 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.495877e-04, Delta(h)=2.548218e-03, Delta/eps=2.096528e+01, D(h)=1.371765e-02 (>= 10.0? True), prox+=5.197769e-03, prox-=3.587848e-03 (<= 0.1? True)
+03/31/2026 20:03:10 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.495877e-04, nu3=1.930316e+06, Δ3=6.408691e-04
+03/31/2026 20:03:10 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.792145e-01, Delta/eps=1.474474e+03, D(h)=1.792145e-01, snr_ok=True, prox_ok=True, prox+=7.181722e-02, prox-=3.638665e-02, nu3_test=2.263641e+05, Δ3_test=4.527283e-01
+03/31/2026 20:03:10 - INFO - src.trainer -   [additive error estimation][update] step=84 h_raw=5.738e-04 -> h=5.520e-04 (eps≈1.22e-04, nu3≈1.93e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:11 - INFO - src.trainer -   [two-point simple estimation][update] step=84 h_tilde=1.732e-04 -> h=1.863e-04 (Delta≈4.38e-05, G≈1.11e+01, L≈9.92e-06, h2=6.62e-03)
+03/31/2026 20:03:11 - INFO - src.trainer -   {'loss': 1.7860107421875, 'learning_rate': 1e-06, 'global_step': 84, 'zo_forward_step': 3522, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 110, 'eps': 0.001}
+03/31/2026 20:03:11 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:11 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=4.744150315902107e-05
+03/31/2026 20:03:11 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.519600e-04, Delta(h)=4.730225e-04, Delta/eps=9.970647e+00, D(h)=4.257202e-03 (>= 10.0? False), prox+=1.304341e-03, prox-=1.044835e-03 (<= 0.1? True)
+03/31/2026 20:03:12 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.103920e-03, Delta(h)=1.663208e-03, Delta/eps=3.505808e+01, D(h)=9.933472e-03 (>= 10.0? True), prox+=3.191695e-03, prox-=2.283471e-03 (<= 0.1? True)
+03/31/2026 20:03:12 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.103920e-03, nu3=2.569068e+06, Δ3=6.912231e-03
+03/31/2026 20:03:12 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.981018e-02, Delta/eps=8.391425e+02, D(h)=2.192841e-01, snr_ok=True, prox_ok=True, prox+=4.721419e-02, prox-=7.153751e-02, nu3_test=7.038116e+04, Δ3_test=1.407623e-01
+03/31/2026 20:03:12 - INFO - src.trainer -   [additive error estimation][update] step=85 h_raw=3.812e-04 -> h=5.319e-04 (eps≈4.74e-05, nu3≈2.57e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:12 - INFO - src.trainer -   [two-point simple estimation][update] step=85 h_tilde=1.819e-04 -> h=1.841e-04 (Delta≈4.24e-05, G≈1.13e+01, L≈8.86e-06, h2=6.62e-03)
+03/31/2026 20:03:12 - INFO - src.trainer -   {'loss': 1.6907806396484375, 'learning_rate': 1e-06, 'global_step': 85, 'zo_forward_step': 3565, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 112, 'eps': 0.001}
+03/31/2026 20:03:13 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:13 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=7.614120452804351e-05
+03/31/2026 20:03:13 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.319044e-04, Delta(h)=5.950928e-04, Delta/eps=7.815647e+00, D(h)=1.017761e-02 (>= 10.0? False), prox+=3.197753e-03, prox-=2.836393e-03 (<= 0.1? True)
+03/31/2026 20:03:13 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.063809e-03, Delta(h)=2.746582e-04, Delta/eps=3.607222e+00, D(h)=1.937866e-02 (>= 10.0? False), prox+=5.833862e-03, prox-=5.638827e-03 (<= 0.1? True)
+03/31/2026 20:03:13 - INFO - src.trainer -   [estimate_nu3][dh-trial-2] layer=ALL h=2.127618e-03, Delta(h)=5.599976e-03, Delta/eps=7.354724e+01, D(h)=2.925110e-02 (>= 10.0? True), prox+=7.020563e-03, prox-=1.023921e-02 (<= 0.1? True)
+03/31/2026 20:03:13 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=2.127618e-03, nu3=1.528856e+06, Δ3=2.944946e-02
+03/31/2026 20:03:13 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=5.673218e-02, Delta/eps=7.450917e+02, D(h)=9.530640e-02, snr_ok=True, prox_ok=True, prox+=4.318205e-02, prox-=1.145031e-02, nu3_test=1.470184e+05, Δ3_test=2.940369e-01
+03/31/2026 20:03:13 - INFO - src.trainer -   [additive error estimation][update] step=86 h_raw=5.306e-04 -> h=5.318e-04 (eps≈7.61e-05, nu3≈1.53e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:14 - INFO - src.trainer -   [two-point simple estimation][update] step=86 h_tilde=1.772e-04 -> h=1.806e-04 (Delta≈4.47e-05, G≈1.14e+01, L≈9.92e-06, h2=6.51e-03)
+03/31/2026 20:03:14 - INFO - src.trainer -   {'loss': 1.4464263916015625, 'learning_rate': 1e-06, 'global_step': 86, 'zo_forward_step': 3610, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 113, 'eps': 0.001}
+03/31/2026 20:03:14 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:14 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00015790573669112107
+03/31/2026 20:03:14 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.317768e-04, Delta(h)=1.525879e-05, Delta/eps=9.663227e-02, D(h)=1.530457e-02 (>= 10.0? False), prox+=5.300858e-03, prox-=5.339744e-03 (<= 0.1? True)
+03/31/2026 20:03:14 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.063554e-03, Delta(h)=9.307861e-04, Delta/eps=5.894568e+00, D(h)=2.989197e-02 (>= 10.0? False), prox+=1.062912e-02, prox-=1.009446e-02 (<= 0.1? True)
+03/31/2026 20:03:14 - INFO - src.trainer -   [estimate_nu3][dh-trial-2] layer=ALL h=2.127107e-03, Delta(h)=3.967285e-04, Delta/eps=2.512439e+00, D(h)=5.007935e-02 (>= 10.0? False), prox+=1.702217e-02, prox-=1.759350e-02 (<= 0.1? True)
+03/31/2026 20:03:14 - INFO - src.trainer -   [estimate_nu3][dh-trial-3] layer=ALL h=4.254215e-03, Delta(h)=2.165222e-02, Delta/eps=1.371212e+02, D(h)=3.578186e-02 (>= 10.0? True), prox+=4.900767e-03, prox-=2.001872e-02 (<= 0.1? True)
+03/31/2026 20:03:14 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=4.254215e-03, nu3=8.751671e+05, Δ3=1.347656e-01
+03/31/2026 20:03:15 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=4.789429e-01, Delta/eps=3.033094e+03, D(h)=4.789429e-01, snr_ok=True, prox_ok=False, prox+=1.209560e-01, prox-=1.640703e-01, nu3_test=1.256065e+05, Δ3_test=2.512131e-01
+03/31/2026 20:03:15 - INFO - src.trainer -   [additive error estimation][update] step=87 h_raw=8.150e-04 -> h=5.550e-04 (eps≈1.58e-04, nu3≈8.75e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:15 - INFO - src.trainer -   [two-point simple estimation][update] step=87 h_tilde=2.035e-04 -> h=1.917e-04 (Delta≈4.47e-05, G≈1.34e+01, L≈8.86e-06, h2=6.69e-03)
+03/31/2026 20:03:15 - INFO - src.trainer -   {'loss': 1.6190948486328125, 'learning_rate': 1e-06, 'global_step': 87, 'zo_forward_step': 3657, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 115, 'eps': 0.001}
+03/31/2026 20:03:15 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:16 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=6.190318524494469e-05
+03/31/2026 20:03:16 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.549716e-04, Delta(h)=6.713867e-04, Delta/eps=1.084575e+01, D(h)=9.887695e-03 (>= 10.0? True), prox+=2.829252e-03, prox-=3.230988e-03 (<= 0.1? True)
+03/31/2026 20:03:16 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.549716e-04, nu3=4.508159e+06, Δ3=1.541138e-03
+03/31/2026 20:03:16 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.881622e-01, Delta/eps=4.655047e+03, D(h)=2.881622e-01, snr_ok=True, prox_ok=False, prox+=1.114681e-01, prox-=4.895043e-02, nu3_test=1.221161e+05, Δ3_test=2.442322e-01
+03/31/2026 20:03:16 - INFO - src.trainer -   [additive error estimation][update] step=88 h_raw=3.454e-04 -> h=5.293e-04 (eps≈6.19e-05, nu3≈4.51e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:17 - INFO - src.trainer -   [two-point simple estimation][update] step=88 h_tilde=1.842e-04 -> h=1.879e-04 (Delta≈4.47e-05, G≈1.26e+01, L≈1.02e-05, h2=6.69e-03)
+03/31/2026 20:03:17 - INFO - src.trainer -   {'loss': 1.5709686279296875, 'learning_rate': 1e-06, 'global_step': 88, 'zo_forward_step': 3698, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 116, 'eps': 0.001}
+03/31/2026 20:03:17 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:17 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=5.9342762703338795e-05
+03/31/2026 20:03:17 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.292630e-04, Delta(h)=2.288818e-03, Delta/eps=3.856946e+01, D(h)=2.288818e-03 (>= 10.0? True), prox+=1.371466e-03, prox-=6.722237e-05 (<= 0.1? True)
+03/31/2026 20:03:17 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.292630e-04, nu3=1.955506e+06, Δ3=5.798340e-04
+03/31/2026 20:03:17 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=6.480560e-01, Delta/eps=1.092056e+04, D(h)=6.480560e-01, snr_ok=True, prox_ok=False, prox+=9.739078e-02, prox-=2.307607e-01, nu3_test=2.970963e+05, Δ3_test=5.941925e-01
+03/31/2026 20:03:17 - INFO - src.trainer -   [additive error estimation][update] step=89 h_raw=4.499e-04 -> h=5.207e-04 (eps≈5.93e-05, nu3≈1.96e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:18 - INFO - src.trainer -   [two-point simple estimation][update] step=89 h_tilde=2.014e-04 -> h=1.945e-04 (Delta≈4.66e-05, G≈1.26e+01, L≈8.86e-06, h2=6.69e-03)
+03/31/2026 20:03:18 - INFO - src.trainer -   {'loss': 1.4217681884765625, 'learning_rate': 1e-06, 'global_step': 89, 'zo_forward_step': 3739, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 117, 'eps': 0.001}
+03/31/2026 20:03:18 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:18 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=8.578687891994943e-05
+03/31/2026 20:03:18 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.207293e-04, Delta(h)=2.365112e-03, Delta/eps=2.756963e+01, D(h)=7.492065e-03 (>= 10.0? True), prox+=1.801628e-03, prox-=3.451887e-03 (<= 0.1? True)
+03/31/2026 20:03:18 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.207293e-04, nu3=1.296777e+06, Δ3=3.662109e-04
+03/31/2026 20:03:19 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=4.702759e-01, Delta/eps=5.481909e+03, D(h)=4.702759e-01, snr_ok=True, prox_ok=False, prox+=1.291000e-01, prox-=1.541734e-01, nu3_test=1.373138e+05, Δ3_test=2.746277e-01
+03/31/2026 20:03:19 - INFO - src.trainer -   [additive error estimation][update] step=90 h_raw=5.833e-04 -> h=5.267e-04 (eps≈8.58e-05, nu3≈1.30e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:19 - INFO - src.trainer -   [two-point simple estimation][update] step=90 h_tilde=2.305e-04 -> h=2.118e-04 (Delta≈4.43e-05, G≈1.16e+01, L≈5.94e-06, h2=6.82e-03)
+03/31/2026 20:03:19 - INFO - src.trainer -   {'loss': 1.4701995849609375, 'learning_rate': 1e-06, 'global_step': 90, 'zo_forward_step': 3780, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 118, 'eps': 0.001}
+03/31/2026 20:03:19 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:19 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=3.2992169663146446e-05
+03/31/2026 20:03:20 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.266718e-04, Delta(h)=4.714966e-03, Delta/eps=1.429117e+02, D(h)=2.803040e-02 (>= 10.0? True), prox+=7.863966e-03, prox-=1.092390e-02 (<= 0.1? True)
+03/31/2026 20:03:20 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.266718e-04, nu3=1.410047e+06, Δ3=4.119873e-04
+03/31/2026 20:03:20 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=4.475555e-01, Delta/eps=1.356551e+04, D(h)=4.475555e-01, snr_ok=True, prox_ok=False, prox+=2.008029e-01, prox-=4.821059e-02, nu3_test=4.876823e+05, Δ3_test=9.753647e-01
+03/31/2026 20:03:20 - INFO - src.trainer -   [additive error estimation][update] step=91 h_raw=4.125e-04 -> h=5.140e-04 (eps≈3.30e-05, nu3≈1.41e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:20 - INFO - src.trainer -   [two-point simple estimation][update] step=91 h_tilde=2.369e-04 -> h=2.240e-04 (Delta≈4.65e-05, G≈1.17e+01, L≈5.94e-06, h2=6.66e-03)
+03/31/2026 20:03:20 - INFO - src.trainer -   {'loss': 1.654693603515625, 'learning_rate': 1e-06, 'global_step': 91, 'zo_forward_step': 3821, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 120, 'eps': 0.001}
+03/31/2026 20:03:21 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:21 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=9.828800260597326e-05
+03/31/2026 20:03:21 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.139600e-04, Delta(h)=8.239746e-04, Delta/eps=8.383267e+00, D(h)=2.316284e-02 (>= 10.0? False), prox+=6.687619e-03, prox-=7.129769e-03 (<= 0.1? True)
+03/31/2026 20:03:21 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.027920e-03, Delta(h)=1.495361e-03, Delta/eps=1.521408e+01, D(h)=4.553223e-02 (>= 10.0? True), prox+=1.318338e-02, prox-=1.388326e-02 (<= 0.1? True)
+03/31/2026 20:03:21 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.027920e-03, nu3=3.203148e+06, Δ3=6.958008e-03
+03/31/2026 20:03:21 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=5.079651e-02, Delta/eps=5.168129e+02, D(h)=9.980774e-02, snr_ok=True, prox_ok=True, prox+=1.467256e-02, prox-=4.314151e-02, nu3_test=3.501129e+04, Δ3_test=7.002258e-02
+03/31/2026 20:03:21 - INFO - src.trainer -   [additive error estimation][update] step=92 h_raw=4.515e-04 -> h=5.073e-04 (eps≈9.83e-05, nu3≈3.20e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:22 - INFO - src.trainer -   [two-point simple estimation][update] step=92 h_tilde=1.904e-04 -> h=2.065e-04 (Delta≈4.43e-05, G≈9.99e+00, L≈7.48e-06, h2=6.82e-03)
+03/31/2026 20:03:22 - INFO - src.trainer -   {'loss': 1.636749267578125, 'learning_rate': 1e-06, 'global_step': 92, 'zo_forward_step': 3864, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 121, 'eps': 0.001}
+03/31/2026 20:03:22 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:22 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00011262943473359142
+03/31/2026 20:03:22 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.073463e-04, Delta(h)=1.098633e-03, Delta/eps=9.754402e+00, D(h)=3.753662e-03 (>= 10.0? False), prox+=1.496865e-03, prox-=8.183691e-04 (<= 0.1? True)
+03/31/2026 20:03:22 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.014693e-03, Delta(h)=3.585815e-03, Delta/eps=3.183729e+01, D(h)=7.736206e-03 (>= 10.0? True), prox+=3.492685e-03, prox-=1.278700e-03 (<= 0.1? True)
+03/31/2026 20:03:22 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.014693e-03, nu3=5.111925e+04, Δ3=1.068115e-04
+03/31/2026 20:03:22 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.230316e-01, Delta/eps=1.092358e+03, D(h)=2.288361e-01, snr_ok=True, prox_ok=True, prox+=9.791766e-02, prox-=3.263919e-02, nu3_test=8.447266e+04, Δ3_test=1.689453e-01
+03/31/2026 20:03:22 - INFO - src.trainer -   [additive error estimation][update] step=93 h_raw=1.877e-03 -> h=5.782e-04 (eps≈1.13e-04, nu3≈5.11e+04, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:23 - INFO - src.trainer -   [two-point simple estimation][update] step=93 h_tilde=2.219e-04 -> h=2.141e-04 (Delta≈4.36e-05, G≈1.09e+01, L≈5.94e-06, h2=6.66e-03)
+03/31/2026 20:03:23 - INFO - src.trainer -   {'loss': 1.63690185546875, 'learning_rate': 1e-06, 'global_step': 93, 'zo_forward_step': 3907, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 122, 'eps': 0.001}
+03/31/2026 20:03:23 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:23 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.0001573641611293779
+03/31/2026 20:03:24 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.782474e-04, Delta(h)=5.416870e-03, Delta/eps=3.442251e+01, D(h)=5.416870e-03 (>= 10.0? True), prox+=2.520508e-03, prox-=7.826257e-04 (<= 0.1? True)
+03/31/2026 20:03:24 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.782474e-04, nu3=3.827548e+06, Δ3=1.480103e-03
+03/31/2026 20:03:24 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=3.414001e-01, Delta/eps=2.169491e+03, D(h)=3.414001e-01, snr_ok=True, prox_ok=True, prox+=9.132733e-02, prox-=9.756652e-02, nu3_test=1.609421e+05, Δ3_test=3.218842e-01
+03/31/2026 20:03:24 - INFO - src.trainer -   [additive error estimation][update] step=94 h_raw=4.978e-04 -> h=5.696e-04 (eps≈1.57e-04, nu3≈3.83e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:24 - INFO - src.trainer -   [two-point simple estimation][update] step=94 h_tilde=1.959e-04 -> h=2.048e-04 (Delta≈4.32e-05, G≈1.08e+01, L≈7.48e-06, h2=6.60e-03)
+03/31/2026 20:03:24 - INFO - src.trainer -   {'loss': 1.5757598876953125, 'learning_rate': 1e-06, 'global_step': 94, 'zo_forward_step': 3948, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 124, 'eps': 0.001}
+03/31/2026 20:03:25 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:25 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=8.009047529303412e-05
+03/31/2026 20:03:25 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.696471e-04, Delta(h)=3.295898e-03, Delta/eps=4.115219e+01, D(h)=3.720093e-02 (>= 10.0? True), prox+=1.262439e-02, prox-=1.070462e-02 (<= 0.1? True)
+03/31/2026 20:03:25 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.696471e-04, nu3=3.632077e+06, Δ3=1.342773e-03
+03/31/2026 20:03:25 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=5.335083e-01, Delta/eps=6.661320e+03, D(h)=5.335083e-01, snr_ok=True, prox_ok=False, prox+=6.671403e-02, prox-=2.097356e-01, nu3_test=2.673950e+05, Δ3_test=5.347900e-01
+03/31/2026 20:03:25 - INFO - src.trainer -   [additive error estimation][update] step=95 h_raw=4.044e-04 -> h=5.505e-04 (eps≈8.01e-05, nu3≈3.63e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:26 - INFO - src.trainer -   [two-point simple estimation][update] step=95 h_tilde=2.143e-04 -> h=2.095e-04 (Delta≈4.36e-05, G≈1.29e+01, L≈7.48e-06, h2=6.57e-03)
+03/31/2026 20:03:26 - INFO - src.trainer -   {'loss': 1.5168304443359375, 'learning_rate': 1e-06, 'global_step': 95, 'zo_forward_step': 3989, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 125, 'eps': 0.001}
+03/31/2026 20:03:26 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:26 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.000182175925954818
+03/31/2026 20:03:26 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.504656e-04, Delta(h)=1.541138e-03, Delta/eps=8.459612e+00, D(h)=6.118774e-03 (>= 10.0? False), prox+=1.502931e-03, prox-=2.518689e-03 (<= 0.1? True)
+03/31/2026 20:03:26 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.100931e-03, Delta(h)=4.470825e-03, Delta/eps=2.454125e+01, D(h)=1.072693e-02 (>= 10.0? True), prox+=2.052874e-03, prox-=4.997240e-03 (<= 0.1? True)
+03/31/2026 20:03:26 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.100931e-03, nu3=3.001711e+06, Δ3=8.010864e-03
+03/31/2026 20:03:26 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=2.883911e-03, Delta/eps=1.583036e+01, D(h)=2.116394e-02, snr_ok=True, prox_ok=True, prox+=7.845246e-03, prox-=6.010737e-03, nu3_test=1.029968e+03, Δ3_test=2.059937e-03
+03/31/2026 20:03:26 - INFO - src.trainer -   [additive error estimation][update] step=96 h_raw=5.668e-04 -> h=5.521e-04 (eps≈1.82e-04, nu3≈3.00e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:27 - INFO - src.trainer -   [two-point simple estimation][update] step=96 h_tilde=2.301e-04 -> h=2.196e-04 (Delta≈4.52e-05, G≈1.28e+01, L≈6.70e-06, h2=6.60e-03)
+03/31/2026 20:03:27 - INFO - src.trainer -   {'loss': 1.749664306640625, 'learning_rate': 1e-06, 'global_step': 96, 'zo_forward_step': 4032, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 126, 'eps': 0.001}
+03/31/2026 20:03:27 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:27 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00014780823859375397
+03/31/2026 20:03:27 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.520757e-04, Delta(h)=5.706787e-03, Delta/eps=3.860940e+01, D(h)=8.483887e-03 (>= 10.0? True), prox+=7.954337e-04, prox-=4.048125e-03 (<= 0.1? True)
+03/31/2026 20:03:28 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.520757e-04, nu3=1.265023e+07, Δ3=4.257202e-03
+03/31/2026 20:03:28 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=5.976868e-02, Delta/eps=4.043663e+02, D(h)=5.976868e-02, snr_ok=True, prox_ok=True, prox+=2.546262e-02, prox-=8.775994e-03, nu3_test=1.970291e+04, Δ3_test=3.940582e-02
+03/31/2026 20:03:28 - INFO - src.trainer -   [additive error estimation][update] step=97 h_raw=3.273e-04 -> h=5.239e-04 (eps≈1.48e-04, nu3≈1.27e+07, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:28 - INFO - src.trainer -   [two-point simple estimation][update] step=97 h_tilde=2.560e-04 -> h=2.371e-04 (Delta≈4.52e-05, G≈1.18e+01, L≈5.00e-06, h2=6.73e-03)
+03/31/2026 20:03:28 - INFO - src.trainer -   {'loss': 1.7552871704101562, 'learning_rate': 1e-06, 'global_step': 97, 'zo_forward_step': 4073, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 128, 'eps': 0.001}
+03/31/2026 20:03:28 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:29 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.000116565896867682
+03/31/2026 20:03:29 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.239496e-04, Delta(h)=3.280640e-03, Delta/eps=2.814408e+01, D(h)=9.048462e-03 (>= 10.0? True), prox+=1.711646e-03, prox-=3.665031e-03 (<= 0.1? True)
+03/31/2026 20:03:29 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.239496e-04, nu3=1.591266e+05, Δ3=4.577637e-05
+03/31/2026 20:03:29 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.106110e-01, Delta/eps=9.489136e+02, D(h)=1.106110e-01, snr_ok=True, prox_ok=True, prox+=5.341510e-02, prox-=1.234680e-02, nu3_test=2.983246e+05, Δ3_test=5.966492e-01
+03/31/2026 20:03:29 - INFO - src.trainer -   [additive error estimation][update] step=98 h_raw=1.300e-03 -> h=5.738e-04 (eps≈1.17e-04, nu3≈1.59e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:30 - INFO - src.trainer -   [two-point simple estimation][update] step=98 h_tilde=2.350e-04 -> h=2.360e-04 (Delta≈4.32e-05, G≈1.04e+01, L≈5.00e-06, h2=6.73e-03)
+03/31/2026 20:03:30 - INFO - src.trainer -   {'loss': 1.58740234375, 'learning_rate': 1e-06, 'global_step': 98, 'zo_forward_step': 4114, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 129, 'eps': 0.001}
+03/31/2026 20:03:30 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:30 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=4.010575640198652e-05
+03/31/2026 20:03:30 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.737978e-04, Delta(h)=1.693726e-03, Delta/eps=4.223148e+01, D(h)=6.790161e-03 (>= 10.0? True), prox+=2.658328e-03, prox-=1.594363e-03 (<= 0.1? True)
+03/31/2026 20:03:30 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=5.737978e-04, nu3=1.978835e+06, Δ3=7.476807e-04
+03/31/2026 20:03:30 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=1.171570e-01, Delta/eps=2.921201e+03, D(h)=1.405029e-01, snr_ok=True, prox_ok=True, prox+=7.315184e-03, prox-=7.470359e-02, nu3_test=6.856537e+04, Δ3_test=1.371307e-01
+03/31/2026 20:03:30 - INFO - src.trainer -   [additive error estimation][update] step=99 h_raw=3.932e-04 -> h=5.525e-04 (eps≈4.01e-05, nu3≈1.98e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:31 - INFO - src.trainer -   [two-point simple estimation][update] step=99 h_tilde=2.396e-04 -> h=2.378e-04 (Delta≈4.14e-05, G≈1.13e+01, L≈5.00e-06, h2=6.57e-03)
+03/31/2026 20:03:31 - INFO - src.trainer -   {'loss': 1.7407684326171875, 'learning_rate': 1e-06, 'global_step': 99, 'zo_forward_step': 4155, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 130, 'eps': 0.001}
+03/31/2026 20:03:31 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:31 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=6.342041760443238e-05
+03/31/2026 20:03:31 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.525186e-04, Delta(h)=3.051758e-05, Delta/eps=4.811948e-01, D(h)=1.403809e-03 (>= 10.0? False), prox+=4.100828e-04, prox-=3.924784e-04 (<= 0.1? True)
+03/31/2026 20:03:31 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.105037e-03, Delta(h)=8.392334e-04, Delta/eps=1.323286e+01, D(h)=3.982544e-03 (>= 10.0? True), prox+=8.986921e-04, prox-=1.376678e-03 (<= 0.1? True)
+03/31/2026 20:03:31 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=1.105037e-03, nu3=2.538667e+06, Δ3=6.851196e-03
+03/31/2026 20:03:32 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=4.489136e-02, Delta/eps=7.078376e+02, D(h)=9.381104e-02, snr_ok=True, prox_ok=True, prox+=3.814327e-02, prox-=1.398644e-02, nu3_test=2.218246e+04, Δ3_test=4.436493e-02
+03/31/2026 20:03:32 - INFO - src.trainer -   [additive error estimation][update] step=100 h_raw=4.216e-04 -> h=5.378e-04 (eps≈6.34e-05, nu3≈2.54e+06, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:32 - INFO - src.trainer -   [two-point simple estimation][update] step=100 h_tilde=2.067e-04 -> h=2.217e-04 (Delta≈4.32e-05, G≈1.06e+01, L≈6.59e-06, h2=6.43e-03)
+/home/jy03364/.conda/envs/ciao/lib/python3.12/site-packages/transformers/trainer_pt_utils.py:476: FutureWarning: DistributedTensorGatherer is deprecated and will be removed in v5 of Transformers.
+  warnings.warn(
+RobertaConfig {
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "dtype": "float32",
+  "eos_token_id": 2,
+  "finetuning_task": "sst-5",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "id2label": {
+    "0": "LABEL_0",
+    "1": "LABEL_1",
+    "2": "LABEL_2",
+    "3": "LABEL_3",
+    "4": "LABEL_4"
+  },
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "label2id": {
+    "LABEL_0": 0,
+    "LABEL_1": 1,
+    "LABEL_2": 2,
+    "LABEL_3": 3,
+    "LABEL_4": 4
+  },
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "transformers_version": "4.56.0",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+
+  0%|          | 0/214 [00:00<?, ?it/s]  6%|▌         | 12/214 [00:00<00:01, 110.41it/s] 11%|█         | 24/214 [00:00<00:01, 103.31it/s] 16%|█▋        | 35/214 [00:00<00:01, 103.44it/s] 21%|██▏       | 46/214 [00:00<00:01, 103.99it/s] 27%|██▋       | 57/214 [00:00<00:01, 103.97it/s] 32%|███▏      | 68/214 [00:00<00:01, 104.13it/s] 37%|███▋      | 79/214 [00:00<00:01, 103.49it/s] 42%|████▏     | 90/214 [00:00<00:01, 103.65it/s] 47%|████▋     | 101/214 [00:00<00:01, 103.87it/s] 52%|█████▏    | 112/214 [00:01<00:00, 103.85it/s] 57%|█████▋    | 123/214 [00:01<00:00, 104.03it/s] 63%|██████▎   | 134/214 [00:01<00:00, 104.00it/s] 68%|██████▊   | 145/214 [00:01<00:00, 103.98it/s] 73%|███████▎  | 156/214 [00:01<00:00, 101.85it/s] 78%|███████▊  | 167/214 [00:01<00:00, 102.22it/s] 83%|████████▎ | 178/214 [00:01<00:00, 101.76it/s] 88%|████████▊ | 189/214 [00:01<00:00, 102.34it/s] 93%|█████████▎| 200/214 [00:01<00:00, 102.79it/s] 99%|█████████▊| 211/214 [00:02<00:00, 103.14it/s]03/31/2026 20:03:34 - INFO - src.trainer -   {'eval_loss': 1.621490716934204, 'eval_acc': 0.2786885245901639}
+03/31/2026 20:03:34 - INFO - src.trainer -   Best dev result: 0.2786885245901639
+03/31/2026 20:03:35 - INFO - src.trainer -   {'loss': 1.5519256591796875, 'learning_rate': 1e-06, 'global_step': 100, 'zo_forward_step': 4198, 'max_steps': 100, 'max_zo_forward_steps': 0, 'time': 134, 'eps': 0.001}
+03/31/2026 20:03:35 - INFO - src.trainer -   [estimate_noise] ||z||=2.020e+04, delta=1.0e-06, q=8
+03/31/2026 20:03:35 - INFO - src.trainer -   [additive error estimation][noise] epsilon_f=0.00021027714922271899
+03/31/2026 20:03:35 - INFO - src.trainer -   [estimate_nu3][dh-trial-0] layer=ALL h=5.377788e-04, Delta(h)=1.220703e-03, Delta/eps=5.805211e+00, D(h)=1.403809e-03 (>= 10.0? False), prox+=8.387953e-04, prox-=5.851717e-05 (<= 0.1? True)
+03/31/2026 20:03:35 - INFO - src.trainer -   [estimate_nu3][dh-trial-1] layer=ALL h=1.075558e-03, Delta(h)=1.617432e-03, Delta/eps=7.691904e+00, D(h)=1.617432e-03 (>= 10.0? False), prox+=9.460830e-04, prox-=8.778090e-05 (<= 0.1? True)
+03/31/2026 20:03:35 - INFO - src.trainer -   [estimate_nu3][dh-trial-2] layer=ALL h=2.151115e-03, Delta(h)=1.647949e-03, Delta/eps=7.837034e+00, D(h)=1.647949e-03 (>= 10.0? False), prox+=4.484567e-04, prox-=6.043474e-04 (<= 0.1? True)
+03/31/2026 20:03:35 - INFO - src.trainer -   [estimate_nu3][dh-trial-3] layer=ALL h=4.302231e-03, Delta(h)=3.503418e-02, Delta/eps=1.666095e+02, D(h)=3.503418e-02 (>= 10.0? True), prox+=1.503463e-02, prox-=7.079286e-03 (<= 0.1? True)
+03/31/2026 20:03:35 - INFO - src.trainer -   [estimate_nu3][final] layer=ALL chosen_h=4.302231e-03, nu3=3.096566e+05, Δ3=4.931641e-02
+03/31/2026 20:03:36 - INFO - src.trainer -   [estimate_nu3][**TEST**] layer=ALL h_test=1.000000e-02, Delta(h)=4.800873e-01, Delta/eps=2.283117e+03, D(h)=4.800873e-01, snr_ok=True, prox_ok=False, prox+=1.989312e-01, prox-=5.530268e-02, nu3_test=3.787041e+05, Δ3_test=7.574081e-01
+03/31/2026 20:03:36 - INFO - src.trainer -   [additive error estimation][update] step=101 h_raw=1.268e-03 -> h=5.859e-04 (eps≈2.10e-04, nu3≈3.10e+05, nb=1, nd=1, reduce=mean)
+03/31/2026 20:03:36 - INFO - src.trainer -   [two-point simple estimation][update] step=101 h_tilde=2.431e-04 -> h=2.322e-04 (Delta≈4.32e-05, G≈1.12e+01, L≈5.00e-06, h2=6.57e-03)
+03/31/2026 20:03:36 - INFO - src.trainer -   [eval_loss_last5] mean=1.621491e+00 count=1 steps=[100]
+03/31/2026 20:03:36 - INFO - src.trainer -   
+
+Training completed. Do not forget to share your model on huggingface.co/models =)
+
+
+Traceback (most recent call last):
+  File "/home/jy03364/MeZO/medium_models/run.py", line 1513, in <module>
+    main()
+  File "/home/jy03364/MeZO/medium_models/run.py", line 1342, in main
+    trainer.save_model(training_args.output_dir)
+  File "/home/jy03364/.conda/envs/ciao/lib/python3.12/site-packages/transformers/trainer.py", line 4207, in save_model
+    self._save(output_dir)
+  File "/home/jy03364/.conda/envs/ciao/lib/python3.12/site-packages/transformers/trainer.py", line 4311, in _save
+    self.model.save_pretrained(
+  File "/home/jy03364/.conda/envs/ciao/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4201, in save_pretrained
+    raise RuntimeError(
+RuntimeError: The weights trying to be saved contained shared tensors [{'roberta.embeddings.word_embeddings.weight', 'lm_head.weight'}, {'lm_head.decoder.bias', 'lm_head.bias'}] that are mismatching the transformers base configuration. Try saving using `safe_serialization=False`, setting the `_dynamic_tied_weights_keys` attribute for affected modules, or remove this tensor sharing.
+100%|██████████| 214/214 [00:04<00:00, 51.09it/s] 
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+FileNotFoundError: [Errno 2] No such file or directory: '/home/jy03364/MeZO/medium_models/sh_file/test_hh/workspaces/sst5/result/sst5_test_hh_fp16/seed16/run_summary.json'
