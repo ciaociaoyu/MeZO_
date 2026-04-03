@@ -15,6 +15,9 @@ BS=${BS:-64}
 LR=${LR:-1e-6}
 EPS=${EPS:-1e-3}
 WD=${WD:-0}
+OPT=${OPT:-sgd}
+ZERO_ORDER_USE_TRAINER_OPTIM=${ZERO_ORDER_USE_TRAINER_OPTIM:-False}
+EFFICIENT_ZERO_ORDER=${EFFICIENT_ZERO_ORDER:-True}
 # This is true seting
 #STEP=${STEP:-100000}
 #EVAL_STEP=${EVAL_STEP:-10000}
@@ -37,6 +40,9 @@ echo "BS: $BS"
 echo "LR: $LR"
 echo "EPS: $EPS"
 echo "Step: $STEP; Eval step: $EVAL_STEP"
+echo "Optimizer: $OPT"
+echo "Use trainer optimizer for ZO: $ZERO_ORDER_USE_TRAINER_OPTIM"
+echo "Efficient zero order: $EFFICIENT_ZERO_ORDER"
 echo "Using adaptive h: $USE_H"
 echo "Dataloader shuffle: $DATALOADER_SHUFFLE"
 
@@ -48,5 +54,5 @@ echo "Tag: $TAG"
 
 TYPE=prompt GRID_TAG=$GR_TAG TAG=$TAG STEPS=$STEP TASK=$TASK SEED=$SEED MODEL=$MODEL K=$K DATASET_MODE=$DATASET_MODE \
     bash run_fewshot.sh --per_device_train_batch_size $BS --learning_rate $LR --eval_steps $EVAL_STEP --weight_decay $WD --zero_order_eps $EPS --use_adaptive_h $USE_H --use_c_scale $USE_C --data_seed $DATA_SEED\
-    --zero_order_optim --lr_scheduler_type "constant" --optimizer "sgd" --efficient_zero_order \
+    --zero_order_optim --lr_scheduler_type "constant" --optimizer "$OPT" --zero_order_use_trainer_optim "$ZERO_ORDER_USE_TRAINER_OPTIM" --efficient_zero_order "$EFFICIENT_ZERO_ORDER" \
     $@

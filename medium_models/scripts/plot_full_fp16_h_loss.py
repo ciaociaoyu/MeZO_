@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+
+import csv
+import json
+import math
+from pathlib import Path
+from typing import Dict, List, Optional
+
+import matplotlib.pyplot as plt
+
+
+ROOT = Path("/Users/jichaoyu/Documents/GitHub/MeZO/medium_models")
+TASKS = [
+    {
+        "task": "SST-2",
+        "summary": ROOT / "sh_file/sst-2/full_fp16_h_sweep_16_workspace/result/SST-2-bs32-full-fp16-h-sweep-seed16/summary.jsonl",
+    },
+    {
+        "task": "sst-5",
+        "summary": ROOT / "sh_file/sst5/bs32/h_precision_sweep_16/workspace/result/sst-5-bs32-full-fp16-h-sweep-seed16/summary.jsonl",
+    },
+    {
+        "task": "MNLI",
+        "summary": ROOT / "sh_file/MNLI_bs8/full_fp16_h_sweep_16_workspace/result/MNLI-bs32-full-fp16-h-sweep-seed16/summary.jsonl",
+    },
+    {
+        "task": "RTE",
+        "summary": ROOT / "sh_file/RTE_bs8/full_fp16_h_sweep_16_workspace/result/RTE-bs32-full-fp16-h-sweep-seed16/summary.jsonl",
+    },
+]
+OUT_DIR = ROOT / "sh_file/h_loss_figures"
+H_MARKS = {
+    "SST-2": {"h_two_point": 1.52e-4, "h_additive": 4.76e-4},
+    "sst-5": {"h_two_point": 2.322e-4, "h_additive": 5.859e-4},
+    "MNLI": {"h_two_point": 2.614e-4, "h_additive": 5.94e-4},
+    "RTE": {"h_two_point": 2.104e-4, "h_additive": 5.304e-4},
+}
+
+
+def _safe_float(value) -> float:
+    try:
+        result = float(value)
+    except Exception:
+        return float("nan")
+    return result if math.isfinite(result) else float("nan")
+
+
+def _first_metrics(block: Optional[Dict]) -> Dict:
+    if not isinstance(block, dict) or not block:
+        return {}
+    return next(iter(block.values()))
+
+
+def load_rows(summary_path: Path, task_name: str) -> List[Dict[str, float]]:
+    rows: List[Dict[str, float]] = []
+    with summary_path.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            record = json.loads(line)
+            eval_metrics = _first_metrics(record.get("eval"))
+            test_metrics = _first_metrics(record.get("test"))
+            csv_metrics = (record.get("artifacts") or {}).get("metrics_csv_last_row") or {}
+            rows.append(
+                {
+                    "task": task_name,
+                    "h": _safe_float(record.get("h")),
+                    "train_loss_last": _safe_float(csv_metrics.get("train_loss")),
+                    "dev_loss": _safe_float(eval_metrics.get("eval_loss")),
+                    "test_loss": _safe_float(test_metrics.get("eval_loss")),
+                    "dev_acc": _safe_float(eval_metrics.get("eval_acc", eval_metrics.get("eval_mnli/acc"))),
+                    "test_acc": _safe_float(test_metrics.get("eval_acc", test_metrics.get("eval_mnli/acc"))),
+                }
+            )
+    rows.sort(key=lambda row: row["h"])
+    return rows
+
+
+def write_csv(all_rows: List[Dict[str, float]], out_path: Path) -> None:
+    with out_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "task",
+                "h",
+                "train_loss_last",
+                "dev_loss",
+                "test_loss",
+                "dev_acc",
+                "test_acc",
+            ],
+        )
+        writer.writeheader()
+        for row in all_rows:
+            writer.writerow(row)
+
+
+def _plot_metric(ax, rows: List[Dict[str, float]], key: str, label: str, color: str) -> None:
+    xs = []
+    ys = []
+    for row in rows:
+        x = row["h"]
+        y = row[key]
+        if math.isfinite(x) and math.isfinite(y):
+            xs.append(x)
+            ys.append(y)
+    if xs:
+        ax.plot(xs, ys, marker="o", linewidth=2, markersize=5, label=label, color=color)
+
+
+def _add_h_markers(ax, task: str) -> None:
+    marks = H_MARKS.get(task)
+    if not marks:
+        return
+
+    two_point = marks["h_two_point"]
+    additive = marks["h_additive"]
+
+    ax.axvline(two_point, color="#2ca02c", linestyle="--", linewidth=1.8, alpha=0.9, label="h_two_point")
+    ax.axvline(additive, color="#9467bd", linestyle="-.", linewidth=1.8, alpha=0.9, label="h_additive")
+    ax.text(
+        two_point,
+        0.98,
+        f"two-point\n{two_point:.2e}",
+        color="#2ca02c",
+        rotation=90,
+        transform=ax.get_xaxis_transform(),
+        ha="right",
+        va="top",
+        fontsize=8,
+        backgroundcolor="white",
+    )
+    ax.text(
+        additive,
+        0.82,
+        f"additive\n{additive:.2e}",
+        color="#9467bd",
+        rotation=90,
+        transform=ax.get_xaxis_transform(),
+        ha="left",
+        va="top",
+        fontsize=8,
+        backgroundcolor="white",
+    )
+
+
+def plot(all_task_rows: Dict[str, List[Dict[str, float]]], out_prefix: Path) -> None:
+    fig, axes = plt.subplots(2, 2, figsize=(13, 9))
+    axes = axes.flatten()
+    colors = {
+        "train_loss_last": "#1f77b4",
+        "dev_loss": "#ff7f0e",
+        "test_loss": "#2ca02c",
+    }
+
+    for ax, (task, rows) in zip(axes, all_task_rows.items()):
+        _plot_metric(ax, rows, "train_loss_last", "train_loss_last", colors["train_loss_last"])
+        _plot_metric(ax, rows, "dev_loss", "dev_loss", colors["dev_loss"])
+        _plot_metric(ax, rows, "test_loss", "test_loss", colors["test_loss"])
+        _add_h_markers(ax, task)
+        ax.set_xscale("log")
+        ax.set_xlabel("h")
+        ax.set_ylabel("loss")
+        ax.set_ylim(0.0, 2.0)
+        ax.set_title(task)
+        ax.grid(True, which="both", alpha=0.3)
+        ax.legend()
+
+    fig.suptitle("FP16 Full-Dataset h vs Loss", fontsize=16)
+    fig.tight_layout(rect=(0, 0, 1, 0.97))
+    fig.savefig(out_prefix.with_suffix(".png"), dpi=220)
+    fig.savefig(out_prefix.with_suffix(".svg"))
+    plt.close(fig)
+
+
+def main() -> None:
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    all_rows: List[Dict[str, float]] = []
+    by_task: Dict[str, List[Dict[str, float]]] = {}
+
+    for item in TASKS:
+        rows = load_rows(item["summary"], item["task"])
+        by_task[item["task"]] = rows
+        all_rows.extend(rows)
+
+    write_csv(all_rows, OUT_DIR / "fp16_full_h_loss_summary.csv")
+    plot(by_task, OUT_DIR / "fp16_full_h_vs_loss")
+    print(f"[done] wrote figure and csv to {OUT_DIR}")
+
+
+if __name__ == "__main__":
+    main()

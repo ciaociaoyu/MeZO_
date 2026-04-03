@@ -1,0 +1,144 @@
+#!/bin/bash
+#SBATCH --job-name=sst5_bs32_adam_fp16_full_h_sweep
+#SBATCH --partition=gpu_p
+#SBATCH --array=0-1%2
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=100G
+#SBATCH --gres=gpu:H100:1
+#SBATCH --time=24:00:00
+#SBATCH --output=jobs/%x_%A_%a.out
+
+ml jq
+
+source ~/.bashrc
+conda activate ciao
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/../../../.."
+mkdir -p jobs
+
+TASK_WORKSPACE="$SCRIPT_DIR/workspace"
+RESULT_ROOT="${TASK_WORKSPACE}/result"
+SWEEP_NAME="sst-5-bs32-full-adam-fp16-h-sweep-seed16"
+SUMMARY_FILE="${RESULT_ROOT}/${SWEEP_NAME}/summary.jsonl"
+
+mkdir -p "${TASK_WORKSPACE}/result" "${TASK_WORKSPACE}/launch_meta"
+mkdir -p "${RESULT_ROOT}/${SWEEP_NAME}"
+
+cat > "${TASK_WORKSPACE}/launch_meta/job_${SLURM_JOB_ID:-manual}_array_${SLURM_ARRAY_TASK_ID:-na}.txt" <<META
+script_dir=${SCRIPT_DIR}
+task=sst-5
+optimizer=adam
+precision=fp16
+bs=32
+seed=16
+data_seed=16
+dataset_mode=full
+step=50000
+eval_step=5000
+workspace=${TASK_WORKSPACE}
+META
+
+append_run_summary() {
+  local run_summary_path="$1"
+  local eps="$2"
+  if [[ ! -f "${run_summary_path}" ]]; then
+    echo "Missing run summary: ${run_summary_path}"
+    return 1
+  fi
+  python - "${run_summary_path}" "${SUMMARY_FILE}" "sst-5" "roberta-large" "adam" "fp16" "${eps}" "16" "full" <<'PY'
+import json
+import os
+import sys
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+
+run_summary_path, summary_file, task, model, optimizer, precision, eps_value, seed, dataset_mode = sys.argv[1:]
+with open(run_summary_path, "r", encoding="utf-8") as f:
+    record = json.load(f)
+
+record.update({
+    "task": task,
+    "model": model,
+    "optimizer": optimizer,
+    "precision": precision,
+    "h": eps_value,
+    "seed": int(seed),
+    "dataset_mode": dataset_mode,
+})
+
+summary_dir = os.path.dirname(summary_file)
+if summary_dir:
+    os.makedirs(summary_dir, exist_ok=True)
+
+lock_path = summary_file + ".lock"
+with open(lock_path, "w", encoding="utf-8") as lock_file:
+    if fcntl is not None:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+    with open(summary_file, "a", encoding="utf-8") as out_file:
+        out_file.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+PY
+}
+
+CHUNK0=(1e-8 3e-8 1e-7 3e-7 1e-6 3e-6 1e-5)
+CHUNK1=(3e-5 1e-4 3e-4 1e-3 3e-3 1e-2)
+
+echo "SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID}"
+echo "Task workspace: ${TASK_WORKSPACE}"
+echo "Summary file: ${SUMMARY_FILE}"
+
+case "${SLURM_ARRAY_TASK_ID}" in
+    0)
+        SELECTED_H_LIST=("${CHUNK0[@]}")
+        ;;
+    1)
+        SELECTED_H_LIST=("${CHUNK1[@]}")
+        ;;
+    *)
+        echo "Unexpected SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID}"
+        exit 1
+        ;;
+esac
+
+echo "EPS chunk: ${SELECTED_H_LIST[*]}"
+
+for EPS in "${SELECTED_H_LIST[@]}"; do
+  JOB_NAME="sst5_bs32_full_adam_fp16_h${EPS}"
+  RUN_SUMMARY_PATH="${RESULT_ROOT}/${JOB_NAME}/seed16/run_summary.json"
+
+  echo "Running Adam+fp16 fixed-h training; EPS(h) = ${EPS}"
+
+  TASK=sst-5 \
+  K=16 \
+  SEED=16 \
+  DATA_SEED=16 \
+  DATASET_MODE=full \
+  BS=32 \
+  LR=1e-6 \
+  WD=0 \
+  STEP=50000 \
+  EVAL_STEP=5000 \
+  MODEL=roberta-large \
+  OPT=adam \
+  ZERO_ORDER_USE_TRAINER_OPTIM=True \
+  EFFICIENT_ZERO_ORDER=True \
+  USE_H=False \
+  USE_C=False \
+  DATALOADER_SHUFFLE=False \
+  EPS="${EPS}" \
+  EXTRA_TAG="full-adam-fp16-bs32-eps${EPS}" \
+  bash mezo.sh \
+    --result_root "${RESULT_ROOT}" \
+    --job_name "${JOB_NAME}" \
+    --dataset_mode full \
+    --zo_two_point_precision fp16 \
+    --zo_probe_every 200 \
+    --zo_probe_num_seeds 16 \
+    --zo_probe_log_csv True
+
+  append_run_summary "${RUN_SUMMARY_PATH}" "${EPS}"
+done
