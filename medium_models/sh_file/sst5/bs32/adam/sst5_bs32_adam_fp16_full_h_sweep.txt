@@ -14,11 +14,31 @@ ml jq
 source ~/.bashrc
 conda activate ciao
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/../../../.."
-mkdir -p jobs
+SUBMIT_DIR="${SLURM_SUBMIT_DIR:-$(pwd)}"
+SEARCH_DIR="${SUBMIT_DIR}"
+PROJECT_ROOT=""
 
-TASK_WORKSPACE="$SCRIPT_DIR/workspace"
+while [[ "${SEARCH_DIR}" != "/" ]]; do
+  if [[ -f "${SEARCH_DIR}/mezo.sh" ]]; then
+    PROJECT_ROOT="${SEARCH_DIR}"
+    break
+  fi
+  if [[ -f "${SEARCH_DIR}/medium_models/mezo.sh" ]]; then
+    PROJECT_ROOT="${SEARCH_DIR}/medium_models"
+    break
+  fi
+  SEARCH_DIR="$(dirname "${SEARCH_DIR}")"
+done
+
+if [[ -z "${PROJECT_ROOT}" ]]; then
+  echo "Cannot locate medium_models from SLURM_SUBMIT_DIR=${SUBMIT_DIR}"
+  exit 1
+fi
+
+SCRIPT_HOME="${PROJECT_ROOT}/sh_file/sst5/bs32/adam"
+cd "${PROJECT_ROOT}"
+
+TASK_WORKSPACE="${SCRIPT_HOME}/workspace"
 RESULT_ROOT="${TASK_WORKSPACE}/result"
 SWEEP_NAME="sst-5-bs32-full-adam-fp16-h-sweep-seed16"
 SUMMARY_FILE="${RESULT_ROOT}/${SWEEP_NAME}/summary.jsonl"
@@ -27,7 +47,9 @@ mkdir -p "${TASK_WORKSPACE}/result" "${TASK_WORKSPACE}/launch_meta"
 mkdir -p "${RESULT_ROOT}/${SWEEP_NAME}"
 
 cat > "${TASK_WORKSPACE}/launch_meta/job_${SLURM_JOB_ID:-manual}_array_${SLURM_ARRAY_TASK_ID:-na}.txt" <<META
-script_dir=${SCRIPT_DIR}
+submit_dir=${SUBMIT_DIR}
+project_root=${PROJECT_ROOT}
+script_home=${SCRIPT_HOME}
 task=sst-5
 optimizer=adam
 precision=fp16
