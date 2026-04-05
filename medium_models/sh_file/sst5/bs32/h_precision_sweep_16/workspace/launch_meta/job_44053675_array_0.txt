@@ -1,0 +1,6 @@
+task=sst-5
+bs=32
+seed=16
+data_seed=16
+dataset_mode=full
+workspace=/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/h_precision_sweep_16/workspace

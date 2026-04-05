@@ -1,0 +1,13 @@
+submit_dir=/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam
+project_root=/home/jy03364/MeZO/medium_models
+script_home=/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam
+task=sst-5
+optimizer=adam
+precision=fp16
+bs=32
+seed=16
+data_seed=16
+dataset_mode=full
+step=50000
+eval_step=5000
+workspace=/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam/workspace

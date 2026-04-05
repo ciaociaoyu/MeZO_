@@ -1,0 +1,6 @@
+task=RTE
+bs=32
+seed=16
+data_seed=16
+dataset_mode=full
+workspace=/home/jy03364/MeZO/medium_models/sh_file/RTE_bs8/full_fp16_h_sweep_16_workspace
