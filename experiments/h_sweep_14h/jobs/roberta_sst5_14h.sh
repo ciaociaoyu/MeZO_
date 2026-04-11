@@ -6,7 +6,8 @@
 #SBATCH --mem=120G
 #SBATCH --gres=gpu:H100:1
 #SBATCH --time=72:00:00
-#SBATCH --output=/Users/jichaoyu/Documents/GitHub/MeZO/experiments/h_sweep_14h/logs/slurm_%x_%j.out
+#SBATCH --chdir=/scratch/jy03364/MeZO_/experiments/h_sweep_14h
+#SBATCH --output=logs/slurm_%x_%j.out
 
 set -euo pipefail
 
@@ -14,9 +15,11 @@ ml jq
 source ~/.bashrc
 conda activate ciao
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-EXPERIMENT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-REPO_ROOT="$(cd "${EXPERIMENT_ROOT}/../.." && pwd)"
+SCRATCH_ROOT="/scratch/jy03364/MeZO_"
+EXPERIMENT_ROOT="${SCRATCH_ROOT}/experiments/h_sweep_14h"
+MEDIUM_ROOT="${SCRATCH_ROOT}/medium_models"
+
+cd "${EXPERIMENT_ROOT}"
 source "${EXPERIMENT_ROOT}/h_values.sh"
 
 SEED=16
@@ -70,9 +73,6 @@ with open(lock_path, "w", encoding="utf-8") as lock_file:
 PY
 }
 
-cd "${REPO_ROOT}/medium_models"
-mkdir -p jobs
-
 for H in "${H_VALUES[@]}"; do
   RUN_ROOT="${EXPERIMENT_ROOT}/results/${MODEL_KEY}/${TASK_KEY}/h_${H}"
   JOB_NAME="run"
@@ -83,31 +83,34 @@ for H in "${H_VALUES[@]}"; do
 
   mkdir -p "${RUN_ROOT}" "${LOG_DIR}"
 
-  TASK="${TASK_NAME}" \
-  K=16 \
-  SEED="${SEED}" \
-  DATA_SEED="${SEED}" \
-  DATASET_MODE=full \
-  BS=32 \
-  LR=1e-6 \
-  WD=0 \
-  STEP=50000 \
-  EVAL_STEP=5000 \
-  MODEL=roberta-large \
-  USE_H=False \
-  USE_C=False \
-  DATALOADER_SHUFFLE=False \
-  EPS="${H}" \
-  EXTRA_TAG="hsweep14h-${TASK_KEY}-fp16-h${H}" \
-  bash mezo.sh \
-    --result_root "${RUN_ROOT}" \
-    --job_name "${JOB_NAME}" \
-    --dataset_mode full \
-    --zo_two_point_precision fp16 \
-    --zo_probe_every 200 \
-    --zo_probe_num_seeds 16 \
-    --zo_probe_log_csv True \
-    >"${RUN_LOG}" 2>"${RUN_ERR}"
+  (
+    cd "${MEDIUM_ROOT}"
+    mkdir -p jobs
+    export TASK="${TASK_NAME}"
+    export K=16
+    export SEED="${SEED}"
+    export DATA_SEED="${SEED}"
+    export DATASET_MODE=full
+    export BS=32
+    export LR=1e-6
+    export WD=0
+    export STEP=50000
+    export EVAL_STEP=5000
+    export MODEL=roberta-large
+    export USE_H=False
+    export USE_C=False
+    export DATALOADER_SHUFFLE=False
+    export EPS="${H}"
+    export EXTRA_TAG="hsweep14h-${TASK_KEY}-fp16-h${H}"
+    bash "${MEDIUM_ROOT}/mezo.sh" \
+      --result_root "${RUN_ROOT}" \
+      --job_name "${JOB_NAME}" \
+      --dataset_mode full \
+      --zo_two_point_precision fp16 \
+      --zo_probe_every 200 \
+      --zo_probe_num_seeds 16 \
+      --zo_probe_log_csv True
+  ) >"${RUN_LOG}" 2>"${RUN_ERR}"
 
   append_run_summary "${RUN_SUMMARY_PATH}" "${H}"
 done

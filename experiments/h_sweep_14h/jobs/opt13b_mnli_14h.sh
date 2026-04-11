@@ -6,16 +6,19 @@
 #SBATCH --mem=160G
 #SBATCH --gres=gpu:H100:1
 #SBATCH --time=168:00:00
-#SBATCH --output=/Users/jichaoyu/Documents/GitHub/MeZO/experiments/h_sweep_14h/logs/slurm_%x_%j.out
+#SBATCH --chdir=/scratch/jy03364/MeZO_/experiments/h_sweep_14h
+#SBATCH --output=logs/slurm_%x_%j.out
 
 set -euo pipefail
 
 source ~/.bashrc
 conda activate mezo-env
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-EXPERIMENT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-REPO_ROOT="$(cd "${EXPERIMENT_ROOT}/../.." && pwd)"
+SCRATCH_ROOT="/scratch/jy03364/MeZO_"
+EXPERIMENT_ROOT="${SCRATCH_ROOT}/experiments/h_sweep_14h"
+LARGE_ROOT="${SCRATCH_ROOT}/large_models"
+
+cd "${EXPERIMENT_ROOT}"
 source "${EXPERIMENT_ROOT}/h_values.sh"
 
 SEED=42
@@ -69,8 +72,6 @@ with open(lock_path, "w", encoding="utf-8") as lock_file:
 PY
 }
 
-cd "${REPO_ROOT}/large_models"
-
 for H in "${H_VALUES[@]}"; do
   RUN_DIR="${EXPERIMENT_ROOT}/results/${MODEL_NAME}/${TASK_KEY}/h_${H}/seed_${SEED}"
   LOG_DIR="${EXPERIMENT_ROOT}/logs/${MODEL_NAME}/${TASK_KEY}/h_${H}/seed_${SEED}"
@@ -80,7 +81,7 @@ for H in "${H_VALUES[@]}"; do
 
   mkdir -p "${RUN_DIR}" "${LOG_DIR}"
 
-  python run.py \
+  python "${LARGE_ROOT}/run.py" \
     --model_name "${MODEL_NAME}" \
     --task_name "${TASK_NAME}" \
     --output_dir "${RUN_DIR}" \
