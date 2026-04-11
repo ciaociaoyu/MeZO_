@@ -9,10 +9,12 @@
 #SBATCH --chdir=/scratch/jy03364/MeZO_/experiments/h_sweep_14h
 #SBATCH --output=logs/slurm_%x_%j.out
 
-set -euo pipefail
+set -eo pipefail
 
+set +u
 source ~/.bashrc
 conda activate mezo-env
+set -u
 
 SCRATCH_ROOT="/scratch/jy03364/MeZO_"
 EXPERIMENT_ROOT="${SCRATCH_ROOT}/experiments/h_sweep_14h"

@@ -9,11 +9,13 @@
 #SBATCH --chdir=/scratch/jy03364/MeZO_/experiments/h_sweep_14h
 #SBATCH --output=logs/slurm_%x_%j.out
 
-set -euo pipefail
+set -eo pipefail
 
 ml jq
+set +u
 source ~/.bashrc
 conda activate ciao
+set -u
 
 SCRATCH_ROOT="/scratch/jy03364/MeZO_"
 EXPERIMENT_ROOT="${SCRATCH_ROOT}/experiments/h_sweep_14h"
