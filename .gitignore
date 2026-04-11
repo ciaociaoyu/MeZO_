@@ -144,10 +144,17 @@ cython_debug/
 !large_models/sh_file/MNLI/*.sh
 !medium_models/scripts/exp_sst5_h_precision_sweep.sh
 !Some_test_exp/sst5_smoke_jobs/*.sh
+!experiments/h_sweep_14h/h_values.sh
+!experiments/h_sweep_14h/jobs/
+!experiments/h_sweep_14h/jobs/*.sh
+!experiments/h_sweep_14h/logs/
+!experiments/h_sweep_14h/logs/.gitkeep
 .venv
 .vscode
 data
 log*
+!experiments/h_sweep_14h/logs/
+!experiments/h_sweep_14h/logs/.gitkeep
 runs
 result
 wandb
