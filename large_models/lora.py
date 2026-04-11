@@ -113,6 +113,8 @@ class LoRA:
 
         if model.config.model_type == "opt":
             attention_name = "attn"
+        elif model.config.model_type in ["llama", "mistral"]:
+            attention_name = "self_attn"
         elif model.config.model_type == "roberta":
             attention_name = "attention"
         else:
@@ -124,20 +126,34 @@ class LoRA:
                 logger.info(f"Inject lora to: {key}")
                 _, _, attn = find_module(model, key)
 
-                if model.config.model_type == "opt":
+                if model.config.model_type in ["opt", "llama", "mistral"]:
                     original_q_weight = attn.q_proj.weight.data
-                    original_q_bias = attn.q_proj.bias.data
-                    original_v_weight= attn.v_proj.weight.data
-                    original_v_bias = attn.v_proj.bias.data
-                    attn.q_proj = LoRALinear(model.config.hidden_size, model.config.hidden_size, r=r, lora_alpha=alpha, bias=model.config.enable_bias).to(original_q_weight.device)
-                    attn.v_proj = LoRALinear(model.config.hidden_size, model.config.hidden_size, r=r, lora_alpha=alpha, bias=model.config.enable_bias).to(original_v_weight.device)
+                    original_q_bias = attn.q_proj.bias.data if attn.q_proj.bias is not None else None
+                    original_v_weight = attn.v_proj.weight.data
+                    original_v_bias = attn.v_proj.bias.data if attn.v_proj.bias is not None else None
+                    attn.q_proj = LoRALinear(
+                        attn.q_proj.in_features,
+                        attn.q_proj.out_features,
+                        r=r,
+                        lora_alpha=alpha,
+                        bias=attn.q_proj.bias is not None,
+                    ).to(device=original_q_weight.device, dtype=original_q_weight.dtype)
+                    attn.v_proj = LoRALinear(
+                        attn.v_proj.in_features,
+                        attn.v_proj.out_features,
+                        r=r,
+                        lora_alpha=alpha,
+                        bias=attn.v_proj.bias is not None,
+                    ).to(device=original_v_weight.device, dtype=original_v_weight.dtype)
                     if float16:
                         attn.q_proj.half()
                         attn.v_proj.half()
-                    attn.q_proj.weight.data = original_q_weight 
-                    attn.q_proj.bias.data = original_q_bias
-                    attn.v_proj.weight.data = original_v_weight
-                    attn.v_proj.bias.data = original_v_bias
+                    attn.q_proj.weight.data.copy_(original_q_weight)
+                    attn.v_proj.weight.data.copy_(original_v_weight)
+                    if original_q_bias is not None:
+                        attn.q_proj.bias.data.copy_(original_q_bias)
+                    if original_v_bias is not None:
+                        attn.v_proj.bias.data.copy_(original_v_bias)
                 else:
                     raise NotImplementedError
         

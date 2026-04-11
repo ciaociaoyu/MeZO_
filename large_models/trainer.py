@@ -229,7 +229,7 @@ class OurTrainer(Trainer):
         if self.args.linear_probing:
 
             def _get_token_prediction_layer(model):
-                if model.config.model_type == "opt":
+                if model.config.model_type in ["opt", "llama", "mistral", "gpt2"]:
                     return model.lm_head
                 else:
                     raise NotImplementedError(model.config.model_type)
@@ -269,7 +269,7 @@ class OurTrainer(Trainer):
             features = torch.cat(features, dim=0).cpu().numpy()
             targets = torch.cat(targets, dim=0).cpu().numpy()
             # Whether to use bias
-            if self.model.config.model_type in ["opt", "gpt2"]:
+            if self.model.config.model_type in ["opt", "llama", "mistral", "gpt2"]:
                 use_bias = False
             else:
                 raise NotImplementedError

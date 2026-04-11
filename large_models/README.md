@@ -19,6 +19,7 @@ Please read `run.py` for a complete list of arguments. We introduce some of the 
 * `--num_dev`: Number of validation examples.
 * `--num_test`: Number of testing examples.
 * `--model_name`: HuggingFace model name or path.
+  The large-model path also accepts short aliases such as `opt-1.3b`, `opt-13b`, `mistral-7b`, and `llama2-7b`.
 * `--task_name`: Task name.
 * `--trainer`: can be `none` (zero-shot/ICL), `regular` (fine-tuning), or `zo` (MeZO).
 * `--train_as_classification`: turn this on for classification tasks (Cross Entropy over likelihood of each class' label words). Otherwise it is LM-style teacher forcing.
@@ -40,6 +41,10 @@ MODEL=facebook/opt-13b TASK=SST2 bash icl.sh
 MODEL=facebook/opt-1.3b TASK=SST2 MODE=ft LR=1e-5 bash finetune.sh
 MODEL=facebook/opt-1.3b TASK=SST2 MODE=prefix LR=1e-2 bash finetune.sh
 MODEL=facebook/opt-1.3b TASK=SST2 MODE=lora LR=1e-4 bash finetune.sh
+
+# SST-5 smoke tests with the standardized data-mode interface
+MODEL=opt-1.3b TASK=SST-5 DATASET_MODE=fewshot K=16 bash finetune.sh --max_steps 100
+MODEL=mistral-7b TASK=SST-5 DATASET_MODE=full bash finetune.sh --max_steps 100
 
 # Full-parameter fine-tuning using fully-sharded data parallel or FSDP (multi-GPU)
 MODEL=facebook/opt-13b TASK=SST2 MODE=ft LR=1e-5 NUM_GPU=4 bash finetune_fsdp.sh

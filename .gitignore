@@ -143,6 +143,7 @@ cython_debug/
 !large_models/train_opt_2p7b_mnli.sh
 !large_models/sh_file/MNLI/*.sh
 !medium_models/scripts/exp_sst5_h_precision_sweep.sh
+!Some_test_exp/sst5_smoke_jobs/*.sh
 .venv
 .vscode
 data
@@ -164,3 +165,4 @@ llm_eval/data
 *.ipynb
 *.output
 *.pdf
+large_models/.hf_token.local

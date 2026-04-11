@@ -1,0 +1,14 @@
+h,probe_mae,probe_rmse,probe_corr,probe_sign_acc,output_dir
+1e-08,5388.908992826939,6974.704138499721,-0.11571059066667855,0.3125,/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam/workspace/result/sst5_bs32_full_adam_fp16_h1e-8/seed16
+3e-08,2607.8677284047008,3478.9581868823875,0.01706843111695548,0.5,/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam/workspace/result/sst5_bs32_full_adam_fp16_h3e-8/seed16
+1e-07,600.7754067257047,724.0078113501748,-0.2024805662083636,0.5,/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam/workspace/result/sst5_bs32_full_adam_fp16_h1e-7/seed16
+3e-07,179.94972286373377,259.72708647918023,0.040490568297241535,0.4375,/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam/workspace/result/sst5_bs32_full_adam_fp16_h3e-7/seed16
+1e-06,58.346906542778015,74.91271957734084,-0.01495521363453564,0.5,/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam/workspace/result/sst5_bs32_full_adam_fp16_h1e-6/seed16
+3e-06,25.241380035877228,31.07821267668534,0.016477012540823125,0.375,/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam/workspace/result/sst5_bs32_full_adam_fp16_h3e-6/seed16
+1e-05,4.97762019187212,6.312674239869151,0.8259313995885992,0.6875,/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam/workspace/result/sst5_bs32_full_adam_fp16_h1e-5/seed16
+3e-05,1.9421276412904263,2.1745025981440214,0.9653216989875666,0.9375,/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam/workspace/result/sst5_bs32_full_adam_fp16_h3e-5/seed16
+0.0001,0.7844428196549416,0.8955335834775343,0.9935865375235358,1.0,/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam/workspace/result/sst5_bs32_full_adam_fp16_h1e-4/seed16
+0.0003,0.3723665475845337,0.4531116996675956,0.9982080701221376,1.0,/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam/workspace/result/sst5_bs32_full_adam_fp16_h3e-4/seed16
+0.001,0.8038466461002827,0.8950316497471766,0.9942689240615689,1.0,/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam/workspace/result/sst5_bs32_full_adam_fp16_h1e-3/seed16
+0.003,3.5085472278296947,4.064689188888482,0.8536634854306414,0.9375,/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam/workspace/result/sst5_bs32_full_adam_fp16_h3e-3/seed16
+0.01,11.960961513221264,16.02386876549588,0.07460257232687306,0.5,/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/adam/workspace/result/sst5_bs32_full_adam_fp16_h1e-2/seed16

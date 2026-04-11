@@ -1,4 +1,5 @@
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -24,18 +25,83 @@ from utils import *
 from trainer import OurTrainer
 import random
 
+MODEL_NAME_ALIASES = {
+    "opt-125m": "facebook/opt-125m",
+    "opt-350m": "facebook/opt-350m",
+    "opt-1.3b": "facebook/opt-1.3b",
+    "opt-2.7b": "facebook/opt-2.7b",
+    "opt-6.7b": "facebook/opt-6.7b",
+    "opt-13b": "facebook/opt-13b",
+    "opt-30b": "facebook/opt-30b",
+    "mistral-7b": "mistralai/Mistral-7B-v0.1",
+    "mistral-7b-v0.1": "mistralai/Mistral-7B-v0.1",
+    "llama2-7b": "meta-llama/Llama-2-7b-hf",
+    "llama-2-7b": "meta-llama/Llama-2-7b-hf",
+    "llama-2-7b-hf": "meta-llama/Llama-2-7b-hf",
+}
+
+MODEL_FAMILY_KEYWORDS = [
+    ("mistral", "mistral"),
+    ("llama", "llama"),
+    ("opt", "opt"),
+    ("gpt2", "gpt2"),
+]
+
+
+def canonicalize_model_name(model_name: str) -> str:
+    model_name = str(model_name).strip()
+    return MODEL_NAME_ALIASES.get(model_name.lower(), model_name)
+
+
+def infer_model_family(model_name: str, config=None) -> Optional[str]:
+    config_model_type = getattr(config, "model_type", None)
+    if config_model_type in {"opt", "mistral", "llama", "gpt2"}:
+        return config_model_type
+
+    normalized_model_name = canonicalize_model_name(model_name).lower()
+    for keyword, family in MODEL_FAMILY_KEYWORDS:
+        if keyword in normalized_model_name:
+            return family
+    return config_model_type
+
+
+def load_hf_auth_token() -> Optional[str]:
+    for env_name in ["MEZO_HF_TOKEN", "HUGGINGFACE_HUB_TOKEN", "HF_TOKEN"]:
+        token = os.environ.get(env_name)
+        if token:
+            return token.strip()
+
+    token_file = os.path.join(os.path.dirname(__file__), ".hf_token.local")
+    if os.path.exists(token_file):
+        with open(token_file, "r", encoding="utf-8") as f:
+            token = f.read().strip()
+        if token:
+            return token
+    return None
+
+
+def hf_auth_kwargs() -> dict:
+    token = load_hf_auth_token()
+    if not token:
+        return {}
+    return {"use_auth_token": token}
+
 @dataclass
 class OurArguments(TrainingArguments):
     # dataset and sampling strategy
-    task_name: str = "SST2" # task name should match the string before Dataset in the Dataset class name. We support the following task_name: SST2, RTE, CB, BoolQ, WSC, WIC, MultiRC, Copa, ReCoRD, MNLI, SQuAD, DROP
+    task_name: str = "SST-2" # canonical task names also accept legacy aliases like SST2 and sst-2
+    dataset_mode: str = "auto" # auto, fewshot, or full
+    num_k: int = 16 # few-shot training examples per class when labels exist; otherwise total examples
+    data_seed: int = None # seed controlling dataset-mode sampling / train-dev split
 
     # Number of examples
-    num_train: int = 0 # ICL mode: number of demonstrations; training mode: number of training samples
-    num_dev: int = None # (only enabled with training) number of development samples
+    num_train: int = 0 # legacy subset interface; prefer dataset_mode + num_k
+    num_dev: int = None # legacy dev-count interface; full mode defaults to full_dev_ratio when unset
     num_eval: int = None # number of evaluation samples
     num_train_sets: int = None # how many sets of training samples/demos to sample; if None and train_set_seed is None, then we will sample one set for each evaluation sample
     train_set_seed: int = None # designated seed to sample training samples/demos
     result_file: str = None # file name for saving performance; if None, then use the task name, model name, and config
+    full_dev_ratio: float = 0.1 # full-mode dev ratio, matching medium_models
 
     # Model loading
     model_name: str = "facebook/opt-125m" # HuggingFace model name
@@ -119,6 +185,69 @@ def set_seed(seed: int):
     torch.cuda.manual_seed_all(seed)
 
 
+def normalize_data_args(args):
+    args.task_name = tasks.canonicalize_task_name(args.task_name)
+    args.dataset_mode = str(getattr(args, "dataset_mode", "auto") or "auto").lower()
+    if args.dataset_mode not in {"auto", "fewshot", "full"}:
+        raise ValueError(
+            f"Unsupported --dataset_mode={args.dataset_mode}. Expected one of ['auto', 'fewshot', 'full']"
+        )
+    if getattr(args, "data_seed", None) is None:
+        args.data_seed = args.train_set_seed if args.train_set_seed is not None else args.seed
+    if args.trainer != "none" and args.train_set_seed is None:
+        args.train_set_seed = args.data_seed
+    args.dataset_mode = tasks.Dataset.resolve_dataset_mode(
+        dataset_mode=args.dataset_mode,
+        num_train=args.num_train,
+        num_k=args.num_k,
+    )
+    logger.info(
+        "[data] task_name=%s dataset_mode=%s num_k=%s data_seed=%s full_dev_ratio=%s",
+        args.task_name,
+        args.dataset_mode,
+        args.num_k,
+        args.data_seed,
+        args.full_dev_ratio,
+    )
+    return args
+
+
+def normalize_model_args(args):
+    requested_model_name = args.model_name
+    args.model_name = canonicalize_model_name(args.model_name)
+    args.model_family = infer_model_family(args.model_name)
+    logger.info(
+        "[model] requested=%s resolved=%s family_hint=%s",
+        requested_model_name,
+        args.model_name,
+        getattr(args, "model_family", None),
+    )
+    return args
+
+
+def split_train_dev_samples(train_samples, num_dev=None, dev_ratio=None, seed=0):
+    if not train_samples:
+        return train_samples, None
+
+    if num_dev is not None and num_dev > 0:
+        dev_count = min(int(num_dev), len(train_samples))
+    elif dev_ratio is not None and dev_ratio > 0 and len(train_samples) > 1:
+        dev_count = int(round(len(train_samples) * float(dev_ratio)))
+        dev_count = max(1, min(dev_count, len(train_samples) - 1))
+    else:
+        dev_count = 0
+
+    if dev_count <= 0:
+        return train_samples, None
+
+    rng = np.random.RandomState(seed)
+    order = rng.permutation(len(train_samples)).tolist()
+    dev_ids = set(order[:dev_count])
+    train_part = [sample for idx, sample in enumerate(train_samples) if idx not in dev_ids]
+    dev_part = [sample for idx, sample in enumerate(train_samples) if idx in dev_ids]
+    return train_part, dev_part
+
+
 class Framework:
 
     def __init__(self, args, task):
@@ -132,20 +261,26 @@ class Framework:
         Load HuggingFace models
         """
         with count_time("Loading model with FP%d" % (16 if self.args.load_float16 else 32)):
-            free_in_GB = int(torch.cuda.mem_get_info()[0]/1024**3)
-            config = AutoConfig.from_pretrained(self.args.model_name)
+            auth_kwargs = hf_auth_kwargs()
+            config = AutoConfig.from_pretrained(self.args.model_name, **auth_kwargs)
+            model_family = infer_model_family(self.args.model_name, config)
+            self.args.model_family = model_family
+            if auth_kwargs and model_family in {"mistral", "llama"}:
+                logger.info("[model] Hugging Face auth token detected for %s", self.args.model_name)
             if self.args.untie_emb:
                 # Untie embeddings/LM head
                 logger.warn("Untie embeddings and LM head")
                 config.tie_word_embeddings = False
-            if self.args.head_tuning:
+            use_auto_device = not self.args.no_auto_device and torch.cuda.is_available()
+            if self.args.head_tuning and model_family == "opt":
                 # Head tuning
                 from ht_opt import OPTForCausalLM
                 model = OPTForCausalLM.from_pretrained(
                     self.args.model_name,
                     config=config,
+                    **auth_kwargs,
                 )
-            elif self.args.no_auto_device:
+            elif not use_auto_device:
                 # No auto device (use for FSDP)
                 torch_dtype = None
                 if self.args.load_float16:
@@ -158,10 +293,12 @@ class Framework:
                 model = AutoModelForCausalLM.from_pretrained(
                     self.args.model_name,
                     config=config,
+                    **auth_kwargs,
                     **load_kwargs,
                 )
             else:
                 # Auto device loading
+                free_in_GB = int(torch.cuda.mem_get_info()[0]/1024**3)
                 torch_dtype = torch.float32
                 if self.args.load_float16:
                     torch_dtype = torch.float16
@@ -174,14 +311,15 @@ class Framework:
                     torch_dtype=torch_dtype,
                     max_memory={i: f'{free_in_GB-5}GB' for i in range(torch.cuda.device_count())},
                     load_in_8bit=self.args.load_int8,
+                    **auth_kwargs,
                 )
             model.eval()
 
         # Load tokenizer
-        tokenizer = AutoTokenizer.from_pretrained(self.args.model_name, use_fast=False)
+        tokenizer = AutoTokenizer.from_pretrained(self.args.model_name, use_fast=False, **auth_kwargs)
 
         # HF tokenizer bug fix
-        if "opt" in self.args.model_name:
+        if model_family == "opt":
             tokenizer.bos_token_id = 0
 
         # Decoder-only LMs may miss a pad token. Keep tokenizer/model pad ids aligned.
@@ -192,7 +330,7 @@ class Framework:
         if getattr(model, "generation_config", None) is not None and model.generation_config.pad_token_id is None:
             model.generation_config.pad_token_id = tokenizer.pad_token_id
 
-        if "llama" in self.args.model_name:
+        if model_family == "llama":
             # LLaMA padding token
             tokenizer.pad_token_id = 0 # technically <unk>
             model.config.pad_token_id = tokenizer.pad_token_id
@@ -208,7 +346,7 @@ class Framework:
             LoRA(model, r=self.args.lora_r, alpha=self.args.lora_alpha, float16=self.args.load_float16)
 
         if self.args.head_tuning:
-            if model.config.model_type == "opt":
+            if model_family in {"opt", "llama", "mistral"}:
                 head_name = "lm_head" if self.args.untie_emb else "embed_tokens"
             else:
                 raise NotImplementedError
@@ -636,15 +774,20 @@ def evaluate_across_splits(framework, train_samples, eval_split_samples, primary
 
 def main():
     args = parse_args()
+    args = normalize_model_args(args)
+    args = normalize_data_args(args)
 
     set_seed(args.seed)
     task = get_task(args.task_name)
+    train_sample_seed = args.train_set_seed
     train_sets = task.sample_train_sets(
         num_train=args.num_train,
         num_dev=args.num_dev,
         num_eval=args.num_eval,
         num_train_sets=args.num_train_sets,
-        seed=args.train_set_seed,
+        seed=train_sample_seed,
+        dataset_mode=args.dataset_mode,
+        num_k=args.num_k,
     )
     # Initialize trainer and load model
     framework = Framework(args, task)
@@ -659,17 +802,34 @@ def main():
             eval_samples = eval_split_samples[primary_eval_split]
 
             if args.trainer != "none":
-                if args.num_dev is not None and args.num_dev > 0:
-                    # 用户指定了数量
-                    dev_samples = train_samples[-args.num_dev:]
-                    train_samples = train_samples[:-args.num_dev]
+                if args.dataset_mode == "full":
+                    if args.num_dev is not None and args.num_dev > 0:
+                        train_samples, dev_samples = split_train_dev_samples(
+                            train_samples,
+                            num_dev=args.num_dev,
+                            seed=args.data_seed + train_set_id,
+                        )
+                    elif args.num_dev == 0:
+                        dev_samples = None
+                    else:
+                        train_samples, dev_samples = split_train_dev_samples(
+                            train_samples,
+                            dev_ratio=args.full_dev_ratio,
+                            seed=args.data_seed + train_set_id,
+                        )
+                elif args.num_dev is not None and args.num_dev > 0:
+                    train_samples, dev_samples = split_train_dev_samples(
+                        train_samples,
+                        num_dev=args.num_dev,
+                        seed=args.data_seed + train_set_id,
+                    )
                 elif args.num_dev == -1:
-                    # 默认切出 1/4 数据作为 dev
-                    split_idx = int(0.75 * len(train_samples))
-                    dev_samples = train_samples[split_idx:]
-                    train_samples = train_samples[:split_idx]
+                    train_samples, dev_samples = split_train_dev_samples(
+                        train_samples,
+                        dev_ratio=0.25,
+                        seed=args.data_seed + train_set_id,
+                    )
                 else:
-                    # 不切 dev
                     dev_samples = None
 
                 # Training

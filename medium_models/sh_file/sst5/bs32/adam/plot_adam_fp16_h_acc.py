@@ -10,9 +10,9 @@ import numpy as np
 SCRIPT_DIR = Path(__file__).resolve().parent
 SUMMARY_PATH = SCRIPT_DIR / "workspace" / "result" / "sst-5-bs32-full-adam-fp16-h-sweep-seed16" / "summary.jsonl"
 OUT_DIR = SCRIPT_DIR / "figures"
-SUMMARY_CSV = OUT_DIR / "adam_fp16_h_loss_summary.csv"
-PNG_PATH = OUT_DIR / "adam_fp16_h_vs_loss.png"
-SVG_PATH = OUT_DIR / "adam_fp16_h_vs_loss.svg"
+SUMMARY_CSV = OUT_DIR / "adam_fp16_h_acc_summary.csv"
+PNG_PATH = OUT_DIR / "adam_fp16_h_vs_acc.png"
+SVG_PATH = OUT_DIR / "adam_fp16_h_vs_acc.svg"
 
 
 def _safe_float(value):
@@ -42,10 +42,8 @@ def _load_records():
 
         records_by_h[h_value] = {
             "h": h_value,
-            "train_loss_last": _safe_float(metrics_last.get("train_loss")),
-            "dev_loss": _safe_float(eval_metrics.get("eval_loss")),
+            "train_acc_last": _safe_float(metrics_last.get("train_acc")),
             "dev_acc": _safe_float(eval_metrics.get("eval_acc")),
-            "test_loss": _safe_float(test_metrics.get("eval_loss")),
             "test_acc": _safe_float(test_metrics.get("eval_acc")),
             "output_dir": record.get("output_dir", ""),
         }
@@ -58,7 +56,7 @@ def _write_summary_csv(records):
     with SUMMARY_CSV.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
             f,
-            fieldnames=["h", "train_loss_last", "dev_loss", "dev_acc", "test_loss", "test_acc", "output_dir"],
+            fieldnames=["h", "train_acc_last", "dev_acc", "test_acc", "output_dir"],
         )
         writer.writeheader()
         writer.writerows(records)
@@ -66,24 +64,23 @@ def _write_summary_csv(records):
 
 def _plot(records):
     xs = np.array([row["h"] for row in records], dtype=float)
-    train_loss = np.array([row["train_loss_last"] for row in records], dtype=float)
-    dev_loss = np.array([row["dev_loss"] for row in records], dtype=float)
-    test_loss = np.array([row["test_loss"] for row in records], dtype=float)
+    train_acc = np.array([row["train_acc_last"] for row in records], dtype=float)
+    dev_acc = np.array([row["dev_acc"] for row in records], dtype=float)
+    test_acc = np.array([row["test_acc"] for row in records], dtype=float)
 
     fig, ax = plt.subplots(figsize=(8.8, 5.2))
     for ys, label, color, marker in (
-        (train_loss, "train_loss_last", "#1f77b4", "o"),
-        (dev_loss, "dev_loss", "#d62728", "s"),
-        (test_loss, "test_loss", "#2ca02c", "^"),
+        (train_acc, "train_acc_last", "#1f77b4", "o"),
+        (dev_acc, "dev_acc", "#d62728", "s"),
+        (test_acc, "test_acc", "#2ca02c", "^"),
     ):
         mask = np.isfinite(ys)
         ax.plot(xs[mask], ys[mask], marker=marker, linewidth=2, markersize=5, label=label, color=color)
 
     ax.set_xscale("log")
     ax.set_xlabel("h (zero_order_eps)")
-    ax.set_ylabel("loss")
-    ax.set_title("SST-5 Adam + fp16: loss vs h")
-    ax.set_ylim(1.25, 2.0)
+    ax.set_ylabel("accuracy")
+    ax.set_title("SST-5 Adam + fp16: acc vs h")
     ax.grid(True, which="both", alpha=0.3)
     ax.legend()
     fig.tight_layout()

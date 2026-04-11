@@ -16,6 +16,7 @@ DATALOADER_SHUFFLE=${DATALOADER_SHUFFLE:-"True"}
 DATA_SEED=${DATA_SEED:-$SEED}
 DATASET_MODE=${DATASET_MODE:-"auto"}
 DATA_ROOT=${DATA_ROOT:-"data/k-shot-1k-test"}
+FULL_DEV_RATIO=${FULL_DEV_RATIO:-0.1}
 STEPS=${STEPS:-1000}
 
 # ---------------------------
@@ -38,8 +39,12 @@ while [[ $# -gt 0 ]]; do
             JOB_NAME="$2"; shift 2 ;;
         --dataset_mode)
             DATASET_MODE="$2"; shift 2 ;;
+        --data_seed)
+            DATA_SEED="$2"; shift 2 ;;
         --data_root|--data_dir_root)
             DATA_ROOT="$2"; shift 2 ;;
+        --full_dev_ratio)
+            FULL_DEV_RATIO="$2"; shift 2 ;;
         *)
             PY_ARGS+=("$1"); shift ;;
     esac
@@ -57,6 +62,7 @@ echo "Job name: $JOB_NAME_SAFE"
 echo "Output dir: $OUTPUT_DIR"
 echo "Dataset mode: $DATASET_MODE"
 echo "Data root: $DATA_ROOT"
+echo "Full dev ratio: $FULL_DEV_RATIO"
 
 
 
@@ -71,11 +77,11 @@ echo "GPU数量: $NUM_GPU"
 
 TASK_EXTRA=""
 case $TASK in
-    SST-2)
+    SST-2|sst-2)
         TEMPLATE=*cls**sent_0*_It_was*mask*.*sep+*
         MAPPING="{'0':'terrible','1':'great'}"
         ;;
-    sst-5)
+    SST-5|sst-5)
         TEMPLATE=*cls**sent_0*_It_was*mask*.*sep+*
         MAPPING="{0:'terrible',1:'bad',2:'okay',3:'good',4:'great'}"
         TASK_EXTRA="--first_sent_limit 110 --other_sent_limit 20 --double_demo"
@@ -144,6 +150,7 @@ ALL_ARGS_TOGETHER="
     --data_dir $DATA_ROOT/$TASK/$K-$SEED
     --dataset_mode $DATASET_MODE
     --data_root $DATA_ROOT
+    --full_dev_ratio $FULL_DEV_RATIO
     --overwrite_output_dir --output_dir $OUTPUT_DIR
     --num_k $K
     --tag $TAG

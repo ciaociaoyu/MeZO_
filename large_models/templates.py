@@ -41,6 +41,30 @@ class SST2Template(Template):
         return f" It was {self.verbalizer[candidate]}"
 
 
+class SST5Template(Template):
+    verbalizer = {
+        0: "terrible",
+        1: "bad",
+        2: "okay",
+        3: "good",
+        4: "great",
+    }
+
+    def encode(self, sample):
+        text = sample.data["text"].strip()
+        return f"{text} It was"
+
+    def verbalize(self, sample, candidate):
+        text = sample.data["text"].strip()
+        return f"{text} It was {self.verbalizer[candidate]}"
+
+    def encode_sfc(self, sample):
+        return " It was"
+
+    def verbalize_sfc(self, sample, candidate):
+        return f" It was {self.verbalizer[candidate]}"
+
+
 class CopaTemplate(Template):
     capitalization: str = "correct"
     effect_conj: str = " so "

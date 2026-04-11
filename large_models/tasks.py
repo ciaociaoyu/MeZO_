@@ -4,7 +4,7 @@ import json
 import os
 from datasets import load_dataset
 from dataclasses import dataclass
-from typing import List, Union
+from typing import Dict, List, Union
 import string
 import random
 import datasets
@@ -16,14 +16,62 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+TASK_NAME_ALIASES = {
+    "sst2": "SST2",
+    "sst-2": "SST2",
+    "sst5": "SST5",
+    "sst-5": "SST5",
+    "boolq": "BoolQ",
+    "snli": "SNLI",
+    "mnli": "MNLI",
+    "rte": "RTE",
+    "squad": "SQuAD",
+    "drop": "DROP",
+    "cb": "CB",
+    "copa": "Copa",
+    "multirc": "MultiRC",
+    "record": "ReCoRD",
+    "wic": "WIC",
+    "wsc": "WSC",
+}
+
+TASK_CLASS_NAMES = {
+    "SST2": "SST2Dataset",
+    "SST5": "SST5Dataset",
+    "BoolQ": "BoolQDataset",
+    "SNLI": "SNLIDataset",
+    "MNLI": "MNLIDataset",
+    "RTE": "RTEDataset",
+    "SQuAD": "SQuADDataset",
+    "DROP": "DROPDataset",
+    "CB": "CBDataset",
+    "Copa": "CopaDataset",
+    "MultiRC": "MultiRCDataset",
+    "ReCoRD": "ReCoRDDataset",
+    "WIC": "WICDataset",
+    "WSC": "WSCDataset",
+}
+
+
+def canonicalize_task_name(task_name: str) -> str:
+    parts = task_name.split("__", 1)
+    primary = parts[0].strip()
+    canonical_primary = TASK_NAME_ALIASES.get(primary.lower(), primary)
+    if len(parts) == 2:
+        return f"{canonical_primary}__{parts[1]}"
+    return canonical_primary
+
+
 def get_task(task_name):
-    aa = task_name.split("__")
+    normalized_task_name = canonicalize_task_name(task_name)
+    aa = normalized_task_name.split("__")
     if len(aa) == 2:
         task_group, subtask = aa
     else:
         task_group = aa[0]
         subtask = None
-    class_ = getattr(sys.modules[__name__], f"{task_group}Dataset")
+    class_name = TASK_CLASS_NAMES.get(task_group, f"{task_group}Dataset")
+    class_ = getattr(sys.modules[__name__], class_name)
     instance = class_(subtask)
     return instance
 
@@ -56,8 +104,63 @@ class Dataset:
    
     def build_sample(self, example):
         return 
-     
-    def sample_train_sets(self, num_train=32, num_dev=None, num_eval=None, num_train_sets=None, seed=None):
+
+    @staticmethod
+    def resolve_dataset_mode(dataset_mode="auto", num_train=None, num_k=16):
+        dataset_mode = (dataset_mode or "auto").lower()
+        if dataset_mode not in {"auto", "fewshot", "full"}:
+            raise ValueError(f"Unsupported dataset_mode={dataset_mode}. Expected one of ['auto', 'fewshot', 'full']")
+        if dataset_mode != "auto":
+            return dataset_mode
+        if isinstance(num_train, int):
+            if num_train < 0:
+                return "full"
+            if num_train > 0:
+                return "fewshot"
+        return "fewshot" if num_k is not None and int(num_k) > 0 else "full"
+
+    def _fewshot_bucket_key(self, sample):
+        if self.generation or isinstance(sample.correct_candidate, list):
+            return None
+        return sample.correct_candidate
+
+    def sample_fewshot_subset(self, data_split="train", seed=0, num_k=16):
+        samples = self.samples[data_split]
+        if num_k is None or (isinstance(num_k, int) and num_k <= 0):
+            return list(samples)
+
+        buckets: Dict[object, List[Sample]] = {}
+        for sample in samples:
+            bucket_key = self._fewshot_bucket_key(sample)
+            if bucket_key is None:
+                return self.sample_subset(data_split=data_split, seed=seed, num=num_k)
+            buckets.setdefault(bucket_key, []).append(sample)
+
+        if len(buckets) <= 1:
+            return self.sample_subset(data_split=data_split, seed=seed, num=num_k)
+
+        with temp_seed(seed):
+            selected = []
+            for key in sorted(buckets.keys(), key=lambda x: str(x)):
+                bucket = list(buckets[key])
+                order = np.random.permutation(len(bucket)).tolist()
+                take = min(int(num_k), len(bucket))
+                selected.extend(bucket[i] for i in order[:take])
+
+            selected_order = np.random.permutation(len(selected)).tolist()
+            return [selected[i] for i in selected_order]
+
+    def sample_train_sets(
+        self,
+        num_train=32,
+        num_dev=None,
+        num_eval=None,
+        num_train_sets=None,
+        seed=None,
+        dataset_mode="auto",
+        num_k=16,
+    ):
+        resolved_dataset_mode = self.resolve_dataset_mode(dataset_mode=dataset_mode, num_train=num_train, num_k=num_k)
         if seed is not None:
             seeds = [seed]
         elif num_train_sets is not None:
@@ -89,12 +192,28 @@ class Dataset:
         else:
             eff_num_dev = None
 
+        effective_num_k = num_k
+        if (effective_num_k is None or (isinstance(effective_num_k, int) and effective_num_k <= 0)) and (
+            isinstance(num_train, int) and num_train > 0
+        ):
+            effective_num_k = num_train
+
         train_samples = []
         for i, set_seed in enumerate(seeds):
             if self.mixed_set:
                 raise NotImplementedError
             else:
-                if eff_num_dev is not None:
+                if resolved_dataset_mode == "fewshot":
+                    sampled = self.sample_fewshot_subset(data_split="train", seed=set_seed, num_k=effective_num_k)
+                    train_samples.append(sampled)
+                    logger.info(
+                        "Sample few-shot train set %d/%d (num_k=%s, seed=%s)",
+                        len(sampled),
+                        len(self.samples["train"]),
+                        effective_num_k,
+                        set_seed,
+                    )
+                elif eff_num_dev is not None:
                     # dev set is included at the end of train set
                     num_take = min(eff_num_train + eff_num_dev, total_train)
                     train_samples.append(self.sample_subset(data_split="train", seed=set_seed, num=num_take))
@@ -156,8 +275,32 @@ class SST2Dataset(Dataset):
         
     def get_template(self, template_version=0):
         return {0: SST2Template}[template_version]()
-        
-    
+
+
+class SST5Dataset(Dataset):
+    train_sep = "\n\n"
+
+    def __init__(self, subtask=None, **kwargs) -> None:
+        self.load_dataset(subtask, **kwargs)
+
+    def load_dataset(self, path, **kwargs):
+        d = load_dataset("SetFit/sst5")
+        train_d = d["train"]
+        valid_split = "validation" if "validation" in d else "test"
+        valid_d = d[valid_split]
+
+        train_samples = [self.build_sample(example, idx) for idx, example in enumerate(train_d)]
+        valid_samples = [self.build_sample(example, idx) for idx, example in enumerate(valid_d)]
+        self.samples = {"train": train_samples, "valid": valid_samples}
+
+    def build_sample(self, example, idx):
+        label = int(example["label"])
+        return Sample(id=idx, data=example, correct_candidate=label, candidates=[0, 1, 2, 3, 4])
+
+    def get_template(self, template_version=0):
+        return {0: SST5Template}[template_version]()
+
+
 class CopaDataset(Dataset):
     train_sep = "\n\n"
     mixed_set = False
@@ -194,7 +337,7 @@ class BoolQDataset(Dataset):
         self.load_dataset(subtask, **kwargs)
     
     def load_dataset(self, path, **kwargs):
-        d = load_dataset("boolq")
+        d = load_dataset("google/boolq")
         train_set = d["train"]
         valid_set = d["validation"]
 
@@ -382,6 +525,40 @@ class RTEDataset(Dataset):
     
     def get_template(self, template_version=0):
         return {0: RTETemplate}[template_version]()
+
+
+class SNLIDataset(Dataset):
+
+    def __init__(self, subtask=None, **kwargs) -> None:
+        self.load_dataset(subtask, **kwargs)
+
+    def load_dataset(self, path, **kwargs):
+        d = load_dataset("stanfordnlp/snli")
+        label_names = d["train"].features["label"].names
+        self.label_to_id = {name: idx for idx, name in enumerate(label_names)}
+
+        train_samples = [
+            self.build_sample(example, idx)
+            for idx, example in enumerate(d["train"])
+            if int(example["label"]) != -1
+        ]
+        valid_samples = [
+            self.build_sample(example, idx)
+            for idx, example in enumerate(d["validation"])
+            if int(example["label"]) != -1
+        ]
+        self.samples = {"train": train_samples, "valid": valid_samples}
+
+    def build_sample(self, example, idx):
+        return Sample(
+            id=idx,
+            data=example,
+            candidates=[0, 1, 2],
+            correct_candidate=int(example["label"]),
+        )
+
+    def get_template(self, template_version=0):
+        return {0: MNLITemplate}[template_version](label_to_id=self.label_to_id)
 
 
 class MNLIDataset(Dataset):
