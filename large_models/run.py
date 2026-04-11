@@ -271,7 +271,14 @@ class Framework:
                 # Untie embeddings/LM head
                 logger.warn("Untie embeddings and LM head")
                 config.tie_word_embeddings = False
-            use_auto_device = not self.args.no_auto_device and torch.cuda.is_available()
+            training_manages_devices = self.args.trainer != "none"
+            use_auto_device = (
+                not self.args.no_auto_device
+                and not training_manages_devices
+                and torch.cuda.is_available()
+            )
+            if training_manages_devices and torch.cuda.is_available() and not self.args.no_auto_device:
+                logger.info("[model] disabling auto device placement for training; Trainer/Accelerate will place the model")
             if self.args.head_tuning and model_family == "opt":
                 # Head tuning
                 from ht_opt import OPTForCausalLM

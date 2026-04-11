@@ -30,5 +30,6 @@ EVAL=128 \
 STEPS=100 \
 EVAL_STEPS=25 \
 bash mezo.sh \
+  --no_auto_device \
   --gradient_accumulation_steps 8 \
   --logging_steps 1
