@@ -40,20 +40,38 @@ from transformers import Trainer
 from sklearn.linear_model import LinearRegression, LogisticRegression, LogisticRegressionCV
 
 # Integrations must be imported before ML frameworks:
-from transformers.integrations import (  # isort: split
-    default_hp_search_backend,
-    get_reporting_integration_callbacks,
-    hp_params,
-    is_fairscale_available,
-    is_optuna_available,
-    is_ray_tune_available,
-    is_sigopt_available,
-    is_wandb_available,
-    run_hp_search_optuna,
-    run_hp_search_ray,
-    run_hp_search_sigopt,
-    run_hp_search_wandb,
-)
+try:  # isort: split
+    from transformers.integrations import (
+        default_hp_search_backend,
+        get_reporting_integration_callbacks,
+        hp_params,
+        is_fairscale_available,
+        is_optuna_available,
+        is_ray_tune_available,
+        is_sigopt_available,
+        is_wandb_available,
+        run_hp_search_optuna,
+        run_hp_search_ray,
+        run_hp_search_sigopt,
+        run_hp_search_wandb,
+    )
+except ImportError:
+    from transformers.integrations import (
+        get_reporting_integration_callbacks,
+        hp_params,
+        is_optuna_available,
+        is_ray_tune_available,
+        is_sigopt_available,
+        is_wandb_available,
+        run_hp_search_optuna,
+        run_hp_search_ray,
+        run_hp_search_sigopt,
+        run_hp_search_wandb,
+    )
+    from transformers.hyperparameter_search import default_hp_search_backend
+
+    def is_fairscale_available():
+        return False
 
 import numpy as np
 import torch
@@ -75,7 +93,6 @@ from transformers.modelcard import TrainingSummary
 from transformers.modeling_utils import PreTrainedModel, load_sharded_checkpoint, unwrap_model
 from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES, MODEL_MAPPING_NAMES
 from transformers.optimization import Adafactor, get_scheduler
-from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS, is_torch_greater_or_equal_than_1_10, is_torch_less_than_1_11
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer_callback import (
     CallbackHandler,
@@ -152,6 +169,14 @@ from transformers.utils import (
     logging,
 )
 from transformers.utils.generic import ContextManagers
+
+try:
+    from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS, is_torch_greater_or_equal_than_1_10, is_torch_less_than_1_11
+except ImportError:
+    from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS, is_torch_less_than_1_11
+
+    parsed_torch_version_base = version.parse(version.parse(torch.__version__).base_version)
+    is_torch_greater_or_equal_than_1_10 = parsed_torch_version_base >= version.parse("1.10")
 
 
 _is_native_cpu_amp_available = is_torch_greater_or_equal_than_1_10
