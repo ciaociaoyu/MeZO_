@@ -1,0 +1,24 @@
+mezo-ft-100-1-1e-6-1e-3-0
+BS: 1
+LR: 1e-6
+EPS: 1e-3
+SEED: 0
+DATASET_MODE: fewshot
+K: 16
+DATA_SEED: 0
+FULL_DEV_RATIO: 0.1
+TRAIN/EVAL STEPS: 100/25
+MODE: ft
+Extra args:  
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+Traceback (most recent call last):
+  File "/scratch/jy03364/MeZO_/large_models/run.py", line 25, in <module>
+    from trainer import OurTrainer
+  File "/scratch/jy03364/MeZO_/large_models/trainer.py", line 43, in <module>
+    from transformers.integrations import (  # isort: split
+ImportError: cannot import name 'default_hp_search_backend' from 'transformers.integrations' (/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/integrations/__init__.py)

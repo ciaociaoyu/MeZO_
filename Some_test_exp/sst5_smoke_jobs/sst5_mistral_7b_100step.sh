@@ -11,7 +11,7 @@
 ml jq
 
 source ~/.bashrc
-conda activate mezo-env
+conda activate mezo-mistral
 
 ROOT_DIR=/scratch/jy03364/MeZO_
 cd "${ROOT_DIR}/large_models"

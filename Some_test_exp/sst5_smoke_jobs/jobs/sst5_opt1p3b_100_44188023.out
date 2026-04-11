@@ -1,0 +1,1154 @@
+mezo-ft-100-1-1e-6-1e-3-0
+BS: 1
+LR: 1e-6
+EPS: 1e-3
+SEED: 0
+DATASET_MODE: fewshot
+K: 16
+DATA_SEED: 0
+FULL_DEV_RATIO: 0.1
+TRAIN/EVAL STEPS: 100/25
+MODE: ft
+Extra args:  
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/accelerate/utils/torch_xla.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+2026-04-11 01:49:22,827 - INFO - [model] requested=opt-1.3b resolved=facebook/opt-1.3b family_hint=opt
+2026-04-11 01:49:22,827 - INFO - [data] task_name=SST5 dataset_mode=fewshot num_k=16 data_seed=0 full_dev_ratio=0.1
+Repo card metadata block was not found. Setting CardData to empty.
+2026-04-11 01:49:23,117 - WARNING - Repo card metadata block was not found. Setting CardData to empty.
+2026-04-11 01:49:23,670 - INFO - Sample few-shot train set 80/8544 (num_k=16, seed=0)
+2026-04-11 01:49:23,670 - INFO - Loading model with FP16...
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/modeling_utils.py:442: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  return torch.load(checkpoint_file, map_location="cpu")
+2026-04-11 01:50:17,608 - INFO - Done with 53.94s
+2026-04-11 01:50:18,376 - INFO - Preparing training/evaluation datasets...
+2026-04-11 01:50:18,376 - INFO - Done with 0.00s
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/optimization.py:391: FutureWarning: This implementation of AdamW is deprecated and will be removed in a future version. Use the PyTorch implementation torch.optim.AdamW instead, or set `no_deprecation_warning=True` to disable this warning
+  warnings.warn(
+2026-04-11 01:50:18,580 - INFO - ***** Running training *****
+2026-04-11 01:50:18,580 - INFO -   Num examples = 80
+2026-04-11 01:50:18,580 - INFO -   Num Epochs = 10
+2026-04-11 01:50:18,580 - INFO -   Instantaneous batch size per device = 1
+2026-04-11 01:50:18,580 - INFO -   Total train batch size (w. parallel, distributed & accumulation) = 8
+2026-04-11 01:50:18,580 - INFO -   Gradient Accumulation steps = 8
+2026-04-11 01:50:18,580 - INFO -   Total optimization steps = 100
+2026-04-11 01:50:18,580 - INFO -   Number of trainable parameters = 1315758080
+OurArguments(
+_n_gpu=1,
+adafactor=False,
+adam_beta1=0.9,
+adam_beta2=0.999,
+adam_epsilon=1e-08,
+auto_find_batch_size=False,
+bf16=False,
+bf16_full_eval=False,
+data_seed=0,
+dataloader_drop_last=False,
+dataloader_num_workers=0,
+dataloader_pin_memory=True,
+dataset_mode=fewshot,
+ddp_bucket_cap_mb=None,
+ddp_find_unused_parameters=None,
+ddp_timeout=1800,
+debug=[],
+deepspeed=None,
+disable_tqdm=False,
+do_eval=True,
+do_predict=False,
+do_train=False,
+eos_token=<EOS_TOKEN>,
+eval_accumulation_steps=None,
+eval_delay=0,
+eval_steps=25,
+evaluation_strategy=steps,
+fp16=False,
+fp16_backend=auto,
+fp16_full_eval=False,
+fp16_opt_level=O1,
+fsdp=[],
+fsdp_config={'fsdp_min_num_params': 0, 'xla': False, 'xla_fsdp_grad_ckpt': False},
+fsdp_min_num_params=0,
+fsdp_transformer_layer_cls_to_wrap=None,
+full_determinism=False,
+full_dev_ratio=0.1,
+gradient_accumulation_steps=8,
+gradient_checkpointing=False,
+greater_is_better=False,
+group_by_length=False,
+half_precision_backend=auto,
+head_tuning=False,
+hub_model_id=None,
+hub_private_repo=False,
+hub_strategy=every_save,
+hub_token=<HUB_TOKEN>,
+icl_sfc=False,
+ignore_data_skip=False,
+include_inputs_for_metrics=False,
+jit_mode_eval=False,
+label_names=None,
+label_smoothing_factor=0.0,
+learning_rate=1e-06,
+length_column_name=length,
+linear_probing=False,
+load_best_model_at_end=True,
+load_bfloat16=False,
+load_float16=True,
+load_int8=False,
+local_rank=-1,
+log_level=passive,
+log_level_replica=warning,
+log_on_each_node=True,
+logging_dir=result/SST5-opt-1.3b-mezo-ft-100-1-1e-6-1e-3-0/runs/Apr11_01-49-22_ra8-4,
+logging_first_step=False,
+logging_nan_inf_filter=True,
+logging_steps=1,
+logging_strategy=steps,
+lora=False,
+lora_alpha=16,
+lora_r=8,
+lp_early_stopping=False,
+lr_scheduler_type=constant,
+max_grad_norm=1.0,
+max_length=2048,
+max_new_tokens=50,
+max_steps=100,
+metric_for_best_model=loss,
+model_name=opt-1.3b,
+mp_parameters=,
+no_auto_device=False,
+no_cuda=False,
+no_eval=False,
+no_reparam=True,
+non_diff=False,
+num_beams=1,
+num_dev=None,
+num_eval=128,
+num_k=16,
+num_prefix=5,
+num_train=0,
+num_train_epochs=3.0,
+num_train_sets=None,
+only_train_option=True,
+optim=adamw_hf,
+optim_args=None,
+output_dir=result/SST5-opt-1.3b-mezo-ft-100-1-1e-6-1e-3-0,
+overwrite_output_dir=False,
+past_index=-1,
+per_device_eval_batch_size=8,
+per_device_train_batch_size=1,
+prediction_loss_only=False,
+prefix_init_by_real_act=True,
+prefix_tuning=False,
+push_to_hub=False,
+push_to_hub_model_id=None,
+push_to_hub_organization=None,
+push_to_hub_token=<PUSH_TO_HUB_TOKEN>,
+ray_scope=last,
+remove_unused_columns=True,
+report_to=[],
+result_file=None,
+resume_from_checkpoint=None,
+run_name=result/SST5-opt-1.3b-mezo-ft-100-1-1e-6-1e-3-0,
+sampling=False,
+save_model=False,
+save_on_each_node=False,
+save_on_interrupt=False,
+save_safetensors=False,
+save_steps=25,
+save_strategy=steps,
+save_total_limit=1,
+seed=42,
+sfc=False,
+sharded_ddp=[],
+skip_memory_metrics=True,
+tag=mezo-ft-100-1-1e-6-1e-3-0,
+task_name=SST5,
+temperature=1.0,
+tf32=None,
+top_k=None,
+top_p=0.95,
+torch_compile=False,
+torch_compile_backend=None,
+torch_compile_mode=None,
+torchdynamo=None,
+tpu_metrics_debug=False,
+tpu_num_cores=None,
+train_as_classification=True,
+train_set_seed=0,
+trainer=zo,
+untie_emb=False,
+use_ipex=False,
+use_legacy_prediction_loop=False,
+use_mps_device=False,
+verbose=False,
+warmup_ratio=0.0,
+warmup_steps=0,
+weight_decay=0.0,
+xpu_backend=None,
+zo_eps=0.001,
+)
+  0%|          | 0/100 [00:00<?, ?it/s]  1%|          | 1/100 [00:05<08:49,  5.34s/it]                                                 1%|          | 1/100 [00:05<08:49,  5.34s/it]  2%|▏         | 2/100 [00:06<04:48,  2.94s/it]                                                 2%|▏         | 2/100 [00:06<04:48,  2.94s/it]  3%|▎         | 3/100 [00:07<03:01,  1.87s/it]                                                 3%|▎         | 3/100 [00:07<03:01,  1.87s/it]  4%|▍         | 4/100 [00:07<02:11,  1.37s/it]                                                 4%|▍         | 4/100 [00:07<02:11,  1.37s/it]  5%|▌         | 5/100 [00:08<01:43,  1.09s/it]                                                 5%|▌         | 5/100 [00:08<01:43,  1.09s/it]  6%|▌         | 6/100 [00:09<01:27,  1.08it/s]                                                 6%|▌         | 6/100 [00:09<01:27,  1.08it/s]  7%|▋         | 7/100 [00:09<01:16,  1.22it/s]                                                 7%|▋         | 7/100 [00:09<01:16,  1.22it/s]  8%|▊         | 8/100 [00:10<01:09,  1.33it/s]                                                 8%|▊         | 8/100 [00:10<01:09,  1.33it/s]  9%|▉         | 9/100 [00:10<01:03,  1.43it/s]                                                 9%|▉         | 9/100 [00:10<01:03,  1.43it/s] 10%|█         | 10/100 [00:11<01:00,  1.50it/s]                                                 10%|█         | 10/100 [00:11<01:00,  1.50it/s] 11%|█         | 11/100 [00:11<00:57,  1.55it/s]                                                 11%|█         | 11/100 [00:11<00:57,  1.55it/s] 12%|█▏        | 12/100 [00:12<00:55,  1.59it/s]                                                 12%|█▏        | 12/100 [00:12<00:55,  1.59it/s] 13%|█▎        | 13/100 [00:13<00:53,  1.61it/s]                                                 13%|█▎        | 13/100 [00:13<00:53,  1.61it/s] 14%|█▍        | 14/100 [00:13<00:52,  1.63it/s]                                                 14%|█▍        | 14/100 [00:13<00:52,  1.63it/s] 15%|█▌        | 15/100 [00:14<00:51,  1.65it/s]                                                 15%|█▌        | 15/100 [00:14<00:51,  1.65it/s] 16%|█▌        | 16/100 [00:14<00:50,  1.66it/s]                                                 16%|█▌        | 16/100 [00:14<00:50,  1.66it/s] 17%|█▋        | 17/100 [00:15<00:49,  1.66it/s]                                                 17%|█▋        | 17/100 [00:15<00:49,  1.66it/s] 18%|█▊        | 18/100 [00:16<00:49,  1.67it/s]                                                 18%|█▊        | 18/100 [00:16<00:49,  1.67it/s] 19%|█▉        | 19/100 [00:16<00:48,  1.67it/s]                                                 19%|█▉        | 19/100 [00:16<00:48,  1.67it/s] 20%|██        | 20/100 [00:17<00:47,  1.68it/s]                                                 20%|██        | 20/100 [00:17<00:47,  1.68it/s] 21%|██        | 21/100 [00:17<00:46,  1.68it/s]                                                 21%|██        | 21/100 [00:17<00:46,  1.68it/s] 22%|██▏       | 22/100 [00:18<00:46,  1.68it/s]                                                 22%|██▏       | 22/100 [00:18<00:46,  1.68it/s] 23%|██▎       | 23/100 [00:19<00:45,  1.69it/s]                                                 23%|██▎       | 23/100 [00:19<00:45,  1.69it/s] 24%|██▍       | 24/100 [00:19<00:45,  1.68it/s]                                                 24%|██▍       | 24/100 [00:19<00:45,  1.68it/s] 25%|██▌       | 25/100 [00:20<00:44,  1.69it/s]                                                 25%|██▌       | 25/100 [00:20<00:44,  1.69it/s]{'loss': 11.1893, 'learning_rate': 1e-06, 'epoch': 0.1}
+{'loss': 14.2412, 'learning_rate': 1e-06, 'epoch': 0.2}
+{'loss': 10.8352, 'learning_rate': 1e-06, 'epoch': 0.3}
+{'loss': 12.4998, 'learning_rate': 1e-06, 'epoch': 0.4}
+{'loss': 17.1328, 'learning_rate': 1e-06, 'epoch': 0.5}
+{'loss': 21.21, 'learning_rate': 1e-06, 'epoch': 0.6}
+{'loss': 16.4282, 'learning_rate': 1e-06, 'epoch': 0.7}
+{'loss': 19.5962, 'learning_rate': 1e-06, 'epoch': 0.8}
+{'loss': 13.4807, 'learning_rate': 1e-06, 'epoch': 0.9}
+{'loss': 17.9932, 'learning_rate': 1e-06, 'epoch': 1.0}
+{'loss': 15.0164, 'learning_rate': 1e-06, 'epoch': 1.1}
+{'loss': 17.748, 'learning_rate': 1e-06, 'epoch': 1.2}
+{'loss': 9.0554, 'learning_rate': 1e-06, 'epoch': 1.3}
+{'loss': 16.0383, 'learning_rate': 1e-06, 'epoch': 1.4}
+{'loss': 13.7119, 'learning_rate': 1e-06, 'epoch': 1.5}
+{'loss': 15.4512, 'learning_rate': 1e-06, 'epoch': 1.6}
+{'loss': 17.9824, 'learning_rate': 1e-06, 'epoch': 1.7}
+{'loss': 14.3187, 'learning_rate': 1e-06, 'epoch': 1.8}
+{'loss': 12.5649, 'learning_rate': 1e-06, 'epoch': 1.9}
+{'loss': 17.3633, 'learning_rate': 1e-06, 'epoch': 2.0}
+{'loss': 13.1997, 'learning_rate': 1e-06, 'epoch': 2.1}
+{'loss': 12.7461, 'learning_rate': 1e-06, 'epoch': 2.2}
+{'loss': 15.0132, 'learning_rate': 1e-06, 'epoch': 2.3}
+{'loss': 18.1077, 'learning_rate': 1e-06, 'epoch': 2.4}
+{'loss': 15.491, 'learning_rate': 1e-06, 'epoch': 2.5}
+
+  0%|          | 0/16 [00:00<?, ?it/s][A
+ 31%|███▏      | 5/16 [00:00<00:00, 41.69it/s][A
+ 62%|██████▎   | 10/16 [00:00<00:00, 39.52it/s][A
+ 88%|████████▊ | 14/16 [00:00<00:00, 38.36it/s][A                                                
+                                               [A 25%|██▌       | 25/100 [00:20<00:44,  1.69it/s]
+100%|██████████| 16/16 [00:00<00:00, 38.36it/s][A
+                                               [A2026-04-11 01:50:39,475 - INFO - There are 0 training samples and 128 validation samples
+{'eval_loss': 1.9423828125, 'eval_runtime': 0.5572, 'eval_samples_per_second': 229.724, 'eval_steps_per_second': 28.716, 'epoch': 2.5}
+
+  0%|          | 0/128 [00:00<?, ?it/s][A2026-04-11 01:50:39,475 - INFO - ========= Example =========
+2026-04-11 01:50:39,475 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:50:39,475 - INFO - Correct candidate: 3
+2026-04-11 01:50:39,960 - INFO - === Candidate 0 ===
+2026-04-11 01:50:39,960 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was terrible
+2026-04-11 01:50:40,319 - INFO - Log probabilities of the option tokens: tensor([-10.4609], dtype=torch.float16)
+2026-04-11 01:50:40,328 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:50:40,329 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was bad
+2026-04-11 01:50:40,329 - INFO - Log probabilities of the option tokens: tensor([-9.7422], dtype=torch.float16)
+2026-04-11 01:50:40,338 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:50:40,338 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was okay
+2026-04-11 01:50:40,339 - INFO - Log probabilities of the option tokens: tensor([-9.7578], dtype=torch.float16)
+2026-04-11 01:50:40,348 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:50:40,348 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was good
+2026-04-11 01:50:40,348 - INFO - Log probabilities of the option tokens: tensor([-6.4648], dtype=torch.float16)
+2026-04-11 01:50:40,364 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:50:40,364 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was great
+2026-04-11 01:50:40,365 - INFO - Log probabilities of the option tokens: tensor([-5.2891], dtype=torch.float16)
+2026-04-11 01:50:40,426 - INFO - Prediction scores: [-10.4609375, -9.7421875, -9.7578125, -6.46484375, -5.2890625]
+
+  1%|          | 1/128 [00:00<02:03,  1.03it/s][A2026-04-11 01:50:40,449 - INFO - ========= Example =========
+2026-04-11 01:50:40,449 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:50:40,449 - INFO - Correct candidate: 1
+2026-04-11 01:50:40,460 - INFO - === Candidate 0 ===
+2026-04-11 01:50:40,460 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was terrible
+2026-04-11 01:50:40,461 - INFO - Log probabilities of the option tokens: tensor([-8.7266], dtype=torch.float16)
+2026-04-11 01:50:40,470 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:50:40,470 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was bad
+2026-04-11 01:50:40,471 - INFO - Log probabilities of the option tokens: tensor([-7.4023], dtype=torch.float16)
+2026-04-11 01:50:40,480 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:50:40,480 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was okay
+2026-04-11 01:50:40,480 - INFO - Log probabilities of the option tokens: tensor([-7.1523], dtype=torch.float16)
+2026-04-11 01:50:40,490 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:50:40,490 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was good
+2026-04-11 01:50:40,490 - INFO - Log probabilities of the option tokens: tensor([-5.1133], dtype=torch.float16)
+2026-04-11 01:50:40,500 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:50:40,500 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was great
+2026-04-11 01:50:40,500 - INFO - Log probabilities of the option tokens: tensor([-5.2383], dtype=torch.float16)
+2026-04-11 01:50:40,500 - INFO - Prediction scores: [-8.7265625, -7.40234375, -7.15234375, -5.11328125, -5.23828125]
+2026-04-11 01:50:40,500 - INFO - ========= Example =========
+2026-04-11 01:50:40,500 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:50:40,500 - INFO - Correct candidate: 3
+2026-04-11 01:50:40,511 - INFO - === Candidate 0 ===
+2026-04-11 01:50:40,511 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was terrible
+2026-04-11 01:50:40,511 - INFO - Log probabilities of the option tokens: tensor([-7.6250], dtype=torch.float16)
+2026-04-11 01:50:40,521 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:50:40,521 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was bad
+2026-04-11 01:50:40,521 - INFO - Log probabilities of the option tokens: tensor([-7.5273], dtype=torch.float16)
+2026-04-11 01:50:40,530 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:50:40,530 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was okay
+2026-04-11 01:50:40,531 - INFO - Log probabilities of the option tokens: tensor([-6.9023], dtype=torch.float16)
+2026-04-11 01:50:40,540 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:50:40,540 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was good
+2026-04-11 01:50:40,540 - INFO - Log probabilities of the option tokens: tensor([-4.4922], dtype=torch.float16)
+2026-04-11 01:50:40,550 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:50:40,550 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was great
+2026-04-11 01:50:40,550 - INFO - Log probabilities of the option tokens: tensor([-4.3203], dtype=torch.float16)
+2026-04-11 01:50:40,550 - INFO - Prediction scores: [-7.625, -7.52734375, -6.90234375, -4.4921875, -4.3203125]
+
+  2%|▏         | 3/128 [00:01<00:36,  3.45it/s][A
+  4%|▍         | 5/128 [00:01<00:23,  5.21it/s][A
+  6%|▋         | 8/128 [00:01<00:13,  8.59it/s][A
+  9%|▊         | 11/128 [00:01<00:10, 11.44it/s][A
+ 11%|█         | 14/128 [00:01<00:08, 13.75it/s][A
+ 13%|█▎        | 17/128 [00:01<00:07, 15.59it/s][A
+ 16%|█▌        | 20/128 [00:01<00:06, 17.07it/s][A
+ 18%|█▊        | 23/128 [00:02<00:05, 18.23it/s][A
+ 20%|██        | 26/128 [00:02<00:05, 18.73it/s][A
+ 23%|██▎       | 29/128 [00:02<00:05, 19.17it/s][A
+ 25%|██▌       | 32/128 [00:02<00:04, 19.71it/s][A
+ 27%|██▋       | 35/128 [00:02<00:04, 20.17it/s][A
+ 30%|██▉       | 38/128 [00:02<00:04, 20.35it/s][A
+ 32%|███▏      | 41/128 [00:03<00:04, 20.58it/s][A
+ 34%|███▍      | 44/128 [00:03<00:04, 20.75it/s][A
+ 37%|███▋      | 47/128 [00:03<00:03, 20.85it/s][A
+ 39%|███▉      | 50/128 [00:03<00:03, 20.82it/s][A
+ 41%|████▏     | 53/128 [00:03<00:03, 20.91it/s][A
+ 44%|████▍     | 56/128 [00:03<00:03, 20.43it/s][A
+ 46%|████▌     | 59/128 [00:03<00:03, 20.57it/s][A
+ 48%|████▊     | 62/128 [00:04<00:03, 20.78it/s][A
+ 51%|█████     | 65/128 [00:04<00:03, 20.89it/s][A
+ 53%|█████▎    | 68/128 [00:04<00:02, 20.89it/s][A
+ 55%|█████▌    | 71/128 [00:04<00:02, 20.84it/s][A
+ 58%|█████▊    | 74/128 [00:04<00:02, 20.96it/s][A
+ 60%|██████    | 77/128 [00:04<00:02, 20.92it/s][A
+ 62%|██████▎   | 80/128 [00:04<00:02, 20.93it/s][A
+ 65%|██████▍   | 83/128 [00:05<00:02, 20.40it/s][A
+ 67%|██████▋   | 86/128 [00:05<00:02, 20.56it/s][A
+ 70%|██████▉   | 89/128 [00:05<00:01, 20.64it/s][A
+ 72%|███████▏  | 92/128 [00:05<00:01, 20.74it/s][A
+ 74%|███████▍  | 95/128 [00:05<00:01, 20.89it/s][A
+ 77%|███████▋  | 98/128 [00:05<00:01, 20.85it/s][A
+ 79%|███████▉  | 101/128 [00:05<00:01, 20.88it/s][A
+ 81%|████████▏ | 104/128 [00:06<00:01, 20.96it/s][A
+ 84%|████████▎ | 107/128 [00:06<00:00, 21.00it/s][A
+ 86%|████████▌ | 110/128 [00:06<00:00, 20.50it/s][A
+ 88%|████████▊ | 113/128 [00:06<00:00, 20.69it/s][A
+ 91%|█████████ | 116/128 [00:06<00:00, 20.92it/s][A
+ 93%|█████████▎| 119/128 [00:06<00:00, 21.01it/s][A
+ 95%|█████████▌| 122/128 [00:06<00:00, 21.03it/s][A
+ 98%|█████████▊| 125/128 [00:07<00:00, 21.10it/s][A
+100%|██████████| 128/128 [00:07<00:00, 21.07it/s][A100%|██████████| 128/128 [00:07<00:00, 17.83it/s]
+2026-04-11 01:50:46,657 - INFO - There are 0 training samples and 80 validation samples
+
+  0%|          | 0/80 [00:00<?, ?it/s][A2026-04-11 01:50:46,657 - INFO - ========= Example =========
+2026-04-11 01:50:46,657 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:50:46,657 - INFO - Correct candidate: 1
+2026-04-11 01:50:46,668 - INFO - === Candidate 0 ===
+2026-04-11 01:50:46,668 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was terrible
+2026-04-11 01:50:46,668 - INFO - Log probabilities of the option tokens: tensor([-9.3047], dtype=torch.float16)
+2026-04-11 01:50:46,678 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:50:46,678 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was bad
+2026-04-11 01:50:46,678 - INFO - Log probabilities of the option tokens: tensor([-8.1172], dtype=torch.float16)
+2026-04-11 01:50:46,687 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:50:46,688 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was okay
+2026-04-11 01:50:46,688 - INFO - Log probabilities of the option tokens: tensor([-7.8906], dtype=torch.float16)
+2026-04-11 01:50:46,697 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:50:46,697 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was good
+2026-04-11 01:50:46,698 - INFO - Log probabilities of the option tokens: tensor([-5.8945], dtype=torch.float16)
+2026-04-11 01:50:46,707 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:50:46,707 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was great
+2026-04-11 01:50:46,707 - INFO - Log probabilities of the option tokens: tensor([-6.4141], dtype=torch.float16)
+2026-04-11 01:50:46,708 - INFO - Prediction scores: [-9.3046875, -8.1171875, -7.890625, -5.89453125, -6.4140625]
+2026-04-11 01:50:46,708 - INFO - ========= Example =========
+2026-04-11 01:50:46,708 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:50:46,708 - INFO - Correct candidate: 2
+2026-04-11 01:50:46,718 - INFO - === Candidate 0 ===
+2026-04-11 01:50:46,719 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was terrible
+2026-04-11 01:50:46,719 - INFO - Log probabilities of the option tokens: tensor([-9.4609], dtype=torch.float16)
+2026-04-11 01:50:46,728 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:50:46,728 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was bad
+2026-04-11 01:50:46,729 - INFO - Log probabilities of the option tokens: tensor([-8.], dtype=torch.float16)
+2026-04-11 01:50:46,738 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:50:46,738 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was okay
+2026-04-11 01:50:46,738 - INFO - Log probabilities of the option tokens: tensor([-7.9688], dtype=torch.float16)
+2026-04-11 01:50:46,748 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:50:46,748 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was good
+2026-04-11 01:50:46,748 - INFO - Log probabilities of the option tokens: tensor([-4.9336], dtype=torch.float16)
+2026-04-11 01:50:46,758 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:50:46,758 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was great
+2026-04-11 01:50:46,758 - INFO - Log probabilities of the option tokens: tensor([-4.8164], dtype=torch.float16)
+2026-04-11 01:50:46,758 - INFO - Prediction scores: [-9.4609375, -8.0, -7.96875, -4.93359375, -4.81640625]
+
+  2%|▎         | 2/80 [00:00<00:03, 19.67it/s][A2026-04-11 01:50:46,758 - INFO - ========= Example =========
+2026-04-11 01:50:46,759 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:50:46,759 - INFO - Correct candidate: 0
+2026-04-11 01:50:46,770 - INFO - === Candidate 0 ===
+2026-04-11 01:50:46,770 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was terrible
+2026-04-11 01:50:46,770 - INFO - Log probabilities of the option tokens: tensor([-7.3008], dtype=torch.float16)
+2026-04-11 01:50:46,780 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:50:46,780 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was bad
+2026-04-11 01:50:46,780 - INFO - Log probabilities of the option tokens: tensor([-5.1914], dtype=torch.float16)
+2026-04-11 01:50:46,791 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:50:46,791 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was okay
+2026-04-11 01:50:46,791 - INFO - Log probabilities of the option tokens: tensor([-7.5664], dtype=torch.float16)
+2026-04-11 01:50:46,801 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:50:46,801 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was good
+2026-04-11 01:50:46,801 - INFO - Log probabilities of the option tokens: tensor([-4.7109], dtype=torch.float16)
+2026-04-11 01:50:46,811 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:50:46,811 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was great
+2026-04-11 01:50:46,811 - INFO - Log probabilities of the option tokens: tensor([-4.5938], dtype=torch.float16)
+2026-04-11 01:50:46,811 - INFO - Prediction scores: [-7.30078125, -5.19140625, -7.56640625, -4.7109375, -4.59375]
+
+  5%|▌         | 4/80 [00:00<00:03, 19.62it/s][A
+  9%|▉         | 7/80 [00:00<00:03, 20.43it/s][A
+ 12%|█▎        | 10/80 [00:00<00:03, 20.55it/s][A
+ 16%|█▋        | 13/80 [00:00<00:03, 20.67it/s][A
+ 20%|██        | 16/80 [00:00<00:03, 20.73it/s][A
+ 24%|██▍       | 19/80 [00:00<00:02, 20.76it/s][A
+ 28%|██▊       | 22/80 [00:01<00:02, 20.79it/s][A
+ 31%|███▏      | 25/80 [00:01<00:02, 20.84it/s][A
+ 35%|███▌      | 28/80 [00:01<00:02, 20.96it/s][A
+ 39%|███▉      | 31/80 [00:01<00:02, 21.01it/s][A
+ 42%|████▎     | 34/80 [00:01<00:02, 20.91it/s][A
+ 46%|████▋     | 37/80 [00:01<00:02, 20.43it/s][A
+ 50%|█████     | 40/80 [00:01<00:01, 20.65it/s][A
+ 54%|█████▍    | 43/80 [00:02<00:01, 20.80it/s][A
+ 57%|█████▊    | 46/80 [00:02<00:01, 20.96it/s][A
+ 61%|██████▏   | 49/80 [00:02<00:01, 20.96it/s][A
+ 65%|██████▌   | 52/80 [00:02<00:01, 21.04it/s][A
+ 69%|██████▉   | 55/80 [00:02<00:01, 21.02it/s][A
+ 72%|███████▎  | 58/80 [00:02<00:01, 20.98it/s][A
+ 76%|███████▋  | 61/80 [00:02<00:00, 20.96it/s][A
+ 80%|████████  | 64/80 [00:03<00:00, 21.03it/s][A
+ 84%|████████▍ | 67/80 [00:03<00:00, 20.99it/s][A
+ 88%|████████▊ | 70/80 [00:03<00:00, 20.95it/s][A
+ 91%|█████████▏| 73/80 [00:03<00:00, 20.88it/s][A
+ 95%|█████████▌| 76/80 [00:03<00:00, 20.85it/s][A
+ 99%|█████████▉| 79/80 [00:03<00:00, 20.93it/s][A100%|██████████| 80/80 [00:03<00:00, 20.85it/s]
+ 26%|██▌       | 26/100 [00:51<11:55,  9.66s/it]                                                 26%|██▌       | 26/100 [00:51<11:55,  9.66s/it] 27%|██▋       | 27/100 [00:51<08:27,  6.95s/it]                                                 27%|██▋       | 27/100 [00:51<08:27,  6.95s/it] 28%|██▊       | 28/100 [00:52<06:02,  5.04s/it]                                                 28%|██▊       | 28/100 [00:52<06:02,  5.04s/it] 29%|██▉       | 29/100 [00:52<04:23,  3.71s/it]                                                 29%|██▉       | 29/100 [00:52<04:23,  3.71s/it] 30%|███       | 30/100 [00:53<03:14,  2.77s/it]                                                 30%|███       | 30/100 [00:53<03:14,  2.77s/it] 31%|███       | 31/100 [00:54<02:26,  2.12s/it]                                                 31%|███       | 31/100 [00:54<02:26,  2.12s/it] 32%|███▏      | 32/100 [00:54<01:53,  1.66s/it]                                                 32%|███▏      | 32/100 [00:54<01:53,  1.66s/it] 33%|███▎      | 33/100 [00:55<01:29,  1.34s/it]                                                 33%|███▎      | 33/100 [00:55<01:29,  1.34s/it] 34%|███▍      | 34/100 [00:55<01:13,  1.12s/it]                                                 34%|███▍      | 34/100 [00:55<01:13,  1.12s/it] 35%|███▌      | 35/100 [00:56<01:02,  1.04it/s]                                                 35%|███▌      | 35/100 [00:56<01:02,  1.04it/s] 36%|███▌      | 36/100 [00:57<00:54,  1.18it/s]                                                 36%|███▌      | 36/100 [00:57<00:54,  1.18it/s] 37%|███▋      | 37/100 [00:57<00:48,  1.29it/s]                                                 37%|███▋      | 37/100 [00:57<00:48,  1.29it/s] 38%|███▊      | 38/100 [00:58<00:44,  1.39it/s]                                                 38%|███▊      | 38/100 [00:58<00:44,  1.39it/s] 39%|███▉      | 39/100 [00:58<00:41,  1.46it/s]                                                 39%|███▉      | 39/100 [00:58<00:41,  1.46it/s] 40%|████      | 40/100 [00:59<00:39,  1.52it/s]                                                 40%|████      | 40/100 [00:59<00:39,  1.52it/s] 41%|████      | 41/100 [01:00<00:37,  1.56it/s]                                                 41%|████      | 41/100 [01:00<00:37,  1.56it/s] 42%|████▏     | 42/100 [01:00<00:36,  1.59it/s]                                                 42%|████▏     | 42/100 [01:00<00:36,  1.59it/s] 43%|████▎     | 43/100 [01:01<00:35,  1.62it/s]                                                 43%|████▎     | 43/100 [01:01<00:35,  1.62it/s] 44%|████▍     | 44/100 [01:01<00:34,  1.64it/s]                                                 44%|████▍     | 44/100 [01:01<00:34,  1.64it/s] 45%|████▌     | 45/100 [01:02<00:33,  1.65it/s]                                                 45%|████▌     | 45/100 [01:02<00:33,  1.65it/s] 46%|████▌     | 46/100 [01:03<00:32,  1.66it/s]                                                 46%|████▌     | 46/100 [01:03<00:32,  1.66it/s] 47%|████▋     | 47/100 [01:03<00:31,  1.67it/s]                                                 47%|████▋     | 47/100 [01:03<00:31,  1.67it/s] 48%|████▊     | 48/100 [01:04<00:31,  1.66it/s]                                                 48%|████▊     | 48/100 [01:04<00:31,  1.66it/s] 49%|████▉     | 49/100 [01:04<00:30,  1.67it/s]                                                 49%|████▉     | 49/100 [01:04<00:30,  1.67it/s] 50%|█████     | 50/100 [01:05<00:30,  1.67it/s]                                                 50%|█████     | 50/100 [01:05<00:30,  1.67it/s]{'loss': 12.2839, 'learning_rate': 1e-06, 'epoch': 2.6}
+{'loss': 15.8296, 'learning_rate': 1e-06, 'epoch': 2.7}
+{'loss': 15.1746, 'learning_rate': 1e-06, 'epoch': 2.8}
+{'loss': 14.5513, 'learning_rate': 1e-06, 'epoch': 2.9}
+{'loss': 16.8262, 'learning_rate': 1e-06, 'epoch': 3.0}
+{'loss': 10.9697, 'learning_rate': 1e-06, 'epoch': 3.1}
+{'loss': 15.8036, 'learning_rate': 1e-06, 'epoch': 3.2}
+{'loss': 15.2656, 'learning_rate': 1e-06, 'epoch': 3.3}
+{'loss': 20.5532, 'learning_rate': 1e-06, 'epoch': 3.4}
+{'loss': 17.4785, 'learning_rate': 1e-06, 'epoch': 3.5}
+{'loss': 10.3301, 'learning_rate': 1e-06, 'epoch': 3.6}
+{'loss': 9.3982, 'learning_rate': 1e-06, 'epoch': 3.7}
+{'loss': 18.2495, 'learning_rate': 1e-06, 'epoch': 3.8}
+{'loss': 16.9746, 'learning_rate': 1e-06, 'epoch': 3.9}
+{'loss': 14.7639, 'learning_rate': 1e-06, 'epoch': 4.0}
+{'loss': 18.3623, 'learning_rate': 1e-06, 'epoch': 4.1}
+{'loss': 16.5601, 'learning_rate': 1e-06, 'epoch': 4.2}
+{'loss': 12.6853, 'learning_rate': 1e-06, 'epoch': 4.3}
+{'loss': 17.7417, 'learning_rate': 1e-06, 'epoch': 4.4}
+{'loss': 17.0718, 'learning_rate': 1e-06, 'epoch': 4.5}
+{'loss': 9.9504, 'learning_rate': 1e-06, 'epoch': 4.6}
+{'loss': 10.918, 'learning_rate': 1e-06, 'epoch': 4.7}
+{'loss': 11.4692, 'learning_rate': 1e-06, 'epoch': 4.8}
+{'loss': 12.9939, 'learning_rate': 1e-06, 'epoch': 4.9}
+{'loss': 14.5421, 'learning_rate': 1e-06, 'epoch': 5.0}
+
+  0%|          | 0/16 [00:00<?, ?it/s][A
+ 31%|███▏      | 5/16 [00:00<00:00, 49.39it/s][A
+ 62%|██████▎   | 10/16 [00:00<00:00, 43.02it/s][A
+ 94%|█████████▍| 15/16 [00:00<00:00, 40.77it/s][A                                                
+                                               [A 50%|█████     | 50/100 [01:05<00:30,  1.67it/s]
+100%|██████████| 16/16 [00:00<00:00, 40.77it/s][A
+                                               [A2026-04-11 01:51:24,473 - INFO - There are 0 training samples and 128 validation samples
+{'eval_loss': 1.849609375, 'eval_runtime': 0.4109, 'eval_samples_per_second': 311.547, 'eval_steps_per_second': 38.943, 'epoch': 5.0}
+
+  0%|          | 0/128 [00:00<?, ?it/s][A2026-04-11 01:51:24,473 - INFO - ========= Example =========
+2026-04-11 01:51:24,473 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:51:24,473 - INFO - Correct candidate: 3
+2026-04-11 01:51:24,484 - INFO - === Candidate 0 ===
+2026-04-11 01:51:24,484 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was terrible
+2026-04-11 01:51:24,485 - INFO - Log probabilities of the option tokens: tensor([-10.3359], dtype=torch.float16)
+2026-04-11 01:51:24,494 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:51:24,494 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was bad
+2026-04-11 01:51:24,495 - INFO - Log probabilities of the option tokens: tensor([-9.5234], dtype=torch.float16)
+2026-04-11 01:51:24,504 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:51:24,504 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was okay
+2026-04-11 01:51:24,505 - INFO - Log probabilities of the option tokens: tensor([-9.6953], dtype=torch.float16)
+2026-04-11 01:51:24,514 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:51:24,514 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was good
+2026-04-11 01:51:24,514 - INFO - Log probabilities of the option tokens: tensor([-6.4883], dtype=torch.float16)
+2026-04-11 01:51:24,524 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:51:24,524 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was great
+2026-04-11 01:51:24,524 - INFO - Log probabilities of the option tokens: tensor([-5.4336], dtype=torch.float16)
+2026-04-11 01:51:24,524 - INFO - Prediction scores: [-10.3359375, -9.5234375, -9.6953125, -6.48828125, -5.43359375]
+2026-04-11 01:51:24,525 - INFO - ========= Example =========
+2026-04-11 01:51:24,525 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:51:24,525 - INFO - Correct candidate: 1
+2026-04-11 01:51:24,536 - INFO - === Candidate 0 ===
+2026-04-11 01:51:24,536 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was terrible
+2026-04-11 01:51:24,536 - INFO - Log probabilities of the option tokens: tensor([-8.4453], dtype=torch.float16)
+2026-04-11 01:51:24,546 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:51:24,546 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was bad
+2026-04-11 01:51:24,546 - INFO - Log probabilities of the option tokens: tensor([-7.0508], dtype=torch.float16)
+2026-04-11 01:51:24,555 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:51:24,556 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was okay
+2026-04-11 01:51:24,556 - INFO - Log probabilities of the option tokens: tensor([-7.1562], dtype=torch.float16)
+2026-04-11 01:51:24,565 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:51:24,566 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was good
+2026-04-11 01:51:24,566 - INFO - Log probabilities of the option tokens: tensor([-5.1211], dtype=torch.float16)
+2026-04-11 01:51:24,575 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:51:24,576 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was great
+2026-04-11 01:51:24,576 - INFO - Log probabilities of the option tokens: tensor([-5.3906], dtype=torch.float16)
+2026-04-11 01:51:24,576 - INFO - Prediction scores: [-8.4453125, -7.05078125, -7.15625, -5.12109375, -5.390625]
+
+  2%|▏         | 2/128 [00:00<00:06, 19.49it/s][A2026-04-11 01:51:24,576 - INFO - ========= Example =========
+2026-04-11 01:51:24,576 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:51:24,576 - INFO - Correct candidate: 3
+2026-04-11 01:51:24,587 - INFO - === Candidate 0 ===
+2026-04-11 01:51:24,587 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was terrible
+2026-04-11 01:51:24,587 - INFO - Log probabilities of the option tokens: tensor([-7.4258], dtype=torch.float16)
+2026-04-11 01:51:24,597 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:51:24,597 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was bad
+2026-04-11 01:51:24,597 - INFO - Log probabilities of the option tokens: tensor([-7.2773], dtype=torch.float16)
+2026-04-11 01:51:24,607 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:51:24,607 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was okay
+2026-04-11 01:51:24,607 - INFO - Log probabilities of the option tokens: tensor([-6.6836], dtype=torch.float16)
+2026-04-11 01:51:24,616 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:51:24,617 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was good
+2026-04-11 01:51:24,617 - INFO - Log probabilities of the option tokens: tensor([-4.5156], dtype=torch.float16)
+2026-04-11 01:51:24,626 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:51:24,626 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was great
+2026-04-11 01:51:24,627 - INFO - Log probabilities of the option tokens: tensor([-4.4844], dtype=torch.float16)
+2026-04-11 01:51:24,627 - INFO - Prediction scores: [-7.42578125, -7.27734375, -6.68359375, -4.515625, -4.484375]
+
+  4%|▍         | 5/128 [00:00<00:06, 20.25it/s][A
+  6%|▋         | 8/128 [00:00<00:05, 20.49it/s][A
+  9%|▊         | 11/128 [00:00<00:05, 20.55it/s][A
+ 11%|█         | 14/128 [00:00<00:05, 19.75it/s][A
+ 12%|█▎        | 16/128 [00:00<00:05, 19.70it/s][A
+ 15%|█▍        | 19/128 [00:00<00:05, 20.18it/s][A
+ 17%|█▋        | 22/128 [00:01<00:05, 20.53it/s][A
+ 20%|█▉        | 25/128 [00:01<00:04, 20.67it/s][A
+ 22%|██▏       | 28/128 [00:01<00:04, 20.78it/s][A
+ 24%|██▍       | 31/128 [00:01<00:04, 20.85it/s][A
+ 27%|██▋       | 34/128 [00:01<00:04, 21.12it/s][A
+ 29%|██▉       | 37/128 [00:01<00:04, 21.07it/s][A
+ 31%|███▏      | 40/128 [00:01<00:04, 20.58it/s][A
+ 34%|███▎      | 43/128 [00:02<00:04, 20.29it/s][A
+ 36%|███▌      | 46/128 [00:02<00:03, 20.56it/s][A
+ 38%|███▊      | 49/128 [00:02<00:03, 20.67it/s][A
+ 41%|████      | 52/128 [00:02<00:03, 20.82it/s][A
+ 43%|████▎     | 55/128 [00:02<00:03, 20.93it/s][A
+ 45%|████▌     | 58/128 [00:02<00:03, 21.03it/s][A
+ 48%|████▊     | 61/128 [00:02<00:03, 21.12it/s][A
+ 50%|█████     | 64/128 [00:03<00:03, 21.28it/s][A
+ 52%|█████▏    | 67/128 [00:03<00:02, 20.71it/s][A
+ 55%|█████▍    | 70/128 [00:03<00:02, 20.33it/s][A
+ 57%|█████▋    | 73/128 [00:03<00:02, 20.58it/s][A
+ 59%|█████▉    | 76/128 [00:03<00:02, 20.75it/s][A
+ 62%|██████▏   | 79/128 [00:03<00:02, 20.87it/s][A
+ 64%|██████▍   | 82/128 [00:03<00:02, 20.87it/s][A
+ 66%|██████▋   | 85/128 [00:04<00:02, 20.93it/s][A
+ 69%|██████▉   | 88/128 [00:04<00:01, 20.96it/s][A
+ 71%|███████   | 91/128 [00:04<00:01, 20.87it/s][A
+ 73%|███████▎  | 94/128 [00:04<00:01, 20.59it/s][A
+ 76%|███████▌  | 97/128 [00:04<00:01, 20.70it/s][A
+ 78%|███████▊  | 100/128 [00:04<00:01, 20.37it/s][A
+ 80%|████████  | 103/128 [00:04<00:01, 20.64it/s][A
+ 83%|████████▎ | 106/128 [00:05<00:01, 20.75it/s][A
+ 85%|████████▌ | 109/128 [00:05<00:00, 20.83it/s][A
+ 88%|████████▊ | 112/128 [00:05<00:00, 20.96it/s][A
+ 90%|████████▉ | 115/128 [00:05<00:00, 21.03it/s][A
+ 92%|█████████▏| 118/128 [00:05<00:00, 21.07it/s][A
+ 95%|█████████▍| 121/128 [00:05<00:00, 20.97it/s][A
+ 97%|█████████▋| 124/128 [00:05<00:00, 20.96it/s][A
+ 99%|█████████▉| 127/128 [00:06<00:00, 20.47it/s][A100%|██████████| 128/128 [00:06<00:00, 20.70it/s]
+2026-04-11 01:51:30,660 - INFO - There are 0 training samples and 80 validation samples
+
+  0%|          | 0/80 [00:00<?, ?it/s][A2026-04-11 01:51:30,660 - INFO - ========= Example =========
+2026-04-11 01:51:30,660 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:51:30,660 - INFO - Correct candidate: 1
+2026-04-11 01:51:30,671 - INFO - === Candidate 0 ===
+2026-04-11 01:51:30,671 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was terrible
+2026-04-11 01:51:30,671 - INFO - Log probabilities of the option tokens: tensor([-9.0781], dtype=torch.float16)
+2026-04-11 01:51:30,680 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:51:30,681 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was bad
+2026-04-11 01:51:30,681 - INFO - Log probabilities of the option tokens: tensor([-7.7812], dtype=torch.float16)
+2026-04-11 01:51:30,690 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:51:30,690 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was okay
+2026-04-11 01:51:30,690 - INFO - Log probabilities of the option tokens: tensor([-7.9062], dtype=torch.float16)
+2026-04-11 01:51:30,700 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:51:30,700 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was good
+2026-04-11 01:51:30,700 - INFO - Log probabilities of the option tokens: tensor([-5.9453], dtype=torch.float16)
+2026-04-11 01:51:30,710 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:51:30,710 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was great
+2026-04-11 01:51:30,710 - INFO - Log probabilities of the option tokens: tensor([-6.5195], dtype=torch.float16)
+2026-04-11 01:51:30,710 - INFO - Prediction scores: [-9.078125, -7.78125, -7.90625, -5.9453125, -6.51953125]
+2026-04-11 01:51:30,710 - INFO - ========= Example =========
+2026-04-11 01:51:30,710 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:51:30,710 - INFO - Correct candidate: 2
+2026-04-11 01:51:30,721 - INFO - === Candidate 0 ===
+2026-04-11 01:51:30,721 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was terrible
+2026-04-11 01:51:30,721 - INFO - Log probabilities of the option tokens: tensor([-9.3828], dtype=torch.float16)
+2026-04-11 01:51:30,730 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:51:30,731 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was bad
+2026-04-11 01:51:30,731 - INFO - Log probabilities of the option tokens: tensor([-7.9297], dtype=torch.float16)
+2026-04-11 01:51:30,740 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:51:30,740 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was okay
+2026-04-11 01:51:30,740 - INFO - Log probabilities of the option tokens: tensor([-7.9805], dtype=torch.float16)
+2026-04-11 01:51:30,750 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:51:30,750 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was good
+2026-04-11 01:51:30,750 - INFO - Log probabilities of the option tokens: tensor([-5.0391], dtype=torch.float16)
+2026-04-11 01:51:30,759 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:51:30,760 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was great
+2026-04-11 01:51:30,760 - INFO - Log probabilities of the option tokens: tensor([-4.9180], dtype=torch.float16)
+2026-04-11 01:51:30,760 - INFO - Prediction scores: [-9.3828125, -7.9296875, -7.98046875, -5.0390625, -4.91796875]
+
+  2%|▎         | 2/80 [00:00<00:03, 20.00it/s][A2026-04-11 01:51:30,760 - INFO - ========= Example =========
+2026-04-11 01:51:30,760 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:51:30,760 - INFO - Correct candidate: 0
+2026-04-11 01:51:30,771 - INFO - === Candidate 0 ===
+2026-04-11 01:51:30,771 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was terrible
+2026-04-11 01:51:30,771 - INFO - Log probabilities of the option tokens: tensor([-7.0625], dtype=torch.float16)
+2026-04-11 01:51:30,781 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:51:30,781 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was bad
+2026-04-11 01:51:30,781 - INFO - Log probabilities of the option tokens: tensor([-5.0195], dtype=torch.float16)
+2026-04-11 01:51:30,791 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:51:30,791 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was okay
+2026-04-11 01:51:30,791 - INFO - Log probabilities of the option tokens: tensor([-7.6016], dtype=torch.float16)
+2026-04-11 01:51:30,800 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:51:30,801 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was good
+2026-04-11 01:51:30,801 - INFO - Log probabilities of the option tokens: tensor([-4.8008], dtype=torch.float16)
+2026-04-11 01:51:30,810 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:51:30,810 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was great
+2026-04-11 01:51:30,811 - INFO - Log probabilities of the option tokens: tensor([-4.7539], dtype=torch.float16)
+2026-04-11 01:51:30,811 - INFO - Prediction scores: [-7.0625, -5.01953125, -7.6015625, -4.80078125, -4.75390625]
+
+  6%|▋         | 5/80 [00:00<00:03, 20.39it/s][A
+ 10%|█         | 8/80 [00:00<00:03, 20.80it/s][A
+ 14%|█▍        | 11/80 [00:00<00:03, 20.87it/s][A
+ 18%|█▊        | 14/80 [00:00<00:03, 20.96it/s][A
+ 21%|██▏       | 17/80 [00:00<00:02, 21.00it/s][A
+ 25%|██▌       | 20/80 [00:00<00:02, 21.05it/s][A
+ 29%|██▉       | 23/80 [00:01<00:02, 21.07it/s][A
+ 32%|███▎      | 26/80 [00:01<00:02, 20.62it/s][A
+ 36%|███▋      | 29/80 [00:01<00:02, 20.85it/s][A
+ 40%|████      | 32/80 [00:01<00:02, 20.91it/s][A
+ 44%|████▍     | 35/80 [00:01<00:02, 20.88it/s][A
+ 48%|████▊     | 38/80 [00:01<00:02, 20.91it/s][A
+ 51%|█████▏    | 41/80 [00:01<00:01, 20.95it/s][A
+ 55%|█████▌    | 44/80 [00:02<00:01, 21.02it/s][A
+ 59%|█████▉    | 47/80 [00:02<00:01, 21.04it/s][A
+ 62%|██████▎   | 50/80 [00:02<00:01, 20.99it/s][A
+ 66%|██████▋   | 53/80 [00:02<00:01, 20.11it/s][A
+ 70%|███████   | 56/80 [00:02<00:01, 20.39it/s][A
+ 74%|███████▍  | 59/80 [00:02<00:01, 20.56it/s][A
+ 78%|███████▊  | 62/80 [00:02<00:00, 20.77it/s][A
+ 81%|████████▏ | 65/80 [00:03<00:00, 20.90it/s][A
+ 85%|████████▌ | 68/80 [00:03<00:00, 20.96it/s][A
+ 89%|████████▉ | 71/80 [00:03<00:00, 20.90it/s][A
+ 92%|█████████▎| 74/80 [00:03<00:00, 20.83it/s][A
+ 96%|█████████▋| 77/80 [00:03<00:00, 20.88it/s][A
+100%|██████████| 80/80 [00:03<00:00, 20.54it/s][A100%|██████████| 80/80 [00:03<00:00, 20.79it/s]
+ 51%|█████     | 51/100 [01:19<03:51,  4.72s/it]                                                 51%|█████     | 51/100 [01:19<03:51,  4.72s/it] 52%|█████▏    | 52/100 [01:20<02:47,  3.48s/it]                                                 52%|█████▏    | 52/100 [01:20<02:47,  3.48s/it] 53%|█████▎    | 53/100 [01:20<02:02,  2.61s/it]                                                 53%|█████▎    | 53/100 [01:20<02:02,  2.61s/it] 54%|█████▍    | 54/100 [01:21<01:32,  2.01s/it]                                                 54%|█████▍    | 54/100 [01:21<01:32,  2.01s/it] 55%|█████▌    | 55/100 [01:22<01:11,  1.58s/it]                                                 55%|█████▌    | 55/100 [01:22<01:11,  1.58s/it] 56%|█████▌    | 56/100 [01:22<00:56,  1.29s/it]                                                 56%|█████▌    | 56/100 [01:22<00:56,  1.29s/it] 57%|█████▋    | 57/100 [01:23<00:46,  1.08s/it]                                                 57%|█████▋    | 57/100 [01:23<00:46,  1.08s/it] 58%|█████▊    | 58/100 [01:23<00:39,  1.07it/s]                                                 58%|█████▊    | 58/100 [01:23<00:39,  1.07it/s] 59%|█████▉    | 59/100 [01:24<00:34,  1.20it/s]                                                 59%|█████▉    | 59/100 [01:24<00:34,  1.20it/s] 60%|██████    | 60/100 [01:25<00:30,  1.31it/s]                                                 60%|██████    | 60/100 [01:25<00:30,  1.31it/s] 61%|██████    | 61/100 [01:25<00:27,  1.40it/s]                                                 61%|██████    | 61/100 [01:25<00:27,  1.40it/s] 62%|██████▏   | 62/100 [01:26<00:25,  1.48it/s]                                                 62%|██████▏   | 62/100 [01:26<00:25,  1.48it/s] 63%|██████▎   | 63/100 [01:26<00:24,  1.53it/s]                                                 63%|██████▎   | 63/100 [01:26<00:24,  1.53it/s] 64%|██████▍   | 64/100 [01:27<00:22,  1.57it/s]                                                 64%|██████▍   | 64/100 [01:27<00:22,  1.57it/s] 65%|██████▌   | 65/100 [01:28<00:21,  1.60it/s]                                                 65%|██████▌   | 65/100 [01:28<00:21,  1.60it/s] 66%|██████▌   | 66/100 [01:28<00:20,  1.62it/s]                                                 66%|██████▌   | 66/100 [01:28<00:20,  1.62it/s] 67%|██████▋   | 67/100 [01:29<00:20,  1.63it/s]                                                 67%|██████▋   | 67/100 [01:29<00:20,  1.63it/s] 68%|██████▊   | 68/100 [01:29<00:19,  1.65it/s]                                                 68%|██████▊   | 68/100 [01:29<00:19,  1.65it/s] 69%|██████▉   | 69/100 [01:30<00:18,  1.66it/s]                                                 69%|██████▉   | 69/100 [01:30<00:18,  1.66it/s] 70%|███████   | 70/100 [01:31<00:18,  1.67it/s]                                                 70%|███████   | 70/100 [01:31<00:18,  1.67it/s] 71%|███████   | 71/100 [01:31<00:17,  1.67it/s]                                                 71%|███████   | 71/100 [01:31<00:17,  1.67it/s] 72%|███████▏  | 72/100 [01:32<00:16,  1.66it/s]                                                 72%|███████▏  | 72/100 [01:32<00:16,  1.66it/s] 73%|███████▎  | 73/100 [01:32<00:16,  1.67it/s]                                                 73%|███████▎  | 73/100 [01:32<00:16,  1.67it/s] 74%|███████▍  | 74/100 [01:33<00:15,  1.68it/s]                                                 74%|███████▍  | 74/100 [01:33<00:15,  1.68it/s] 75%|███████▌  | 75/100 [01:34<00:14,  1.68it/s]                                                 75%|███████▌  | 75/100 [01:34<00:14,  1.68it/s]{'loss': 14.1013, 'learning_rate': 1e-06, 'epoch': 5.1}
+{'loss': 15.7246, 'learning_rate': 1e-06, 'epoch': 5.2}
+{'loss': 12.3799, 'learning_rate': 1e-06, 'epoch': 5.3}
+{'loss': 15.201, 'learning_rate': 1e-06, 'epoch': 5.4}
+{'loss': 13.1499, 'learning_rate': 1e-06, 'epoch': 5.5}
+{'loss': 12.4727, 'learning_rate': 1e-06, 'epoch': 5.6}
+{'loss': 17.2876, 'learning_rate': 1e-06, 'epoch': 5.7}
+{'loss': 12.906, 'learning_rate': 1e-06, 'epoch': 5.8}
+{'loss': 15.9727, 'learning_rate': 1e-06, 'epoch': 5.9}
+{'loss': 12.7551, 'learning_rate': 1e-06, 'epoch': 6.0}
+{'loss': 9.7727, 'learning_rate': 1e-06, 'epoch': 6.1}
+{'loss': 15.5105, 'learning_rate': 1e-06, 'epoch': 6.2}
+{'loss': 11.4761, 'learning_rate': 1e-06, 'epoch': 6.3}
+{'loss': 13.8838, 'learning_rate': 1e-06, 'epoch': 6.4}
+{'loss': 21.0186, 'learning_rate': 1e-06, 'epoch': 6.5}
+{'loss': 12.1611, 'learning_rate': 1e-06, 'epoch': 6.6}
+{'loss': 15.5576, 'learning_rate': 1e-06, 'epoch': 6.7}
+{'loss': 9.7314, 'learning_rate': 1e-06, 'epoch': 6.8}
+{'loss': 18.1313, 'learning_rate': 1e-06, 'epoch': 6.9}
+{'loss': 11.6875, 'learning_rate': 1e-06, 'epoch': 7.0}
+{'loss': 16.1626, 'learning_rate': 1e-06, 'epoch': 7.1}
+{'loss': 13.0109, 'learning_rate': 1e-06, 'epoch': 7.2}
+{'loss': 13.3257, 'learning_rate': 1e-06, 'epoch': 7.3}
+{'loss': 13.9038, 'learning_rate': 1e-06, 'epoch': 7.4}
+{'loss': 13.9736, 'learning_rate': 1e-06, 'epoch': 7.5}
+
+  0%|          | 0/16 [00:00<?, ?it/s][A
+ 31%|███▏      | 5/16 [00:00<00:00, 49.24it/s][A
+ 62%|██████▎   | 10/16 [00:00<00:00, 43.07it/s][A
+ 94%|█████████▍| 15/16 [00:00<00:00, 39.51it/s][A                                                
+                                               [A 75%|███████▌  | 75/100 [01:34<00:14,  1.68it/s]
+100%|██████████| 16/16 [00:00<00:00, 39.51it/s][A
+                                               [A2026-04-11 01:51:53,110 - INFO - There are 0 training samples and 128 validation samples
+{'eval_loss': 1.7861328125, 'eval_runtime': 0.4195, 'eval_samples_per_second': 305.126, 'eval_steps_per_second': 38.141, 'epoch': 7.5}
+
+  0%|          | 0/128 [00:00<?, ?it/s][A2026-04-11 01:51:53,110 - INFO - ========= Example =========
+2026-04-11 01:51:53,110 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:51:53,110 - INFO - Correct candidate: 3
+2026-04-11 01:51:53,121 - INFO - === Candidate 0 ===
+2026-04-11 01:51:53,121 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was terrible
+2026-04-11 01:51:53,122 - INFO - Log probabilities of the option tokens: tensor([-10.3125], dtype=torch.float16)
+2026-04-11 01:51:53,131 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:51:53,132 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was bad
+2026-04-11 01:51:53,132 - INFO - Log probabilities of the option tokens: tensor([-9.4297], dtype=torch.float16)
+2026-04-11 01:51:53,141 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:51:53,141 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was okay
+2026-04-11 01:51:53,142 - INFO - Log probabilities of the option tokens: tensor([-9.7422], dtype=torch.float16)
+2026-04-11 01:51:53,151 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:51:53,151 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was good
+2026-04-11 01:51:53,152 - INFO - Log probabilities of the option tokens: tensor([-6.4688], dtype=torch.float16)
+2026-04-11 01:51:53,161 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:51:53,161 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was great
+2026-04-11 01:51:53,161 - INFO - Log probabilities of the option tokens: tensor([-5.6914], dtype=torch.float16)
+2026-04-11 01:51:53,162 - INFO - Prediction scores: [-10.3125, -9.4296875, -9.7421875, -6.46875, -5.69140625]
+2026-04-11 01:51:53,162 - INFO - ========= Example =========
+2026-04-11 01:51:53,162 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:51:53,162 - INFO - Correct candidate: 1
+2026-04-11 01:51:53,173 - INFO - === Candidate 0 ===
+2026-04-11 01:51:53,173 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was terrible
+2026-04-11 01:51:53,173 - INFO - Log probabilities of the option tokens: tensor([-8.3594], dtype=torch.float16)
+2026-04-11 01:51:53,183 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:51:53,183 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was bad
+2026-04-11 01:51:53,183 - INFO - Log probabilities of the option tokens: tensor([-6.9688], dtype=torch.float16)
+2026-04-11 01:51:53,193 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:51:53,193 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was okay
+2026-04-11 01:51:53,193 - INFO - Log probabilities of the option tokens: tensor([-7.1914], dtype=torch.float16)
+2026-04-11 01:51:53,203 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:51:53,203 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was good
+2026-04-11 01:51:53,203 - INFO - Log probabilities of the option tokens: tensor([-5.2070], dtype=torch.float16)
+2026-04-11 01:51:53,213 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:51:53,213 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was great
+2026-04-11 01:51:53,213 - INFO - Log probabilities of the option tokens: tensor([-5.5273], dtype=torch.float16)
+2026-04-11 01:51:53,213 - INFO - Prediction scores: [-8.359375, -6.96875, -7.19140625, -5.20703125, -5.52734375]
+
+  2%|▏         | 2/128 [00:00<00:06, 19.49it/s][A2026-04-11 01:51:53,213 - INFO - ========= Example =========
+2026-04-11 01:51:53,213 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:51:53,213 - INFO - Correct candidate: 3
+2026-04-11 01:51:53,224 - INFO - === Candidate 0 ===
+2026-04-11 01:51:53,224 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was terrible
+2026-04-11 01:51:53,224 - INFO - Log probabilities of the option tokens: tensor([-7.2773], dtype=torch.float16)
+2026-04-11 01:51:53,234 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:51:53,234 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was bad
+2026-04-11 01:51:53,234 - INFO - Log probabilities of the option tokens: tensor([-7.1875], dtype=torch.float16)
+2026-04-11 01:51:53,244 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:51:53,244 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was okay
+2026-04-11 01:51:53,244 - INFO - Log probabilities of the option tokens: tensor([-6.7656], dtype=torch.float16)
+2026-04-11 01:51:53,254 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:51:53,254 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was good
+2026-04-11 01:51:53,254 - INFO - Log probabilities of the option tokens: tensor([-4.6523], dtype=torch.float16)
+2026-04-11 01:51:53,263 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:51:53,264 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was great
+2026-04-11 01:51:53,264 - INFO - Log probabilities of the option tokens: tensor([-4.6914], dtype=torch.float16)
+2026-04-11 01:51:53,264 - INFO - Prediction scores: [-7.27734375, -7.1875, -6.765625, -4.65234375, -4.69140625]
+
+  4%|▍         | 5/128 [00:00<00:06, 20.21it/s][A
+  6%|▋         | 8/128 [00:00<00:05, 20.43it/s][A
+  9%|▊         | 11/128 [00:00<00:05, 20.53it/s][A
+ 11%|█         | 14/128 [00:00<00:05, 20.56it/s][A
+ 13%|█▎        | 17/128 [00:00<00:05, 20.61it/s][A
+ 16%|█▌        | 20/128 [00:00<00:05, 20.76it/s][A
+ 18%|█▊        | 23/128 [00:01<00:05, 20.92it/s][A
+ 20%|██        | 26/128 [00:01<00:04, 20.41it/s][A
+ 23%|██▎       | 29/128 [00:01<00:04, 20.63it/s][A
+ 25%|██▌       | 32/128 [00:01<00:04, 20.77it/s][A
+ 27%|██▋       | 35/128 [00:01<00:04, 20.91it/s][A
+ 30%|██▉       | 38/128 [00:01<00:04, 20.85it/s][A
+ 32%|███▏      | 41/128 [00:01<00:04, 20.88it/s][A
+ 34%|███▍      | 44/128 [00:02<00:04, 20.91it/s][A
+ 37%|███▋      | 47/128 [00:02<00:03, 20.89it/s][A
+ 39%|███▉      | 50/128 [00:02<00:03, 20.77it/s][A
+ 41%|████▏     | 53/128 [00:02<00:03, 20.84it/s][A
+ 44%|████▍     | 56/128 [00:02<00:03, 20.78it/s][A
+ 46%|████▌     | 59/128 [00:02<00:03, 20.27it/s][A
+ 48%|████▊     | 62/128 [00:03<00:03, 20.53it/s][A
+ 51%|█████     | 65/128 [00:03<00:03, 20.67it/s][A
+ 53%|█████▎    | 68/128 [00:03<00:02, 20.65it/s][A
+ 55%|█████▌    | 71/128 [00:03<00:02, 20.56it/s][A
+ 58%|█████▊    | 74/128 [00:03<00:02, 20.65it/s][A
+ 60%|██████    | 77/128 [00:03<00:02, 20.64it/s][A
+ 62%|██████▎   | 80/128 [00:03<00:02, 20.66it/s][A
+ 65%|██████▍   | 83/128 [00:04<00:02, 20.10it/s][A
+ 67%|██████▋   | 86/128 [00:04<00:02, 20.26it/s][A
+ 70%|██████▉   | 89/128 [00:04<00:01, 20.30it/s][A
+ 72%|███████▏  | 92/128 [00:04<00:01, 20.41it/s][A
+ 74%|███████▍  | 95/128 [00:04<00:01, 20.58it/s][A
+ 77%|███████▋  | 98/128 [00:04<00:01, 20.55it/s][A
+ 79%|███████▉  | 101/128 [00:04<00:01, 20.64it/s][A
+ 81%|████████▏ | 104/128 [00:05<00:01, 20.73it/s][A
+ 84%|████████▎ | 107/128 [00:05<00:01, 20.79it/s][A
+ 86%|████████▌ | 110/128 [00:05<00:00, 20.31it/s][A
+ 88%|████████▊ | 113/128 [00:05<00:00, 20.52it/s][A
+ 91%|█████████ | 116/128 [00:05<00:00, 20.78it/s][A
+ 93%|█████████▎| 119/128 [00:05<00:00, 20.90it/s][A
+ 95%|█████████▌| 122/128 [00:05<00:00, 20.93it/s][A
+ 98%|█████████▊| 125/128 [00:06<00:00, 20.97it/s][A
+100%|██████████| 128/128 [00:06<00:00, 20.94it/s][A100%|██████████| 128/128 [00:06<00:00, 20.66it/s]
+2026-04-11 01:51:59,309 - INFO - There are 0 training samples and 80 validation samples
+
+  0%|          | 0/80 [00:00<?, ?it/s][A2026-04-11 01:51:59,309 - INFO - ========= Example =========
+2026-04-11 01:51:59,309 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:51:59,309 - INFO - Correct candidate: 1
+2026-04-11 01:51:59,320 - INFO - === Candidate 0 ===
+2026-04-11 01:51:59,320 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was terrible
+2026-04-11 01:51:59,320 - INFO - Log probabilities of the option tokens: tensor([-8.9609], dtype=torch.float16)
+2026-04-11 01:51:59,330 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:51:59,330 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was bad
+2026-04-11 01:51:59,330 - INFO - Log probabilities of the option tokens: tensor([-7.6719], dtype=torch.float16)
+2026-04-11 01:51:59,340 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:51:59,340 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was okay
+2026-04-11 01:51:59,340 - INFO - Log probabilities of the option tokens: tensor([-7.9727], dtype=torch.float16)
+2026-04-11 01:51:59,349 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:51:59,350 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was good
+2026-04-11 01:51:59,350 - INFO - Log probabilities of the option tokens: tensor([-5.9922], dtype=torch.float16)
+2026-04-11 01:51:59,359 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:51:59,359 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was great
+2026-04-11 01:51:59,360 - INFO - Log probabilities of the option tokens: tensor([-6.6016], dtype=torch.float16)
+2026-04-11 01:51:59,360 - INFO - Prediction scores: [-8.9609375, -7.671875, -7.97265625, -5.9921875, -6.6015625]
+2026-04-11 01:51:59,360 - INFO - ========= Example =========
+2026-04-11 01:51:59,360 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:51:59,360 - INFO - Correct candidate: 2
+2026-04-11 01:51:59,371 - INFO - === Candidate 0 ===
+2026-04-11 01:51:59,371 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was terrible
+2026-04-11 01:51:59,371 - INFO - Log probabilities of the option tokens: tensor([-9.2656], dtype=torch.float16)
+2026-04-11 01:51:59,381 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:51:59,381 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was bad
+2026-04-11 01:51:59,381 - INFO - Log probabilities of the option tokens: tensor([-7.9023], dtype=torch.float16)
+2026-04-11 01:51:59,390 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:51:59,391 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was okay
+2026-04-11 01:51:59,391 - INFO - Log probabilities of the option tokens: tensor([-7.8438], dtype=torch.float16)
+2026-04-11 01:51:59,400 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:51:59,400 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was good
+2026-04-11 01:51:59,401 - INFO - Log probabilities of the option tokens: tensor([-5.1211], dtype=torch.float16)
+2026-04-11 01:51:59,410 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:51:59,410 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was great
+2026-04-11 01:51:59,411 - INFO - Log probabilities of the option tokens: tensor([-4.9609], dtype=torch.float16)
+2026-04-11 01:51:59,411 - INFO - Prediction scores: [-9.265625, -7.90234375, -7.84375, -5.12109375, -4.9609375]
+
+  2%|▎         | 2/80 [00:00<00:03, 19.66it/s][A2026-04-11 01:51:59,411 - INFO - ========= Example =========
+2026-04-11 01:51:59,411 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:51:59,411 - INFO - Correct candidate: 0
+2026-04-11 01:51:59,422 - INFO - === Candidate 0 ===
+2026-04-11 01:51:59,422 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was terrible
+2026-04-11 01:51:59,422 - INFO - Log probabilities of the option tokens: tensor([-6.7852], dtype=torch.float16)
+2026-04-11 01:51:59,432 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:51:59,432 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was bad
+2026-04-11 01:51:59,432 - INFO - Log probabilities of the option tokens: tensor([-4.8672], dtype=torch.float16)
+2026-04-11 01:51:59,442 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:51:59,442 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was okay
+2026-04-11 01:51:59,442 - INFO - Log probabilities of the option tokens: tensor([-7.5156], dtype=torch.float16)
+2026-04-11 01:51:59,452 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:51:59,452 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was good
+2026-04-11 01:51:59,452 - INFO - Log probabilities of the option tokens: tensor([-4.9453], dtype=torch.float16)
+2026-04-11 01:51:59,462 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:51:59,462 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was great
+2026-04-11 01:51:59,462 - INFO - Log probabilities of the option tokens: tensor([-4.9297], dtype=torch.float16)
+2026-04-11 01:51:59,462 - INFO - Prediction scores: [-6.78515625, -4.8671875, -7.515625, -4.9453125, -4.9296875]
+
+  5%|▌         | 4/80 [00:00<00:03, 19.74it/s][A
+  9%|▉         | 7/80 [00:00<00:03, 20.47it/s][A
+ 12%|█▎        | 10/80 [00:00<00:03, 20.58it/s][A
+ 16%|█▋        | 13/80 [00:00<00:03, 20.06it/s][A
+ 20%|██        | 16/80 [00:00<00:03, 20.35it/s][A
+ 24%|██▍       | 19/80 [00:00<00:02, 20.53it/s][A
+ 28%|██▊       | 22/80 [00:01<00:02, 20.69it/s][A
+ 31%|███▏      | 25/80 [00:01<00:02, 20.76it/s][A
+ 35%|███▌      | 28/80 [00:01<00:02, 20.85it/s][A
+ 39%|███▉      | 31/80 [00:01<00:02, 20.90it/s][A
+ 42%|████▎     | 34/80 [00:01<00:02, 20.82it/s][A
+ 46%|████▋     | 37/80 [00:01<00:02, 20.37it/s][A
+ 50%|█████     | 40/80 [00:01<00:01, 20.60it/s][A
+ 54%|█████▍    | 43/80 [00:02<00:01, 20.72it/s][A
+ 57%|█████▊    | 46/80 [00:02<00:01, 20.84it/s][A
+ 61%|██████▏   | 49/80 [00:02<00:01, 20.79it/s][A
+ 65%|██████▌   | 52/80 [00:02<00:01, 20.82it/s][A
+ 69%|██████▉   | 55/80 [00:02<00:01, 20.80it/s][A
+ 72%|███████▎  | 58/80 [00:02<00:01, 20.77it/s][A
+ 76%|███████▋  | 61/80 [00:02<00:00, 20.77it/s][A
+ 80%|████████  | 64/80 [00:03<00:00, 20.33it/s][A
+ 84%|████████▍ | 67/80 [00:03<00:00, 20.43it/s][A
+ 88%|████████▊ | 70/80 [00:03<00:00, 20.47it/s][A
+ 91%|█████████▏| 73/80 [00:03<00:00, 20.45it/s][A
+ 95%|█████████▌| 76/80 [00:03<00:00, 20.45it/s][A
+ 99%|█████████▉| 79/80 [00:03<00:00, 20.54it/s][A100%|██████████| 80/80 [00:03<00:00, 20.59it/s]
+ 76%|███████▌  | 76/100 [01:48<01:54,  4.77s/it]                                                 76%|███████▌  | 76/100 [01:48<01:54,  4.77s/it] 77%|███████▋  | 77/100 [01:49<01:21,  3.52s/it]                                                 77%|███████▋  | 77/100 [01:49<01:21,  3.52s/it] 78%|███████▊  | 78/100 [01:49<00:58,  2.64s/it]                                                 78%|███████▊  | 78/100 [01:49<00:58,  2.64s/it] 79%|███████▉  | 79/100 [01:50<00:42,  2.03s/it]                                                 79%|███████▉  | 79/100 [01:50<00:42,  2.03s/it] 80%|████████  | 80/100 [01:50<00:31,  1.60s/it]                                                 80%|████████  | 80/100 [01:50<00:31,  1.60s/it] 81%|████████  | 81/100 [01:51<00:24,  1.30s/it]                                                 81%|████████  | 81/100 [01:51<00:24,  1.30s/it] 82%|████████▏ | 82/100 [01:52<00:19,  1.09s/it]                                                 82%|████████▏ | 82/100 [01:52<00:19,  1.09s/it] 83%|████████▎ | 83/100 [01:52<00:15,  1.07it/s]                                                 83%|████████▎ | 83/100 [01:52<00:15,  1.07it/s] 84%|████████▍ | 84/100 [01:53<00:13,  1.20it/s]                                                 84%|████████▍ | 84/100 [01:53<00:13,  1.20it/s] 85%|████████▌ | 85/100 [01:53<00:11,  1.31it/s]                                                 85%|████████▌ | 85/100 [01:53<00:11,  1.31it/s] 86%|████████▌ | 86/100 [01:54<00:10,  1.40it/s]                                                 86%|████████▌ | 86/100 [01:54<00:10,  1.40it/s] 87%|████████▋ | 87/100 [01:55<00:08,  1.48it/s]                                                 87%|████████▋ | 87/100 [01:55<00:08,  1.48it/s] 88%|████████▊ | 88/100 [01:55<00:07,  1.53it/s]                                                 88%|████████▊ | 88/100 [01:55<00:07,  1.53it/s] 89%|████████▉ | 89/100 [01:56<00:06,  1.57it/s]                                                 89%|████████▉ | 89/100 [01:56<00:06,  1.57it/s] 90%|█████████ | 90/100 [01:56<00:06,  1.61it/s]                                                 90%|█████████ | 90/100 [01:56<00:06,  1.61it/s] 91%|█████████ | 91/100 [01:57<00:05,  1.63it/s]                                                 91%|█████████ | 91/100 [01:57<00:05,  1.63it/s] 92%|█████████▏| 92/100 [01:58<00:04,  1.65it/s]                                                 92%|█████████▏| 92/100 [01:58<00:04,  1.65it/s] 93%|█████████▎| 93/100 [01:58<00:04,  1.66it/s]                                                 93%|█████████▎| 93/100 [01:58<00:04,  1.66it/s] 94%|█████████▍| 94/100 [01:59<00:03,  1.67it/s]                                                 94%|█████████▍| 94/100 [01:59<00:03,  1.67it/s] 95%|█████████▌| 95/100 [01:59<00:02,  1.67it/s]                                                 95%|█████████▌| 95/100 [01:59<00:02,  1.67it/s] 96%|█████████▌| 96/100 [02:00<00:02,  1.68it/s]                                                 96%|█████████▌| 96/100 [02:00<00:02,  1.68it/s] 97%|█████████▋| 97/100 [02:01<00:01,  1.67it/s]                                                 97%|█████████▋| 97/100 [02:01<00:01,  1.67it/s] 98%|█████████▊| 98/100 [02:01<00:01,  1.68it/s]                                                 98%|█████████▊| 98/100 [02:01<00:01,  1.68it/s] 99%|█████████▉| 99/100 [02:02<00:00,  1.68it/s]                                                 99%|█████████▉| 99/100 [02:02<00:00,  1.68it/s]100%|██████████| 100/100 [02:02<00:00,  1.69it/s]                                                 100%|██████████| 100/100 [02:02<00:00,  1.69it/s]{'loss': 12.8247, 'learning_rate': 1e-06, 'epoch': 7.6}
+{'loss': 18.3086, 'learning_rate': 1e-06, 'epoch': 7.7}
+{'loss': 10.8458, 'learning_rate': 1e-06, 'epoch': 7.8}
+{'loss': 15.3013, 'learning_rate': 1e-06, 'epoch': 7.9}
+{'loss': 9.5865, 'learning_rate': 1e-06, 'epoch': 8.0}
+{'loss': 19.3564, 'learning_rate': 1e-06, 'epoch': 8.1}
+{'loss': 18.3423, 'learning_rate': 1e-06, 'epoch': 8.2}
+{'loss': 9.7534, 'learning_rate': 1e-06, 'epoch': 8.3}
+{'loss': 12.8599, 'learning_rate': 1e-06, 'epoch': 8.4}
+{'loss': 14.5122, 'learning_rate': 1e-06, 'epoch': 8.5}
+{'loss': 8.9515, 'learning_rate': 1e-06, 'epoch': 8.6}
+{'loss': 10.5276, 'learning_rate': 1e-06, 'epoch': 8.7}
+{'loss': 11.3716, 'learning_rate': 1e-06, 'epoch': 8.8}
+{'loss': 12.9131, 'learning_rate': 1e-06, 'epoch': 8.9}
+{'loss': 17.1609, 'learning_rate': 1e-06, 'epoch': 9.0}
+{'loss': 11.7002, 'learning_rate': 1e-06, 'epoch': 9.1}
+{'loss': 7.1729, 'learning_rate': 1e-06, 'epoch': 9.2}
+{'loss': 16.0823, 'learning_rate': 1e-06, 'epoch': 9.3}
+{'loss': 12.0459, 'learning_rate': 1e-06, 'epoch': 9.4}
+{'loss': 13.5781, 'learning_rate': 1e-06, 'epoch': 9.5}
+{'loss': 16.8906, 'learning_rate': 1e-06, 'epoch': 9.6}
+{'loss': 13.4482, 'learning_rate': 1e-06, 'epoch': 9.7}
+{'loss': 10.9019, 'learning_rate': 1e-06, 'epoch': 9.8}
+{'loss': 14.4297, 'learning_rate': 1e-06, 'epoch': 9.9}
+{'loss': 16.9268, 'learning_rate': 1e-06, 'epoch': 10.0}
+
+  0%|          | 0/16 [00:00<?, ?it/s][A
+ 31%|███▏      | 5/16 [00:00<00:00, 49.43it/s][A
+ 62%|██████▎   | 10/16 [00:00<00:00, 43.25it/s][A
+ 94%|█████████▍| 15/16 [00:00<00:00, 40.89it/s][A                                                 
+                                               [A100%|██████████| 100/100 [02:03<00:00,  1.69it/s]
+100%|██████████| 16/16 [00:00<00:00, 40.89it/s][A
+                                               [A2026-04-11 01:52:21,880 - INFO - There are 0 training samples and 128 validation samples
+{'eval_loss': 1.7421875, 'eval_runtime': 0.4095, 'eval_samples_per_second': 312.594, 'eval_steps_per_second': 39.074, 'epoch': 10.0}
+
+  0%|          | 0/128 [00:00<?, ?it/s][A2026-04-11 01:52:21,880 - INFO - ========= Example =========
+2026-04-11 01:52:21,880 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:52:21,880 - INFO - Correct candidate: 3
+2026-04-11 01:52:21,891 - INFO - === Candidate 0 ===
+2026-04-11 01:52:21,891 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was terrible
+2026-04-11 01:52:21,891 - INFO - Log probabilities of the option tokens: tensor([-10.2422], dtype=torch.float16)
+2026-04-11 01:52:21,901 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:52:21,901 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was bad
+2026-04-11 01:52:21,901 - INFO - Log probabilities of the option tokens: tensor([-9.4609], dtype=torch.float16)
+2026-04-11 01:52:21,911 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:52:21,911 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was okay
+2026-04-11 01:52:21,911 - INFO - Log probabilities of the option tokens: tensor([-9.6484], dtype=torch.float16)
+2026-04-11 01:52:21,921 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:52:21,921 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was good
+2026-04-11 01:52:21,921 - INFO - Log probabilities of the option tokens: tensor([-6.4531], dtype=torch.float16)
+2026-04-11 01:52:21,931 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:52:21,931 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was great
+2026-04-11 01:52:21,931 - INFO - Log probabilities of the option tokens: tensor([-5.7695], dtype=torch.float16)
+2026-04-11 01:52:21,931 - INFO - Prediction scores: [-10.2421875, -9.4609375, -9.6484375, -6.453125, -5.76953125]
+2026-04-11 01:52:21,931 - INFO - ========= Example =========
+2026-04-11 01:52:21,931 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:52:21,931 - INFO - Correct candidate: 1
+2026-04-11 01:52:21,942 - INFO - === Candidate 0 ===
+2026-04-11 01:52:21,942 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was terrible
+2026-04-11 01:52:21,943 - INFO - Log probabilities of the option tokens: tensor([-8.1562], dtype=torch.float16)
+2026-04-11 01:52:21,952 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:52:21,952 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was bad
+2026-04-11 01:52:21,953 - INFO - Log probabilities of the option tokens: tensor([-6.8828], dtype=torch.float16)
+2026-04-11 01:52:21,962 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:52:21,962 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was okay
+2026-04-11 01:52:21,963 - INFO - Log probabilities of the option tokens: tensor([-7.0234], dtype=torch.float16)
+2026-04-11 01:52:21,972 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:52:21,972 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was good
+2026-04-11 01:52:21,972 - INFO - Log probabilities of the option tokens: tensor([-5.2930], dtype=torch.float16)
+2026-04-11 01:52:21,982 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:52:21,982 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was great
+2026-04-11 01:52:21,982 - INFO - Log probabilities of the option tokens: tensor([-5.7109], dtype=torch.float16)
+2026-04-11 01:52:21,983 - INFO - Prediction scores: [-8.15625, -6.8828125, -7.0234375, -5.29296875, -5.7109375]
+
+  2%|▏         | 2/128 [00:00<00:06, 19.51it/s][A2026-04-11 01:52:21,983 - INFO - ========= Example =========
+2026-04-11 01:52:21,983 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:52:21,983 - INFO - Correct candidate: 3
+2026-04-11 01:52:21,993 - INFO - === Candidate 0 ===
+2026-04-11 01:52:21,994 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was terrible
+2026-04-11 01:52:21,994 - INFO - Log probabilities of the option tokens: tensor([-7.0156], dtype=torch.float16)
+2026-04-11 01:52:22,003 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:52:22,003 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was bad
+2026-04-11 01:52:22,004 - INFO - Log probabilities of the option tokens: tensor([-7.0039], dtype=torch.float16)
+2026-04-11 01:52:22,013 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:52:22,013 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was okay
+2026-04-11 01:52:22,013 - INFO - Log probabilities of the option tokens: tensor([-6.7734], dtype=torch.float16)
+2026-04-11 01:52:22,023 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:52:22,023 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was good
+2026-04-11 01:52:22,023 - INFO - Log probabilities of the option tokens: tensor([-4.7305], dtype=torch.float16)
+2026-04-11 01:52:22,033 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:52:22,033 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was great
+2026-04-11 01:52:22,033 - INFO - Log probabilities of the option tokens: tensor([-4.8633], dtype=torch.float16)
+2026-04-11 01:52:22,033 - INFO - Prediction scores: [-7.015625, -7.00390625, -6.7734375, -4.73046875, -4.86328125]
+
+  3%|▎         | 4/128 [00:00<00:06, 18.92it/s][A
+  5%|▌         | 7/128 [00:00<00:06, 19.91it/s][A
+  8%|▊         | 10/128 [00:00<00:05, 20.34it/s][A
+ 10%|█         | 13/128 [00:00<00:05, 20.52it/s][A
+ 12%|█▎        | 16/128 [00:00<00:05, 20.60it/s][A
+ 15%|█▍        | 19/128 [00:00<00:05, 20.79it/s][A
+ 17%|█▋        | 22/128 [00:01<00:05, 20.96it/s][A
+ 20%|█▉        | 25/128 [00:01<00:04, 20.98it/s][A
+ 22%|██▏       | 28/128 [00:01<00:04, 21.00it/s][A
+ 24%|██▍       | 31/128 [00:01<00:04, 20.54it/s][A
+ 27%|██▋       | 34/128 [00:01<00:04, 20.83it/s][A
+ 29%|██▉       | 37/128 [00:01<00:04, 20.87it/s][A
+ 31%|███▏      | 40/128 [00:01<00:04, 20.92it/s][A
+ 34%|███▎      | 43/128 [00:02<00:04, 20.97it/s][A
+ 36%|███▌      | 46/128 [00:02<00:03, 21.08it/s][A
+ 38%|███▊      | 49/128 [00:02<00:03, 21.02it/s][A
+ 41%|████      | 52/128 [00:02<00:03, 21.06it/s][A
+ 43%|████▎     | 55/128 [00:02<00:03, 21.06it/s][A
+ 45%|████▌     | 58/128 [00:02<00:03, 21.01it/s][A
+ 48%|████▊     | 61/128 [00:02<00:03, 20.07it/s][A
+ 50%|█████     | 64/128 [00:03<00:03, 20.41it/s][A
+ 52%|█████▏    | 67/128 [00:03<00:02, 20.52it/s][A
+ 55%|█████▍    | 70/128 [00:03<00:02, 20.57it/s][A
+ 57%|█████▋    | 73/128 [00:03<00:02, 20.66it/s][A
+ 59%|█████▉    | 76/128 [00:03<00:02, 20.73it/s][A
+ 62%|██████▏   | 79/128 [00:03<00:02, 20.76it/s][A
+ 64%|██████▍   | 82/128 [00:03<00:02, 20.70it/s][A
+ 66%|██████▋   | 85/128 [00:04<00:02, 20.71it/s][A
+ 69%|██████▉   | 88/128 [00:04<00:01, 20.30it/s][A
+ 71%|███████   | 91/128 [00:04<00:01, 20.38it/s][A
+ 73%|███████▎  | 94/128 [00:04<00:01, 20.63it/s][A
+ 76%|███████▌  | 97/128 [00:04<00:01, 20.68it/s][A
+ 78%|███████▊  | 100/128 [00:04<00:01, 20.76it/s][A
+ 80%|████████  | 103/128 [00:04<00:01, 20.84it/s][A
+ 83%|████████▎ | 106/128 [00:05<00:01, 20.81it/s][A
+ 85%|████████▌ | 109/128 [00:05<00:00, 20.80it/s][A
+ 88%|████████▊ | 112/128 [00:05<00:00, 20.88it/s][A
+ 90%|████████▉ | 115/128 [00:05<00:00, 20.97it/s][A
+ 92%|█████████▏| 118/128 [00:05<00:00, 21.03it/s][A
+ 95%|█████████▍| 121/128 [00:05<00:00, 20.96it/s][A
+ 97%|█████████▋| 124/128 [00:05<00:00, 20.98it/s][A
+ 99%|█████████▉| 127/128 [00:06<00:00, 20.98it/s][A100%|██████████| 128/128 [00:06<00:00, 20.75it/s]
+2026-04-11 01:52:28,055 - INFO - There are 0 training samples and 80 validation samples
+
+  0%|          | 0/80 [00:00<?, ?it/s][A2026-04-11 01:52:28,055 - INFO - ========= Example =========
+2026-04-11 01:52:28,055 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:52:28,055 - INFO - Correct candidate: 1
+2026-04-11 01:52:28,066 - INFO - === Candidate 0 ===
+2026-04-11 01:52:28,066 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was terrible
+2026-04-11 01:52:28,066 - INFO - Log probabilities of the option tokens: tensor([-8.7578], dtype=torch.float16)
+2026-04-11 01:52:28,075 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:52:28,076 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was bad
+2026-04-11 01:52:28,076 - INFO - Log probabilities of the option tokens: tensor([-7.5820], dtype=torch.float16)
+2026-04-11 01:52:28,085 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:52:28,085 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was okay
+2026-04-11 01:52:28,086 - INFO - Log probabilities of the option tokens: tensor([-8.1016], dtype=torch.float16)
+2026-04-11 01:52:28,095 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:52:28,095 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was good
+2026-04-11 01:52:28,096 - INFO - Log probabilities of the option tokens: tensor([-6.1211], dtype=torch.float16)
+2026-04-11 01:52:28,105 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:52:28,105 - INFO - <s>despite its dry wit and compassion, the film suffers from a philosophical emptiness and maddeningly sedate pacing. It was great
+2026-04-11 01:52:28,105 - INFO - Log probabilities of the option tokens: tensor([-6.7188], dtype=torch.float16)
+2026-04-11 01:52:28,105 - INFO - Prediction scores: [-8.7578125, -7.58203125, -8.1015625, -6.12109375, -6.71875]
+2026-04-11 01:52:28,105 - INFO - ========= Example =========
+2026-04-11 01:52:28,105 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:52:28,105 - INFO - Correct candidate: 2
+2026-04-11 01:52:28,116 - INFO - === Candidate 0 ===
+2026-04-11 01:52:28,116 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was terrible
+2026-04-11 01:52:28,116 - INFO - Log probabilities of the option tokens: tensor([-9.1875], dtype=torch.float16)
+2026-04-11 01:52:28,126 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:52:28,126 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was bad
+2026-04-11 01:52:28,126 - INFO - Log probabilities of the option tokens: tensor([-8.0234], dtype=torch.float16)
+2026-04-11 01:52:28,136 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:52:28,136 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was okay
+2026-04-11 01:52:28,136 - INFO - Log probabilities of the option tokens: tensor([-7.8047], dtype=torch.float16)
+2026-04-11 01:52:28,146 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:52:28,146 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was good
+2026-04-11 01:52:28,146 - INFO - Log probabilities of the option tokens: tensor([-5.1172], dtype=torch.float16)
+2026-04-11 01:52:28,155 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:52:28,155 - INFO - <s>in this film we at least see a study in contrasts ; the wide range of one actor, and the limited range of a comedian. It was great
+2026-04-11 01:52:28,156 - INFO - Log probabilities of the option tokens: tensor([-4.9375], dtype=torch.float16)
+2026-04-11 01:52:28,156 - INFO - Prediction scores: [-9.1875, -8.0234375, -7.8046875, -5.1171875, -4.9375]
+
+  2%|▎         | 2/80 [00:00<00:03, 19.82it/s][A2026-04-11 01:52:28,156 - INFO - ========= Example =========
+2026-04-11 01:52:28,156 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:52:28,156 - INFO - Correct candidate: 0
+2026-04-11 01:52:28,167 - INFO - === Candidate 0 ===
+2026-04-11 01:52:28,167 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was terrible
+2026-04-11 01:52:28,167 - INFO - Log probabilities of the option tokens: tensor([-6.4609], dtype=torch.float16)
+2026-04-11 01:52:28,177 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:52:28,177 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was bad
+2026-04-11 01:52:28,177 - INFO - Log probabilities of the option tokens: tensor([-4.6875], dtype=torch.float16)
+2026-04-11 01:52:28,187 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:52:28,187 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was okay
+2026-04-11 01:52:28,187 - INFO - Log probabilities of the option tokens: tensor([-7.5078], dtype=torch.float16)
+2026-04-11 01:52:28,197 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:52:28,197 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was good
+2026-04-11 01:52:28,197 - INFO - Log probabilities of the option tokens: tensor([-5.0859], dtype=torch.float16)
+2026-04-11 01:52:28,207 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:52:28,207 - INFO - <s>instead of letting the laughs come as they may, lawrence unleashes his trademark misogyny -- er, comedy -- like a human volcano or an overflowing septic tank, take your pick. It was great
+2026-04-11 01:52:28,207 - INFO - Log probabilities of the option tokens: tensor([-5.1875], dtype=torch.float16)
+2026-04-11 01:52:28,207 - INFO - Prediction scores: [-6.4609375, -4.6875, -7.5078125, -5.0859375, -5.1875]
+
+  6%|▋         | 5/80 [00:00<00:03, 20.17it/s][A
+ 10%|█         | 8/80 [00:00<00:03, 20.64it/s][A
+ 14%|█▍        | 11/80 [00:00<00:03, 20.73it/s][A
+ 18%|█▊        | 14/80 [00:00<00:03, 20.24it/s][A
+ 21%|██▏       | 17/80 [00:00<00:03, 20.52it/s][A
+ 25%|██▌       | 20/80 [00:00<00:02, 20.73it/s][A
+ 29%|██▉       | 23/80 [00:01<00:02, 20.80it/s][A
+ 32%|███▎      | 26/80 [00:01<00:02, 20.91it/s][A
+ 36%|███▋      | 29/80 [00:01<00:02, 21.02it/s][A
+ 40%|████      | 32/80 [00:01<00:02, 21.04it/s][A
+ 44%|████▍     | 35/80 [00:01<00:02, 21.01it/s][A
+ 48%|████▊     | 38/80 [00:01<00:01, 21.01it/s][A
+ 51%|█████▏    | 41/80 [00:01<00:01, 20.58it/s][A
+ 55%|█████▌    | 44/80 [00:02<00:01, 20.32it/s][A
+ 59%|█████▉    | 47/80 [00:02<00:01, 20.58it/s][A
+ 62%|██████▎   | 50/80 [00:02<00:01, 20.69it/s][A
+ 66%|██████▋   | 53/80 [00:02<00:01, 20.88it/s][A
+ 70%|███████   | 56/80 [00:02<00:01, 20.96it/s][A
+ 74%|███████▍  | 59/80 [00:02<00:01, 20.98it/s][A
+ 78%|███████▊  | 62/80 [00:02<00:00, 21.08it/s][A
+ 81%|████████▏ | 65/80 [00:03<00:00, 21.14it/s][A
+ 85%|████████▌ | 68/80 [00:03<00:00, 21.09it/s][A
+ 89%|████████▉ | 71/80 [00:03<00:00, 20.42it/s][A
+ 92%|█████████▎| 74/80 [00:03<00:00, 20.46it/s][A
+ 96%|█████████▋| 77/80 [00:03<00:00, 20.56it/s][A
+100%|██████████| 80/80 [00:03<00:00, 20.72it/s][A100%|██████████| 80/80 [00:03<00:00, 20.75it/s]
+2026-04-11 01:52:35,237 - INFO - 
+
+Training completed. Do not forget to share your model on huggingface.co/models =)
+
+
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/trainer.py:2220: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  state_dict = torch.load(best_model_path, map_location="cpu")
+                                                 100%|██████████| 100/100 [02:18<00:00,  1.69it/s]100%|██████████| 100/100 [02:18<00:00,  1.38s/it]
+2026-04-11 01:52:36,693 - INFO - There are 0 training samples and 128 validation samples
+{'train_runtime': 138.1022, 'train_samples_per_second': 5.793, 'train_steps_per_second': 0.724, 'train_loss': 14.32212646484375, 'epoch': 10.0}
+  0%|          | 0/128 [00:00<?, ?it/s]2026-04-11 01:52:36,694 - INFO - ========= Example =========
+2026-04-11 01:52:36,694 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:52:36,694 - INFO - Correct candidate: 3
+2026-04-11 01:52:36,705 - INFO - === Candidate 0 ===
+2026-04-11 01:52:36,705 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was terrible
+2026-04-11 01:52:36,706 - INFO - Log probabilities of the option tokens: tensor([-10.2422], dtype=torch.float16)
+2026-04-11 01:52:36,716 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:52:36,716 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was bad
+2026-04-11 01:52:36,716 - INFO - Log probabilities of the option tokens: tensor([-9.4609], dtype=torch.float16)
+2026-04-11 01:52:36,725 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:52:36,726 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was okay
+2026-04-11 01:52:36,726 - INFO - Log probabilities of the option tokens: tensor([-9.6484], dtype=torch.float16)
+2026-04-11 01:52:36,735 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:52:36,735 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was good
+2026-04-11 01:52:36,736 - INFO - Log probabilities of the option tokens: tensor([-6.4531], dtype=torch.float16)
+2026-04-11 01:52:36,745 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:52:36,745 - INFO - <s>the magic of the film lies not in the mysterious spring but in the richness of its performances. It was great
+2026-04-11 01:52:36,745 - INFO - Log probabilities of the option tokens: tensor([-5.7695], dtype=torch.float16)
+2026-04-11 01:52:36,746 - INFO - Prediction scores: [-10.2421875, -9.4609375, -9.6484375, -6.453125, -5.76953125]
+2026-04-11 01:52:36,746 - INFO - ========= Example =========
+2026-04-11 01:52:36,746 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:52:36,746 - INFO - Correct candidate: 1
+2026-04-11 01:52:36,757 - INFO - === Candidate 0 ===
+2026-04-11 01:52:36,757 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was terrible
+2026-04-11 01:52:36,757 - INFO - Log probabilities of the option tokens: tensor([-8.1562], dtype=torch.float16)
+2026-04-11 01:52:36,767 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:52:36,767 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was bad
+2026-04-11 01:52:36,767 - INFO - Log probabilities of the option tokens: tensor([-6.8828], dtype=torch.float16)
+2026-04-11 01:52:36,782 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:52:36,782 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was okay
+2026-04-11 01:52:36,782 - INFO - Log probabilities of the option tokens: tensor([-7.0234], dtype=torch.float16)
+2026-04-11 01:52:36,797 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:52:36,797 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was good
+2026-04-11 01:52:36,797 - INFO - Log probabilities of the option tokens: tensor([-5.2930], dtype=torch.float16)
+2026-04-11 01:52:36,807 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:52:36,807 - INFO - <s>irwin is a man with enough charisma and audacity to carry a dozen films, but this particular result is ultimately held back from being something greater. It was great
+2026-04-11 01:52:36,808 - INFO - Log probabilities of the option tokens: tensor([-5.7109], dtype=torch.float16)
+2026-04-11 01:52:36,808 - INFO - Prediction scores: [-8.15625, -6.8828125, -7.0234375, -5.29296875, -5.7109375]
+  2%|▏         | 2/128 [00:00<00:07, 17.52it/s]2026-04-11 01:52:36,808 - INFO - ========= Example =========
+2026-04-11 01:52:36,808 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 01:52:36,808 - INFO - Correct candidate: 3
+2026-04-11 01:52:36,819 - INFO - === Candidate 0 ===
+2026-04-11 01:52:36,819 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was terrible
+2026-04-11 01:52:36,819 - INFO - Log probabilities of the option tokens: tensor([-7.0156], dtype=torch.float16)
+2026-04-11 01:52:36,829 - INFO - === Candidate 1 (without context)===
+2026-04-11 01:52:36,829 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was bad
+2026-04-11 01:52:36,829 - INFO - Log probabilities of the option tokens: tensor([-7.0039], dtype=torch.float16)
+2026-04-11 01:52:36,839 - INFO - === Candidate 2 (without context)===
+2026-04-11 01:52:36,839 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was okay
+2026-04-11 01:52:36,839 - INFO - Log probabilities of the option tokens: tensor([-6.7734], dtype=torch.float16)
+2026-04-11 01:52:36,848 - INFO - === Candidate 3 (without context)===
+2026-04-11 01:52:36,849 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was good
+2026-04-11 01:52:36,849 - INFO - Log probabilities of the option tokens: tensor([-4.7305], dtype=torch.float16)
+2026-04-11 01:52:36,858 - INFO - === Candidate 4 (without context)===
+2026-04-11 01:52:36,858 - INFO - <s>the lion king was a roaring success when it was released eight years ago, but on imax it seems better, not just bigger. It was great
+2026-04-11 01:52:36,859 - INFO - Log probabilities of the option tokens: tensor([-4.8633], dtype=torch.float16)
+2026-04-11 01:52:36,859 - INFO - Prediction scores: [-7.015625, -7.00390625, -6.7734375, -4.73046875, -4.86328125]
+  4%|▍         | 5/128 [00:00<00:06, 19.46it/s]  6%|▋         | 8/128 [00:00<00:05, 20.01it/s]  9%|▊         | 11/128 [00:00<00:05, 20.18it/s] 11%|█         | 14/128 [00:00<00:05, 20.27it/s] 13%|█▎        | 17/128 [00:00<00:05, 20.36it/s] 16%|█▌        | 20/128 [00:00<00:05, 20.53it/s] 18%|█▊        | 23/128 [00:01<00:05, 20.69it/s] 20%|██        | 26/128 [00:01<00:04, 20.67it/s] 23%|██▎       | 29/128 [00:01<00:04, 20.26it/s] 25%|██▌       | 32/128 [00:01<00:04, 19.96it/s] 27%|██▋       | 35/128 [00:01<00:04, 20.35it/s] 30%|██▉       | 38/128 [00:01<00:04, 20.40it/s] 32%|███▏      | 41/128 [00:02<00:04, 20.53it/s] 34%|███▍      | 44/128 [00:02<00:04, 20.65it/s] 37%|███▋      | 47/128 [00:02<00:03, 20.71it/s] 39%|███▉      | 50/128 [00:02<00:03, 20.65it/s] 41%|████▏     | 53/128 [00:02<00:03, 20.78it/s] 44%|████▍     | 56/128 [00:02<00:03, 20.29it/s] 46%|████▌     | 59/128 [00:02<00:03, 19.95it/s] 48%|████▊     | 62/128 [00:03<00:03, 20.33it/s] 51%|█████     | 65/128 [00:03<00:03, 20.51it/s] 53%|█████▎    | 68/128 [00:03<00:02, 20.57it/s] 55%|█████▌    | 71/128 [00:03<00:02, 20.55it/s] 58%|█████▊    | 74/128 [00:03<00:02, 20.69it/s] 60%|██████    | 77/128 [00:03<00:02, 20.70it/s] 62%|██████▎   | 80/128 [00:03<00:02, 20.73it/s] 65%|██████▍   | 83/128 [00:04<00:02, 20.18it/s] 67%|██████▋   | 86/128 [00:04<00:02, 20.34it/s] 70%|██████▉   | 89/128 [00:04<00:01, 20.40it/s] 72%|███████▏  | 92/128 [00:04<00:01, 20.51it/s] 74%|███████▍  | 95/128 [00:04<00:01, 20.64it/s] 77%|███████▋  | 98/128 [00:04<00:01, 20.62it/s] 79%|███████▉  | 101/128 [00:04<00:01, 20.71it/s] 81%|████████▏ | 104/128 [00:05<00:01, 20.76it/s] 84%|████████▎ | 107/128 [00:05<00:01, 20.78it/s] 86%|████████▌ | 110/128 [00:05<00:00, 20.35it/s] 88%|████████▊ | 113/128 [00:05<00:00, 20.53it/s] 91%|█████████ | 116/128 [00:05<00:00, 20.75it/s] 93%|█████████▎| 119/128 [00:05<00:00, 20.88it/s] 95%|█████████▌| 122/128 [00:05<00:00, 20.92it/s] 98%|█████████▊| 125/128 [00:06<00:00, 20.93it/s]100%|██████████| 128/128 [00:06<00:00, 20.88it/s]100%|██████████| 128/128 [00:06<00:00, 20.52it/s]
+2026-04-11 01:52:42,931 - INFO - ===== Train set 0 =====
+2026-04-11 01:52:42,931 - INFO - {'accuracy': np.float64(0.28125)}

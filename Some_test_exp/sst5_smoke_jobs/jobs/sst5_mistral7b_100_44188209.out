@@ -1,0 +1,272 @@
+mezo-ft-100-1-1e-6-1e-3-0
+BS: 1
+LR: 1e-6
+EPS: 1e-3
+SEED: 0
+DATASET_MODE: fewshot
+K: 16
+DATA_SEED: 0
+FULL_DEV_RATIO: 0.1
+TRAIN/EVAL STEPS: 100/25
+MODE: ft
+Extra args:  
+/home/jy03364/miniconda3/envs/mezo-mistral/lib/python3.10/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-mistral/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-mistral/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-mistral/lib/python3.10/site-packages/transformers/deepspeed.py:23: FutureWarning: transformers.deepspeed module is deprecated and will be removed in a future version. Please import deepspeed modules directly from transformers.integrations
+  warnings.warn(
+2026-04-11 03:50:13,905 - INFO - [model] requested=mistral-7b resolved=mistralai/Mistral-7B-v0.1 family_hint=mistral
+2026-04-11 03:50:13,905 - INFO - [data] task_name=SST5 dataset_mode=fewshot num_k=16 data_seed=0 full_dev_ratio=0.1
+Repo card metadata block was not found. Setting CardData to empty.
+2026-04-11 03:50:14,357 - WARNING - Repo card metadata block was not found. Setting CardData to empty.
+2026-04-11 03:50:16,063 - INFO - Sample few-shot train set 80/8544 (num_k=16, seed=0)
+2026-04-11 03:50:16,063 - INFO - Loading model with FP16...
+/home/jy03364/miniconda3/envs/mezo-mistral/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+OurArguments(
+_n_gpu=1,
+adafactor=False,
+adam_beta1=0.9,
+adam_beta2=0.999,
+adam_epsilon=1e-08,
+auto_find_batch_size=False,
+bf16=False,
+bf16_full_eval=False,
+data_seed=0,
+dataloader_drop_last=False,
+dataloader_num_workers=0,
+dataloader_pin_memory=True,
+dataset_mode=fewshot,
+ddp_backend=None,
+ddp_broadcast_buffers=None,
+ddp_bucket_cap_mb=None,
+ddp_find_unused_parameters=None,
+ddp_timeout=1800,
+debug=[],
+deepspeed=None,
+disable_tqdm=False,
+dispatch_batches=None,
+do_eval=True,
+do_predict=False,
+do_train=False,
+eos_token=<EOS_TOKEN>,
+eval_accumulation_steps=None,
+eval_delay=0,
+eval_steps=25,
+evaluation_strategy=steps,
+fp16=False,
+fp16_backend=auto,
+fp16_full_eval=False,
+fp16_opt_level=O1,
+fsdp=[],
+fsdp_config={'min_num_params': 0, 'xla': False, 'xla_fsdp_grad_ckpt': False},
+fsdp_min_num_params=0,
+fsdp_transformer_layer_cls_to_wrap=None,
+full_determinism=False,
+full_dev_ratio=0.1,
+gradient_accumulation_steps=8,
+gradient_checkpointing=False,
+gradient_checkpointing_kwargs=None,
+greater_is_better=False,
+group_by_length=False,
+half_precision_backend=auto,
+head_tuning=False,
+hub_always_push=False,
+hub_model_id=None,
+hub_private_repo=False,
+hub_strategy=every_save,
+hub_token=<HUB_TOKEN>,
+icl_sfc=False,
+ignore_data_skip=False,
+include_inputs_for_metrics=False,
+include_tokens_per_second=False,
+jit_mode_eval=False,
+label_names=None,
+label_smoothing_factor=0.0,
+learning_rate=1e-06,
+length_column_name=length,
+linear_probing=False,
+load_best_model_at_end=True,
+load_bfloat16=False,
+load_float16=True,
+load_int8=False,
+local_rank=0,
+log_level=passive,
+log_level_replica=warning,
+log_on_each_node=True,
+logging_dir=result/SST5-mistral-7b-mezo-ft-100-1-1e-6-1e-3-0/runs/Apr11_03-50-12_ra5-4,
+logging_first_step=False,
+logging_nan_inf_filter=True,
+logging_steps=1.0,
+logging_strategy=steps,
+lora=False,
+lora_alpha=16,
+lora_r=8,
+lp_early_stopping=False,
+lr_scheduler_type=constant,
+max_grad_norm=1.0,
+max_length=2048,
+max_new_tokens=50,
+max_steps=100,
+metric_for_best_model=loss,
+model_name=mistral-7b,
+mp_parameters=,
+neftune_noise_alpha=None,
+no_auto_device=True,
+no_cuda=False,
+no_eval=False,
+no_reparam=True,
+non_diff=False,
+num_beams=1,
+num_dev=None,
+num_eval=128,
+num_k=16,
+num_prefix=5,
+num_train=0,
+num_train_epochs=3.0,
+num_train_sets=None,
+only_train_option=True,
+optim=adamw_torch,
+optim_args=None,
+output_dir=result/SST5-mistral-7b-mezo-ft-100-1-1e-6-1e-3-0,
+overwrite_output_dir=False,
+past_index=-1,
+per_device_eval_batch_size=8,
+per_device_train_batch_size=1,
+prediction_loss_only=False,
+prefix_init_by_real_act=True,
+prefix_tuning=False,
+push_to_hub=False,
+push_to_hub_model_id=None,
+push_to_hub_organization=None,
+push_to_hub_token=<PUSH_TO_HUB_TOKEN>,
+ray_scope=last,
+remove_unused_columns=True,
+report_to=[],
+result_file=None,
+resume_from_checkpoint=None,
+run_name=result/SST5-mistral-7b-mezo-ft-100-1-1e-6-1e-3-0,
+sampling=False,
+save_model=False,
+save_on_each_node=False,
+save_on_interrupt=False,
+save_safetensors=True,
+save_steps=25,
+save_strategy=steps,
+save_total_limit=1,
+seed=42,
+sfc=False,
+skip_memory_metrics=True,
+split_batches=False,
+tag=mezo-ft-100-1-1e-6-1e-3-0,
+task_name=SST5,
+temperature=1.0,
+tf32=None,
+top_k=None,
+top_p=0.95,
+torch_compile=False,
+torch_compile_backend=None,
+torch_compile_mode=None,
+torchdynamo=None,
+tpu_metrics_debug=False,
+tpu_num_cores=None,
+train_as_classification=True,
+train_set_seed=0,
+trainer=zo,
+untie_emb=False,
+use_cpu=False,
+use_ipex=False,
+use_legacy_prediction_loop=False,
+use_mps_device=False,
+verbose=False,
+warmup_ratio=0.0,
+warmup_steps=0,
+weight_decay=0.0,
+zo_eps=0.001,
+)
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [01:58<01:58, 118.62s/it]Loading checkpoint shards: 100%|██████████| 2/2 [02:57<00:00, 83.73s/it] Loading checkpoint shards: 100%|██████████| 2/2 [02:57<00:00, 88.96s/it]
+2026-04-11 03:53:51,518 - INFO - Done with 215.46s
+2026-04-11 03:53:52,299 - INFO - Preparing training/evaluation datasets...
+2026-04-11 03:53:52,299 - INFO - Done with 0.00s
+/home/jy03364/miniconda3/envs/mezo-mistral/lib/python3.10/site-packages/accelerate/accelerator.py:432: FutureWarning: Passing the following arguments to `Accelerator` is deprecated and will be removed in version 1.0 of Accelerate: dict_keys(['dispatch_batches', 'split_batches']). Please pass an `accelerate.DataLoaderConfiguration` instead: 
+dataloader_config = DataLoaderConfiguration(dispatch_batches=None, split_batches=False)
+  warnings.warn(
+2026-04-11 03:53:54,162 - INFO - ***** Running training *****
+2026-04-11 03:53:54,162 - INFO -   Num examples = 80
+2026-04-11 03:53:54,162 - INFO -   Num Epochs = 10
+2026-04-11 03:53:54,162 - INFO -   Instantaneous batch size per device = 1
+2026-04-11 03:53:54,162 - INFO -   Total train batch size (w. parallel, distributed & accumulation) = 8
+2026-04-11 03:53:54,162 - INFO -   Gradient Accumulation steps = 8
+2026-04-11 03:53:54,162 - INFO -   Total optimization steps = 100
+2026-04-11 03:53:54,163 - INFO -   Number of trainable parameters = 7241732096
+  0%|          | 0/100 [00:00<?, ?it/s]  1%|          | 1/100 [00:09<14:51,  9.01s/it]  2%|▏         | 2/100 [00:10<07:56,  4.86s/it]  3%|▎         | 3/100 [00:12<05:42,  3.53s/it]  4%|▍         | 4/100 [00:14<04:39,  2.92s/it]  5%|▌         | 5/100 [00:16<04:04,  2.57s/it]  6%|▌         | 6/100 [00:18<03:42,  2.37s/it]  7%|▋         | 7/100 [00:20<03:27,  2.23s/it]  8%|▊         | 8/100 [00:22<03:17,  2.15s/it]  9%|▉         | 9/100 [00:24<03:12,  2.11s/it] 10%|█         | 10/100 [00:26<03:06,  2.07s/it] 11%|█         | 11/100 [00:28<03:01,  2.04s/it] 12%|█▏        | 12/100 [00:30<02:56,  2.01s/it] 13%|█▎        | 13/100 [00:32<02:53,  2.00s/it] 14%|█▍        | 14/100 [00:34<02:51,  1.99s/it] 15%|█▌        | 15/100 [00:36<02:48,  1.98s/it] 16%|█▌        | 16/100 [00:38<02:46,  1.98s/it] 17%|█▋        | 17/100 [00:40<02:43,  1.97s/it] 18%|█▊        | 18/100 [00:42<02:41,  1.97s/it] 19%|█▉        | 19/100 [00:44<02:39,  1.97s/it] 20%|██        | 20/100 [00:46<02:37,  1.97s/it] 21%|██        | 21/100 [00:48<02:35,  1.97s/it] 22%|██▏       | 22/100 [00:50<02:33,  1.97s/it] 23%|██▎       | 23/100 [00:52<02:31,  1.96s/it] 24%|██▍       | 24/100 [00:54<02:29,  1.96s/it] 25%|██▌       | 25/100 [00:56<02:27,  1.96s/it] 26%|██▌       | 26/100 [00:58<02:25,  1.96s/it] 27%|██▋       | 27/100 [01:00<02:23,  1.97s/it] 28%|██▊       | 28/100 [01:02<02:21,  1.97s/it] 29%|██▉       | 29/100 [01:04<02:19,  1.97s/it] 30%|███       | 30/100 [01:06<02:17,  1.97s/it] 31%|███       | 31/100 [01:07<02:15,  1.96s/it] 32%|███▏      | 32/100 [01:09<02:13,  1.96s/it] 33%|███▎      | 33/100 [01:11<02:11,  1.96s/it] 34%|███▍      | 34/100 [01:13<02:09,  1.97s/it] 35%|███▌      | 35/100 [01:15<02:08,  1.97s/it] 36%|███▌      | 36/100 [01:17<02:05,  1.97s/it] 37%|███▋      | 37/100 [01:19<02:03,  1.96s/it] 38%|███▊      | 38/100 [01:21<02:01,  1.96s/it] 39%|███▉      | 39/100 [01:23<01:59,  1.96s/it] 40%|████      | 40/100 [01:25<01:57,  1.96s/it] 41%|████      | 41/100 [01:27<01:55,  1.97s/it] 42%|████▏     | 42/100 [01:29<01:53,  1.96s/it] 43%|████▎     | 43/100 [01:31<01:52,  1.97s/it] 44%|████▍     | 44/100 [01:33<01:50,  1.97s/it] 45%|████▌     | 45/100 [01:35<01:48,  1.97s/it] 46%|████▌     | 46/100 [01:37<01:46,  1.97s/it] 47%|████▋     | 47/100 [01:39<01:44,  1.96s/it] 48%|████▊     | 48/100 [01:41<01:41,  1.96s/it] 49%|████▉     | 49/100 [01:43<01:40,  1.96s/it] 50%|█████     | 50/100 [01:45<01:38,  1.96s/it] 51%|█████     | 51/100 [01:47<01:36,  1.96s/it] 52%|█████▏    | 52/100 [01:49<01:34,  1.96s/it] 53%|█████▎    | 53/100 [01:51<01:32,  1.96s/it] 54%|█████▍    | 54/100 [01:53<01:30,  1.96s/it] 55%|█████▌    | 55/100 [01:55<01:28,  1.96s/it] 56%|█████▌    | 56/100 [01:57<01:26,  1.96s/it] 57%|█████▋    | 57/100 [01:59<01:24,  1.96s/it] 58%|█████▊    | 58/100 [02:01<01:22,  1.96s/it] 59%|█████▉    | 59/100 [02:02<01:20,  1.96s/it] 60%|██████    | 60/100 [02:04<01:18,  1.96s/it] 61%|██████    | 61/100 [02:06<01:16,  1.96s/it] 62%|██████▏   | 62/100 [02:08<01:14,  1.97s/it] 63%|██████▎   | 63/100 [02:10<01:12,  1.97s/it] 64%|██████▍   | 64/100 [02:12<01:10,  1.96s/it] 65%|██████▌   | 65/100 [02:14<01:08,  1.97s/it] 66%|██████▌   | 66/100 [02:16<01:06,  1.96s/it] 67%|██████▋   | 67/100 [02:18<01:04,  1.96s/it] 68%|██████▊   | 68/100 [02:20<01:02,  1.96s/it] 69%|██████▉   | 69/100 [02:22<01:00,  1.97s/it] 70%|███████   | 70/100 [02:24<00:58,  1.96s/it] 71%|███████   | 71/100 [02:26<00:56,  1.96s/it] 72%|███████▏  | 72/100 [02:28<00:54,  1.96s/it] 73%|███████▎  | 73/100 [02:30<00:52,  1.96s/it] 74%|███████▍  | 74/100 [02:32<00:50,  1.96s/it] 75%|███████▌  | 75/100 [02:34<00:48,  1.96s/it] 76%|███████▌  | 76/100 [02:36<00:47,  1.96s/it] 77%|███████▋  | 77/100 [02:38<00:45,  1.96s/it] 78%|███████▊  | 78/100 [02:40<00:43,  1.96s/it] 79%|███████▉  | 79/100 [02:42<00:41,  1.96s/it] 80%|████████  | 80/100 [02:44<00:39,  1.97s/it] 81%|████████  | 81/100 [02:46<00:37,  1.97s/it] 82%|████████▏ | 82/100 [02:48<00:37,  2.08s/it] 83%|████████▎ | 83/100 [02:50<00:34,  2.05s/it] 84%|████████▍ | 84/100 [02:52<00:32,  2.03s/it] 85%|████████▌ | 85/100 [02:54<00:32,  2.14s/it] 86%|████████▌ | 86/100 [02:56<00:29,  2.09s/it] 87%|████████▋ | 87/100 [02:58<00:26,  2.04s/it] 88%|████████▊ | 88/100 [03:01<00:26,  2.17s/it] 89%|████████▉ | 89/100 [03:03<00:23,  2.11s/it] 90%|█████████ | 90/100 [03:05<00:20,  2.06s/it] 91%|█████████ | 91/100 [03:07<00:18,  2.03s/it] 92%|█████████▏| 92/100 [03:09<00:16,  2.01s/it] 93%|█████████▎| 93/100 [03:11<00:13,  2.00s/it] 94%|█████████▍| 94/100 [03:12<00:11,  1.98s/it] 95%|█████████▌| 95/100 [03:14<00:09,  1.98s/it] 96%|█████████▌| 96/100 [03:16<00:07,  1.97s/it] 97%|█████████▋| 97/100 [03:18<00:05,  1.98s/it] 98%|█████████▊| 98/100 [03:20<00:03,  1.97s/it] 99%|█████████▉| 99/100 [03:22<00:01,  1.97s/it]100%|██████████| 100/100 [03:24<00:00,  1.97s/it]2026-04-11 03:57:18,957 - INFO - 
+
+Training completed. Do not forget to share your model on huggingface.co/models =)
+
+
+                                                 100%|██████████| 100/100 [03:24<00:00,  1.97s/it]100%|██████████| 100/100 [03:24<00:00,  2.05s/it]
+2026-04-11 03:57:19,084 - INFO - There are 0 training samples and 128 validation samples
+{'train_runtime': 204.8389, 'train_samples_per_second': 3.906, 'train_steps_per_second': 0.488, 'train_loss': 17.8148388671875, 'epoch': 10.0}
+  0%|          | 0/128 [00:00<?, ?it/s]2026-04-11 03:57:19,084 - INFO - ========= Example =========
+2026-04-11 03:57:19,084 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 03:57:19,084 - INFO - Correct candidate: 3
+2026-04-11 03:57:19,187 - INFO - === Candidate 0 ===
+2026-04-11 03:57:19,188 - INFO - <s> the magic of the film lies not in the mysterious spring but in the richness of its performances . It was terrible
+2026-04-11 03:57:19,439 - INFO - Log probabilities of the option tokens: tensor([-12.4113])
+2026-04-11 03:57:19,454 - INFO - === Candidate 1 (without context)===
+2026-04-11 03:57:19,454 - INFO - <s> the magic of the film lies not in the mysterious spring but in the richness of its performances . It was bad
+2026-04-11 03:57:19,454 - INFO - Log probabilities of the option tokens: tensor([-12.3793])
+2026-04-11 03:57:19,469 - INFO - === Candidate 2 (without context)===
+2026-04-11 03:57:19,469 - INFO - <s> the magic of the film lies not in the mysterious spring but in the richness of its performances . It was okay
+2026-04-11 03:57:19,469 - INFO - Log probabilities of the option tokens: tensor([-11.7431])
+2026-04-11 03:57:19,484 - INFO - === Candidate 3 (without context)===
+2026-04-11 03:57:19,485 - INFO - <s> the magic of the film lies not in the mysterious spring but in the richness of its performances . It was good
+2026-04-11 03:57:19,485 - INFO - Log probabilities of the option tokens: tensor([-13.9589])
+2026-04-11 03:57:19,499 - INFO - === Candidate 4 (without context)===
+2026-04-11 03:57:19,500 - INFO - <s> the magic of the film lies not in the mysterious spring but in the richness of its performances . It was great
+2026-04-11 03:57:19,500 - INFO - Log probabilities of the option tokens: tensor([-12.9233])
+2026-04-11 03:57:19,534 - INFO - Prediction scores: [-12.411270141601562, -12.379287719726562, -11.743057250976562, -13.958877563476562, -12.923294067382812]
+  1%|          | 1/128 [00:00<00:58,  2.15it/s]2026-04-11 03:57:19,548 - INFO - ========= Example =========
+2026-04-11 03:57:19,548 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 03:57:19,548 - INFO - Correct candidate: 1
+2026-04-11 03:57:19,595 - INFO - === Candidate 0 ===
+2026-04-11 03:57:19,595 - INFO - <s> irwin is a man with enough charisma and audacity to carry a dozen films , but this particular result is ultimately held back from being something greater . It was terrible
+2026-04-11 03:57:19,595 - INFO - Log probabilities of the option tokens: tensor([-12.2140])
+2026-04-11 03:57:19,610 - INFO - === Candidate 1 (without context)===
+2026-04-11 03:57:19,611 - INFO - <s> irwin is a man with enough charisma and audacity to carry a dozen films , but this particular result is ultimately held back from being something greater . It was bad
+2026-04-11 03:57:19,611 - INFO - Log probabilities of the option tokens: tensor([-12.0872])
+2026-04-11 03:57:19,626 - INFO - === Candidate 2 (without context)===
+2026-04-11 03:57:19,626 - INFO - <s> irwin is a man with enough charisma and audacity to carry a dozen films , but this particular result is ultimately held back from being something greater . It was okay
+2026-04-11 03:57:19,627 - INFO - Log probabilities of the option tokens: tensor([-11.6930])
+2026-04-11 03:57:19,642 - INFO - === Candidate 3 (without context)===
+2026-04-11 03:57:19,642 - INFO - <s> irwin is a man with enough charisma and audacity to carry a dozen films , but this particular result is ultimately held back from being something greater . It was good
+2026-04-11 03:57:19,642 - INFO - Log probabilities of the option tokens: tensor([-13.6381])
+2026-04-11 03:57:19,657 - INFO - === Candidate 4 (without context)===
+2026-04-11 03:57:19,658 - INFO - <s> irwin is a man with enough charisma and audacity to carry a dozen films , but this particular result is ultimately held back from being something greater . It was great
+2026-04-11 03:57:19,658 - INFO - Log probabilities of the option tokens: tensor([-12.3336])
+2026-04-11 03:57:19,658 - INFO - Prediction scores: [-12.213990211486816, -12.087159156799316, -11.692994117736816, -13.638062477111816, -12.333619117736816]
+  2%|▏         | 2/128 [00:00<00:32,  3.91it/s]2026-04-11 03:57:19,658 - INFO - ========= Example =========
+2026-04-11 03:57:19,658 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-11 03:57:19,658 - INFO - Correct candidate: 3
+2026-04-11 03:57:19,675 - INFO - === Candidate 0 ===
+2026-04-11 03:57:19,675 - INFO - <s> the lion king was a roaring success when it was released eight years ago , but on imax it seems better , not just bigger . It was terrible
+2026-04-11 03:57:19,675 - INFO - Log probabilities of the option tokens: tensor([-11.9528])
+2026-04-11 03:57:19,690 - INFO - === Candidate 1 (without context)===
+2026-04-11 03:57:19,691 - INFO - <s> the lion king was a roaring success when it was released eight years ago , but on imax it seems better , not just bigger . It was bad
+2026-04-11 03:57:19,691 - INFO - Log probabilities of the option tokens: tensor([-12.3754])
+2026-04-11 03:57:19,706 - INFO - === Candidate 2 (without context)===
+2026-04-11 03:57:19,706 - INFO - <s> the lion king was a roaring success when it was released eight years ago , but on imax it seems better , not just bigger . It was okay
+2026-04-11 03:57:19,706 - INFO - Log probabilities of the option tokens: tensor([-12.0339])
+2026-04-11 03:57:19,721 - INFO - === Candidate 3 (without context)===
+2026-04-11 03:57:19,722 - INFO - <s> the lion king was a roaring success when it was released eight years ago , but on imax it seems better , not just bigger . It was good
+2026-04-11 03:57:19,722 - INFO - Log probabilities of the option tokens: tensor([-13.5295])
+2026-04-11 03:57:19,737 - INFO - === Candidate 4 (without context)===
+2026-04-11 03:57:19,737 - INFO - <s> the lion king was a roaring success when it was released eight years ago , but on imax it seems better , not just bigger . It was great
+2026-04-11 03:57:19,737 - INFO - Log probabilities of the option tokens: tensor([-11.5402])
+2026-04-11 03:57:19,737 - INFO - Prediction scores: [-11.952836990356445, -12.37541389465332, -12.033891677856445, -13.529497146606445, -11.540239334106445]
+  3%|▎         | 4/128 [00:00<00:21,  5.85it/s]  4%|▍         | 5/128 [00:00<00:21,  5.84it/s]  5%|▌         | 7/128 [00:01<00:15,  7.90it/s]  7%|▋         | 9/128 [00:01<00:12,  9.43it/s]  9%|▊         | 11/128 [00:01<00:11, 10.50it/s] 10%|█         | 13/128 [00:01<00:10, 11.28it/s] 12%|█▏        | 15/128 [00:01<00:09, 11.80it/s] 13%|█▎        | 17/128 [00:01<00:09, 12.23it/s] 15%|█▍        | 19/128 [00:02<00:08, 12.56it/s] 16%|█▋        | 21/128 [00:02<00:08, 12.79it/s] 18%|█▊        | 23/128 [00:02<00:08, 13.00it/s] 20%|█▉        | 25/128 [00:02<00:07, 13.09it/s] 21%|██        | 27/128 [00:02<00:07, 13.14it/s] 23%|██▎       | 29/128 [00:02<00:07, 13.23it/s] 24%|██▍       | 31/128 [00:02<00:07, 13.20it/s] 26%|██▌       | 33/128 [00:03<00:07, 13.33it/s] 27%|██▋       | 35/128 [00:03<00:06, 13.35it/s] 29%|██▉       | 37/128 [00:03<00:13,  6.96it/s] 30%|███       | 39/128 [00:04<00:10,  8.11it/s] 32%|███▏      | 41/128 [00:04<00:09,  9.22it/s] 34%|███▎      | 43/128 [00:04<00:08, 10.16it/s] 35%|███▌      | 45/128 [00:04<00:07, 10.97it/s] 37%|███▋      | 47/128 [00:04<00:06, 11.64it/s] 38%|███▊      | 49/128 [00:04<00:06, 12.05it/s] 40%|███▉      | 51/128 [00:04<00:06, 12.44it/s] 41%|████▏     | 53/128 [00:05<00:05, 12.76it/s] 43%|████▎     | 55/128 [00:05<00:05, 12.88it/s] 45%|████▍     | 57/128 [00:05<00:05, 13.08it/s] 46%|████▌     | 59/128 [00:05<00:05, 13.10it/s] 48%|████▊     | 61/128 [00:05<00:05, 13.24it/s] 49%|████▉     | 63/128 [00:05<00:04, 13.32it/s] 51%|█████     | 65/128 [00:05<00:04, 13.39it/s] 52%|█████▏    | 67/128 [00:06<00:04, 13.36it/s] 54%|█████▍    | 69/128 [00:06<00:04, 13.38it/s] 55%|█████▌    | 71/128 [00:06<00:04, 13.30it/s] 57%|█████▋    | 73/128 [00:06<00:04, 13.33it/s] 59%|█████▊    | 75/128 [00:06<00:03, 13.31it/s] 60%|██████    | 77/128 [00:06<00:03, 13.34it/s] 62%|██████▏   | 79/128 [00:06<00:03, 13.34it/s] 63%|██████▎   | 81/128 [00:07<00:03, 13.32it/s] 65%|██████▍   | 83/128 [00:07<00:03, 13.30it/s] 66%|██████▋   | 85/128 [00:07<00:03, 13.26it/s] 68%|██████▊   | 87/128 [00:07<00:03, 13.30it/s] 70%|██████▉   | 89/128 [00:07<00:02, 13.27it/s] 71%|███████   | 91/128 [00:07<00:02, 13.22it/s] 73%|███████▎  | 93/128 [00:08<00:02, 13.31it/s] 74%|███████▍  | 95/128 [00:08<00:02, 13.33it/s] 76%|███████▌  | 97/128 [00:08<00:02, 13.32it/s] 77%|███████▋  | 99/128 [00:08<00:02, 13.29it/s] 79%|███████▉  | 101/128 [00:08<00:02, 13.34it/s] 80%|████████  | 103/128 [00:08<00:01, 13.41it/s] 82%|████████▏ | 105/128 [00:09<00:02,  7.88it/s] 84%|████████▎ | 107/128 [00:09<00:02,  8.95it/s] 85%|████████▌ | 109/128 [00:09<00:01,  9.92it/s] 87%|████████▋ | 111/128 [00:09<00:01, 10.76it/s] 88%|████████▊ | 113/128 [00:09<00:01, 11.42it/s] 90%|████████▉ | 115/128 [00:10<00:01, 12.00it/s] 91%|█████████▏| 117/128 [00:10<00:00, 12.42it/s] 93%|█████████▎| 119/128 [00:10<00:00, 12.70it/s] 95%|█████████▍| 121/128 [00:10<00:00, 12.86it/s] 96%|█████████▌| 123/128 [00:10<00:00, 13.00it/s] 98%|█████████▊| 125/128 [00:10<00:00, 13.13it/s] 99%|█████████▉| 127/128 [00:10<00:00, 13.15it/s]100%|██████████| 128/128 [00:11<00:00, 11.62it/s]
+2026-04-11 03:57:30,100 - INFO - ===== Train set 0 =====
+2026-04-11 03:57:30,100 - INFO - {'accuracy': np.float64(0.234375)}
