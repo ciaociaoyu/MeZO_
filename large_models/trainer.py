@@ -17,6 +17,7 @@ The Trainer class, to easily train a 🤗 Transformers from scratch or finetune 
 """
 
 import contextlib
+import csv
 import enum
 import functools
 import glob
@@ -35,6 +36,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Un
 import copy
 from metrics import f1
 import numpy as np
+from quzo import make_quzo_direction_pair, quantize_tensor, quzo_enabled
 
 from tqdm.auto import tqdm
 from transformers import Trainer
@@ -275,6 +277,8 @@ class OurTrainer(Trainer):
         self._train_batch_size = batch_size
         # Data loader and number of training steps
         train_dataloader = self.get_train_dataloader()
+        self.latest_zo_probe_row = None
+        self._setup_zo_probe_csv()
 
         # MeZO added: Linear probing
         if self.args.linear_probing:
@@ -791,6 +795,252 @@ class OurTrainer(Trainer):
 
     ############## MeZO ##############
 
+    def _zo_quant_bits(self) -> int:
+        return int(getattr(self.args, "zo_quantization_bits", 32))
+
+    def _zo_use_quzo(self) -> bool:
+        return quzo_enabled(self._zo_quant_bits())
+
+    def _zo_use_weight_decay(self, name: str) -> bool:
+        return "bias" not in name and "layer_norm" not in name and "layernorm" not in name
+
+    def _quzo_get_bundle(self, name, param, step_seed: int):
+        return make_quzo_direction_pair(
+            param.data,
+            bits=self._zo_quant_bits(),
+            key=name,
+            step_seed=int(step_seed),
+            target_dtype=param.data.dtype,
+        )
+
+    def _quzo_quantize_param_from_bundle(self, param, bundle):
+        seed_val = bundle.get("state_seed", None)
+        seed = int(seed_val.item()) if isinstance(seed_val, torch.Tensor) else None
+        param.data.copy_(
+            quantize_tensor(
+                param.data,
+                self._zo_quant_bits(),
+                seed=seed,
+                target_dtype=param.data.dtype,
+            )
+        )
+
+    def _quzo_apply_update_to_param(self, name, param, direction, projected_grad, learning_rate, bundle):
+        update = float(learning_rate) * (float(projected_grad) * direction.detach().float())
+        if self.args.weight_decay > 0 and self._zo_use_weight_decay(name):
+            update = update + float(learning_rate) * float(self.args.weight_decay) * param.data.detach().float()
+        seed_val = bundle.get("state_seed", None)
+        seed = int(seed_val.item()) if isinstance(seed_val, torch.Tensor) else None
+        param.data.copy_(
+            quantize_tensor(
+                param.data.detach().float() - update,
+                self._zo_quant_bits(),
+                seed=seed,
+                target_dtype=param.data.dtype,
+            )
+        )
+
+    def _setup_zo_probe_csv(self):
+        self._zo_probe_csv_path = None
+        self._zo_probe_csv_fields = [
+            "global_step",
+            "eps",
+            "precision",
+            "zo_quantization_bits",
+            "fd_mean",
+            "td_mean",
+            "mae",
+            "mse",
+            "rmse",
+            "sign_acc",
+            "corr",
+            "probe_num_seeds",
+        ]
+
+        every = int(getattr(self.args, "zo_probe_every", 0))
+        if every <= 0 or (not bool(getattr(self.args, "zo_probe_log_csv", True))):
+            return
+        if hasattr(self.args, "local_rank") and getattr(self.args, "local_rank", -1) not in (-1, 0):
+            return
+
+        base_dir = getattr(self.args, "output_dir", "./outputs") or "./outputs"
+        os.makedirs(base_dir, exist_ok=True)
+        self._zo_probe_csv_path = os.path.join(base_dir, "zo_directional_probe.csv")
+        if not os.path.exists(self._zo_probe_csv_path):
+            with open(self._zo_probe_csv_path, "w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=self._zo_probe_csv_fields)
+                writer.writeheader()
+
+    def _zo_probe_should_run(self) -> bool:
+        every = int(getattr(self.args, "zo_probe_every", 0))
+        if every <= 0:
+            return False
+        if hasattr(self.args, "local_rank") and getattr(self.args, "local_rank", -1) not in (-1, 0):
+            return False
+
+        global_step = int(getattr(self.state, "global_step", 0))
+        if global_step <= 0 or (global_step % every) != 0:
+            return False
+        if getattr(self, "_zo_probe_last_step", None) == global_step:
+            return False
+        self._zo_probe_last_step = global_step
+        return True
+
+    def _zo_probe_seed_list(self, global_step: int, num_seeds: int) -> List[int]:
+        base_seed = int(getattr(self.args, "seed", 0))
+        mixed_seed = (base_seed * 1000003 + int(global_step) * 9176 + 97) % 2147483647
+        rng = np.random.RandomState(int(mixed_seed))
+        return [int(x) for x in rng.randint(0, 2147483647, size=max(1, int(num_seeds)))]
+
+    def _zo_probe_append_csv_row(self, row: Dict[str, Any]):
+        if getattr(self, "_zo_probe_csv_path", None) is None:
+            return
+        try:
+            with open(self._zo_probe_csv_path, "a", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=self._zo_probe_csv_fields)
+                writer.writerow({k: row.get(k) for k in self._zo_probe_csv_fields})
+        except Exception as e:
+            logger.warning(f"[zo_probe] failed to append CSV row: {type(e).__name__}: {e}")
+
+    def zo_true_directional_derivative(self, model, inputs, random_seed=None):
+        if self.args.non_diff:
+            raise RuntimeError("Directional probe does not support non-differentiable objectives.")
+
+        model.eval()
+        inputs = self._prepare_inputs(inputs)
+        with self.compute_loss_context_manager():
+            loss = self.compute_loss(model, inputs)
+        if self.args.n_gpu > 1:
+            loss = loss.mean()
+
+        params = [p for _, p in self.named_parameters_to_optim]
+        grads = torch.autograd.grad(loss, params, retain_graph=False, create_graph=False, allow_unused=True)
+
+        if random_seed is not None:
+            torch.manual_seed(int(random_seed))
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(int(random_seed))
+
+        proj = None
+        for (name, param), grad in zip(self.named_parameters_to_optim, grads):
+            if self._zo_use_quzo():
+                z = self._quzo_get_bundle(name, param, int(random_seed))["u2"]
+            else:
+                z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+
+            if grad is None:
+                continue
+
+            contrib = torch.sum(grad.detach().float() * z.detach().float())
+            proj = contrib if proj is None else proj + contrib
+
+        if proj is None:
+            proj = torch.tensor(0.0, device=loss.device)
+        return loss.detach(), proj.detach()
+
+    def _zo_maybe_run_directional_probe(self, model, inputs):
+        if self._zo_use_quzo():
+            return
+        if not self._zo_probe_should_run():
+            return
+
+        global_step = int(getattr(self.state, "global_step", 0))
+        num_seeds = max(1, int(getattr(self.args, "zo_probe_num_seeds", 16)))
+        eps = float(getattr(self.args, "zo_eps", 1e-3))
+        precision = "fp16" if bool(getattr(self.args, "load_float16", False)) else (
+            "bf16" if bool(getattr(self.args, "load_bfloat16", False)) else (
+                "int8" if bool(getattr(self.args, "load_int8", False)) else "fp32"
+            )
+        )
+        dir_seeds = self._zo_probe_seed_list(global_step, num_seeds)
+
+        fd_vals: List[float] = []
+        td_vals: List[float] = []
+
+        torch_state = torch.random.get_rng_state()
+        cuda_states = None
+        try:
+            if torch.cuda.is_available():
+                cuda_states = torch.cuda.get_rng_state_all()
+        except Exception:
+            cuda_states = None
+
+        try:
+            for seed in dir_seeds:
+                with torch.no_grad():
+                    self.zo_perturb_parameters(random_seed=seed, scaling_factor=1)
+                    loss1 = self.zo_forward(model, inputs)
+                    self.zo_perturb_parameters(random_seed=seed, scaling_factor=-2)
+                    loss2 = self.zo_forward(model, inputs)
+                    self.zo_perturb_parameters(random_seed=seed, scaling_factor=1)
+
+                _, td = self.zo_true_directional_derivative(model, inputs, random_seed=seed)
+                fd = (loss1.float() - loss2.float()) / (2.0 * eps)
+                fd_vals.append(float(fd.detach().item()))
+                td_vals.append(float(td.detach().float().item()))
+
+            fd_arr = np.asarray(fd_vals, dtype=np.float64)
+            td_arr = np.asarray(td_vals, dtype=np.float64)
+            valid = np.isfinite(fd_arr) & np.isfinite(td_arr)
+            fd_arr = fd_arr[valid]
+            td_arr = td_arr[valid]
+            if fd_arr.size == 0:
+                logger.warning(f"[zo_probe] step={global_step}: no finite probe pairs; skipping row.")
+                return
+
+            diff = fd_arr - td_arr
+            fd_mean = float(np.mean(fd_arr))
+            td_mean = float(np.mean(td_arr))
+            mae = float(np.mean(np.abs(diff)))
+            mse = float(np.mean(diff * diff))
+            rmse = float(np.sqrt(np.mean(diff * diff)))
+            sign_acc = float(np.mean(np.sign(fd_arr) == np.sign(td_arr)))
+
+            corr = float("nan")
+            if fd_arr.size >= 2:
+                std_fd = float(np.std(fd_arr))
+                std_td = float(np.std(td_arr))
+                if std_fd > 0.0 and std_td > 0.0:
+                    corr = float(np.corrcoef(fd_arr, td_arr)[0, 1])
+
+            row = {
+                "global_step": int(global_step),
+                "eps": float(eps),
+                "precision": precision,
+                "zo_quantization_bits": int(getattr(self.args, "zo_quantization_bits", 32)),
+                "fd_mean": fd_mean,
+                "td_mean": td_mean,
+                "mae": mae,
+                "mse": mse,
+                "rmse": rmse,
+                "sign_acc": sign_acc,
+                "corr": corr,
+                "probe_num_seeds": int(num_seeds),
+            }
+            self.latest_zo_probe_row = row
+            self._zo_probe_append_csv_row(row)
+            logger.info(
+                "[zo_probe] step=%d eps=%.3e precision=%s n=%d mae=%.6e mse=%.6e rmse=%.6e sign_acc=%.4f corr=%s",
+                int(global_step),
+                float(eps),
+                precision,
+                int(fd_arr.size),
+                mae,
+                mse,
+                rmse,
+                sign_acc,
+                f"{corr:.6f}" if math.isfinite(corr) else "nan",
+            )
+        except Exception as e:
+            logger.warning(f"[zo_probe] step={global_step} failed: {type(e).__name__}: {e}")
+        finally:
+            torch.random.set_rng_state(torch_state)
+            try:
+                if cuda_states is not None and torch.cuda.is_available():
+                    torch.cuda.set_rng_state_all(cuda_states)
+            except Exception:
+                pass
+
 
     def zo_perturb_parameters(self, random_seed=None, scaling_factor=1):
         """
@@ -800,8 +1050,16 @@ class OurTrainer(Trainer):
         - scaling_factor: theta = theta + scaling_factor * z * eps
         """
 
+        step_seed = int(random_seed if random_seed is not None else self.zo_random_seed)
+        if self._zo_use_quzo():
+            for name, param in self.named_parameters_to_optim:
+                bundle = self._quzo_get_bundle(name, param, step_seed)
+                param.data = param.data + scaling_factor * bundle["u1"] * self.args.zo_eps
+                self._quzo_quantize_param_from_bundle(param, bundle)
+            return
+
         # Set the random seed to ensure that we sample the same z for perturbation/update
-        torch.manual_seed(random_seed if random_seed is not None else self.zo_random_seed)
+        torch.manual_seed(step_seed)
 
         for name, param in self.named_parameters_to_optim:
             z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
@@ -880,6 +1138,8 @@ class OurTrainer(Trainer):
             if param.requires_grad:
                 self.named_parameters_to_optim.append((name, param))
 
+        self._zo_maybe_run_directional_probe(model, inputs)
+
         # Sample the random seed for sampling z
         self.zo_random_seed = np.random.randint(1000000000)
 
@@ -927,27 +1187,44 @@ class OurTrainer(Trainer):
         # Keep the original update formula when there is no gradient accumulation.
         if len(self.zo_random_seed_buffer) == 1:
             self.zo_random_seed, self.projected_grad = self.zo_random_seed_buffer[0]
-            torch.manual_seed(self.zo_random_seed)
-            for name, param in self.named_parameters_to_optim:
-                z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                if "bias" not in name and "layer_norm" not in name and "layernorm" not in name:
-                    param.data = param.data - learning_rate * (self.projected_grad * z + args.weight_decay * param.data)
-                else:
-                    param.data = param.data - learning_rate * (self.projected_grad * z)
+            if self._zo_use_quzo():
+                for name, param in self.named_parameters_to_optim:
+                    bundle = self._quzo_get_bundle(name, param, int(self.zo_random_seed))
+                    self._quzo_apply_update_to_param(name, param, bundle["u2"], self.projected_grad, learning_rate, bundle)
+            else:
+                torch.manual_seed(self.zo_random_seed)
+                for name, param in self.named_parameters_to_optim:
+                    z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                    if self._zo_use_weight_decay(name):
+                        param.data = param.data - learning_rate * (self.projected_grad * z + args.weight_decay * param.data)
+                    else:
+                        param.data = param.data - learning_rate * (self.projected_grad * z)
         else:
             # Average ZO directional gradients over micro-batches when using accumulation.
             # We keep finite-difference + random-direction logic unchanged per micro-step.
             num_micro_batches = len(self.zo_random_seed_buffer)
             for zo_random_seed, projected_grad in self.zo_random_seed_buffer:
-                torch.manual_seed(zo_random_seed)
-                for _, param in self.named_parameters_to_optim:
-                    z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                    param.data = param.data - learning_rate * ((projected_grad / num_micro_batches) * z)
+                if self._zo_use_quzo():
+                    for name, param in self.named_parameters_to_optim:
+                        bundle = self._quzo_get_bundle(name, param, int(zo_random_seed))
+                        self._quzo_apply_update_to_param(
+                            name,
+                            param,
+                            bundle["u2"],
+                            float(projected_grad) / float(num_micro_batches),
+                            learning_rate,
+                            bundle,
+                        )
+                else:
+                    torch.manual_seed(zo_random_seed)
+                    for _, param in self.named_parameters_to_optim:
+                        z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                        param.data = param.data - learning_rate * ((projected_grad / num_micro_batches) * z)
 
             # Apply weight decay once per optimizer update (excluding bias/layernorm params).
-            if args.weight_decay > 0:
+            if (not self._zo_use_quzo()) and args.weight_decay > 0:
                 for name, param in self.named_parameters_to_optim:
-                    if "bias" not in name and "layer_norm" not in name and "layernorm" not in name:
+                    if self._zo_use_weight_decay(name):
                         param.data = param.data - learning_rate * (args.weight_decay * param.data)
 
         self.zo_random_seed_buffer = []

@@ -94,6 +94,7 @@ from torch.optim import SGD
 import torch.nn.functional as F
 
 from src.linearhead_trainer import LinearHeadTrainer
+from src.quzo import make_quzo_direction_pair, quantize_tensor, quzo_enabled
 from transformers.trainer_callback import TrainerState
 
 import copy
@@ -549,9 +550,15 @@ class Trainer(LinearHeadTrainer):
         return float(getattr(self.args, "zero_order_eps", 1e-3))
 
     def _should_quantize_training_perturbation(self) -> bool:
-        return self._get_active_h_source() == "two_point"
+        return self._zo_use_quzo() or self._get_active_h_source() == "two_point"
 
     def _quantize_delta_tensor(self, delta: torch.Tensor, target_dtype: Optional[torch.dtype] = None) -> torch.Tensor:
+        if self._zo_use_quzo():
+            return quantize_tensor(
+                delta,
+                self._zo_quant_bits(),
+                target_dtype=(delta.dtype if target_dtype is None else target_dtype),
+            )
         precision = str(getattr(self.args, "zo_two_point_precision", "fp32")).lower()
         if target_dtype is None:
             target_dtype = delta.dtype
@@ -1971,6 +1978,70 @@ class Trainer(LinearHeadTrainer):
     def should_optim(self, name, param):
         return (not self.args.layer_wise_optim or f".{self.state.global_step % self.model.config.num_hidden_layers}." in name) and param.requires_grad
 
+    def _zo_quant_bits(self) -> int:
+        return int(getattr(self.args, "zo_quantization_bits", 32))
+
+    def _zo_use_quzo(self) -> bool:
+        return quzo_enabled(self._zo_quant_bits())
+
+    def _quzo_get_bundle(
+        self,
+        name: str,
+        param: nn.Parameter,
+        random_vector: Optional[Dict[str, Any]] = None,
+        random_seed: Optional[int] = None,
+    ) -> Dict[str, torch.Tensor]:
+        if random_vector is not None and name in random_vector:
+            return random_vector[name]
+        step_seed = int(random_seed if random_seed is not None else np.random.randint(2147483647))
+        bundle = make_quzo_direction_pair(
+            param.data,
+            bits=self._zo_quant_bits(),
+            key=name,
+            step_seed=step_seed,
+            target_dtype=param.data.dtype,
+        )
+        if random_vector is not None:
+            random_vector[name] = bundle
+        return bundle
+
+    def _quzo_quantize_param_from_bundle(self, param: nn.Parameter, bundle: Dict[str, torch.Tensor]) -> None:
+        seed_val = bundle.get("state_seed", None)
+        seed = int(seed_val.item()) if isinstance(seed_val, torch.Tensor) else None
+        param.data.copy_(
+            quantize_tensor(
+                param.data,
+                self._zo_quant_bits(),
+                seed=seed,
+                target_dtype=param.data.dtype,
+            )
+        )
+
+    def _quzo_apply_update_to_param(
+        self,
+        name: str,
+        param: nn.Parameter,
+        direction: torch.Tensor,
+        projected_grad: Union[torch.Tensor, float],
+        learning_rate: float,
+        weight_decay: float,
+        bundle: Optional[Dict[str, torch.Tensor]] = None,
+    ) -> None:
+        pg = float(projected_grad.detach().float().item()) if isinstance(projected_grad, torch.Tensor) else float(projected_grad)
+        update = float(learning_rate) * (pg * direction.detach().float())
+        if weight_decay != 0.0 and self._hprobe_use_wd(name):
+            update = update + float(learning_rate) * float(weight_decay) * param.data.detach().float()
+        seed_val = None if bundle is None else bundle.get("state_seed", None)
+        seed = int(seed_val.item()) if isinstance(seed_val, torch.Tensor) else None
+        param.data.copy_(
+            quantize_tensor(
+                param.data.detach().float() - update,
+                self._zo_quant_bits(),
+                seed=seed,
+                target_dtype=param.data.dtype,
+            )
+        )
+
     def _zo_two_point_autocast_context(self):
         precision = str(getattr(self.args, "zo_two_point_precision", "fp32")).lower()
         if precision == "fp16":
@@ -2000,6 +2071,7 @@ class Trainer(LinearHeadTrainer):
             "fd_mean",
             "td_mean",
             "mae",
+            "mse",
             "rmse",
             "sign_acc",
             "corr",
@@ -2053,6 +2125,8 @@ class Trainer(LinearHeadTrainer):
             logger.warning(f"[zo_probe] failed to append CSV row: {type(e).__name__}: {e}")
 
     def _zo_maybe_run_directional_probe(self, model: nn.Module, inputs: Dict[str, Any]):
+        if self._zo_use_quzo():
+            return
         if not self._zo_probe_should_run():
             return
 
@@ -2127,6 +2201,7 @@ class Trainer(LinearHeadTrainer):
             fd_mean = float(np.mean(fd_arr))
             td_mean = float(np.mean(td_arr))
             mae = float(np.mean(np.abs(diff)))
+            mse = float(np.mean(diff * diff))
             rmse = float(np.sqrt(np.mean(diff * diff)))
             sign_acc = float(np.mean(np.sign(fd_arr) == np.sign(td_arr)))
 
@@ -2144,6 +2219,7 @@ class Trainer(LinearHeadTrainer):
                 "fd_mean": fd_mean,
                 "td_mean": td_mean,
                 "mae": mae,
+                "mse": mse,
                 "rmse": rmse,
                 "sign_acc": sign_acc,
                 "corr": corr,
@@ -2151,12 +2227,13 @@ class Trainer(LinearHeadTrainer):
             }
             self._zo_probe_append_csv_row(row)
             logger.info(
-                "[zo_probe] step=%d eps=%.3e precision=%s n=%d mae=%.6e rmse=%.6e sign_acc=%.4f corr=%s",
+                "[zo_probe] step=%d eps=%.3e precision=%s n=%d mae=%.6e mse=%.6e rmse=%.6e sign_acc=%.4f corr=%s",
                 int(global_step),
                 float(eps),
                 precision,
                 int(fd_arr.size),
                 mae,
+                mse,
                 rmse,
                 sign_acc,
                 f"{corr:.6f}" if math.isfinite(corr) else "nan",
@@ -2227,9 +2304,6 @@ class Trainer(LinearHeadTrainer):
         params = [p for _, p in named_params]
         grads = torch.autograd.grad(loss, params, retain_graph=False, create_graph=False, allow_unused=True)
 
-        if random_seed is not None:
-            torch.manual_seed(int(random_seed))
-
         # Match the z used later when writing pseudo-gradients.
         apply_c_scale = (
             getattr(self.args, "use_c_scale", False)
@@ -2243,16 +2317,29 @@ class Trainer(LinearHeadTrainer):
             if g is None:
                 # keep RNG consumption in sync for efficient mode
                 if random_seed is not None:
-                    _ = torch.normal(
-                        mean=0,
-                        std=1,
-                        size=param.data.size(),
-                        device=param.data.device,
-                        dtype=param.data.dtype,
-                    )
+                    if self._zo_use_quzo():
+                        _ = self._quzo_get_bundle(name, param, random_seed=random_seed)
+                    else:
+                        _ = torch.normal(
+                            mean=0,
+                            std=1,
+                            size=param.data.size(),
+                            device=param.data.device,
+                            dtype=param.data.dtype,
+                        )
                 continue
 
-            if random_seed is not None:
+            if self._zo_use_quzo():
+                if random_seed is not None:
+                    bundle = self._quzo_get_bundle(name, param, random_seed=random_seed)
+                elif random_vector is None or name not in random_vector:
+                    bundle = self._quzo_get_bundle(name, param)
+                    if random_vector is not None:
+                        random_vector[name] = bundle
+                else:
+                    bundle = random_vector[name]
+                z = bundle["u2"]
+            elif random_seed is not None:
                 z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
             else:
                 if random_vector is None or name not in random_vector:
@@ -2279,6 +2366,15 @@ class Trainer(LinearHeadTrainer):
         return loss.detach(), proj.detach()
 
     def efficient_perturb_parameters(self, model: nn.Module, random_seed: int, scaling_factor=1):
+        if self._zo_use_quzo():
+            for name, param in self.named_parameters_to_optim:
+                bundle = self._quzo_get_bundle(name, param, random_seed=random_seed)
+                eps = float(self._get_training_step_size())
+                delta = bundle["u1"] * (float(scaling_factor) * eps)
+                param.data = param.data + delta
+                self._quzo_quantize_param_from_bundle(param, bundle)
+            return model
+
         torch.manual_seed(random_seed)
         # 需要 name 以支持按层操作
         for name, param in self.named_parameters_to_optim:
@@ -2297,11 +2393,16 @@ class Trainer(LinearHeadTrainer):
             random_vector = {}
 
         for name, param in self.named_parameters_to_optim:
-            if name in random_vector:
-                z = random_vector[name]
+            bundle = None
+            if self._zo_use_quzo():
+                bundle = self._quzo_get_bundle(name, param, random_vector=random_vector)
+                z = bundle["u1"]
             else:
-                z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                random_vector[name] = z
+                if name in random_vector:
+                    z = random_vector[name]
+                else:
+                    z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                    random_vector[name] = z
 
             cname = self.retrieve_c(name)
             # === C-缩放开关：是否用每层的 c 值来缩放扰动（等价于缩放 h）===
@@ -2318,9 +2419,11 @@ class Trainer(LinearHeadTrainer):
             # === Begin Adaptive h (Berahas et al.) ===
             eps = float(self._get_training_step_size())
             delta = z * (float(scaling_factor) * eps)
-            if self._should_quantize_training_perturbation():
+            if (not self._zo_use_quzo()) and self._should_quantize_training_perturbation():
                 delta = self._quantize_delta_tensor(delta, target_dtype=param.data.dtype)
             param.data = param.data + delta
+            if self._zo_use_quzo():
+                self._quzo_quantize_param_from_bundle(param, bundle)
             # === End Adaptive h ===
 
         return model, random_vector
@@ -2330,17 +2433,24 @@ class Trainer(LinearHeadTrainer):
             random_vector = {}
 
         for name, param in self.named_parameters_to_optim:
-            if name in random_vector:
-                z = random_vector[name]
+            bundle = None
+            if self._zo_use_quzo():
+                bundle = self._quzo_get_bundle(name, param, random_vector=random_vector)
+                z = bundle["u1"]
             else:
-                z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                random_vector[name] = z
+                if name in random_vector:
+                    z = random_vector[name]
+                else:
+                    z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                    random_vector[name] = z
             # === Begin Adaptive h (Berahas et al.) ===
             eps = float(self._get_training_step_size())
             delta = z * (float(scaling_factor) * eps)
-            if self._should_quantize_training_perturbation():
+            if (not self._zo_use_quzo()) and self._should_quantize_training_perturbation():
                 delta = self._quantize_delta_tensor(delta, target_dtype=param.data.dtype)
             param.data = param.data + delta
+            if self._zo_use_quzo():
+                self._quzo_quantize_param_from_bundle(param, bundle)
             # === End Adaptive h ===
 
         return model, random_vector
@@ -2352,17 +2462,24 @@ class Trainer(LinearHeadTrainer):
         for name, param in self.named_parameters_to_optim:
             cname = self.retrieve_c(name)
             if cname == layer_name:
-                if name in random_vector:
-                    z = random_vector[name]
+                bundle = None
+                if self._zo_use_quzo():
+                    bundle = self._quzo_get_bundle(name, param, random_vector=random_vector)
+                    z = bundle["u1"]
                 else:
-                    z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                    random_vector[name] = z
+                    if name in random_vector:
+                        z = random_vector[name]
+                    else:
+                        z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                        random_vector[name] = z
                 # === Begin Adaptive h (Berahas et al.) ===
                 eps = float(self._get_training_step_size())
                 delta = z * (float(scaling_factor) * eps)
-                if self._should_quantize_training_perturbation():
+                if (not self._zo_use_quzo()) and self._should_quantize_training_perturbation():
                     delta = self._quantize_delta_tensor(delta, target_dtype=param.data.dtype)
                 param.data = param.data + delta
+                if self._zo_use_quzo():
+                    self._quzo_quantize_param_from_bundle(param, bundle)
                 # === End Adaptive h ===
 
         return model, random_vector
@@ -2805,7 +2922,8 @@ class Trainer(LinearHeadTrainer):
                                     for (n, _), g in zip(layer_named_params, layer_grads):
                                         if g is None:
                                             continue
-                                        z_tilde = random_vector[n] * (c_i_val if getattr(self.args, "use_c_scale", False) else 1.0)
+                                        z_base = random_vector[n]["u2"] if self._zo_use_quzo() else random_vector[n]
+                                        z_tilde = z_base * (c_i_val if getattr(self.args, "use_c_scale", False) else 1.0)
                                         contrib = torch.sum(g.detach().float() * z_tilde.detach().float())
                                         proj = contrib if proj is None else proj + contrib
 
@@ -2838,7 +2956,8 @@ class Trainer(LinearHeadTrainer):
                                 # 在写入 grad 前，用 z_tilde 乘回 c（若启用）
                                 for name, param in self.named_parameters_to_optim:
                                     if self.retrieve_c(name) == layer:
-                                        z_tilde = random_vector[name] * (c_i_val if getattr(self.args, "use_c_scale", False) else 1.0)
+                                        z_base = random_vector[name]["u2"] if self._zo_use_quzo() else random_vector[name]
+                                        z_tilde = z_base * (c_i_val if getattr(self.args, "use_c_scale", False) else 1.0)
                                         if param.grad is None:
                                             param.grad = projected_grad * z_tilde
                                         else:
@@ -2920,16 +3039,19 @@ class Trainer(LinearHeadTrainer):
                             # store gradient in parameter buffer if using trainer
                             # o/w, the loop will exit after one round and the update will be applied directly (see below)
                             if self.args.zero_order_use_trainer_optim:
-                                if self.args.efficient_zero_order:
+                                if self.args.efficient_zero_order and (not self._zo_use_quzo()):
                                     # print(random_seed)
                                     torch.manual_seed(random_seed)
 
                                 for name, param in self.named_parameters_to_optim:
                                     # recover noise used in perturbations
                                     if self.args.efficient_zero_order:
-                                        z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                                        if self._zo_use_quzo():
+                                            z = self._quzo_get_bundle(name, param, random_seed=random_seed)["u2"]
+                                        else:
+                                            z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
                                     else:
-                                        z = random_vector[name]
+                                        z = random_vector[name]["u2"] if self._zo_use_quzo() else random_vector[name]
 
                                     # === C-缩放开关：仅当 use_c_scale=True 时才按层放大 z ===
                                     # 关闭开关即不使用 C 缩放（与新方法一致）
@@ -2983,6 +3105,11 @@ class Trainer(LinearHeadTrainer):
 
                             # Update the parameters and step scheduler
                             optimizer.step()
+                            if self._zo_use_quzo():
+                                with torch.no_grad():
+                                    for name, param in self.named_parameters_to_optim:
+                                        bundle = self._quzo_get_bundle(name, param, random_seed=int(self.state.global_step))
+                                        self._quzo_quantize_param_from_bundle(param, bundle)
                             scheduler.step()
 
                             # logging
@@ -3043,16 +3170,36 @@ class Trainer(LinearHeadTrainer):
                         grad_l1_acc = 0.0
                         grad_l2_sq_acc = 0.0
                         for name, param in self.named_parameters_to_optim:
+                            bundle = None
                             if self.args.efficient_zero_order:
-                                z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                                if self._zo_use_quzo():
+                                    bundle = self._quzo_get_bundle(name, param, random_seed=random_seed)
+                                    z = bundle["u2"]
+                                else:
+                                    z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
                             else:
-                                z = random_vector[name]
+                                if self._zo_use_quzo():
+                                    bundle = random_vector[name]
+                                    z = bundle["u2"]
+                                else:
+                                    z = random_vector[name]
                             grad_est = projected_grad * z
                             if grad_norm_logging:
                                 g = grad_est.detach().float()
                                 grad_l1_acc += float(torch.sum(torch.abs(g)).item())
                                 grad_l2_sq_acc += float(torch.sum(g * g).item())
-                            param.data = param.data - self.args.learning_rate * (grad_est + self.args.weight_decay * param.data)
+                            if self._zo_use_quzo():
+                                self._quzo_apply_update_to_param(
+                                    name,
+                                    param,
+                                    z,
+                                    projected_grad,
+                                    float(self.args.learning_rate),
+                                    float(self.args.weight_decay),
+                                    bundle=bundle,
+                                )
+                            else:
+                                param.data = param.data - self.args.learning_rate * (grad_est + self.args.weight_decay * param.data)
 
                         if grad_norm_logging:
                             grad_l1_step = float(grad_l1_acc)
