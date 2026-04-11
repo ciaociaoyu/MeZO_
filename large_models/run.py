@@ -1,5 +1,6 @@
 import logging
 import os
+import csv
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset
 from torch.distributed.fsdp.fully_sharded_data_parallel import FullyShardedDataParallel as FSDP
 from metrics import calculate_metric
+from quzo import quzo_enabled, quantize_model_in_place, validate_quzo_bits
 from utils import *
 from trainer import OurTrainer
 import random
@@ -86,6 +88,48 @@ def hf_auth_kwargs() -> dict:
         return {}
     return {"use_auth_token": token}
 
+
+def detect_precision_label(args) -> str:
+    if bool(getattr(args, "load_int8", False)):
+        return "int8"
+    if bool(getattr(args, "load_bfloat16", False)):
+        return "bf16"
+    if bool(getattr(args, "load_float16", False)):
+        return "fp16"
+    return "fp32"
+
+
+def _normalize_for_json(value):
+    if isinstance(value, (np.floating, np.integer)):
+        return value.item()
+    if isinstance(value, torch.Tensor):
+        if value.numel() == 1:
+            return _normalize_for_json(value.item())
+        return [_normalize_for_json(v) for v in value.detach().cpu().tolist()]
+    if isinstance(value, dict):
+        return {str(k): _normalize_for_json(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_normalize_for_json(v) for v in value]
+    return value
+
+
+def _read_json_if_exists(path: str):
+    if not path or (not os.path.exists(path)):
+        return None
+    with open(path, "r", encoding="utf-8") as f:
+        return _normalize_for_json(json.load(f))
+
+
+def _read_last_csv_row(path: str):
+    if not path or (not os.path.exists(path)):
+        return None
+    with open(path, "r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        last_row = None
+        for row in reader:
+            last_row = row
+    return _normalize_for_json(last_row)
+
 @dataclass
 class OurArguments(TrainingArguments):
     # dataset and sampling strategy
@@ -126,6 +170,10 @@ class OurArguments(TrainingArguments):
 
     # MeZO
     zo_eps: float = 1e-3 # eps in MeZO
+    zo_quantization_bits: int = 32 # 32 keeps original MeZO; 16/8/4 enable QuZO-style quantized params/perturbations/updates
+    zo_probe_every: int = 0 # run G-vs-D directional probe every N optimizer steps; 0 disables it
+    zo_probe_num_seeds: int = 16 # number of probe directions per diagnostic step
+    zo_probe_log_csv: bool = True # write directional probe rows to output_dir/zo_directional_probe.csv
 
     # Prefix tuning
     prefix_tuning: bool = False # whether to use prefix tuning
@@ -174,6 +222,11 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser = HfArgumentParser(OurArguments)
     args = parser.parse_args_into_dataclasses()[0]
+    args.zo_quantization_bits = validate_quzo_bits(getattr(args, "zo_quantization_bits", 32))
+    if int(getattr(args, "zo_probe_num_seeds", 16)) <= 0:
+        raise ValueError("--zo_probe_num_seeds must be > 0")
+    if int(getattr(args, "zo_probe_every", 0)) < 0:
+        raise ValueError("--zo_probe_every must be >= 0")
     print(args)
     return args
 
@@ -254,6 +307,7 @@ class Framework:
         self.args = args
         self.task = task
         self.model, self.tokenizer = self.load_model()
+        self.last_train_artifacts = {}
 
 
     def load_model(self):
@@ -362,6 +416,18 @@ class Framework:
                     p.requires_grad = False
                 else:
                     logger.info(f"Only tuning {n}")
+
+        if self.args.trainer == "zo" and quzo_enabled(getattr(self.args, "zo_quantization_bits", 32)):
+            quantize_model_in_place(
+                model,
+                int(self.args.zo_quantization_bits),
+                include_frozen=True,
+                seed=int(getattr(self.args, "seed", 0)),
+            )
+            logger.info(
+                "[quzo-config] quantized model parameters in-place at %d bits before ZO training",
+                int(self.args.zo_quantization_bits),
+            )
 
         return model, tokenizer
 
@@ -569,7 +635,7 @@ class Framework:
 
         # ---- 训练过程指标日志回调（中文注释）--------------------------------------
         # 目标：在每一次**优化步**（global_step）记录训练 loss，并在评估时记录验证/训练探针集的准确率。
-        # 日志输出到 result 目录下，文件名包含 任务名+模型名+eps 等关键信息，方便多组实验对比。
+        # 日志输出到当前 run 的 output_dir 下，方便 sweep 直接按目录收集。
         # 注意：HuggingFace 的 Trainer 在设置了 logging_strategy="steps" 且 logging_steps=1 时，
         # 会在每个优化步触发 on_log 回调（若使用梯度累积，则每累计完成一次为一个优化步）。
         import os
@@ -579,28 +645,42 @@ class Framework:
 
         # 生成当前运行的标签（包含任务名/模型名/样本数/eps 等），用于区分不同实验
         run_tag = result_file_tag(self.args)  # 例如：SST2-opt-125m-eps0.001-...
-        logs_dir = os.path.join("result")  # 统一把迭代日志放在 result 目录
+        logs_dir = self.args.output_dir or os.path.join("result", run_tag)
         os.makedirs(logs_dir, exist_ok=True)
+        precision_label = detect_precision_label(self.args)
 
         class _HistoryWriter:
             """
             简单的历史日志写入器：
-            - JSONL：`result/metrics_{run_tag}.jsonl`
-            - CSV：  `result/metrics_{run_tag}.csv`
-            每一行都会额外带上 task/model/eps 字段，便于后期聚合分析。
+            - JSONL：`<output_dir>/metrics_<run_tag>.jsonl`
+            - CSV：  `<output_dir>/metrics_<run_tag>.csv`
+            每一行都会额外带上 task/model/eps/seed/precision 等字段，便于后期聚合分析。
             """
-            def __init__(self, out_dir: str, run_tag: str, task_name: str, model_name: str, eps: float):
+            def __init__(
+                self,
+                out_dir: str,
+                run_tag: str,
+                task_name: str,
+                model_name: str,
+                eps: float,
+                seed: int,
+                precision: str,
+                zo_quantization_bits: int,
+            ):
                 self.dir = out_dir
                 self.run_tag = run_tag
                 self.task_name = task_name
                 self.model_name = model_name
                 self.eps = eps
+                self.seed = int(seed)
+                self.precision = precision
+                self.zo_quantization_bits = int(zo_quantization_bits)
                 self.jsonl_path = os.path.join(self.dir, f"metrics_{self.run_tag}.jsonl")
                 self.csv_path = os.path.join(self.dir, f"metrics_{self.run_tag}.csv")
                 # 初始化 CSV 表头（包含任务信息）
                 if not os.path.exists(self.csv_path):
                     with open(self.csv_path, "w", encoding="utf-8") as f:
-                        f.write("time,step,epoch,phase,metric,value,task,model,eps\n")
+                        f.write("time,step,epoch,phase,split,metric,value,task,model,eps,seed,precision,zo_quantization_bits\n")
 
             def append_jsonl(self, obj: dict):
                 # JSONL 中也冗余写入任务信息，方便独立解析
@@ -609,13 +689,19 @@ class Framework:
                     "task": self.task_name,
                     "model": self.model_name,
                     "eps": self.eps,
+                    "seed": self.seed,
+                    "precision": self.precision,
+                    "zo_quantization_bits": self.zo_quantization_bits,
                 })
                 with open(self.jsonl_path, "a", encoding="utf-8") as f:
                     f.write(json.dumps(obj, ensure_ascii=False) + "\n")
 
             def append_csv_row(self, time_s: str, step: int, epoch: float, phase: str, metric: str, value: float):
                 with open(self.csv_path, "a", encoding="utf-8") as f:
-                    f.write(f"{time_s},{step},{epoch},{phase},{metric},{value},{self.task_name},{self.model_name},{self.eps}\n")
+                    f.write(
+                        f"{time_s},{step},{epoch},{phase},{phase},{metric},{value},"
+                        f"{self.task_name},{self.model_name},{self.eps},{self.seed},{self.precision},{self.zo_quantization_bits}\n"
+                    )
 
         class MetricsRecorder(TrainerCallback):
             """记录训练 loss（on_log）以及在评估阶段计算并记录指标（on_evaluate）。
@@ -633,6 +719,9 @@ class Framework:
                     task_name=self.framework.args.task_name,
                     model_name=self.framework.args.model_name.split("/")[-1],
                     eps=self.framework.args.zo_eps,
+                    seed=self.framework.args.seed,
+                    precision=precision_label,
+                    zo_quantization_bits=int(getattr(self.framework.args, "zo_quantization_bits", 32)),
                 )
                 self.train_probe_size = train_probe_size
 
@@ -647,7 +736,7 @@ class Framework:
                     if isinstance(v, (int, float)) and k not in ("total_flos",):
                         self.writer.append_jsonl({
                             "time": ts, "step": step, "epoch": epoch_val,
-                            "phase": "train", "metric": k, "value": float(v)
+                            "phase": "train", "split": "train", "metric": k, "value": float(v)
                         })
                         self.writer.append_csv_row(ts, step, epoch_val, "train", k, float(v))
 
@@ -663,7 +752,7 @@ class Framework:
                         if isinstance(mv, (int, float)):
                             self.writer.append_jsonl({
                                 "time": ts, "step": step, "epoch": epoch_val,
-                                "phase": "eval", "metric": mk, "value": float(mv)
+                                "phase": "eval", "split": "eval", "metric": mk, "value": float(mv)
                             })
                             self.writer.append_csv_row(ts, step, epoch_val, "eval", mk, float(mv))
 
@@ -672,7 +761,7 @@ class Framework:
                 for mk, mv in eval_metrics.items():
                     self.writer.append_jsonl({
                         "time": ts, "step": step, "epoch": epoch_val,
-                        "phase": "eval", "metric": mk, "value": float(mv)
+                        "phase": "eval", "split": "eval", "metric": mk, "value": float(mv)
                     })
                     self.writer.append_csv_row(ts, step, epoch_val, "eval", mk, float(mv))
 
@@ -684,7 +773,7 @@ class Framework:
                     for mk, mv in train_metrics.items():
                         self.writer.append_jsonl({
                             "time": ts, "step": step, "epoch": epoch_val,
-                            "phase": "train_probe", "metric": mk, "value": float(mv)
+                            "phase": "train_probe", "split": "train_probe", "metric": mk, "value": float(mv)
                         })
                         self.writer.append_csv_row(ts, step, epoch_val, "train_probe", mk, float(mv))
         # ---- end metrics logging callback -------------------------------------------
@@ -705,7 +794,8 @@ class Framework:
             tokenizer=self.tokenizer,
             data_collator=DataCollatorWithPaddingAndNesting(self.tokenizer, pad_to_multiple_of=8) if self.args.train_as_classification else collator(self.tokenizer, pad_to_multiple_of=8),
         )
-        trainer.add_callback(MetricsRecorder(self, train_samples, eval_samples, logs_dir, run_tag))
+        metrics_recorder = MetricsRecorder(self, train_samples, eval_samples, logs_dir, run_tag)
+        trainer.add_callback(metrics_recorder)
         if self.args.save_on_interrupt:
             trainer.add_callback(SIGUSR1Callback())
 
@@ -722,7 +812,19 @@ class Framework:
         if self.args.resume_from_checkpoint is not None:
             last_checkpoint = self.args.resume_from_checkpoint
 
-        trainer.train(resume_from_checkpoint=last_checkpoint) 
+        train_result = trainer.train(resume_from_checkpoint=last_checkpoint)
+        self.last_train_artifacts = {
+            "run_tag": run_tag,
+            "output_dir": self.args.output_dir,
+            "metrics_jsonl_path": metrics_recorder.writer.jsonl_path,
+            "metrics_csv_path": metrics_recorder.writer.csv_path,
+            "zo_directional_probe_csv": getattr(trainer, "_zo_probe_csv_path", None),
+            "zo_directional_probe_last_row": getattr(trainer, "latest_zo_probe_row", None),
+            "train_metrics": getattr(train_result, "metrics", None),
+            "best_metric": getattr(trainer.state, "best_metric", None),
+            "best_model_checkpoint": getattr(trainer.state, "best_model_checkpoint", None),
+            "trainer_state_path": os.path.join(self.args.output_dir, "trainer_state.json") if self.args.output_dir else None,
+        }
 
         # Explicitly save the model
         if self.args.save_model:
@@ -753,7 +855,8 @@ def result_file_tag(args):
     sample_dev_tag = "-ndev%d" % args.num_dev if args.num_dev is not None else ""
     customized_tag = f"-{args.tag}" if len(args.tag) > 0 else ""
     eps_tag = f"-eps{args.zo_eps:g}"
-    return f"{args.task_name}-{save_model_name}" + sfc_tag + icl_sfc_tag + sample_eval_tag + sample_train_tag + sample_dev_tag + eps_tag + customized_tag
+    quzo_tag = f"-qbits{int(getattr(args, 'zo_quantization_bits', 32))}"
+    return f"{args.task_name}-{save_model_name}" + sfc_tag + icl_sfc_tag + sample_eval_tag + sample_train_tag + sample_dev_tag + eps_tag + quzo_tag + customized_tag
 
 
 def get_eval_split_samples(task, num_eval=None, seed=0):
@@ -868,7 +971,47 @@ def main():
                 logger.info("===== Train set %d =====" % train_set_seed)
                 logger.info(metrics)
                 if args.local_rank <= 0:
-                    write_metrics_to_file(metrics, "result/" +  result_file_tag(args) + f"-trainset{train_set_id}.json" if args.result_file is None else args.result_file)
+                    legacy_result_path = "result/" + result_file_tag(args) + f"-trainset{train_set_id}.json" if args.result_file is None else args.result_file
+                    write_metrics_to_file(metrics, legacy_result_path)
+
+                    final_metrics_name = "final_metrics.json" if len(train_sets) == 1 else f"final_metrics_trainset{train_set_id}.json"
+                    final_metrics_path = os.path.join(args.output_dir, final_metrics_name)
+                    write_metrics_to_file(metrics, final_metrics_path)
+
+                    train_artifacts = dict(getattr(framework, "last_train_artifacts", {}) or {})
+                    summary_name = "run_summary.json" if len(train_sets) == 1 else f"run_summary_trainset{train_set_id}.json"
+                    summary_path = os.path.join(args.output_dir, summary_name)
+                    summary_payload = {
+                        "task_name": args.task_name,
+                        "dataset_mode": getattr(args, "dataset_mode", None),
+                        "model_name": args.model_name,
+                        "output_dir": args.output_dir,
+                        "seed": int(args.seed),
+                        "train_set_seed": int(train_set_seed),
+                        "h": float(args.zo_eps),
+                        "precision": detect_precision_label(args),
+                        "zo_quantization_bits": int(getattr(args, "zo_quantization_bits", 32)),
+                        "final_metrics": metrics,
+                        "paths": {
+                            "final_metrics_json": final_metrics_path,
+                            "legacy_metrics_json": legacy_result_path,
+                            "metrics_jsonl": train_artifacts.get("metrics_jsonl_path"),
+                            "metrics_csv": train_artifacts.get("metrics_csv_path"),
+                            "zo_directional_probe_csv": train_artifacts.get("zo_directional_probe_csv"),
+                            "trainer_state_json": train_artifacts.get("trainer_state_path"),
+                        },
+                        "artifacts": {
+                            "train_metrics": train_artifacts.get("train_metrics"),
+                            "best_metric": train_artifacts.get("best_metric"),
+                            "best_model_checkpoint": train_artifacts.get("best_model_checkpoint"),
+                            "metrics_csv_last_row": _read_last_csv_row(train_artifacts.get("metrics_csv_path")),
+                            "zo_directional_probe_last_row": _read_last_csv_row(train_artifacts.get("zo_directional_probe_csv")),
+                            "trainer_state": _read_json_if_exists(train_artifacts.get("trainer_state_path")),
+                        },
+                        "config": vars(args),
+                    }
+                    with open(summary_path, "w", encoding="utf-8") as f:
+                        json.dump(_normalize_for_json(summary_payload), f, ensure_ascii=False, indent=2)
 
     else:
         # For each eval sample, there is a training set. no training is allowed
@@ -882,7 +1025,10 @@ def main():
         metrics = framework.evaluate(train_sets, eval_samples, one_train_set_per_eval_sample=True)
         logger.info(metrics)
         if args.local_rank <= 0:
-            write_metrics_to_file(metrics, "result/" + result_file_tag(args) + "-onetrainpereval.json" if args.result_file is None else args.result_file)
+            legacy_result_path = "result/" + result_file_tag(args) + "-onetrainpereval.json" if args.result_file is None else args.result_file
+            write_metrics_to_file(metrics, legacy_result_path)
+            if args.output_dir:
+                write_metrics_to_file(metrics, os.path.join(args.output_dir, "final_metrics.json"))
 
 if __name__ == "__main__": 
     main()

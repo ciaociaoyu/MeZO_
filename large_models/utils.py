@@ -352,4 +352,8 @@ def write_predictions_to_file(final_preds, output):
 
 
 def write_metrics_to_file(metrics, output):
-    json.dump(metrics, open(output, "w"), cls=EnhancedJSONEncoder, indent=4)
+    output_dir = os.path.dirname(output)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+    with open(output, "w") as f:
+        json.dump(metrics, f, cls=EnhancedJSONEncoder, indent=4)

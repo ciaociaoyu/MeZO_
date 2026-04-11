@@ -27,6 +27,7 @@ from src.linearhead_trainer import LinearHeadTrainer
 from src.dataset import FewShotDataset, OurInputFeatures
 from src.data_utils import resolve_and_prepare_data
 from src.models import MODEL_TYPES, resize_token_type_embeddings, convert_opt_model
+from src.quzo import quzo_enabled, quantize_model_in_place, validate_quzo_bits
 from src.trainer import Trainer
 from src.processors import processors_mapping, num_labels_mapping, output_modes_mapping, compute_metrics_mapping, bound_mapping
 
@@ -480,6 +481,12 @@ class DynamicTrainingArguments(TrainingArguments):
             'help': 'Precision used ONLY for the two finite-difference function evaluations (loss1/loss2) in ZO. Choices: fp32, fp16.'
         }
     )
+    zo_quantization_bits: int = field(
+        default=32,
+        metadata={
+            "help": "Quantization used by ZO training. 32 keeps original MeZO. 16/8/4 enable QuZO-style quantized parameters, perturbations, and updates."
+        }
+    )
     zo_probe_every: int = field(
         default=0,
         metadata={"help": "Run directional-derivative probe every N training steps. <=0 disables probing."}
@@ -860,6 +867,7 @@ def main():
     training_args.zo_two_point_precision = str(getattr(training_args, "zo_two_point_precision", "fp32")).lower()
     if training_args.zo_two_point_precision not in {"fp32", "fp16"}:
         raise ValueError(f"Invalid --zo_two_point_precision={training_args.zo_two_point_precision}. Allowed: fp32, fp16")
+    training_args.zo_quantization_bits = validate_quzo_bits(getattr(training_args, "zo_quantization_bits", 32))
     if int(getattr(training_args, "zo_probe_num_seeds", 16)) <= 0:
         raise ValueError("--zo_probe_num_seeds must be > 0")
     training_args.h_estimation_active_source = str(
@@ -998,6 +1006,11 @@ def main():
         training_args.zo_two_point_precision,
         training_args.zero_order_eps,
         bool(getattr(training_args, "zo_use_true_directional_derivative", False)),
+    )
+    logger.info(
+        "[quzo-config] zo_quantization_bits=%s | quzo_enabled=%s",
+        int(getattr(training_args, "zo_quantization_bits", 32)),
+        bool(quzo_enabled(getattr(training_args, "zo_quantization_bits", 32))),
     )
 
     # Set seed
@@ -1250,6 +1263,18 @@ def main():
         for name, param in model.named_parameters():
             if (name.startswith('roberta') and "lora" not in name) or (name.startswith('opt') and "lora" not in name):
                 param.requires_grad_(False)
+
+    if bool(getattr(training_args, "zero_order_optim", False)) and quzo_enabled(getattr(training_args, "zo_quantization_bits", 32)):
+        quantize_model_in_place(
+            model,
+            int(training_args.zo_quantization_bits),
+            include_frozen=True,
+            seed=int(getattr(training_args, "seed", 0)),
+        )
+        logger.info(
+            "[quzo-config] quantized model parameters in-place at %d bits before ZO training",
+            int(training_args.zo_quantization_bits),
+        )
 
     # Build metric
     def build_compute_metrics_fn(task_name: str) -> Callable[[EvalPrediction], Dict]:
