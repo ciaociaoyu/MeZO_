@@ -17,6 +17,7 @@ The Trainer class, to easily train a 🤗 Transformers from scratch or finetune 
 """
 
 import contextlib
+import enum
 import functools
 import glob
 import inspect
@@ -135,7 +136,6 @@ from transformers.trainer_utils import (
     IntervalStrategy,
     PredictionOutput,
     RemoveColumnsCollator,
-    ShardedDDPOption,
     TrainerMemoryTracker,
     TrainOutput,
     default_compute_objective,
@@ -177,6 +177,16 @@ except ImportError:
 
     parsed_torch_version_base = version.parse(version.parse(torch.__version__).base_version)
     is_torch_greater_or_equal_than_1_10 = parsed_torch_version_base >= version.parse("1.10")
+
+try:
+    from transformers.trainer_utils import ShardedDDPOption
+except ImportError:
+    class ShardedDDPOption(str, enum.Enum):
+        SIMPLE = "simple"
+        ZERO_DP_2 = "zero_dp_2"
+        ZERO_DP_3 = "zero_dp_3"
+        OFFLOAD = "offload"
+        AUTO_WRAP = "auto_wrap"
 
 
 _is_native_cpu_amp_available = is_torch_greater_or_equal_than_1_10
@@ -372,9 +382,10 @@ class OurTrainer(Trainer):
             else:
                 debug_overflow = DebugUnderflowOverflow(self.model)  # noqa
 
+        sharded_ddp = getattr(self, "sharded_ddp", None)
         delay_optimizer_creation = (
-            self.sharded_ddp is not None
-            and self.sharded_ddp != ShardedDDPOption.SIMPLE
+            sharded_ddp is not None
+            and sharded_ddp != ShardedDDPOption.SIMPLE
             or is_sagemaker_mp_enabled()
             or self.fsdp is not None
         )
@@ -951,6 +962,7 @@ class OurTrainer(Trainer):
 
         if output_dir is None:
             output_dir = self.args.output_dir
+        sharded_ddp_args = getattr(self.args, "sharded_ddp", []) or []
 
         if is_torch_tpu_available():
             self._save_tpu(output_dir)
@@ -964,8 +976,8 @@ class OurTrainer(Trainer):
                 # 'user_content.pt' indicates model state_dict saved with smp >= 1.10
                 Path(os.path.join(output_dir, "user_content.pt")).touch()
         elif (
-            ShardedDDPOption.ZERO_DP_2 in self.args.sharded_ddp
-            or ShardedDDPOption.ZERO_DP_3 in self.args.sharded_ddp
+            ShardedDDPOption.ZERO_DP_2 in sharded_ddp_args
+            or ShardedDDPOption.ZERO_DP_3 in sharded_ddp_args
             or self.fsdp is not None
         ):
             from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, StateDictType, FullStateDictConfig
