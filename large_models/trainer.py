@@ -139,7 +139,6 @@ from transformers.trainer_utils import (
     TrainerMemoryTracker,
     TrainOutput,
     default_compute_objective,
-    default_hp_space,
     denumpify_detensorize,
     enable_full_determinism,
     find_executable_batch_size,
@@ -187,6 +186,23 @@ except ImportError:
         ZERO_DP_3 = "zero_dp_3"
         OFFLOAD = "offload"
         AUTO_WRAP = "auto_wrap"
+
+try:
+    from transformers.trainer_utils import default_hp_space
+except ImportError:
+    from transformers.trainer_utils import (
+        default_hp_space_optuna,
+        default_hp_space_ray,
+        default_hp_space_sigopt,
+        default_hp_space_wandb,
+    )
+
+    default_hp_space = {
+        HPSearchBackend.OPTUNA: default_hp_space_optuna,
+        HPSearchBackend.RAY: default_hp_space_ray,
+        HPSearchBackend.SIGOPT: default_hp_space_sigopt,
+        HPSearchBackend.WANDB: default_hp_space_wandb,
+    }
 
 
 _is_native_cpu_amp_available = is_torch_greater_or_equal_than_1_10
