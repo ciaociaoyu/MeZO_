@@ -17,7 +17,7 @@ ROOT_DIR=/home/jy03364/MeZO
 cd "${ROOT_DIR}/large_models"
 
 MODEL=opt-1.3b \
-TASK=SST-5 \
+TASK=SST5 \
 MODE=ft \
 SEED=0 \
 DATA_SEED=0 \
@@ -32,4 +32,3 @@ EVAL_STEPS=25 \
 bash mezo.sh \
   --gradient_accumulation_steps 8 \
   --logging_steps 1
-

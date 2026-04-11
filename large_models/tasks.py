@@ -37,7 +37,9 @@ TASK_NAME_ALIASES = {
 
 TASK_CLASS_NAMES = {
     "SST2": "SST2Dataset",
+    "SST-2": "SST2Dataset",
     "SST5": "SST5Dataset",
+    "SST-5": "SST5Dataset",
     "BoolQ": "BoolQDataset",
     "SNLI": "SNLIDataset",
     "MNLI": "MNLIDataset",

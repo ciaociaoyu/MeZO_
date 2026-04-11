@@ -17,7 +17,7 @@ ROOT_DIR=/home/jy03364/MeZO
 cd "${ROOT_DIR}/large_models"
 
 MODEL=mistral-7b \
-TASK=SST-5 \
+TASK=SST5 \
 MODE=ft \
 SEED=0 \
 DATA_SEED=0 \
