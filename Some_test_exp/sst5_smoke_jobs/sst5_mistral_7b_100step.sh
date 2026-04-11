@@ -13,7 +13,7 @@ ml jq
 source ~/.bashrc
 conda activate mezo-env
 
-ROOT_DIR=/home/jy03364/MeZO
+ROOT_DIR=/scratch/jy03364/MeZO_
 cd "${ROOT_DIR}/large_models"
 
 MODEL=mistral-7b \
