@@ -1,6 +1,7 @@
 import logging
 import os
 import csv
+import enum
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -102,14 +103,42 @@ def detect_precision_label(args) -> str:
 def _normalize_for_json(value):
     if isinstance(value, (np.floating, np.integer)):
         return value.item()
+    if isinstance(value, np.bool_):
+        return bool(value)
+    if isinstance(value, enum.Enum):
+        return _normalize_for_json(value.value)
+    if isinstance(value, torch.device):
+        return str(value)
     if isinstance(value, torch.Tensor):
         if value.numel() == 1:
             return _normalize_for_json(value.item())
         return [_normalize_for_json(v) for v in value.detach().cpu().tolist()]
+    if is_dataclass(value) and not isinstance(value, type):
+        return _normalize_for_json(asdict(value))
     if isinstance(value, dict):
         return {str(k): _normalize_for_json(v) for k, v in value.items()}
+    if isinstance(value, set):
+        return [_normalize_for_json(v) for v in sorted(value, key=repr)]
     if isinstance(value, (list, tuple)):
         return [_normalize_for_json(v) for v in value]
+    if hasattr(value, "tolist") and callable(getattr(value, "tolist")):
+        try:
+            return _normalize_for_json(value.tolist())
+        except Exception:
+            pass
+    if hasattr(value, "__dict__"):
+        public_attrs = {
+            str(k): _normalize_for_json(v)
+            for k, v in vars(value).items()
+            if not str(k).startswith("_")
+        }
+        if public_attrs:
+            public_attrs["_class"] = value.__class__.__name__
+            return public_attrs
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    if hasattr(value, "name") and isinstance(getattr(value, "name"), str):
+        return value.name
     return value
 
 

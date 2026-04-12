@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 import subprocess
 from dataclasses import dataclass
@@ -160,6 +161,18 @@ def _ensure_original_data(
     available_after_download = is_original_dataset_available(str(original_data_root), task_dir_name) or (
         canonical_task != task_dir_name and is_original_dataset_available(str(original_data_root), canonical_task)
     )
+    if not available_after_download:
+        logger.info(
+            "[data] Original dataset still incomplete for task=%s. Retrying with FORCE_EXTRACT=1",
+            task_dir_name,
+        )
+        retry_env = dict(os.environ)
+        retry_env["FORCE_EXTRACT"] = "1"
+        subprocess.run(["bash", str(download_script)], cwd=str(data_dir), env=retry_env, check=True)
+        available_after_download = is_original_dataset_available(str(original_data_root), task_dir_name) or (
+            canonical_task != task_dir_name and is_original_dataset_available(str(original_data_root), canonical_task)
+        )
+
     if not available_after_download:
         raise FileNotFoundError(
             "Original dataset is still incomplete after auto-download. "

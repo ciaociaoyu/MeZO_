@@ -6,6 +6,7 @@ cd "${SCRIPT_DIR}"
 
 DATASET_URL="https://nlp.cs.princeton.edu/projects/lm-bff/datasets.tar"
 DATASET_TAR="datasets.tar"
+FORCE_EXTRACT="${FORCE_EXTRACT:-0}"
 
 if [[ ! -f "${DATASET_TAR}" ]]; then
   wget "${DATASET_URL}" -O "${DATASET_TAR}"
@@ -13,7 +14,10 @@ else
   echo "*** ${DATASET_TAR} already exists; skip download ***"
 fi
 
-if [[ ! -d original ]]; then
+if [[ ! -d original || "${FORCE_EXTRACT}" == "1" ]]; then
+  if [[ "${FORCE_EXTRACT}" == "1" && -d original ]]; then
+    echo "*** FORCE_EXTRACT=1; re-extract into existing original/ ***"
+  fi
   tar xvf "${DATASET_TAR}"
 else
   echo "*** original/ already exists; skip extract ***"
