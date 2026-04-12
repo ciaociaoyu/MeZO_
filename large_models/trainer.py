@@ -814,7 +814,11 @@ class OurTrainer(Trainer):
             # Wait for everyone to get here so we are sur the model has been saved by process 0.
             if is_torch_tpu_available():
                 xm.rendezvous("load_best_model_at_end")
-            elif args.local_rank != -1:
+            elif (
+                args.local_rank != -1
+                and dist.is_available()
+                and dist.is_initialized()
+            ):
                 dist.barrier()
             elif is_sagemaker_mp_enabled():
                 smp.barrier()
