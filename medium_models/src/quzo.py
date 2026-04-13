@@ -51,6 +51,17 @@ def _normal_like_with_seed(tensor: torch.Tensor, seed: int, dtype: Optional[torc
         )
 
 
+def _normal_like_with_generator_seed(
+    tensor: torch.Tensor,
+    seed: int,
+    dtype: Optional[torch.dtype] = None,
+) -> torch.Tensor:
+    out_dtype = dtype if dtype is not None else tensor.dtype
+    generator = torch.Generator(device=tensor.device.type)
+    generator.manual_seed(int(seed))
+    return torch.empty_like(tensor, dtype=out_dtype).normal_(mean=0.0, std=1.0, generator=generator)
+
+
 def quantize_tensor(
     tensor: torch.Tensor,
     bits: int,
@@ -65,10 +76,10 @@ def quantize_tensor(
 
     if bits == 32:
         return tensor.detach().to(dtype=target_dtype)
+    if bits == 16:
+        return tensor.detach().to(dtype=torch.float16)
 
     x = tensor.detach().float()
-    if bits == 16:
-        return x.to(dtype=torch.float16).to(dtype=target_dtype)
 
     qmax = (1 << (bits - 1)) - 1
     max_abs = float(torch.max(torch.abs(x)).item()) if x.numel() > 0 else 0.0
@@ -102,6 +113,12 @@ def make_quzo_direction_pair(
     if target_dtype is None:
         target_dtype = tensor.dtype
 
+    if bits == 16:
+        return {
+            "z": _normal_like_with_generator_seed(tensor, int(step_seed), dtype=torch.float16),
+            "seed": torch.tensor(int(step_seed), device=tensor.device, dtype=torch.int64),
+        }
+
     direction_dtype = torch.float32 if bits in {8, 4} else target_dtype
     gaussian_seed = _seed_from_parts(step_seed, key, "gaussian")
     perturb_seed = _seed_from_parts(step_seed, key, "perturb")
@@ -129,6 +146,9 @@ def quantize_model_in_place(
     bits = validate_quzo_bits(bits)
     if bits == 32:
         return
+    if bits == 16:
+        model.half()
+        return
 
     with torch.no_grad():
         for name, param in model.named_parameters():
@@ -136,4 +156,3 @@ def quantize_model_in_place(
                 continue
             q_seed = _seed_from_parts(seed, name, "model_init")
             param.data.copy_(quantize_tensor(param.data, bits, seed=q_seed, target_dtype=param.data.dtype))
-

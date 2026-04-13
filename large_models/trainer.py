@@ -36,7 +36,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Un
 import copy
 from metrics import f1
 import numpy as np
-from quzo import make_quzo_direction_pair, quantize_tensor, quzo_enabled
+from quzo import make_quzo_direction_pair, quantize_tensor
 
 from tqdm.auto import tqdm
 from transformers import Trainer
@@ -861,7 +861,8 @@ class OurTrainer(Trainer):
         return int(getattr(self.args, "zo_quantization_bits", 32))
 
     def _zo_use_quzo(self) -> bool:
-        return quzo_enabled(self._zo_quant_bits())
+        # Keep 16-bit on the plain MeZO path; only 8/4-bit use QuZO-specific bundle/requantize logic.
+        return self._zo_quant_bits() in {8, 4}
 
     def _zo_use_weight_decay(self, name: str) -> bool:
         return "bias" not in name and "layer_norm" not in name and "layernorm" not in name
@@ -876,6 +877,8 @@ class OurTrainer(Trainer):
         )
 
     def _quzo_quantize_param_from_bundle(self, param, bundle):
+        if self._zo_quant_bits() == 16:
+            return
         seed_val = bundle.get("state_seed", None)
         seed = int(seed_val.item()) if isinstance(seed_val, torch.Tensor) else None
         param.data.copy_(
@@ -888,6 +891,11 @@ class OurTrainer(Trainer):
         )
 
     def _quzo_apply_update_to_param(self, name, param, direction, projected_grad, learning_rate, bundle):
+        if self._zo_quant_bits() == 16:
+            if self.args.weight_decay > 0 and self._zo_use_weight_decay(name):
+                param.data.mul_(1.0 - float(learning_rate) * float(self.args.weight_decay))
+            param.data.add_(direction.detach().to(dtype=param.data.dtype), alpha=-(float(learning_rate) * float(projected_grad)))
+            return
         update = float(learning_rate) * (float(projected_grad) * direction.detach().float())
         if self.args.weight_decay > 0 and self._zo_use_weight_decay(name):
             update = update + float(learning_rate) * float(self.args.weight_decay) * param.data.detach().float()

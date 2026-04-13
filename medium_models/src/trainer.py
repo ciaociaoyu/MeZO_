@@ -94,7 +94,7 @@ from torch.optim import SGD
 import torch.nn.functional as F
 
 from src.linearhead_trainer import LinearHeadTrainer
-from src.quzo import make_quzo_direction_pair, quantize_tensor, quzo_enabled
+from src.quzo import make_quzo_direction_pair, quantize_tensor
 from transformers.trainer_callback import TrainerState
 
 import copy
@@ -1982,7 +1982,8 @@ class Trainer(LinearHeadTrainer):
         return int(getattr(self.args, "zo_quantization_bits", 32))
 
     def _zo_use_quzo(self) -> bool:
-        return quzo_enabled(self._zo_quant_bits())
+        # Keep 16-bit on the plain MeZO path; only 8/4-bit use QuZO-specific bundle/requantize logic.
+        return self._zo_quant_bits() in {8, 4}
 
     def _quzo_get_bundle(
         self,
@@ -2006,6 +2007,8 @@ class Trainer(LinearHeadTrainer):
         return bundle
 
     def _quzo_quantize_param_from_bundle(self, param: nn.Parameter, bundle: Dict[str, torch.Tensor]) -> None:
+        if self._zo_quant_bits() == 16:
+            return
         seed_val = bundle.get("state_seed", None)
         seed = int(seed_val.item()) if isinstance(seed_val, torch.Tensor) else None
         param.data.copy_(
@@ -2028,6 +2031,11 @@ class Trainer(LinearHeadTrainer):
         bundle: Optional[Dict[str, torch.Tensor]] = None,
     ) -> None:
         pg = float(projected_grad.detach().float().item()) if isinstance(projected_grad, torch.Tensor) else float(projected_grad)
+        if self._zo_quant_bits() == 16:
+            if weight_decay != 0.0 and self._hprobe_use_wd(name):
+                param.data.mul_(1.0 - float(learning_rate) * float(weight_decay))
+            param.data.add_(direction.detach().to(dtype=param.data.dtype), alpha=-(float(learning_rate) * pg))
+            return
         update = float(learning_rate) * (pg * direction.detach().float())
         if weight_decay != 0.0 and self._hprobe_use_wd(name):
             update = update + float(learning_rate) * float(weight_decay) * param.data.detach().float()

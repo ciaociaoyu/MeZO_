@@ -168,11 +168,8 @@ for H in "${H_VALUES[@]}"; do
       --gradient_accumulation_steps 1 \
       --lr_scheduler_type constant \
       --evaluation_strategy steps \
-      --save_strategy steps \
-      --eval_steps 100 \
-      --save_steps 100 \
-      --save_total_limit 1 \
-      --load_best_model_at_end \
+      --save_strategy no \
+      --eval_steps 5000 \
       --logging_steps 10 \
       --zo_probe_every 100 \
       --zo_probe_num_seeds 16 \
