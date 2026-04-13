@@ -27,35 +27,12 @@ def _seed_from_parts(*parts: object) -> int:
 
 
 def _rand_like_with_seed(tensor: torch.Tensor, seed: int) -> torch.Tensor:
-    devices = [tensor.device] if tensor.is_cuda else []
-    with torch.random.fork_rng(devices=devices, enabled=True):
-        torch.manual_seed(int(seed))
-        if tensor.is_cuda:
-            torch.cuda.manual_seed_all(int(seed))
-        return torch.rand_like(tensor, dtype=torch.float32)
+    generator = torch.Generator(device=tensor.device.type)
+    generator.manual_seed(int(seed))
+    return torch.rand(tensor.size(), device=tensor.device, dtype=torch.float32, generator=generator)
 
 
 def _normal_like_with_seed(tensor: torch.Tensor, seed: int, dtype: Optional[torch.dtype] = None) -> torch.Tensor:
-    devices = [tensor.device] if tensor.is_cuda else []
-    out_dtype = dtype if dtype is not None else tensor.dtype
-    with torch.random.fork_rng(devices=devices, enabled=True):
-        torch.manual_seed(int(seed))
-        if tensor.is_cuda:
-            torch.cuda.manual_seed_all(int(seed))
-        return torch.normal(
-            mean=0.0,
-            std=1.0,
-            size=tensor.size(),
-            device=tensor.device,
-            dtype=out_dtype,
-        )
-
-
-def _normal_like_with_generator_seed(
-    tensor: torch.Tensor,
-    seed: int,
-    dtype: Optional[torch.dtype] = None,
-) -> torch.Tensor:
     out_dtype = dtype if dtype is not None else tensor.dtype
     generator = torch.Generator(device=tensor.device.type)
     generator.manual_seed(int(seed))
@@ -79,12 +56,12 @@ def quantize_tensor(
     if bits == 16:
         return tensor.detach().to(dtype=torch.float16)
 
-    x = tensor.detach().float()
+    x = tensor.detach()
 
     qmax = (1 << (bits - 1)) - 1
     max_abs = float(torch.max(torch.abs(x)).item()) if x.numel() > 0 else 0.0
     if (not math.isfinite(max_abs)) or max_abs <= 0.0:
-        return torch.zeros_like(x, dtype=target_dtype)
+        return torch.zeros_like(tensor, dtype=target_dtype)
 
     scale = max_abs / float(qmax)
     y = torch.clamp(x / scale, -float(qmax), float(qmax))
@@ -113,9 +90,13 @@ def make_quzo_direction_pair(
     if target_dtype is None:
         target_dtype = tensor.dtype
 
-    if bits == 16:
+    if bits in {16, 8}:
+        z_dtype = torch.float16 if bits == 16 else target_dtype
+        z = _normal_like_with_seed(tensor, int(step_seed), dtype=z_dtype)
+        if bits == 8:
+            z = quantize_tensor(z, bits, target_dtype=target_dtype, stochastic=False)
         return {
-            "z": _normal_like_with_generator_seed(tensor, int(step_seed), dtype=torch.float16),
+            "z": z,
             "seed": torch.tensor(int(step_seed), device=tensor.device, dtype=torch.int64),
         }
 
@@ -148,6 +129,13 @@ def quantize_model_in_place(
         return
     if bits == 16:
         model.half()
+        return
+    if bits == 8:
+        with torch.no_grad():
+            for _, param in model.named_parameters():
+                if (not include_frozen) and (not param.requires_grad):
+                    continue
+                param.data.copy_(quantize_tensor(param.data, bits, target_dtype=param.data.dtype, stochastic=False))
         return
 
     with torch.no_grad():

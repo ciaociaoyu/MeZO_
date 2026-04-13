@@ -199,7 +199,7 @@ class OurArguments(TrainingArguments):
 
     # MeZO
     zo_eps: float = 1e-3 # eps in MeZO
-    zo_quantization_bits: int = 32 # 32 keeps original MeZO; 16/8/4 enable QuZO-style quantized params/perturbations/updates
+    zo_quantization_bits: int = 32 # 32 keeps original MeZO; 16/8 keep MeZO control flow with low-precision parameter snapping; 4 retains the QuZO-specific quantized update path
     zo_probe_every: int = 0 # run G-vs-D directional probe every N optimizer steps; 0 disables it
     zo_probe_num_seeds: int = 16 # number of probe directions per diagnostic step
     zo_probe_log_csv: bool = True # write directional probe rows to output_dir/zo_directional_probe.csv

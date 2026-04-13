@@ -484,7 +484,7 @@ class DynamicTrainingArguments(TrainingArguments):
     zo_quantization_bits: int = field(
         default=32,
         metadata={
-            "help": "Quantization used by ZO training. 32 keeps original MeZO. 16/8/4 enable QuZO-style quantized parameters, perturbations, and updates."
+            "help": "Quantization used by ZO training. 32 keeps original MeZO. 16/8 keep the standard MeZO control flow with low-precision parameter snapping; 4 retains the QuZO-specific quantized update path."
         }
     )
     zo_probe_every: int = field(

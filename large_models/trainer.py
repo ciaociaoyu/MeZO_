@@ -861,8 +861,8 @@ class OurTrainer(Trainer):
         return int(getattr(self.args, "zo_quantization_bits", 32))
 
     def _zo_use_quzo(self) -> bool:
-        # Keep 16-bit on the plain MeZO path; only 8/4-bit use QuZO-specific bundle/requantize logic.
-        return self._zo_quant_bits() in {8, 4}
+        # Keep 16/8-bit on the plain MeZO path; only 4-bit uses the old QuZO bundle/requantize logic.
+        return self._zo_quant_bits() == 4
 
     def _zo_use_weight_decay(self, name: str) -> bool:
         return "bias" not in name and "layer_norm" not in name and "layernorm" not in name
@@ -877,7 +877,7 @@ class OurTrainer(Trainer):
         )
 
     def _quzo_quantize_param_from_bundle(self, param, bundle):
-        if self._zo_quant_bits() == 16:
+        if not self._zo_use_quzo():
             return
         seed_val = bundle.get("state_seed", None)
         seed = int(seed_val.item()) if isinstance(seed_val, torch.Tensor) else None
@@ -891,7 +891,7 @@ class OurTrainer(Trainer):
         )
 
     def _quzo_apply_update_to_param(self, name, param, direction, projected_grad, learning_rate, bundle):
-        if self._zo_quant_bits() == 16:
+        if not self._zo_use_quzo():
             if self.args.weight_decay > 0 and self._zo_use_weight_decay(name):
                 param.data.mul_(1.0 - float(learning_rate) * float(self.args.weight_decay))
             param.data.add_(direction.detach().to(dtype=param.data.dtype), alpha=-(float(learning_rate) * float(projected_grad)))
