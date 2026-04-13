@@ -165,8 +165,8 @@ for H in "${H_VALUES[@]}"; do
       --learning_rate 1e-6 \
       --zo_eps "${H}" \
       --num_train_epochs 1 \
-      --per_device_train_batch_size 1 \
-      --gradient_accumulation_steps 8 \
+      --per_device_train_batch_size 16 \
+      --gradient_accumulation_steps 1 \
       --lr_scheduler_type constant \
       --evaluation_strategy steps \
       --save_strategy steps \

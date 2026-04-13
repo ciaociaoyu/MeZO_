@@ -13,7 +13,7 @@ set -eo pipefail
 
 ml jq
 set +u
-source ~/.bashrc
+source /home/jy03364/miniconda3/etc/profile.d/conda.sh
 conda activate ciao
 set -u
 

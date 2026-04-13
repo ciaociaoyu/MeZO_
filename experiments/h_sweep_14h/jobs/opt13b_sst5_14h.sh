@@ -12,7 +12,7 @@
 set -eo pipefail
 
 set +u
-source ~/.bashrc
+source /home/jy03364/miniconda3/etc/profile.d/conda.sh
 conda activate mezo-env
 set -u
 
@@ -99,7 +99,7 @@ for H in "${H_VALUES[@]}"; do
     --learning_rate 1e-6 \
     --zo_eps "${H}" \
     --num_train_epochs 5 \
-    --per_device_train_batch_size 8 \
+    --per_device_train_batch_size 16 \
     --gradient_accumulation_steps 1 \
     --lr_scheduler_type constant \
     --evaluation_strategy steps \
