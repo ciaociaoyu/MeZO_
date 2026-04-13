@@ -90,6 +90,68 @@ def hf_auth_kwargs() -> dict:
     return {"use_auth_token": token}
 
 
+def maybe_convert_model_to_torchao_float8_training(model, enabled: bool):
+    if not bool(enabled):
+        return model
+    try:
+        from torchao.float8 import convert_to_float8_training
+        from torchao.float8.config import Float8LinearConfig
+    except Exception as exc:
+        raise RuntimeError(
+            "FP8 training requested via --use_torchao_float8, but torchao.float8 is unavailable."
+        ) from exc
+    emulate = False
+    capability = None
+    if torch.cuda.is_available():
+        device_index = 0
+        if torch.cuda.device_count() > 0:
+            capability = torch.cuda.get_device_capability(device_index)
+            emulate = capability < (9, 0)
+    config = Float8LinearConfig(emulate=emulate)
+    incompatible_linear_modules = {
+        fqn: module
+        for fqn, module in model.named_modules()
+        if isinstance(module, torch.nn.Linear)
+        and ((module.in_features % 16) != 0 or (module.out_features % 16) != 0)
+    }
+    incompatible_linear_fqns = set(incompatible_linear_modules.keys())
+
+    def module_filter_fn(module, fqn: str) -> bool:
+        if not isinstance(module, torch.nn.Linear):
+            return False
+        return fqn not in incompatible_linear_fqns
+
+    convert_to_float8_training(model, module_filter_fn=module_filter_fn, config=config)
+    for fqn, module in incompatible_linear_modules.items():
+        if "." in fqn:
+            parent_fqn, child_name = fqn.rsplit(".", 1)
+            parent_module = model.get_submodule(parent_fqn)
+        else:
+            parent_module = model
+            child_name = fqn
+        setattr(parent_module, child_name, module)
+    mode = "emulated" if emulate else "native"
+    if capability is None:
+        logger.info("[fp8] converted nn.Linear modules to torchao Float8Linear for training (%s mode)", mode)
+    else:
+        logger.info(
+            "[fp8] converted nn.Linear modules to torchao Float8Linear for training (%s mode, compute_capability=%s.%s)",
+            mode,
+            capability[0],
+            capability[1],
+        )
+    if incompatible_linear_fqns:
+        skipped = ", ".join(sorted(incompatible_linear_fqns)[:8])
+        suffix = " ..." if len(incompatible_linear_fqns) > 8 else ""
+        logger.info(
+            "[fp8] kept %d nn.Linear modules in high precision because their dimensions are not divisible by 16: %s%s",
+            len(incompatible_linear_fqns),
+            skipped,
+            suffix,
+        )
+    return model
+
+
 def detect_precision_label(args) -> str:
     if bool(getattr(args, "load_int8", False)):
         return "int8"
@@ -181,6 +243,7 @@ class OurArguments(TrainingArguments):
     load_float16: bool = False # load model parameters as float16
     load_bfloat16: bool = False # load model parameters as bfloat16
     load_int8: bool = False # load model parameters as int8
+    use_torchao_float8: bool = False # swap nn.Linear modules with torchao Float8Linear for training
     max_length: int = 2048 # max length the model can take
     no_auto_device: bool = False # do not load model by auto device; should turn this on when using FSDP
 
@@ -445,6 +508,8 @@ class Framework:
                     p.requires_grad = False
                 else:
                     logger.info(f"Only tuning {n}")
+
+        maybe_convert_model_to_torchao_float8_training(model, getattr(self.args, "use_torchao_float8", False))
 
         if self.args.trainer == "zo" and quzo_enabled(getattr(self.args, "zo_quantization_bits", 32)):
             quantize_model_in_place(

@@ -79,6 +79,68 @@ def _read_last_csv_row(path: str):
         return None
 
 
+def maybe_convert_model_to_torchao_float8_training(model, enabled: bool):
+    if not bool(enabled):
+        return model
+    try:
+        from torchao.float8 import convert_to_float8_training
+        from torchao.float8.config import Float8LinearConfig
+    except Exception as exc:
+        raise RuntimeError(
+            "FP8 training requested via --use_torchao_float8, but torchao.float8 is unavailable."
+        ) from exc
+    emulate = False
+    capability = None
+    if torch.cuda.is_available():
+        device_index = 0
+        if torch.cuda.device_count() > 0:
+            capability = torch.cuda.get_device_capability(device_index)
+            emulate = capability < (9, 0)
+    config = Float8LinearConfig(emulate=emulate)
+    incompatible_linear_modules = {
+        fqn: module
+        for fqn, module in model.named_modules()
+        if isinstance(module, torch.nn.Linear)
+        and ((module.in_features % 16) != 0 or (module.out_features % 16) != 0)
+    }
+    incompatible_linear_fqns = set(incompatible_linear_modules.keys())
+
+    def module_filter_fn(module, fqn: str) -> bool:
+        if not isinstance(module, torch.nn.Linear):
+            return False
+        return fqn not in incompatible_linear_fqns
+
+    convert_to_float8_training(model, module_filter_fn=module_filter_fn, config=config)
+    for fqn, module in incompatible_linear_modules.items():
+        if "." in fqn:
+            parent_fqn, child_name = fqn.rsplit(".", 1)
+            parent_module = model.get_submodule(parent_fqn)
+        else:
+            parent_module = model
+            child_name = fqn
+        setattr(parent_module, child_name, module)
+    mode = "emulated" if emulate else "native"
+    if capability is None:
+        logger.info("[fp8] converted nn.Linear modules to torchao Float8Linear for training (%s mode)", mode)
+    else:
+        logger.info(
+            "[fp8] converted nn.Linear modules to torchao Float8Linear for training (%s mode, compute_capability=%s.%s)",
+            mode,
+            capability[0],
+            capability[1],
+        )
+    if incompatible_linear_fqns:
+        skipped = ", ".join(sorted(incompatible_linear_fqns)[:8])
+        suffix = " ..." if len(incompatible_linear_fqns) > 8 else ""
+        logger.info(
+            "[fp8] kept %d nn.Linear modules in high precision because their dimensions are not divisible by 16: %s%s",
+            len(incompatible_linear_fqns),
+            skipped,
+            suffix,
+        )
+    return model
+
+
 @dataclass
 class ModelArguments:
     """
@@ -486,6 +548,10 @@ class DynamicTrainingArguments(TrainingArguments):
         metadata={
             "help": "Quantization used by ZO training. 32 keeps original MeZO. 16/8 keep the standard MeZO control flow with low-precision parameter snapping; 4 retains the QuZO-specific quantized update path."
         }
+    )
+    use_torchao_float8: bool = field(
+        default=False,
+        metadata={"help": "Swap nn.Linear modules with torchao Float8Linear for training."}
     )
     zo_probe_every: int = field(
         default=0,
@@ -1250,8 +1316,11 @@ def main():
         resize_token_type_embeddings(model, new_num_types=10, random_segment=model_args.random_segment)
 
     # Pass dataset and argument information to the model
-    if eval_dataset.label_word_list is not None:
-        model.label_word_list = torch.tensor(eval_dataset.label_word_list).long().to(training_args.device)
+    label_word_source = eval_dataset if eval_dataset is not None else train_dataset
+    if label_word_source is None:
+        label_word_source = test_dataset
+    if label_word_source is not None and label_word_source.label_word_list is not None:
+        model.label_word_list = torch.tensor(label_word_source.label_word_list).long().to(training_args.device)
     if output_modes_mapping[data_args.task_name] == 'regression':
         # lower / upper bounds
         model.lb, model.ub = bound_mapping[data_args.task_name]
@@ -1263,6 +1332,8 @@ def main():
         for name, param in model.named_parameters():
             if (name.startswith('roberta') and "lora" not in name) or (name.startswith('opt') and "lora" not in name):
                 param.requires_grad_(False)
+
+    maybe_convert_model_to_torchao_float8_training(model, getattr(training_args, "use_torchao_float8", False))
 
     if bool(getattr(training_args, "zero_order_optim", False)) and quzo_enabled(getattr(training_args, "zo_quantization_bits", 32)):
         quantize_model_in_place(
@@ -1385,7 +1456,14 @@ def main():
                 # model = model.to(training_args.device)
 
                 # Now we just reload this from memory instead of disk <-- much faster
-                trainer.model.load_state_dict(trainer.best_model_ckpt)
+                best_model_ckpt = getattr(trainer, "best_model_ckpt", None)
+                if best_model_ckpt is not None:
+                    trainer.model.load_state_dict(best_model_ckpt)
+                else:
+                    logger.info(
+                        "evaluate_during_training=True but no in-memory best checkpoint was recorded; "
+                        "keeping the current model weights."
+                    )
 
     # Evaluation
     final_result = {
