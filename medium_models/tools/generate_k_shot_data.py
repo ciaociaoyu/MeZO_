@@ -44,6 +44,7 @@ TASK_NAME_CANONICAL = {
     "mnli": "MNLI",
     "mnli-mm": "MNLI",
     "mrpc": "MRPC",
+    "sst2": "SST-2",
     "sst-2": "SST-2",
     "sts-b": "STS-B",
     "qqp": "QQP",

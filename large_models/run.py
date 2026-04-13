@@ -262,7 +262,8 @@ class OurArguments(TrainingArguments):
 
     # MeZO
     zo_eps: float = 1e-3 # eps in MeZO
-    zo_quantization_bits: int = 32 # 32 keeps original MeZO; 16/8 keep MeZO control flow with low-precision parameter snapping; 4 retains the QuZO-specific quantized update path
+    zo_quantization_bits: int = 32 # 32 keeps original MeZO; 16 keeps the FP16 MeZO path; 8/4 use the QuZO perturbation/update path
+    zo_quantization: Optional[str] = None # string alias for ZO quantization: fp32/off/none, fp16, int8, int4
     zo_probe_every: int = 0 # run G-vs-D directional probe every N optimizer steps; 0 disables it
     zo_probe_num_seeds: int = 16 # number of probe directions per diagnostic step
     zo_probe_log_csv: bool = True # write directional probe rows to output_dir/zo_directional_probe.csv
@@ -314,7 +315,11 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser = HfArgumentParser(OurArguments)
     args = parser.parse_args_into_dataclasses()[0]
-    args.zo_quantization_bits = validate_quzo_bits(getattr(args, "zo_quantization_bits", 32))
+    zo_quantization_alias = getattr(args, "zo_quantization", None)
+    if zo_quantization_alias not in (None, ""):
+        args.zo_quantization_bits = validate_quzo_bits(zo_quantization_alias)
+    else:
+        args.zo_quantization_bits = validate_quzo_bits(getattr(args, "zo_quantization_bits", 32))
     if int(getattr(args, "zo_probe_num_seeds", 16)) <= 0:
         raise ValueError("--zo_probe_num_seeds must be > 0")
     if int(getattr(args, "zo_probe_every", 0)) < 0:

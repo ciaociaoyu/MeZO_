@@ -1,0 +1,754 @@
+[nan-guard] command=bash /scratch/jy03364/MeZO_/medium_models/mezo.sh --result_root /scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo8/roberta-large/sst5/h_3e-7 --job_name run_quzo8 --dataset_mode full --zo_two_point_precision fp16 --zo_quantization_bits 8 --zo_probe_every 200 --zo_probe_num_seeds 16 --zo_probe_log_csv True
+[nan-guard] cwd=/scratch/jy03364/MeZO_/medium_models max_consecutive_nan=100
+WARNING:__main__:Process rank: -1, device: cuda:0, n_gpu: 1, distributed training: False, 16-bits training: False
+INFO:__main__:Training/evaluation parameters DynamicTrainingArguments(
+_n_gpu=1,
+accelerator_config={'split_batches': False, 'dispatch_batches': None, 'even_batches': True, 'use_seedable_sampler': True, 'non_blocking': False, 'gradient_accumulation_kwargs': None, 'use_configured_state': False},
+adafactor=False,
+adam_beta1=0.9,
+adam_beta2=0.999,
+adam_epsilon=1e-08,
+adaptive_h_ema_beta=0.1,
+adaptive_h_estimate_num_batches=4,
+adaptive_h_estimate_num_directions=3,
+adaptive_h_estimate_reduce=mean,
+adaptive_h_max=0.5,
+adaptive_h_min=1e-05,
+adaptive_h_probe_buffer_size=64,
+adjust_for_init=False,
+array_id=-1,
+auto_find_batch_size=False,
+average_tokens_across_devices=False,
+batch_eval_metrics=False,
+bf16=False,
+bf16_full_eval=False,
+binary_classification=False,
+change_grad_estimate=False,
+data_seed=16,
+dataloader_drop_last=False,
+dataloader_num_workers=0,
+dataloader_persistent_workers=False,
+dataloader_pin_memory=True,
+dataloader_prefetch_factor=None,
+dataloader_shuffle=False,
+ddp_backend=None,
+ddp_broadcast_buffers=None,
+ddp_bucket_cap_mb=None,
+ddp_find_unused_parameters=None,
+ddp_timeout=1800,
+debug=[],
+deepspeed=None,
+dh_h_growth=2.0,
+dh_max_trials=10,
+dh_test_h=0.01,
+disable_tqdm=False,
+do_eval=True,
+do_predict=True,
+do_train=True,
+efficient_zero_order=True,
+efficient_zero_order_fp16=False,
+enable_additive_h_estimation=False,
+enable_two_point_h_estimation=False,
+eval_accumulation_steps=None,
+eval_delay=0,
+eval_do_concat_batches=True,
+eval_on_start=False,
+eval_steps=5000.0,
+eval_strategy=IntervalStrategy.NO,
+eval_use_gather_object=False,
+evaluate_during_training=True,
+exclude_embeddings=False,
+exclude_first_layers=-1,
+exclude_head=False,
+f0_scaling=1.0,
+fix_layers=0,
+fp16=False,
+fp16_backend=auto,
+fp16_full_eval=False,
+fp16_opt_level=O1,
+from_linearhead=False,
+fsdp=[],
+fsdp_config={'min_num_params': 0, 'xla': False, 'xla_fsdp_v2': False, 'xla_fsdp_grad_ckpt': False},
+fsdp_min_num_params=0,
+fsdp_transformer_layer_cls_to_wrap=None,
+full_determinism=False,
+gradient_accumulation_steps=1,
+gradient_checkpointing=False,
+gradient_checkpointing_kwargs=None,
+greater_is_better=None,
+group_by_length=False,
+h_estimation_active_source=fixed,
+h_trunc_alpha=1.0,
+half_precision_backend=auto,
+head_tuning=False,
+hf_inference_model=False,
+hub_always_push=False,
+hub_model_id=None,
+hub_private_repo=None,
+hub_revision=None,
+hub_strategy=HubStrategy.EVERY_SAVE,
+hub_token=<HUB_TOKEN>,
+ignore_data_skip=False,
+include_for_metrics=[],
+include_inputs_for_metrics=False,
+include_num_input_tokens_seen=False,
+include_tokens_per_second=False,
+initial_h=0.001,
+jit_mode_eval=False,
+kernel_formula=sgd,
+kernel_gamma=1.0,
+kernel_regularization=0.0,
+kernel_solver=logistic,
+label_names=None,
+label_smoothing_factor=0.0,
+layer_wise_optim=False,
+learning_rate=1e-06,
+length_column_name=length,
+liger_kernel_config=None,
+load_best_model_at_end=False,
+load_kernels=None,
+local_rank=-1,
+log_file=log-USE_H0-USE_C0,
+log_level=passive,
+log_level_replica=warning,
+log_on_each_node=True,
+logging_dir=/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo8/roberta-large/sst5/h_3e-7/run_quzo8/seed16/runs/Apr13_03-55-20_ra5-4,
+logging_first_step=False,
+logging_nan_inf_filter=True,
+logging_steps=10,
+logging_strategy=IntervalStrategy.STEPS,
+lp_early_stopping=False,
+lr_scheduler_kwargs={},
+lr_scheduler_type=SchedulerType.CONSTANT,
+max_grad_norm=1.0,
+max_steps=50000,
+max_zo_forward_steps=0,
+mc_tol=0.1,
+metric_for_best_model=None,
+model_id=-1,
+mp_parameters=,
+neftune_noise_alpha=None,
+no_cuda=False,
+no_predict=False,
+no_reparam=False,
+no_train=False,
+norm_running_update=False,
+nu3_retry=3,
+num_hvp_vecs=128,
+num_prefix=10,
+num_train_epochs=3.0,
+only_biases=False,
+optim=OptimizerNames.ADAMW_TORCH,
+optim_args=None,
+optim_target_modules=None,
+optimize_acc=False,
+optimizer=sgd,
+optimizer_variant=,
+output_dir=/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo8/roberta-large/sst5/h_3e-7/run_quzo8/seed16,
+overwrite_kernels=False,
+overwrite_output_dir=True,
+parallelism_config=None,
+past_index=-1,
+per_device_eval_batch_size=4,
+per_device_train_batch_size=32,
+prediction_loss_only=False,
+prefix_init_by_real_act=False,
+prefix_tuning=False,
+prob_as_feature=False,
+push_to_hub=False,
+push_to_hub_model_id=None,
+push_to_hub_organization=None,
+push_to_hub_token=<PUSH_TO_HUB_TOKEN>,
+random_model_init=False,
+ray_scope=last,
+recompute_norms=False,
+remove_unused_columns=True,
+report_to=[],
+restore_callback_states_from_checkpoint=False,
+resume_from_checkpoint=None,
+run_name=None,
+save_at_last=False,
+save_logit=False,
+save_logit_dir=None,
+save_on_each_node=False,
+save_only_model=False,
+save_safetensors=True,
+save_steps=500,
+save_strategy=SaveStrategy.STEPS,
+save_total_limit=None,
+scale_lr_with_samples=False,
+scale_norm_by_num_params=False,
+seed=16,
+skip_memory_metrics=True,
+sweep=False,
+sync_embedding_layers=False,
+tf32=None,
+tie_emb=False,
+torch_compile=False,
+torch_compile_backend=None,
+torch_compile_mode=None,
+torch_empty_cache_steps=None,
+torchdynamo=None,
+tpu_metrics_debug=False,
+tpu_num_cores=None,
+trainer=standard,
+two_point_h_beta=0.5,
+two_point_h_c2=1.0,
+two_point_h_delta_sample_size=4096,
+two_point_h_eps_num=1e-12,
+two_point_h_fixed_probe_batch=True,
+two_point_h_log_csv=True,
+two_point_h_max=0.5,
+two_point_h_min=1e-05,
+two_point_h_num_directions_g=4,
+two_point_h_num_directions_l=4,
+two_point_h_q_l=0.5,
+two_point_h_refresh_every=100,
+two_point_h_window_delta=3,
+two_point_h_window_g=5,
+two_point_h_window_l=5,
+untie_emb=False,
+update_noise_every=1000,
+use_adaptive_h=False,
+use_c_scale=False,
+use_cpu=False,
+use_ipex=False,
+use_legacy_prediction_loop=False,
+use_liger_kernel=False,
+use_mps_device=False,
+use_torchao_float8=False,
+use_zo_grad_est=False,
+warmup_ratio=0.0,
+warmup_steps=0,
+weight_decay=0.0,
+zero_order_clip_grad=False,
+zero_order_eps=3e-07,
+zero_order_optim=True,
+zero_order_sample=1,
+zero_order_sample_scheduler=None,
+zero_order_use_trainer_optim=False,
+zo_by_layer=False,
+zo_probe_every=200,
+zo_probe_log_csv=True,
+zo_probe_num_seeds=16,
+zo_quantization_bits=8,
+zo_two_point_precision=fp16,
+zo_use_true_directional_derivative=False,
+zo_variant=None,
+)
+INFO:__main__:[zo-config] zo_two_point_precision=fp16 | zero_order_eps=3e-07 | zo_use_true_directional_derivative=False
+INFO:__main__:[quzo-config] zo_quantization_bits=8 | quzo_enabled=True
+INFO:__main__:Task name: sst-5, number of labels: 5, output mode: classification
+INFO:__main__:[data] dataset_mode requested=full resolved=full
+INFO:__main__:[data] task_dir=sst-5 data_seed=16
+INFO:__main__:[data] auto_download=0 original_data_root=/scratch/jy03364/MeZO_/medium_models/data/original
+INFO:__main__:[data] auto_generate=0 target=/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:__main__:[data] resolved_data_dir=/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+WARNING:src.models:By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode train: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:[FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+INFO:src.dataset:Creating features from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode dev: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+/scratch/jy03364/MeZO_/medium_models/src/dataset.py:363: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  self.support_examples, self.query_examples = torch.load(cached_features_file)
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16/cached_dev_RobertaTokenizerFast-roberta_128_sst-5 [took 0.012 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: dev-0
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 627, 936, 19, 4133, 59, 30859, 16, 51, 33, 10, 16699, 7, 9215, 88, 1368, 1638, 783, 479, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=1, mask_pos=[21], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>the problem with movies about angels is they have a tendency to slip into hokum . It was<mask>.</s>
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode test: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16/cached_test_RobertaTokenizerFast-roberta_128_sst-5 [took 0.013 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: test-0
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 2362, 2079, 2156, 117, 1423, 257, 2258, 2156, 45, 203, 9, 932, 479, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=1, mask_pos=[16], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>no movement , no yuks , not much of anything . It was<mask>.</s>
+INFO:__main__:[quzo-config] quantized model parameters in-place at 8 bits before ZO training
+INFO:src.trainer:[dataloader][debug] self class=Trainer, get_train_dataloader=<bound method Trainer.get_train_dataloader of <src.trainer.Trainer object at 0x14fcdf117920>>
+INFO:src.trainer:[dataloader][override] Trainer.get_train_dataloader active. shuffle_raw=False type=bool -> shuffle=False; data_seed=16 seed=16 local_rank=-1
+INFO:src.trainer:[dataloader][override] selected sampler=SequentialSampler
+INFO:src.trainer:[dataloader] sampler=SequentialSampler, batch_sampler=BatchSampler
+INFO:src.trainer:[dataloader] training uses SequentialSampler (no shuffle).
+INFO:src.trainer:[dataloader] args.dataloader_shuffle=False
+INFO:src.trainer:[dataloader] args.data_seed=16 args.seed=16
+INFO:src.trainer:***** Running training *****
+INFO:src.trainer:  Num examples = 7690
+INFO:src.trainer:  Num Epochs = 208
+INFO:src.trainer:  Instantaneous batch size per device = 32
+INFO:src.trainer:  Total train batch size (w. parallel, distributed & accumulation) = 32
+INFO:src.trainer:  Gradient Accumulation steps = 1
+INFO:src.trainer:  Total optimization steps = 50000
+INFO:src.trainer:[zo-config] zo_two_point_precision=fp16 | zero_order_eps=3e-07 | zo_use_true_directional_derivative=False
+INFO:src.trainer:[zo_probe] enabled: every=200, num_seeds=16, csv=/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo8/roberta-large/sst5/h_3e-7/run_quzo8/seed16/zo_directional_probe.csv
+INFO:src.trainer:[h_estimation][init] h0=1.000e-03 active_source=fixed additive=False two_point=False
+You're using a RobertaTokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+/scratch/jy03364/MeZO_/medium_models/src/trainer.py:2057: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  return autocast(dtype=torch.float16)
+INFO:src.trainer:{'loss': 1.59710693359375, 'learning_rate': 1e-06, 'global_step': 0, 'zo_forward_step': 2, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 0, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6727447509765625, 'learning_rate': 1e-06, 'global_step': 10, 'zo_forward_step': 22, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 1, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6295013427734375, 'learning_rate': 1e-06, 'global_step': 20, 'zo_forward_step': 42, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 2, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.507598876953125, 'learning_rate': 1e-06, 'global_step': 30, 'zo_forward_step': 62, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 2, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.777313232421875, 'learning_rate': 1e-06, 'global_step': 40, 'zo_forward_step': 82, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 3, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.615325927734375, 'learning_rate': 1e-06, 'global_step': 50, 'zo_forward_step': 102, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 4, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7201995849609375, 'learning_rate': 1e-06, 'global_step': 60, 'zo_forward_step': 122, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 5, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.4483184814453125, 'learning_rate': 1e-06, 'global_step': 70, 'zo_forward_step': 142, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 5, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6219940185546875, 'learning_rate': 1e-06, 'global_step': 80, 'zo_forward_step': 162, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 6, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.4859619140625, 'learning_rate': 1e-06, 'global_step': 90, 'zo_forward_step': 182, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 7, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.550018310546875, 'learning_rate': 1e-06, 'global_step': 100, 'zo_forward_step': 202, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 8, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5477294921875, 'learning_rate': 1e-06, 'global_step': 110, 'zo_forward_step': 222, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 8, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6722564697265625, 'learning_rate': 1e-06, 'global_step': 120, 'zo_forward_step': 242, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 9, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.660186767578125, 'learning_rate': 1e-06, 'global_step': 130, 'zo_forward_step': 262, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 10, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6523895263671875, 'learning_rate': 1e-06, 'global_step': 140, 'zo_forward_step': 282, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 10, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.499298095703125, 'learning_rate': 1e-06, 'global_step': 150, 'zo_forward_step': 302, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 11, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.4422454833984375, 'learning_rate': 1e-06, 'global_step': 160, 'zo_forward_step': 322, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 12, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.48980712890625, 'learning_rate': 1e-06, 'global_step': 170, 'zo_forward_step': 342, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 13, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.721923828125, 'learning_rate': 1e-06, 'global_step': 180, 'zo_forward_step': 362, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 13, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5913848876953125, 'learning_rate': 1e-06, 'global_step': 190, 'zo_forward_step': 382, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 14, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=200 eps=3.000e-07 precision=fp16 n=16 mae=1.942183e+02 mse=5.199999e+04 rmse=2.280351e+02 sign_acc=0.8750 corr=0.473344
+INFO:src.trainer:{'loss': 1.55938720703125, 'learning_rate': 1e-06, 'global_step': 200, 'zo_forward_step': 402, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 18, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7549591064453125, 'learning_rate': 1e-06, 'global_step': 210, 'zo_forward_step': 422, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 19, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6869354248046875, 'learning_rate': 1e-06, 'global_step': 220, 'zo_forward_step': 442, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 19, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.4952545166015625, 'learning_rate': 1e-06, 'global_step': 230, 'zo_forward_step': 462, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 20, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.569189429283142, 'learning_rate': 1e-06, 'global_step': 240, 'zo_forward_step': 482, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 21, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.660400390625, 'learning_rate': 1e-06, 'global_step': 250, 'zo_forward_step': 502, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 21, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6373443603515625, 'learning_rate': 1e-06, 'global_step': 260, 'zo_forward_step': 522, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 22, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6309814453125, 'learning_rate': 1e-06, 'global_step': 270, 'zo_forward_step': 542, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 23, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6583709716796875, 'learning_rate': 1e-06, 'global_step': 280, 'zo_forward_step': 562, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 24, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6563720703125, 'learning_rate': 1e-06, 'global_step': 290, 'zo_forward_step': 582, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 24, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.615325927734375, 'learning_rate': 1e-06, 'global_step': 300, 'zo_forward_step': 602, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 25, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.66693115234375, 'learning_rate': 1e-06, 'global_step': 310, 'zo_forward_step': 622, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 26, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.77093505859375, 'learning_rate': 1e-06, 'global_step': 320, 'zo_forward_step': 642, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 26, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.396148681640625, 'learning_rate': 1e-06, 'global_step': 330, 'zo_forward_step': 662, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 27, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6921234130859375, 'learning_rate': 1e-06, 'global_step': 340, 'zo_forward_step': 682, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 28, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.60430908203125, 'learning_rate': 1e-06, 'global_step': 350, 'zo_forward_step': 702, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 29, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.39825439453125, 'learning_rate': 1e-06, 'global_step': 360, 'zo_forward_step': 722, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 29, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.60003662109375, 'learning_rate': 1e-06, 'global_step': 370, 'zo_forward_step': 742, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 30, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7150726318359375, 'learning_rate': 1e-06, 'global_step': 380, 'zo_forward_step': 762, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 31, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.68280029296875, 'learning_rate': 1e-06, 'global_step': 390, 'zo_forward_step': 782, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 32, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=400 eps=3.000e-07 precision=fp16 n=16 mae=2.020593e+02 mse=6.004024e+04 rmse=2.450311e+02 sign_acc=0.5000 corr=0.063737
+INFO:src.trainer:{'loss': 1.49798583984375, 'learning_rate': 1e-06, 'global_step': 400, 'zo_forward_step': 802, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 35, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6591644287109375, 'learning_rate': 1e-06, 'global_step': 410, 'zo_forward_step': 822, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 35, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.650482177734375, 'learning_rate': 1e-06, 'global_step': 420, 'zo_forward_step': 842, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 36, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7115936279296875, 'learning_rate': 1e-06, 'global_step': 430, 'zo_forward_step': 862, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 37, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6360931396484375, 'learning_rate': 1e-06, 'global_step': 440, 'zo_forward_step': 882, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 38, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.69073486328125, 'learning_rate': 1e-06, 'global_step': 450, 'zo_forward_step': 902, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 38, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.465606689453125, 'learning_rate': 1e-06, 'global_step': 460, 'zo_forward_step': 922, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 39, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7130126953125, 'learning_rate': 1e-06, 'global_step': 470, 'zo_forward_step': 942, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 40, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5469207763671875, 'learning_rate': 1e-06, 'global_step': 480, 'zo_forward_step': 962, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 40, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6193389892578125, 'learning_rate': 1e-06, 'global_step': 490, 'zo_forward_step': 982, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 41, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6273651123046875, 'learning_rate': 1e-06, 'global_step': 500, 'zo_forward_step': 1002, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 42, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7083587646484375, 'learning_rate': 1e-06, 'global_step': 510, 'zo_forward_step': 1022, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 43, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6920928955078125, 'learning_rate': 1e-06, 'global_step': 520, 'zo_forward_step': 1042, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 43, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6596832275390625, 'learning_rate': 1e-06, 'global_step': 530, 'zo_forward_step': 1062, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 44, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.63128662109375, 'learning_rate': 1e-06, 'global_step': 540, 'zo_forward_step': 1082, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 45, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5472259521484375, 'learning_rate': 1e-06, 'global_step': 550, 'zo_forward_step': 1102, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 46, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6436004638671875, 'learning_rate': 1e-06, 'global_step': 560, 'zo_forward_step': 1122, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 46, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6562347412109375, 'learning_rate': 1e-06, 'global_step': 570, 'zo_forward_step': 1142, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 47, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6698760986328125, 'learning_rate': 1e-06, 'global_step': 580, 'zo_forward_step': 1162, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 48, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5500946044921875, 'learning_rate': 1e-06, 'global_step': 590, 'zo_forward_step': 1182, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 49, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=600 eps=3.000e-07 precision=fp16 n=16 mae=1.490065e+02 mse=3.835037e+04 rmse=1.958325e+02 sign_acc=0.3750 corr=-0.068861
+INFO:src.trainer:{'loss': 1.580169677734375, 'learning_rate': 1e-06, 'global_step': 600, 'zo_forward_step': 1202, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 52, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.82098388671875, 'learning_rate': 1e-06, 'global_step': 610, 'zo_forward_step': 1222, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 52, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5724334716796875, 'learning_rate': 1e-06, 'global_step': 620, 'zo_forward_step': 1242, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 53, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.69482421875, 'learning_rate': 1e-06, 'global_step': 630, 'zo_forward_step': 1262, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 54, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6934967041015625, 'learning_rate': 1e-06, 'global_step': 640, 'zo_forward_step': 1282, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 55, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6927947998046875, 'learning_rate': 1e-06, 'global_step': 650, 'zo_forward_step': 1302, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 55, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.659942626953125, 'learning_rate': 1e-06, 'global_step': 660, 'zo_forward_step': 1322, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 56, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.842529296875, 'learning_rate': 1e-06, 'global_step': 670, 'zo_forward_step': 1342, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 57, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.67913818359375, 'learning_rate': 1e-06, 'global_step': 680, 'zo_forward_step': 1362, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 57, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.597442626953125, 'learning_rate': 1e-06, 'global_step': 690, 'zo_forward_step': 1382, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 58, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.616424560546875, 'learning_rate': 1e-06, 'global_step': 700, 'zo_forward_step': 1402, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 59, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.572845458984375, 'learning_rate': 1e-06, 'global_step': 710, 'zo_forward_step': 1422, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 60, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6647491455078125, 'learning_rate': 1e-06, 'global_step': 720, 'zo_forward_step': 1442, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 60, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.4839630126953125, 'learning_rate': 1e-06, 'global_step': 730, 'zo_forward_step': 1462, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 61, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.668792724609375, 'learning_rate': 1e-06, 'global_step': 740, 'zo_forward_step': 1482, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 62, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.4044189453125, 'learning_rate': 1e-06, 'global_step': 750, 'zo_forward_step': 1502, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 63, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7155609130859375, 'learning_rate': 1e-06, 'global_step': 760, 'zo_forward_step': 1522, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 63, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5282135009765625, 'learning_rate': 1e-06, 'global_step': 770, 'zo_forward_step': 1542, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 64, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.49884033203125, 'learning_rate': 1e-06, 'global_step': 780, 'zo_forward_step': 1562, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 65, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7474517822265625, 'learning_rate': 1e-06, 'global_step': 790, 'zo_forward_step': 1582, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 65, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=800 eps=3.000e-07 precision=fp16 n=16 mae=4.897496e+02 mse=4.180419e+05 rmse=6.465616e+02 sign_acc=0.5000 corr=-0.004230
+INFO:src.trainer:{'loss': 1.6571807861328125, 'learning_rate': 1e-06, 'global_step': 800, 'zo_forward_step': 1602, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 69, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.766448974609375, 'learning_rate': 1e-06, 'global_step': 810, 'zo_forward_step': 1622, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 69, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.682861328125, 'learning_rate': 1e-06, 'global_step': 820, 'zo_forward_step': 1642, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 70, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6160430908203125, 'learning_rate': 1e-06, 'global_step': 830, 'zo_forward_step': 1662, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 71, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5269775390625, 'learning_rate': 1e-06, 'global_step': 840, 'zo_forward_step': 1682, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 72, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.671875, 'learning_rate': 1e-06, 'global_step': 850, 'zo_forward_step': 1702, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 72, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.597015380859375, 'learning_rate': 1e-06, 'global_step': 860, 'zo_forward_step': 1722, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 73, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.917144775390625, 'learning_rate': 1e-06, 'global_step': 870, 'zo_forward_step': 1742, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 74, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6544189453125, 'learning_rate': 1e-06, 'global_step': 880, 'zo_forward_step': 1762, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 75, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6822509765625, 'learning_rate': 1e-06, 'global_step': 890, 'zo_forward_step': 1782, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 75, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5761566162109375, 'learning_rate': 1e-06, 'global_step': 900, 'zo_forward_step': 1802, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 76, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.910675048828125, 'learning_rate': 1e-06, 'global_step': 910, 'zo_forward_step': 1822, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 77, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.70269775390625, 'learning_rate': 1e-06, 'global_step': 920, 'zo_forward_step': 1842, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 77, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.68328857421875, 'learning_rate': 1e-06, 'global_step': 930, 'zo_forward_step': 1862, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 78, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.708740234375, 'learning_rate': 1e-06, 'global_step': 940, 'zo_forward_step': 1882, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 79, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.81622314453125, 'learning_rate': 1e-06, 'global_step': 950, 'zo_forward_step': 1902, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 80, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7016143798828125, 'learning_rate': 1e-06, 'global_step': 960, 'zo_forward_step': 1922, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 80, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5497589111328125, 'learning_rate': 1e-06, 'global_step': 970, 'zo_forward_step': 1942, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 81, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7440032958984375, 'learning_rate': 1e-06, 'global_step': 980, 'zo_forward_step': 1962, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 82, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5651092529296875, 'learning_rate': 1e-06, 'global_step': 990, 'zo_forward_step': 1982, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 83, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=1000 eps=3.000e-07 precision=fp16 n=16 mae=3.756714e+02 mse=1.918836e+05 rmse=4.380452e+02 sign_acc=0.3750 corr=0.183767
+INFO:src.trainer:{'loss': 1.7622528076171875, 'learning_rate': 1e-06, 'global_step': 1000, 'zo_forward_step': 2002, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 86, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6197662353515625, 'learning_rate': 1e-06, 'global_step': 1010, 'zo_forward_step': 2022, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 86, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.618896484375, 'learning_rate': 1e-06, 'global_step': 1020, 'zo_forward_step': 2042, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 87, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.67340087890625, 'learning_rate': 1e-06, 'global_step': 1030, 'zo_forward_step': 2062, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 88, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6013336181640625, 'learning_rate': 1e-06, 'global_step': 1040, 'zo_forward_step': 2082, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 89, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5156402587890625, 'learning_rate': 1e-06, 'global_step': 1050, 'zo_forward_step': 2102, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 89, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7388763427734375, 'learning_rate': 1e-06, 'global_step': 1060, 'zo_forward_step': 2122, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 90, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5412750244140625, 'learning_rate': 1e-06, 'global_step': 1070, 'zo_forward_step': 2142, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 91, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5712890625, 'learning_rate': 1e-06, 'global_step': 1080, 'zo_forward_step': 2162, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 91, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7725296020507812, 'learning_rate': 1e-06, 'global_step': 1090, 'zo_forward_step': 2182, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 92, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.831329345703125, 'learning_rate': 1e-06, 'global_step': 1100, 'zo_forward_step': 2202, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 93, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.756622314453125, 'learning_rate': 1e-06, 'global_step': 1110, 'zo_forward_step': 2222, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 94, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5095367431640625, 'learning_rate': 1e-06, 'global_step': 1120, 'zo_forward_step': 2242, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 94, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.9900665283203125, 'learning_rate': 1e-06, 'global_step': 1130, 'zo_forward_step': 2262, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 95, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5273590087890625, 'learning_rate': 1e-06, 'global_step': 1140, 'zo_forward_step': 2282, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 96, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6476593017578125, 'learning_rate': 1e-06, 'global_step': 1150, 'zo_forward_step': 2302, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 97, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7415924072265625, 'learning_rate': 1e-06, 'global_step': 1160, 'zo_forward_step': 2322, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 97, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6766357421875, 'learning_rate': 1e-06, 'global_step': 1170, 'zo_forward_step': 2342, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 98, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.520599365234375, 'learning_rate': 1e-06, 'global_step': 1180, 'zo_forward_step': 2362, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 99, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.8917388916015625, 'learning_rate': 1e-06, 'global_step': 1190, 'zo_forward_step': 2382, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 99, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=1200 eps=3.000e-07 precision=fp16 n=16 mae=9.834287e+02 mse=1.535677e+06 rmse=1.239224e+03 sign_acc=0.6875 corr=0.451606
+INFO:src.trainer:{'loss': 1.8694000244140625, 'learning_rate': 1e-06, 'global_step': 1200, 'zo_forward_step': 2402, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 102, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.9259796142578125, 'learning_rate': 1e-06, 'global_step': 1210, 'zo_forward_step': 2422, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 103, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.9260482788085938, 'learning_rate': 1e-06, 'global_step': 1220, 'zo_forward_step': 2442, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 104, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.65789794921875, 'learning_rate': 1e-06, 'global_step': 1230, 'zo_forward_step': 2462, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 105, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7463607788085938, 'learning_rate': 1e-06, 'global_step': 1240, 'zo_forward_step': 2482, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 105, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.4759368896484375, 'learning_rate': 1e-06, 'global_step': 1250, 'zo_forward_step': 2502, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 106, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7693023681640625, 'learning_rate': 1e-06, 'global_step': 1260, 'zo_forward_step': 2522, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 107, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 2.0115966796875, 'learning_rate': 1e-06, 'global_step': 1270, 'zo_forward_step': 2542, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 108, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.9594192504882812, 'learning_rate': 1e-06, 'global_step': 1280, 'zo_forward_step': 2562, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 108, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7794113159179688, 'learning_rate': 1e-06, 'global_step': 1290, 'zo_forward_step': 2582, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 109, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.8468475341796875, 'learning_rate': 1e-06, 'global_step': 1300, 'zo_forward_step': 2602, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 110, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7992095947265625, 'learning_rate': 1e-06, 'global_step': 1310, 'zo_forward_step': 2622, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 110, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5850677490234375, 'learning_rate': 1e-06, 'global_step': 1320, 'zo_forward_step': 2642, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 111, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7990264892578125, 'learning_rate': 1e-06, 'global_step': 1330, 'zo_forward_step': 2662, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 112, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5681304931640625, 'learning_rate': 1e-06, 'global_step': 1340, 'zo_forward_step': 2682, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 113, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.5931243896484375, 'learning_rate': 1e-06, 'global_step': 1350, 'zo_forward_step': 2702, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 113, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.7093429565429688, 'learning_rate': 1e-06, 'global_step': 1360, 'zo_forward_step': 2722, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 114, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.9031829833984375, 'learning_rate': 1e-06, 'global_step': 1370, 'zo_forward_step': 2742, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 115, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.69671630859375, 'learning_rate': 1e-06, 'global_step': 1380, 'zo_forward_step': 2762, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 116, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6851348876953125, 'learning_rate': 1e-06, 'global_step': 1390, 'zo_forward_step': 2782, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 116, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=1400 eps=3.000e-07 precision=fp16 n=16 mae=1.071329e+03 mse=1.390066e+06 rmse=1.179011e+03 sign_acc=0.5000 corr=-0.199038
+INFO:src.trainer:{'loss': 2.0000762939453125, 'learning_rate': 1e-06, 'global_step': 1400, 'zo_forward_step': 2802, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 119, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.889373779296875, 'learning_rate': 1e-06, 'global_step': 1410, 'zo_forward_step': 2822, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 120, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.6904296875, 'learning_rate': 1e-06, 'global_step': 1420, 'zo_forward_step': 2842, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 121, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.993621826171875, 'learning_rate': 1e-06, 'global_step': 1430, 'zo_forward_step': 2862, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 122, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.82568359375, 'learning_rate': 1e-06, 'global_step': 1440, 'zo_forward_step': 2882, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 122, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.9469070434570312, 'learning_rate': 1e-06, 'global_step': 1450, 'zo_forward_step': 2902, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 123, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.72406005859375, 'learning_rate': 1e-06, 'global_step': 1460, 'zo_forward_step': 2922, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 124, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 2.189868927001953, 'learning_rate': 1e-06, 'global_step': 1470, 'zo_forward_step': 2942, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 125, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 2.0369644165039062, 'learning_rate': 1e-06, 'global_step': 1480, 'zo_forward_step': 2962, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 125, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 2.408966064453125, 'learning_rate': 1e-06, 'global_step': 1490, 'zo_forward_step': 2982, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 126, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 1.930419921875, 'learning_rate': 1e-06, 'global_step': 1500, 'zo_forward_step': 3002, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 127, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 2.2808151245117188, 'learning_rate': 1e-06, 'global_step': 1510, 'zo_forward_step': 3022, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 127, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 2.8856849670410156, 'learning_rate': 1e-06, 'global_step': 1520, 'zo_forward_step': 3042, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 128, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 2.274261474609375, 'learning_rate': 1e-06, 'global_step': 1530, 'zo_forward_step': 3062, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 129, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 2.051727294921875, 'learning_rate': 1e-06, 'global_step': 1540, 'zo_forward_step': 3082, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 130, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 2.6430816650390625, 'learning_rate': 1e-06, 'global_step': 1550, 'zo_forward_step': 3102, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 130, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 2.405303955078125, 'learning_rate': 1e-06, 'global_step': 1560, 'zo_forward_step': 3122, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 131, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 2.5000991821289062, 'learning_rate': 1e-06, 'global_step': 1570, 'zo_forward_step': 3142, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 132, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 6.454914093017578, 'learning_rate': 1e-06, 'global_step': 1580, 'zo_forward_step': 3162, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 133, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 21.260272979736328, 'learning_rate': 1e-06, 'global_step': 1590, 'zo_forward_step': 3182, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 133, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=1600 eps=3.000e-07 precision=fp16 n=16 mae=3.008555e+04 mse=1.174289e+09 rmse=3.426791e+04 sign_acc=0.5625 corr=0.274474
+INFO:src.trainer:{'loss': 37.022029876708984, 'learning_rate': 1e-06, 'global_step': 1600, 'zo_forward_step': 3202, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 137, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 44.15185546875, 'learning_rate': 1e-06, 'global_step': 1610, 'zo_forward_step': 3222, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 138, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 42.34912109375, 'learning_rate': 1e-06, 'global_step': 1620, 'zo_forward_step': 3242, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 138, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 46.492919921875, 'learning_rate': 1e-06, 'global_step': 1630, 'zo_forward_step': 3262, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 139, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 51.4609375, 'learning_rate': 1e-06, 'global_step': 1640, 'zo_forward_step': 3282, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 140, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 41.0771484375, 'learning_rate': 1e-06, 'global_step': 1650, 'zo_forward_step': 3302, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 141, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 38.517822265625, 'learning_rate': 1e-06, 'global_step': 1660, 'zo_forward_step': 3322, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 141, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 40.6044921875, 'learning_rate': 1e-06, 'global_step': 1670, 'zo_forward_step': 3342, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 142, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 37.4150390625, 'learning_rate': 1e-06, 'global_step': 1680, 'zo_forward_step': 3362, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 143, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 41.203125, 'learning_rate': 1e-06, 'global_step': 1690, 'zo_forward_step': 3382, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 143, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 40.4501953125, 'learning_rate': 1e-06, 'global_step': 1700, 'zo_forward_step': 3402, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 144, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 33.47119140625, 'learning_rate': 1e-06, 'global_step': 1710, 'zo_forward_step': 3422, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 145, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 32.00556182861328, 'learning_rate': 1e-06, 'global_step': 1720, 'zo_forward_step': 3442, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 146, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 36.0390625, 'learning_rate': 1e-06, 'global_step': 1730, 'zo_forward_step': 3462, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 146, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 35.476593017578125, 'learning_rate': 1e-06, 'global_step': 1740, 'zo_forward_step': 3482, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 147, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 27.74755859375, 'learning_rate': 1e-06, 'global_step': 1750, 'zo_forward_step': 3502, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 148, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 25.173583984375, 'learning_rate': 1e-06, 'global_step': 1760, 'zo_forward_step': 3522, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 149, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 21.002979278564453, 'learning_rate': 1e-06, 'global_step': 1770, 'zo_forward_step': 3542, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 149, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 38.00634765625, 'learning_rate': 1e-06, 'global_step': 1780, 'zo_forward_step': 3562, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 150, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 44.91357421875, 'learning_rate': 1e-06, 'global_step': 1790, 'zo_forward_step': 3582, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 151, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=1800 eps=3.000e-07 precision=fp16 n=16 mae=1.950853e+04 mse=4.696237e+08 rmse=2.167080e+04 sign_acc=0.5000 corr=0.320503
+INFO:src.trainer:{'loss': 33.73876953125, 'learning_rate': 1e-06, 'global_step': 1800, 'zo_forward_step': 3602, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 154, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 36.70458984375, 'learning_rate': 1e-06, 'global_step': 1810, 'zo_forward_step': 3622, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 154, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 39.2568359375, 'learning_rate': 1e-06, 'global_step': 1820, 'zo_forward_step': 3642, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 155, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 42.9228515625, 'learning_rate': 1e-06, 'global_step': 1830, 'zo_forward_step': 3662, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 156, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 44.462890625, 'learning_rate': 1e-06, 'global_step': 1840, 'zo_forward_step': 3682, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 157, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 59.4501953125, 'learning_rate': 1e-06, 'global_step': 1850, 'zo_forward_step': 3702, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 157, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 52.09375, 'learning_rate': 1e-06, 'global_step': 1860, 'zo_forward_step': 3722, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 158, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 45.68359375, 'learning_rate': 1e-06, 'global_step': 1870, 'zo_forward_step': 3742, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 159, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 53.65625, 'learning_rate': 1e-06, 'global_step': 1880, 'zo_forward_step': 3762, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 160, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 60.392578125, 'learning_rate': 1e-06, 'global_step': 1890, 'zo_forward_step': 3782, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 160, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 32.978271484375, 'learning_rate': 1e-06, 'global_step': 1900, 'zo_forward_step': 3802, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 161, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 40.838134765625, 'learning_rate': 1e-06, 'global_step': 1910, 'zo_forward_step': 3822, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 162, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 44.91064453125, 'learning_rate': 1e-06, 'global_step': 1920, 'zo_forward_step': 3842, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 162, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 45.09423828125, 'learning_rate': 1e-06, 'global_step': 1930, 'zo_forward_step': 3862, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 163, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 35.740234375, 'learning_rate': 1e-06, 'global_step': 1940, 'zo_forward_step': 3882, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 164, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 33.845703125, 'learning_rate': 1e-06, 'global_step': 1950, 'zo_forward_step': 3902, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 165, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 25.6845703125, 'learning_rate': 1e-06, 'global_step': 1960, 'zo_forward_step': 3922, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 165, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 30.272951126098633, 'learning_rate': 1e-06, 'global_step': 1970, 'zo_forward_step': 3942, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 166, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 31.004905700683594, 'learning_rate': 1e-06, 'global_step': 1980, 'zo_forward_step': 3962, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 167, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 34.24192810058594, 'learning_rate': 1e-06, 'global_step': 1990, 'zo_forward_step': 3982, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 168, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=2000 eps=3.000e-07 precision=fp16 n=16 mae=1.017110e+04 mse=1.774595e+08 rmse=1.332139e+04 sign_acc=0.3750 corr=-0.424121
+INFO:src.trainer:{'loss': 44.56449890136719, 'learning_rate': 1e-06, 'global_step': 2000, 'zo_forward_step': 4002, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 171, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 39.63037109375, 'learning_rate': 1e-06, 'global_step': 2010, 'zo_forward_step': 4022, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 171, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 22.291996002197266, 'learning_rate': 1e-06, 'global_step': 2020, 'zo_forward_step': 4042, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 172, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 29.388427734375, 'learning_rate': 1e-06, 'global_step': 2030, 'zo_forward_step': 4062, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 173, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 24.24169921875, 'learning_rate': 1e-06, 'global_step': 2040, 'zo_forward_step': 4082, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 173, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 28.02001953125, 'learning_rate': 1e-06, 'global_step': 2050, 'zo_forward_step': 4102, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 174, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 41.08837890625, 'learning_rate': 1e-06, 'global_step': 2060, 'zo_forward_step': 4122, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 175, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 36.5107421875, 'learning_rate': 1e-06, 'global_step': 2070, 'zo_forward_step': 4142, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 176, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 39.02978515625, 'learning_rate': 1e-06, 'global_step': 2080, 'zo_forward_step': 4162, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 176, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 35.05078125, 'learning_rate': 1e-06, 'global_step': 2090, 'zo_forward_step': 4182, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 177, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 46.53857421875, 'learning_rate': 1e-06, 'global_step': 2100, 'zo_forward_step': 4202, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 178, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 45.3037109375, 'learning_rate': 1e-06, 'global_step': 2110, 'zo_forward_step': 4222, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 179, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 43.9033203125, 'learning_rate': 1e-06, 'global_step': 2120, 'zo_forward_step': 4242, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 179, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 41.8046875, 'learning_rate': 1e-06, 'global_step': 2130, 'zo_forward_step': 4262, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 180, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 43.78271484375, 'learning_rate': 1e-06, 'global_step': 2140, 'zo_forward_step': 4282, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 181, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 48.4189453125, 'learning_rate': 1e-06, 'global_step': 2150, 'zo_forward_step': 4302, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 182, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 67.189453125, 'learning_rate': 1e-06, 'global_step': 2160, 'zo_forward_step': 4322, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 182, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 52.06595993041992, 'learning_rate': 1e-06, 'global_step': 2170, 'zo_forward_step': 4342, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 183, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 54.94505310058594, 'learning_rate': 1e-06, 'global_step': 2180, 'zo_forward_step': 4362, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 184, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 59.79848861694336, 'learning_rate': 1e-06, 'global_step': 2190, 'zo_forward_step': 4382, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 184, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=2200 eps=3.000e-07 precision=fp16 n=16 mae=9.682176e+03 mse=1.375161e+08 rmse=1.172673e+04 sign_acc=0.5000 corr=-0.393795
+INFO:src.trainer:{'loss': 43.12294006347656, 'learning_rate': 1e-06, 'global_step': 2200, 'zo_forward_step': 4402, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 187, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 43.66603469848633, 'learning_rate': 1e-06, 'global_step': 2210, 'zo_forward_step': 4422, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 188, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 42.95217514038086, 'learning_rate': 1e-06, 'global_step': 2220, 'zo_forward_step': 4442, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 189, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 59.408714294433594, 'learning_rate': 1e-06, 'global_step': 2230, 'zo_forward_step': 4462, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 190, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 45.3348388671875, 'learning_rate': 1e-06, 'global_step': 2240, 'zo_forward_step': 4482, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 190, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 46.807132720947266, 'learning_rate': 1e-06, 'global_step': 2250, 'zo_forward_step': 4502, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 191, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 48.57958984375, 'learning_rate': 1e-06, 'global_step': 2260, 'zo_forward_step': 4522, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 192, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 42.68310546875, 'learning_rate': 1e-06, 'global_step': 2270, 'zo_forward_step': 4542, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 192, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 42.5390625, 'learning_rate': 1e-06, 'global_step': 2280, 'zo_forward_step': 4562, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 193, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 52.953125, 'learning_rate': 1e-06, 'global_step': 2290, 'zo_forward_step': 4582, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 194, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 59.9482421875, 'learning_rate': 1e-06, 'global_step': 2300, 'zo_forward_step': 4602, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 195, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 53.26025390625, 'learning_rate': 1e-06, 'global_step': 2310, 'zo_forward_step': 4622, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 195, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 41.30419921875, 'learning_rate': 1e-06, 'global_step': 2320, 'zo_forward_step': 4642, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 196, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 57.6962890625, 'learning_rate': 1e-06, 'global_step': 2330, 'zo_forward_step': 4662, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 197, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 52.81591796875, 'learning_rate': 1e-06, 'global_step': 2340, 'zo_forward_step': 4682, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 198, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 47.884765625, 'learning_rate': 1e-06, 'global_step': 2350, 'zo_forward_step': 4702, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 198, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 42.38671875, 'learning_rate': 1e-06, 'global_step': 2360, 'zo_forward_step': 4722, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 199, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 53.31884765625, 'learning_rate': 1e-06, 'global_step': 2370, 'zo_forward_step': 4742, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 200, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 63.07275390625, 'learning_rate': 1e-06, 'global_step': 2380, 'zo_forward_step': 4762, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 200, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 52.760257720947266, 'learning_rate': 1e-06, 'global_step': 2390, 'zo_forward_step': 4782, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 201, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=2400 eps=3.000e-07 precision=fp16 n=16 mae=8.467056e+03 mse=9.608719e+07 rmse=9.802407e+03 sign_acc=0.6875 corr=0.186671
+INFO:src.trainer:{'loss': 39.702022552490234, 'learning_rate': 1e-06, 'global_step': 2400, 'zo_forward_step': 4802, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 204, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 44.14424133300781, 'learning_rate': 1e-06, 'global_step': 2410, 'zo_forward_step': 4822, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 205, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 44.29248046875, 'learning_rate': 1e-06, 'global_step': 2420, 'zo_forward_step': 4842, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 206, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 35.90930938720703, 'learning_rate': 1e-06, 'global_step': 2430, 'zo_forward_step': 4862, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 206, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 80.76025390625, 'learning_rate': 1e-06, 'global_step': 2440, 'zo_forward_step': 4882, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 207, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 53.4619140625, 'learning_rate': 1e-06, 'global_step': 2450, 'zo_forward_step': 4902, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 208, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 56.46875, 'learning_rate': 1e-06, 'global_step': 2460, 'zo_forward_step': 4922, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 209, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 48.52442932128906, 'learning_rate': 1e-06, 'global_step': 2470, 'zo_forward_step': 4942, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 209, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 63.15011978149414, 'learning_rate': 1e-06, 'global_step': 2480, 'zo_forward_step': 4962, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 210, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 54.52136993408203, 'learning_rate': 1e-06, 'global_step': 2490, 'zo_forward_step': 4982, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 211, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 58.41080856323242, 'learning_rate': 1e-06, 'global_step': 2500, 'zo_forward_step': 5002, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 211, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 62.12110900878906, 'learning_rate': 1e-06, 'global_step': 2510, 'zo_forward_step': 5022, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 212, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 57.689453125, 'learning_rate': 1e-06, 'global_step': 2520, 'zo_forward_step': 5042, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 213, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 49.05126953125, 'learning_rate': 1e-06, 'global_step': 2530, 'zo_forward_step': 5062, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 214, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 46.736328125, 'learning_rate': 1e-06, 'global_step': 2540, 'zo_forward_step': 5082, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 214, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 45.630859375, 'learning_rate': 1e-06, 'global_step': 2550, 'zo_forward_step': 5102, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 215, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 66.45703125, 'learning_rate': 1e-06, 'global_step': 2560, 'zo_forward_step': 5122, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 216, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 54.0048828125, 'learning_rate': 1e-06, 'global_step': 2570, 'zo_forward_step': 5142, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 217, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 44.147499084472656, 'learning_rate': 1e-06, 'global_step': 2580, 'zo_forward_step': 5162, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 217, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 53.679622650146484, 'learning_rate': 1e-06, 'global_step': 2590, 'zo_forward_step': 5182, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 218, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=2600 eps=3.000e-07 precision=fp16 n=16 mae=1.118678e+04 mse=1.707948e+08 rmse=1.306885e+04 sign_acc=0.5625 corr=0.312300
+INFO:src.trainer:{'loss': 58.121124267578125, 'learning_rate': 1e-06, 'global_step': 2600, 'zo_forward_step': 5202, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 221, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 49.31499481201172, 'learning_rate': 1e-06, 'global_step': 2610, 'zo_forward_step': 5222, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 222, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 40.688873291015625, 'learning_rate': 1e-06, 'global_step': 2620, 'zo_forward_step': 5242, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 222, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 49.68865203857422, 'learning_rate': 1e-06, 'global_step': 2630, 'zo_forward_step': 5262, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 223, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 66.94140625, 'learning_rate': 1e-06, 'global_step': 2640, 'zo_forward_step': 5282, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 224, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 52.940765380859375, 'learning_rate': 1e-06, 'global_step': 2650, 'zo_forward_step': 5302, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 225, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 36.28022003173828, 'learning_rate': 1e-06, 'global_step': 2660, 'zo_forward_step': 5322, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 225, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 37.03104782104492, 'learning_rate': 1e-06, 'global_step': 2670, 'zo_forward_step': 5342, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 226, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 33.59999084472656, 'learning_rate': 1e-06, 'global_step': 2680, 'zo_forward_step': 5362, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 227, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 32.89579772949219, 'learning_rate': 1e-06, 'global_step': 2690, 'zo_forward_step': 5382, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 227, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 46.071739196777344, 'learning_rate': 1e-06, 'global_step': 2700, 'zo_forward_step': 5402, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 228, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 49.6270751953125, 'learning_rate': 1e-06, 'global_step': 2710, 'zo_forward_step': 5422, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 229, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 39.076568603515625, 'learning_rate': 1e-06, 'global_step': 2720, 'zo_forward_step': 5442, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 230, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 37.982421875, 'learning_rate': 1e-06, 'global_step': 2730, 'zo_forward_step': 5462, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 230, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 49.969696044921875, 'learning_rate': 1e-06, 'global_step': 2740, 'zo_forward_step': 5482, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 231, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 51.15338897705078, 'learning_rate': 1e-06, 'global_step': 2750, 'zo_forward_step': 5502, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 232, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 34.14631271362305, 'learning_rate': 1e-06, 'global_step': 2760, 'zo_forward_step': 5522, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 233, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 46.02225112915039, 'learning_rate': 1e-06, 'global_step': 2770, 'zo_forward_step': 5542, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 233, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 43.61781311035156, 'learning_rate': 1e-06, 'global_step': 2780, 'zo_forward_step': 5562, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 234, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 35.2086181640625, 'learning_rate': 1e-06, 'global_step': 2790, 'zo_forward_step': 5582, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 235, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=2800 eps=3.000e-07 precision=fp16 n=16 mae=7.909167e+03 mse=8.952714e+07 rmse=9.461878e+03 sign_acc=0.5625 corr=0.104987
+INFO:src.trainer:{'loss': 32.79696273803711, 'learning_rate': 1e-06, 'global_step': 2800, 'zo_forward_step': 5602, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 238, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 50.64982986450195, 'learning_rate': 1e-06, 'global_step': 2810, 'zo_forward_step': 5622, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 239, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 42.73779296875, 'learning_rate': 1e-06, 'global_step': 2820, 'zo_forward_step': 5642, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 239, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 43.66455078125, 'learning_rate': 1e-06, 'global_step': 2830, 'zo_forward_step': 5662, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 240, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 46.31689453125, 'learning_rate': 1e-06, 'global_step': 2840, 'zo_forward_step': 5682, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 241, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 50.6220703125, 'learning_rate': 1e-06, 'global_step': 2850, 'zo_forward_step': 5702, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 241, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 41.716796875, 'learning_rate': 1e-06, 'global_step': 2860, 'zo_forward_step': 5722, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 242, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 57.5947265625, 'learning_rate': 1e-06, 'global_step': 2870, 'zo_forward_step': 5742, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 243, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 60.73193359375, 'learning_rate': 1e-06, 'global_step': 2880, 'zo_forward_step': 5762, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 244, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 63.2294921875, 'learning_rate': 1e-06, 'global_step': 2890, 'zo_forward_step': 5782, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 244, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 56.1904296875, 'learning_rate': 1e-06, 'global_step': 2900, 'zo_forward_step': 5802, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 245, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 60.2802734375, 'learning_rate': 1e-06, 'global_step': 2910, 'zo_forward_step': 5822, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 246, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 47.98876953125, 'learning_rate': 1e-06, 'global_step': 2920, 'zo_forward_step': 5842, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 247, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 53.3525390625, 'learning_rate': 1e-06, 'global_step': 2930, 'zo_forward_step': 5862, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 247, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 72.2890625, 'learning_rate': 1e-06, 'global_step': 2940, 'zo_forward_step': 5882, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 248, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 75.5302734375, 'learning_rate': 1e-06, 'global_step': 2950, 'zo_forward_step': 5902, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 249, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 69.7021484375, 'learning_rate': 1e-06, 'global_step': 2960, 'zo_forward_step': 5922, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 249, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 55.4375, 'learning_rate': 1e-06, 'global_step': 2970, 'zo_forward_step': 5942, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 250, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 60.748046875, 'learning_rate': 1e-06, 'global_step': 2980, 'zo_forward_step': 5962, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 251, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 52.525390625, 'learning_rate': 1e-06, 'global_step': 2990, 'zo_forward_step': 5982, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 252, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=3000 eps=3.000e-07 precision=fp16 n=16 mae=1.301238e+04 mse=2.447205e+08 rmse=1.564355e+04 sign_acc=0.4375 corr=-0.378069
+INFO:src.trainer:{'loss': 78.2158203125, 'learning_rate': 1e-06, 'global_step': 3000, 'zo_forward_step': 6002, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 255, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 58.5166015625, 'learning_rate': 1e-06, 'global_step': 3010, 'zo_forward_step': 6022, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 255, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 59.7412109375, 'learning_rate': 1e-06, 'global_step': 3020, 'zo_forward_step': 6042, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 256, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 62.3408203125, 'learning_rate': 1e-06, 'global_step': 3030, 'zo_forward_step': 6062, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 257, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 62.580078125, 'learning_rate': 1e-06, 'global_step': 3040, 'zo_forward_step': 6082, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 258, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 57.6708984375, 'learning_rate': 1e-06, 'global_step': 3050, 'zo_forward_step': 6102, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 258, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 47.4384765625, 'learning_rate': 1e-06, 'global_step': 3060, 'zo_forward_step': 6122, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 259, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 60.080078125, 'learning_rate': 1e-06, 'global_step': 3070, 'zo_forward_step': 6142, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 260, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 48.876953125, 'learning_rate': 1e-06, 'global_step': 3080, 'zo_forward_step': 6162, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 260, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 54.44921875, 'learning_rate': 1e-06, 'global_step': 3090, 'zo_forward_step': 6182, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 261, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 57.8017578125, 'learning_rate': 1e-06, 'global_step': 3100, 'zo_forward_step': 6202, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 262, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 46.4775390625, 'learning_rate': 1e-06, 'global_step': 3110, 'zo_forward_step': 6222, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 263, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 46.453125, 'learning_rate': 1e-06, 'global_step': 3120, 'zo_forward_step': 6242, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 263, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 30.58935546875, 'learning_rate': 1e-06, 'global_step': 3130, 'zo_forward_step': 6262, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 264, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 34.8291015625, 'learning_rate': 1e-06, 'global_step': 3140, 'zo_forward_step': 6282, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 265, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 40.486328125, 'learning_rate': 1e-06, 'global_step': 3150, 'zo_forward_step': 6302, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 266, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 51.4072265625, 'learning_rate': 1e-06, 'global_step': 3160, 'zo_forward_step': 6322, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 266, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 43.88720703125, 'learning_rate': 1e-06, 'global_step': 3170, 'zo_forward_step': 6342, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 267, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 43.89208984375, 'learning_rate': 1e-06, 'global_step': 3180, 'zo_forward_step': 6362, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 268, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 61.2138671875, 'learning_rate': 1e-06, 'global_step': 3190, 'zo_forward_step': 6382, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 268, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=3200 eps=3.000e-07 precision=fp16 n=16 mae=1.392474e+04 mse=3.483291e+08 rmse=1.866358e+04 sign_acc=0.3750 corr=-0.522523
+INFO:src.trainer:{'loss': 62.0087890625, 'learning_rate': 1e-06, 'global_step': 3200, 'zo_forward_step': 6402, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 271, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 53.296875, 'learning_rate': 1e-06, 'global_step': 3210, 'zo_forward_step': 6422, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 272, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 58.935546875, 'learning_rate': 1e-06, 'global_step': 3220, 'zo_forward_step': 6442, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 273, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 49.634765625, 'learning_rate': 1e-06, 'global_step': 3230, 'zo_forward_step': 6462, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 274, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 50.99072265625, 'learning_rate': 1e-06, 'global_step': 3240, 'zo_forward_step': 6482, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 274, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 38.91455078125, 'learning_rate': 1e-06, 'global_step': 3250, 'zo_forward_step': 6502, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 275, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 48.05029296875, 'learning_rate': 1e-06, 'global_step': 3260, 'zo_forward_step': 6522, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 276, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 45.9052734375, 'learning_rate': 1e-06, 'global_step': 3270, 'zo_forward_step': 6542, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 276, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 37.58551788330078, 'learning_rate': 1e-06, 'global_step': 3280, 'zo_forward_step': 6562, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 277, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 42.50927734375, 'learning_rate': 1e-06, 'global_step': 3290, 'zo_forward_step': 6582, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 278, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 29.26318359375, 'learning_rate': 1e-06, 'global_step': 3300, 'zo_forward_step': 6602, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 279, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 30.20264434814453, 'learning_rate': 1e-06, 'global_step': 3310, 'zo_forward_step': 6622, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 279, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 35.01708984375, 'learning_rate': 1e-06, 'global_step': 3320, 'zo_forward_step': 6642, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 280, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 29.40630531311035, 'learning_rate': 1e-06, 'global_step': 3330, 'zo_forward_step': 6662, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 281, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 36.81254196166992, 'learning_rate': 1e-06, 'global_step': 3340, 'zo_forward_step': 6682, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 282, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 44.1728515625, 'learning_rate': 1e-06, 'global_step': 3350, 'zo_forward_step': 6702, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 282, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 48.7939453125, 'learning_rate': 1e-06, 'global_step': 3360, 'zo_forward_step': 6722, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 283, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 36.7568359375, 'learning_rate': 1e-06, 'global_step': 3370, 'zo_forward_step': 6742, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 284, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 28.84326171875, 'learning_rate': 1e-06, 'global_step': 3380, 'zo_forward_step': 6762, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 284, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 28.74072265625, 'learning_rate': 1e-06, 'global_step': 3390, 'zo_forward_step': 6782, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 285, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=3400 eps=3.000e-07 precision=fp16 n=16 mae=9.310112e+03 mse=1.804613e+08 rmse=1.343359e+04 sign_acc=0.5625 corr=0.103382
+INFO:src.trainer:{'loss': 24.78204345703125, 'learning_rate': 1e-06, 'global_step': 3400, 'zo_forward_step': 6802, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 288, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 24.252105712890625, 'learning_rate': 1e-06, 'global_step': 3410, 'zo_forward_step': 6822, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 289, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 26.46413803100586, 'learning_rate': 1e-06, 'global_step': 3420, 'zo_forward_step': 6842, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 289, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 31.223146438598633, 'learning_rate': 1e-06, 'global_step': 3430, 'zo_forward_step': 6862, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 290, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 23.81005859375, 'learning_rate': 1e-06, 'global_step': 3440, 'zo_forward_step': 6882, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 291, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 37.19432830810547, 'learning_rate': 1e-06, 'global_step': 3450, 'zo_forward_step': 6902, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 292, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 37.426273345947266, 'learning_rate': 1e-06, 'global_step': 3460, 'zo_forward_step': 6922, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 292, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 23.503009796142578, 'learning_rate': 1e-06, 'global_step': 3470, 'zo_forward_step': 6942, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 293, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 29.953475952148438, 'learning_rate': 1e-06, 'global_step': 3480, 'zo_forward_step': 6962, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 294, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 22.402780532836914, 'learning_rate': 1e-06, 'global_step': 3490, 'zo_forward_step': 6982, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 295, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 33.04523849487305, 'learning_rate': 1e-06, 'global_step': 3500, 'zo_forward_step': 7002, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 295, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 36.18458557128906, 'learning_rate': 1e-06, 'global_step': 3510, 'zo_forward_step': 7022, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 296, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 44.0078125, 'learning_rate': 1e-06, 'global_step': 3520, 'zo_forward_step': 7042, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 297, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 23.4423828125, 'learning_rate': 1e-06, 'global_step': 3530, 'zo_forward_step': 7062, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 298, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 28.287025451660156, 'learning_rate': 1e-06, 'global_step': 3540, 'zo_forward_step': 7082, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 298, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 32.2978515625, 'learning_rate': 1e-06, 'global_step': 3550, 'zo_forward_step': 7102, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 299, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 26.789627075195312, 'learning_rate': 1e-06, 'global_step': 3560, 'zo_forward_step': 7122, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 300, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 25.62462615966797, 'learning_rate': 1e-06, 'global_step': 3570, 'zo_forward_step': 7142, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 300, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 22.988285064697266, 'learning_rate': 1e-06, 'global_step': 3580, 'zo_forward_step': 7162, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 301, 'eps': 3e-07}
+INFO:src.trainer:{'loss': 39.86669921875, 'learning_rate': 1e-06, 'global_step': 3590, 'zo_forward_step': 7182, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 302, 'eps': 3e-07}
+INFO:src.trainer:[zo_probe] step=3600 eps=3.000e-07 precision=fp16 n=16 mae=7.160784e+03 mse=7.966142e+07 rmse=8.925324e+03 sign_acc=0.4375 corr=0.158905
+INFO:src.trainer:{'loss': 25.05463409423828, 'learning_rate': 1e-06, 'global_step': 3600, 'zo_forward_step': 7202, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 305, 'eps': 3e-07}
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+INFO:src.trainer:{'loss': nan, 'learning_rate': 1e-06, 'global_step': 3610, 'zo_forward_step': 7222, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 306, 'eps': 3e-07}
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+INFO:src.trainer:{'loss': nan, 'learning_rate': 1e-06, 'global_step': 3620, 'zo_forward_step': 7242, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 307, 'eps': 3e-07}
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+INFO:src.trainer:{'loss': nan, 'learning_rate': 1e-06, 'global_step': 3630, 'zo_forward_step': 7262, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 307, 'eps': 3e-07}
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 3e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+[nan-guard] reached 100 consecutive NaN tokens on stderr; terminating child process 3514967.
+[nan-guard] terminated child after 100 consecutive NaN tokens.

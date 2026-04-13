@@ -1982,8 +1982,8 @@ class Trainer(LinearHeadTrainer):
         return int(getattr(self.args, "zo_quantization_bits", 32))
 
     def _zo_use_quzo(self) -> bool:
-        # Keep 16/8-bit on the plain MeZO path; only 4-bit uses the old QuZO bundle/requantize logic.
-        return self._zo_quant_bits() == 4
+        # INT8/INT4 use the QuZO perturbation/update path; FP16 stays on the plain MeZO path.
+        return self._zo_quant_bits() in {8, 4}
 
     def _quzo_get_bundle(
         self,

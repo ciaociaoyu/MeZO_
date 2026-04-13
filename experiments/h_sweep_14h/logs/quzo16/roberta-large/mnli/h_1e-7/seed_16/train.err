@@ -1,0 +1,397 @@
+[nan-guard] command=bash /scratch/jy03364/MeZO_/medium_models/mezo.sh --result_root /scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/roberta-large/mnli/h_1e-7 --job_name run_quzo16 --dataset_mode full --zo_two_point_precision fp16 --zo_quantization_bits 16 --zo_probe_every 200 --zo_probe_num_seeds 16 --zo_probe_log_csv True
+[nan-guard] cwd=/scratch/jy03364/MeZO_/medium_models max_consecutive_nan=100
+WARNING:__main__:Process rank: -1, device: cuda:0, n_gpu: 1, distributed training: False, 16-bits training: False
+INFO:__main__:Training/evaluation parameters DynamicTrainingArguments(
+_n_gpu=1,
+accelerator_config={'split_batches': False, 'dispatch_batches': None, 'even_batches': True, 'use_seedable_sampler': True, 'non_blocking': False, 'gradient_accumulation_kwargs': None, 'use_configured_state': False},
+adafactor=False,
+adam_beta1=0.9,
+adam_beta2=0.999,
+adam_epsilon=1e-08,
+adaptive_h_ema_beta=0.1,
+adaptive_h_estimate_num_batches=4,
+adaptive_h_estimate_num_directions=3,
+adaptive_h_estimate_reduce=mean,
+adaptive_h_max=0.5,
+adaptive_h_min=1e-05,
+adaptive_h_probe_buffer_size=64,
+adjust_for_init=False,
+array_id=-1,
+auto_find_batch_size=False,
+average_tokens_across_devices=False,
+batch_eval_metrics=False,
+bf16=False,
+bf16_full_eval=False,
+binary_classification=False,
+change_grad_estimate=False,
+data_seed=16,
+dataloader_drop_last=False,
+dataloader_num_workers=0,
+dataloader_persistent_workers=False,
+dataloader_pin_memory=True,
+dataloader_prefetch_factor=None,
+dataloader_shuffle=False,
+ddp_backend=None,
+ddp_broadcast_buffers=None,
+ddp_bucket_cap_mb=None,
+ddp_find_unused_parameters=None,
+ddp_timeout=1800,
+debug=[],
+deepspeed=None,
+dh_h_growth=2.0,
+dh_max_trials=10,
+dh_test_h=0.01,
+disable_tqdm=False,
+do_eval=True,
+do_predict=True,
+do_train=True,
+efficient_zero_order=True,
+efficient_zero_order_fp16=False,
+enable_additive_h_estimation=False,
+enable_two_point_h_estimation=False,
+eval_accumulation_steps=None,
+eval_delay=0,
+eval_do_concat_batches=True,
+eval_on_start=False,
+eval_steps=5000.0,
+eval_strategy=IntervalStrategy.NO,
+eval_use_gather_object=False,
+evaluate_during_training=True,
+exclude_embeddings=False,
+exclude_first_layers=-1,
+exclude_head=False,
+f0_scaling=1.0,
+fix_layers=0,
+fp16=False,
+fp16_backend=auto,
+fp16_full_eval=False,
+fp16_opt_level=O1,
+from_linearhead=False,
+fsdp=[],
+fsdp_config={'min_num_params': 0, 'xla': False, 'xla_fsdp_v2': False, 'xla_fsdp_grad_ckpt': False},
+fsdp_min_num_params=0,
+fsdp_transformer_layer_cls_to_wrap=None,
+full_determinism=False,
+gradient_accumulation_steps=1,
+gradient_checkpointing=False,
+gradient_checkpointing_kwargs=None,
+greater_is_better=None,
+group_by_length=False,
+h_estimation_active_source=fixed,
+h_trunc_alpha=1.0,
+half_precision_backend=auto,
+head_tuning=False,
+hf_inference_model=False,
+hub_always_push=False,
+hub_model_id=None,
+hub_private_repo=None,
+hub_revision=None,
+hub_strategy=HubStrategy.EVERY_SAVE,
+hub_token=<HUB_TOKEN>,
+ignore_data_skip=False,
+include_for_metrics=[],
+include_inputs_for_metrics=False,
+include_num_input_tokens_seen=False,
+include_tokens_per_second=False,
+initial_h=0.001,
+jit_mode_eval=False,
+kernel_formula=sgd,
+kernel_gamma=1.0,
+kernel_regularization=0.0,
+kernel_solver=logistic,
+label_names=None,
+label_smoothing_factor=0.0,
+layer_wise_optim=False,
+learning_rate=1e-06,
+length_column_name=length,
+liger_kernel_config=None,
+load_best_model_at_end=False,
+load_kernels=None,
+local_rank=-1,
+log_file=log-USE_H0-USE_C0,
+log_level=passive,
+log_level_replica=warning,
+log_on_each_node=True,
+logging_dir=/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/roberta-large/mnli/h_1e-7/run_quzo16/seed16/runs/Apr13_02-18-17_ra7-2,
+logging_first_step=False,
+logging_nan_inf_filter=True,
+logging_steps=10,
+logging_strategy=IntervalStrategy.STEPS,
+lp_early_stopping=False,
+lr_scheduler_kwargs={},
+lr_scheduler_type=SchedulerType.CONSTANT,
+max_grad_norm=1.0,
+max_steps=50000,
+max_zo_forward_steps=0,
+mc_tol=0.1,
+metric_for_best_model=None,
+model_id=-1,
+mp_parameters=,
+neftune_noise_alpha=None,
+no_cuda=False,
+no_predict=False,
+no_reparam=False,
+no_train=False,
+norm_running_update=False,
+nu3_retry=3,
+num_hvp_vecs=128,
+num_prefix=10,
+num_train_epochs=3.0,
+only_biases=False,
+optim=OptimizerNames.ADAMW_TORCH,
+optim_args=None,
+optim_target_modules=None,
+optimize_acc=False,
+optimizer=sgd,
+optimizer_variant=,
+output_dir=/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/roberta-large/mnli/h_1e-7/run_quzo16/seed16,
+overwrite_kernels=False,
+overwrite_output_dir=True,
+parallelism_config=None,
+past_index=-1,
+per_device_eval_batch_size=4,
+per_device_train_batch_size=32,
+prediction_loss_only=False,
+prefix_init_by_real_act=False,
+prefix_tuning=False,
+prob_as_feature=False,
+push_to_hub=False,
+push_to_hub_model_id=None,
+push_to_hub_organization=None,
+push_to_hub_token=<PUSH_TO_HUB_TOKEN>,
+random_model_init=False,
+ray_scope=last,
+recompute_norms=False,
+remove_unused_columns=True,
+report_to=[],
+restore_callback_states_from_checkpoint=False,
+resume_from_checkpoint=None,
+run_name=None,
+save_at_last=False,
+save_logit=False,
+save_logit_dir=None,
+save_on_each_node=False,
+save_only_model=False,
+save_safetensors=True,
+save_steps=500,
+save_strategy=SaveStrategy.STEPS,
+save_total_limit=None,
+scale_lr_with_samples=False,
+scale_norm_by_num_params=False,
+seed=16,
+skip_memory_metrics=True,
+sweep=False,
+sync_embedding_layers=False,
+tf32=None,
+tie_emb=False,
+torch_compile=False,
+torch_compile_backend=None,
+torch_compile_mode=None,
+torch_empty_cache_steps=None,
+torchdynamo=None,
+tpu_metrics_debug=False,
+tpu_num_cores=None,
+trainer=standard,
+two_point_h_beta=0.5,
+two_point_h_c2=1.0,
+two_point_h_delta_sample_size=4096,
+two_point_h_eps_num=1e-12,
+two_point_h_fixed_probe_batch=True,
+two_point_h_log_csv=True,
+two_point_h_max=0.5,
+two_point_h_min=1e-05,
+two_point_h_num_directions_g=4,
+two_point_h_num_directions_l=4,
+two_point_h_q_l=0.5,
+two_point_h_refresh_every=100,
+two_point_h_window_delta=3,
+two_point_h_window_g=5,
+two_point_h_window_l=5,
+untie_emb=False,
+update_noise_every=1000,
+use_adaptive_h=False,
+use_c_scale=False,
+use_cpu=False,
+use_ipex=False,
+use_legacy_prediction_loop=False,
+use_liger_kernel=False,
+use_mps_device=False,
+use_torchao_float8=False,
+use_zo_grad_est=False,
+warmup_ratio=0.0,
+warmup_steps=0,
+weight_decay=0.0,
+zero_order_clip_grad=False,
+zero_order_eps=1e-07,
+zero_order_optim=True,
+zero_order_sample=1,
+zero_order_sample_scheduler=None,
+zero_order_use_trainer_optim=False,
+zo_by_layer=False,
+zo_probe_every=200,
+zo_probe_log_csv=True,
+zo_probe_num_seeds=16,
+zo_quantization_bits=16,
+zo_two_point_precision=fp16,
+zo_use_true_directional_derivative=False,
+zo_variant=None,
+)
+INFO:__main__:[zo-config] zo_two_point_precision=fp16 | zero_order_eps=1e-07 | zo_use_true_directional_derivative=False
+INFO:__main__:[quzo-config] zo_quantization_bits=16 | quzo_enabled=True
+INFO:__main__:Task name: mnli, number of labels: 3, output mode: classification
+INFO:__main__:[data] dataset_mode requested=full resolved=full
+INFO:__main__:[data] task_dir=MNLI data_seed=16
+INFO:__main__:[data] auto_download=0 original_data_root=/scratch/jy03364/MeZO_/medium_models/data/original
+INFO:__main__:[data] auto_generate=0 target=/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16
+INFO:__main__:[data] resolved_data_dir=/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16
+WARNING:src.models:By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+INFO:src.dataset:Label contradiction to word ĠNo (440)
+INFO:src.dataset:Label entailment to word ĠYes (3216)
+INFO:src.dataset:Label neutral to word ĠMaybe (5359)
+INFO:src.dataset:Total num_sample for mode train: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16
+INFO:src.dataset:[FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+INFO:src.dataset:Creating features from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16
+INFO:src.dataset:Label contradiction to word ĠNo (440)
+INFO:src.dataset:Label entailment to word ĠYes (3216)
+INFO:src.dataset:Label neutral to word ĠMaybe (5359)
+INFO:src.dataset:Total num_sample for mode dev: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16
+/scratch/jy03364/MeZO_/medium_models/src/dataset.py:363: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  self.support_examples, self.query_examples = torch.load(cached_features_file)
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16/cached_dev_RobertaTokenizerFast-roberta_256_mnli [took 0.619 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: dev_matched-263856
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 487, 4132, 298, 1180, 18, 82, 32, 481, 7, 989, 5, 2946, 6, 53, 683, 51, 517, 5140, 6, 51, 189, 28, 3179, 5537, 7, 671, 116, 50264, 6, 71, 1375, 8, 1618, 5, 2946, 6, 234, 4132, 298, 1180, 18, 82, 189, 45, 28, 576, 5537, 7, 671, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=1, mask_pos=[28], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>Niihau's people are free to leave the island, but once they move elsewhere, they may be refused permission to return?<mask>, after moving and leaving the island, Niihau's people may not be given permission to return.</s>
+WARNING:src.dataset:Input exceeds max_length limit: <s>uh-huh oh i feel that is certainly if you're going to carry one you need to be uh very comfortable with the piece and have enough uh knowledge and insight for your own self on whether or not you're going to use it in that situation and not pull it unless you intend to because i i feel like that's you know i mean i'm i'm i'm all for uh people having having firearms or having whatever form of protection they prefer because you know even though the odds is you know the criminal ends up getting the gun and shooting the people to begin with you know the people that had it in the beginning but if the if if you're talking about uh two people if you're talking about a criminal an assailant that is coming at you with a gun and you don't have a gun at all well the chances are a hundred percent they're going to get you if you if you both of you have a firearm you've at least got that fifty percent chance that you may get them first and so i believe in that but i i've not ever felt comfortable in it i guess it's  i'm glad i  i'm glad i um i'm that i'm married to someone?<mask>, i think you need to know a lot about guns if you're goign to carry one.</s>
+WARNING:src.dataset:Input exceeds max_length limit: <s>we went uh and did a a thing through IBS which is a like a financial consultant  type thing here in Dallas and uh one of the things that we talked about with the counselor there was you know they work up this whole big you know proposal profile for you that every all the things that you need to work on and you need to do and then one of the things that we talked about with her was you know the need to save for our son's education we have a two year old you know and and you know we can't start saving for college when he's sixteen you know we have to do that now and and uh they have a way that they can figure you know what you know and he's two now in sixteen years when he's ready to go to college this is how much it'll cost you know and it's just really scary the thought of how much it's going to it's what it costs now is ridiculous what it's going to cost sixteen years from now is just really scary and they sat down and figured up that we needed to save like fifteen between fifteen and seventeen hundred dollars a year at a oh you know six percent interest rate to be able to have you know?<mask>, we worked with a financial consultant through IBS in Dallas.</s>
+WARNING:src.dataset:Input exceeds max_length limit: <s>yes i'm i'm i have some great concerns about uh my my parents and my relatives reaching that age um around here where i live in Maryland in the Washington area there's there's and uh i used to live down in Dallas there was just so many stories about uh rest homes where the people are being abused where the people are being kept in filthy conditions in fact here in Baltimore they've actually shut a couple of them down and taken all the people out of them because they were so uh bug infested and rat infested and it i you know really concerns me that um first of all that anyone could let someone live like that but if you have to you know how do you make sure i mean i'm sure when you make your appointment and go by everybody puts on a happy face um you know how are you sure that the home is really as good as it is because once you put someone into there you know they may not like the fact that they've been put in there and they might complain about the place all the time even though it's the best place in the whole world they could be just because they want to make you feel guilty for putting them in there and you kno?<mask>, i am worried about how landlords could let people live in such poor conditions.</s>
+INFO:src.dataset:Label contradiction to word ĠNo (440)
+INFO:src.dataset:Label entailment to word ĠYes (3216)
+INFO:src.dataset:Label neutral to word ĠMaybe (5359)
+INFO:src.dataset:Total num_sample for mode test: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16/cached_test_RobertaTokenizerFast-roberta_256_mnli [took 0.635 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: test_matched-0
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 133, 92, 659, 32, 2579, 1177, 13098, 116, 50264, 6, 961, 269, 3829, 5, 8946, 1795, 1437, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=2, mask_pos=[9], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>The new rights are nice enoug?<mask>, everyone really likes the newest benefits </s>
+INFO:__main__:[quzo-config] quantized model parameters in-place at 16 bits before ZO training
+INFO:src.trainer:[dataloader][debug] self class=Trainer, get_train_dataloader=<bound method Trainer.get_train_dataloader of <src.trainer.Trainer object at 0x147e2139eed0>>
+INFO:src.trainer:[dataloader][override] Trainer.get_train_dataloader active. shuffle_raw=False type=bool -> shuffle=False; data_seed=16 seed=16 local_rank=-1
+INFO:src.trainer:[dataloader][override] selected sampler=SequentialSampler
+INFO:src.trainer:[dataloader] sampler=SequentialSampler, batch_sampler=BatchSampler
+INFO:src.trainer:[dataloader] training uses SequentialSampler (no shuffle).
+INFO:src.trainer:[dataloader] args.dataloader_shuffle=False
+INFO:src.trainer:[dataloader] args.data_seed=16 args.seed=16
+INFO:src.trainer:***** Running training *****
+INFO:src.trainer:  Num examples = 353432
+INFO:src.trainer:  Num Epochs = 5
+INFO:src.trainer:  Instantaneous batch size per device = 32
+INFO:src.trainer:  Total train batch size (w. parallel, distributed & accumulation) = 32
+INFO:src.trainer:  Gradient Accumulation steps = 1
+INFO:src.trainer:  Total optimization steps = 50000
+INFO:src.trainer:[zo-config] zo_two_point_precision=fp16 | zero_order_eps=1e-07 | zo_use_true_directional_derivative=False
+INFO:src.trainer:[zo_probe] enabled: every=200, num_seeds=16, csv=/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/roberta-large/mnli/h_1e-7/run_quzo16/seed16/zo_directional_probe.csv
+INFO:src.trainer:[h_estimation][init] h0=1.000e-03 active_source=fixed additive=False two_point=False
+You're using a RobertaTokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+/scratch/jy03364/MeZO_/medium_models/src/trainer.py:2057: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  return autocast(dtype=torch.float16)
+INFO:src.trainer:{'loss': 1.223175048828125, 'learning_rate': 1e-06, 'global_step': 0, 'zo_forward_step': 2, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 0, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.1716766357421875, 'learning_rate': 1e-06, 'global_step': 10, 'zo_forward_step': 22, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 1, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.283966064453125, 'learning_rate': 1e-06, 'global_step': 20, 'zo_forward_step': 42, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 2, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.2294158935546875, 'learning_rate': 1e-06, 'global_step': 30, 'zo_forward_step': 62, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 2, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.0854339599609375, 'learning_rate': 1e-06, 'global_step': 40, 'zo_forward_step': 82, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 3, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.2311553955078125, 'learning_rate': 1e-06, 'global_step': 50, 'zo_forward_step': 102, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 4, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.2508163452148438, 'learning_rate': 1e-06, 'global_step': 60, 'zo_forward_step': 122, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 5, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.3052520751953125, 'learning_rate': 1e-06, 'global_step': 70, 'zo_forward_step': 142, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 5, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.09454345703125, 'learning_rate': 1e-06, 'global_step': 80, 'zo_forward_step': 162, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 6, 'eps': 1e-07}
+WARNING:src.dataset:Input exceeds max_length limit: <s>yeah well that's well that's funny yeah not everybody enjoys it though everybody has a different things i kind of enjoy it and my husband doesn't i kind of have to sometimes i'm too busy to get out there and do it and he you know he doesn't really enjoy doing it but he'll do it and he doesn't gripe about it or anything but you know i'm kind of like you and he's kind of like your wife and you know in that he doesn't really enjoy it but i would like to have a garden though that's my thing but right now where we're living we have the trees where the uh roots are at the top of the ground everywhere all over the ground i don't know what kind of trees they are but you can't have a garden you can't till it or it'll it'll tear up a nice tiller so we're going to wait until we move we don't have a lot of sun either because it big trees back there so we're going to wait and when we move that's one of our priorities is to get a house where we can have a um garden and so i'd like to do that i have a feeling i'll be?<mask>, i would love to have a garden with vegetables and herbs.</s>
+INFO:src.trainer:{'loss': 1.0553436279296875, 'learning_rate': 1e-06, 'global_step': 90, 'zo_forward_step': 182, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 7, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.3388519287109375, 'learning_rate': 1e-06, 'global_step': 100, 'zo_forward_step': 202, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 8, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.1813812255859375, 'learning_rate': 1e-06, 'global_step': 110, 'zo_forward_step': 222, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 8, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.2299041748046875, 'learning_rate': 1e-06, 'global_step': 120, 'zo_forward_step': 242, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 9, 'eps': 1e-07}
+WARNING:src.dataset:Input exceeds max_length limit: <s>yeah well that's well that's funny yeah not everybody enjoys it though everybody has a different things i kind of enjoy it and my husband doesn't i kind of have to sometimes i'm too busy to get out there and do it and he you know he doesn't really enjoy doing it but he'll do it and he doesn't gripe about it or anything but you know i'm kind of like you and he's kind of like your wife and you know in that he doesn't really enjoy it but i would like to have a garden though that's my thing but right now where we're living we have the trees where the uh roots are at the top of the ground everywhere all over the ground i don't know what kind of trees they are but you can't have a garden you can't till it or it'll it'll tear up a nice tiller so we're going to wait until we move we don't have a lot of sun either because it big trees back there so we're going to wait and when we move that's one of our priorities is to get a house where we can have a um garden and so i'd like to do that i have a feeling i'll be?<mask>, my husband does not enjoy having a garden, but I do.</s>
+INFO:src.trainer:{'loss': 1.27435302734375, 'learning_rate': 1e-06, 'global_step': 130, 'zo_forward_step': 262, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 10, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.21771240234375, 'learning_rate': 1e-06, 'global_step': 140, 'zo_forward_step': 282, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 11, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.145355224609375, 'learning_rate': 1e-06, 'global_step': 150, 'zo_forward_step': 302, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 12, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.3443450927734375, 'learning_rate': 1e-06, 'global_step': 160, 'zo_forward_step': 322, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 12, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.7923126220703125, 'learning_rate': 1e-06, 'global_step': 170, 'zo_forward_step': 342, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 13, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.33477783203125, 'learning_rate': 1e-06, 'global_step': 180, 'zo_forward_step': 362, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 14, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 2.0159759521484375, 'learning_rate': 1e-06, 'global_step': 190, 'zo_forward_step': 382, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 14, 'eps': 1e-07}
+INFO:src.trainer:[zo_probe] step=200 eps=1.000e-07 precision=fp16 n=16 mae=1.606574e+03 mse=3.961532e+06 rmse=1.990360e+03 sign_acc=0.5625 corr=0.234299
+INFO:src.trainer:{'loss': 1.1467971801757812, 'learning_rate': 1e-06, 'global_step': 200, 'zo_forward_step': 402, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 19, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 1.4017753601074219, 'learning_rate': 1e-06, 'global_step': 210, 'zo_forward_step': 422, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 20, 'eps': 1e-07}
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+INFO:src.trainer:{'loss': nan, 'learning_rate': 1e-06, 'global_step': 220, 'zo_forward_step': 442, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 20, 'eps': 1e-07}
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+INFO:src.trainer:{'loss': nan, 'learning_rate': 1e-06, 'global_step': 230, 'zo_forward_step': 462, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 21, 'eps': 1e-07}
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+INFO:src.trainer:{'loss': nan, 'learning_rate': 1e-06, 'global_step': 240, 'zo_forward_step': 482, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 22, 'eps': 1e-07}
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+WARNING:src.trainer:projected_grad became invalid. loss1: nan, loss2: nan, eps: 1e-07
+INFO:src.trainer:{'loss': nan, 'learning_rate': 1e-06, 'global_step': 250, 'zo_forward_step': 502, 'max_steps': 50000, 'max_zo_forward_steps': 0, 'time': 23, 'eps': 1e-07}
+[nan-guard] reached 100 consecutive NaN tokens on stderr; terminating child process 1722309.
+[nan-guard] terminated child after 100 consecutive NaN tokens.

@@ -37,6 +37,20 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+MEDIUM_TASK_NAME_ALIASES = {
+    "sst2": "sst-2",
+}
+
+
+def normalize_medium_task_name(task_name: str) -> str:
+    task_name = str(task_name).strip()
+    lowered = task_name.lower()
+    if lowered in MEDIUM_TASK_NAME_ALIASES:
+        return MEDIUM_TASK_NAME_ALIASES[lowered]
+    if lowered in processors_mapping:
+        return lowered
+    return task_name
+
 
 def _normalize_for_json(value):
     if value is None or isinstance(value, (bool, int, str)):
@@ -546,7 +560,13 @@ class DynamicTrainingArguments(TrainingArguments):
     zo_quantization_bits: int = field(
         default=32,
         metadata={
-            "help": "Quantization used by ZO training. 32 keeps original MeZO. 16/8 keep the standard MeZO control flow with low-precision parameter snapping; 4 retains the QuZO-specific quantized update path."
+            "help": "Quantization used by ZO training. 32 keeps original MeZO. 16 keeps the FP16 MeZO path. 8/4 use the QuZO perturbation/update path."
+        }
+    )
+    zo_quantization: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "String alias for ZO quantization. Supported values: fp32/off/none, fp16, int8, int4. Overrides --zo_quantization_bits when set."
         }
     )
     use_torchao_float8: bool = field(
@@ -930,10 +950,15 @@ def main():
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
+    data_args.task_name = normalize_medium_task_name(getattr(data_args, "task_name", ""))
     training_args.zo_two_point_precision = str(getattr(training_args, "zo_two_point_precision", "fp32")).lower()
     if training_args.zo_two_point_precision not in {"fp32", "fp16"}:
         raise ValueError(f"Invalid --zo_two_point_precision={training_args.zo_two_point_precision}. Allowed: fp32, fp16")
-    training_args.zo_quantization_bits = validate_quzo_bits(getattr(training_args, "zo_quantization_bits", 32))
+    zo_quantization_alias = getattr(training_args, "zo_quantization", None)
+    if zo_quantization_alias not in (None, ""):
+        training_args.zo_quantization_bits = validate_quzo_bits(zo_quantization_alias)
+    else:
+        training_args.zo_quantization_bits = validate_quzo_bits(getattr(training_args, "zo_quantization_bits", 32))
     if int(getattr(training_args, "zo_probe_num_seeds", 16)) <= 0:
         raise ValueError("--zo_probe_num_seeds must be > 0")
     training_args.h_estimation_active_source = str(

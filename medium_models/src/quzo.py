@@ -7,10 +7,36 @@ from torch import nn
 
 
 SUPPORTED_QUZO_BITS = {16, 8, 4}
+QUZO_BIT_ALIASES = {
+    32: 32,
+    16: 16,
+    8: 8,
+    4: 4,
+    "32": 32,
+    "fp32": 32,
+    "none": 32,
+    "off": 32,
+    "16": 16,
+    "fp16": 16,
+    "half": 16,
+    "8": 8,
+    "int8": 8,
+    "quzo8": 8,
+    "4": 4,
+    "int4": 4,
+    "quzo4": 4,
+}
 
 
 def validate_quzo_bits(bits: int) -> int:
-    bits = int(bits)
+    if isinstance(bits, str):
+        key = bits.strip().lower()
+        if key in QUZO_BIT_ALIASES:
+            bits = QUZO_BIT_ALIASES[key]
+        else:
+            bits = int(bits)
+    else:
+        bits = int(bits)
     if bits not in {32, 16, 8, 4}:
         raise ValueError(f"Unsupported QuZO bits={bits}. Allowed values: 32, 16, 8, 4")
     return bits
@@ -90,11 +116,9 @@ def make_quzo_direction_pair(
     if target_dtype is None:
         target_dtype = tensor.dtype
 
-    if bits in {16, 8}:
-        z_dtype = torch.float16 if bits == 16 else target_dtype
+    if bits == 16:
+        z_dtype = torch.float16
         z = _normal_like_with_seed(tensor, int(step_seed), dtype=z_dtype)
-        if bits == 8:
-            z = quantize_tensor(z, bits, target_dtype=target_dtype, stochastic=False)
         return {
             "z": z,
             "seed": torch.tensor(int(step_seed), device=tensor.device, dtype=torch.int64),
@@ -130,14 +154,6 @@ def quantize_model_in_place(
     if bits == 16:
         model.half()
         return
-    if bits == 8:
-        with torch.no_grad():
-            for _, param in model.named_parameters():
-                if (not include_frozen) and (not param.requires_grad):
-                    continue
-                param.data.copy_(quantize_tensor(param.data, bits, target_dtype=param.data.dtype, stochastic=False))
-        return
-
     with torch.no_grad():
         for name, param in model.named_parameters():
             if (not include_frozen) and (not param.requires_grad):

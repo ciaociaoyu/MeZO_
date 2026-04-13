@@ -23,6 +23,7 @@ TASK_DIR_NAME_PREFERENCES = {
     "mnli": ["MNLI", "mnli"],
     "mnli-mm": ["MNLI", "mnli"],
     "mrpc": ["MRPC", "mrpc"],
+    "sst2": ["SST-2", "sst-2", "sst2"],
     "sst-2": ["SST-2", "sst-2"],
     "sts-b": ["STS-B", "sts-b"],
     "qqp": ["QQP", "qqp"],
