@@ -17,7 +17,7 @@ from typing import Union, Optional
 import torch
 from torch.nn.parameter import Parameter
 import numpy as np
-from dataclasses import dataclass, is_dataclass, asdict
+from dataclasses import dataclass, field, is_dataclass, asdict
 from tqdm import tqdm
 from tasks import get_task
 import json

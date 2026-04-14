@@ -17,6 +17,57 @@
 
 目标是让不同方法、不同模型、不同低精度路径都能输出可比较的统一运行 metadata，而不是继续依赖 “QuZO / 非 QuZO” 这种历史标签。
 
+### 1.1 顶层目录地图
+
+当前仓库最常用的顶层目录如下：
+
+| 路径 | 作用 |
+| --- | --- |
+| `large_models/` | 大模型主线。自回归模型、HF `Trainer`、ICL / regular FT / MeZO / QuZO / Sparse MeZO / LoRA / Prefix / head tuning 都在这里接入。 |
+| `medium_models/` | 中模型主线。分类 / prompt / few-shot / kernel / linearhead / MeZO / QuZO / Sparse MeZO 的主实验路径。 |
+| `experiments/` | 统一放实验脚本、smoke test、h-sweep 结果、日志、提交器。当前 MNLI / SST-5 的 14-value 搜索也在这里。 |
+| `docs/` | 项目文档。`code_structure_and_metadata.md` 是当前 canonical 结构文档，`sparse_mezo_h100_experiments.md` 是最近一轮 H100 实验记录。 |
+| `run_metadata.py` | 共享 metadata helper，负责生成 `run_metadata.json` 并统一低精度/方法字段。 |
+| `README.md` | 仓库总体说明。 |
+
+### 1.2 当前支持范围总表
+
+下面这张表描述的是“代码当前已经接入并能通过现有入口调用”的支持范围，不等同于“每个组合都已经系统验证过”。
+
+| 维度 | `large_models/` | `medium_models/` |
+| --- | --- | --- |
+| 模型 | 以 `AutoModelForCausalLM` 为主，显式适配 `OPT`、`GPT-2`、`LLaMA`、`Mistral` | 显式模型类型为 `BERT`、`RoBERTa`、`OPT`、`GPT-2`，另有 `AutoModelForSequenceClassification` 路径 |
+| 任务 | `SST-2`、`SST-5`、`BoolQ`、`SNLI`、`MNLI`、`RTE`、`SQuAD`、`DROP`、`CB`、`Copa`、`MultiRC`、`ReCoRD`、`WIC`、`WSC` | `CoLA`、`MNLI`、`MNLI-MM`、`MRPC`、`SST-2`/`sst2`、`STS-B`、`QQP`、`QNLI`、`RTE`、`WNLI`、`SNLI`、`MR`、`SST-5`、`SUBJ`、`TREC`、`CR`、`MPQA` |
+| 方法 / baseline | `inference`、`regular`、`mezo`、`mezo+quzo`、`sparse_mezo`、`sparse_mezo+quzo`、`linear_probing`，以及和这些组合的 `LoRA` / `Prefix` / `head_tuning` | `standard`、`kernel`、`linearhead`、`mezo`、`mezo` 各种变体、`mezo+quzo`、`sparse_mezo`、`sparse_mezo+quzo`，以及 `prefix_tuning` / `LoRA` / `head_tuning` |
+| 精度 / 量化 | `fp32`、`fp16`、`bf16`、`load_int8`、`torchao FP8`、`zo_quantization = none/fp16/int8/int4` | `fp32`、`fp16`、`bf16`、`torchao FP8`、`zo_quantization = none/fp16/int8/int4` |
+
+当前最常跑、最稳定的组合主要是：
+
+- `medium_models` 下的 `roberta-large + MNLI/SST-5`
+- `large_models` 下的 `opt-1.3b + MNLI/SST-5`
+- 方法上以 `MeZO`、`QuZO`、`Sparse MeZO` 为主
+- “16-bit” 在当前正式脚本里通常保持仓库既有语义：`fp16`
+
+### 1.3 常用实验目录与提交约定
+
+当前实验组织方式已经基本固定：
+
+| 路径 | 作用 |
+| --- | --- |
+| `experiments/h_sweep_14h/` | 当前 MNLI / SST-5 的 14-value `h` 搜索目录。这里的 “14h” 表示 14 个候选 `h` 值，不表示 14 小时。 |
+| `experiments/h_sweep_14h/jobs/` | 正式 `sbatch` 作业脚本，包括 `quzo16`、`quzo8`、`sparse_mezo16` 等。 |
+| `experiments/h_sweep_14h/results/` | sweep 结果目录，按方法 / 模型 / 任务分层。 |
+| `experiments/h_sweep_14h/logs/` | sweep 日志目录，包括 `slurm_*.out` 和每个 `h` 的 `train.log` / `train.err`。 |
+| `experiments/sparse_mezo_smoke/` | Sparse MeZO 的 smoke test 结果。 |
+| `experiments/fp8_smoke*` | FP8 smoke test 结果。 |
+
+当前仓库的正式批量实验提交风格是：
+
+- 优先沿用 Slurm / `sbatch`
+- 每个 sweep task 产出 `summary.jsonl`
+- 每个单独 run 产出 `run_summary.json` 与 `run_metadata.json`
+- h-sweep 脚本一般通过 `manifest.jsonl` / `summary.jsonl` 记录整体状态
+
 ## 2. 当前高层代码结构
 
 ### 2.1 `large_models/`
@@ -225,7 +276,8 @@
 
 ### 5.1 `large_models/`
 
-- `trainer=zo` -> `mezo`
+- `trainer=zo, sparse_ratio < 1.0` -> `sparse_mezo`
+- `trainer=zo, sparse_ratio == 1.0` -> `mezo`
 - `linear_probing=True` -> `linear_probing`
 - `trainer=regular` -> `regular`
 - `trainer=none` -> `inference`
@@ -313,7 +365,12 @@
 - 统一 helper：`run_metadata.py`
 - 大模型 metadata 文件：`<large_models 运行 output_dir>/run_metadata.json`
 - 中模型 metadata 文件：`<medium_models 运行 output_dir>/run_metadata.json`
-- 新文档：`docs/code_structure_and_metadata.md`
+- canonical 结构文档：`docs/code_structure_and_metadata.md`
+- 最近实验记录：`docs/sparse_mezo_h100_experiments.md`
+- 当前 14-value `h` 网格：`experiments/h_sweep_14h/h_values.sh`
+- 当前正式 sweep 脚本目录：`experiments/h_sweep_14h/jobs/`
+- 当前正式 sweep 结果目录：`experiments/h_sweep_14h/results/`
+- 当前正式 sweep 日志目录：`experiments/h_sweep_14h/logs/`
 
 ## 10. Sparse MeZO 扩展
 
