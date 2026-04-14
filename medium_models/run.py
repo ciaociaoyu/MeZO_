@@ -8,6 +8,7 @@ import math
 import os
 import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Callable, Dict, Optional, Union, List
 
 from accelerate.utils import ParallelismConfig
@@ -33,6 +34,12 @@ from src.processors import processors_mapping, num_labels_mapping, output_modes_
 
 from filelock import FileLock
 from datetime import datetime
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from run_metadata import collect_run_metadata, update_model_run_metadata, write_run_metadata
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -94,7 +101,15 @@ def _read_last_csv_row(path: str):
 
 
 def maybe_convert_model_to_torchao_float8_training(model, enabled: bool):
+    total_linear_layers = sum(1 for _, module in model.named_modules() if isinstance(module, torch.nn.Linear))
     if not bool(enabled):
+        update_model_run_metadata(
+            model,
+            fp8_mode="none",
+            converted_linear_layers=0,
+            total_linear_layers=total_linear_layers,
+            skipped_layer_names=[],
+        )
         return model
     try:
         from torchao.float8 import convert_to_float8_training
@@ -152,7 +167,37 @@ def maybe_convert_model_to_torchao_float8_training(model, enabled: bool):
             skipped,
             suffix,
         )
+    update_model_run_metadata(
+        model,
+        fp8_mode=mode,
+        converted_linear_layers=max(0, total_linear_layers - len(incompatible_linear_fqns)),
+        total_linear_layers=total_linear_layers,
+        skipped_layer_names=sorted(incompatible_linear_fqns),
+    )
     return model
+
+
+def infer_medium_run_zo_method(training_args) -> str:
+    if bool(getattr(training_args, "zero_order_optim", False)):
+        if bool(getattr(training_args, "zo_by_layer", False)):
+            return "mezo_layerwise"
+        zo_variant = str(getattr(training_args, "zo_variant", "") or "").lower()
+        if zo_variant == "grad_norm":
+            return "mezo_grad_norm"
+        if zo_variant == "param_norm":
+            return "mezo_param_norm"
+        if bool(getattr(training_args, "efficient_zero_order", False)):
+            return "mezo_efficient"
+        if bool(getattr(training_args, "zero_order_use_trainer_optim", False)):
+            optimizer = str(getattr(training_args, "optimizer", "") or "").lower()
+            optimizer_variant = str(getattr(training_args, "optimizer_variant", "") or "").lower()
+            if optimizer == "adam":
+                return "mezo_adam"
+            if optimizer_variant == "signgd":
+                return "mezo_signgd"
+        return "mezo"
+    trainer_name = str(getattr(training_args, "trainer", "standard") or "standard").lower()
+    return trainer_name
 
 
 @dataclass
@@ -1372,6 +1417,19 @@ def main():
             int(training_args.zo_quantization_bits),
         )
 
+    run_metadata = collect_run_metadata(
+        zo_method=infer_medium_run_zo_method(training_args),
+        args=training_args,
+        model=model,
+        output_dir=training_args.output_dir,
+        model_name=model_args.model_name_or_path,
+        task_name=data_args.task_name,
+        repo_root=str(REPO_ROOT),
+    )
+    run_metadata_path = None
+    if int(getattr(training_args, "local_rank", -1)) <= 0:
+        run_metadata_path = write_run_metadata(run_metadata, training_args.output_dir)
+
     # Build metric
     def build_compute_metrics_fn(task_name: str) -> Callable[[EvalPrediction], Dict]:
         def compute_metrics_fn(p: EvalPrediction):
@@ -1610,7 +1668,9 @@ def main():
                 "eval_loss_last5_json": eval_loss_last5_path if os.path.exists(eval_loss_last5_path) else None,
                 "eval_results": eval_output_files,
                 "test_results": test_output_files,
+                "run_metadata_json": run_metadata_path,
             },
+            "run_metadata": run_metadata,
             "config": {
                 "model_args": vars(model_args),
                 "training_args": vars(training_args),

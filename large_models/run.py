@@ -2,6 +2,8 @@ import logging
 import os
 import csv
 import enum
+import sys
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -27,6 +29,12 @@ from quzo import quzo_enabled, quantize_model_in_place, validate_quzo_bits
 from utils import *
 from trainer import OurTrainer
 import random
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from run_metadata import collect_run_metadata, update_model_run_metadata, write_run_metadata
 
 MODEL_NAME_ALIASES = {
     "opt-125m": "facebook/opt-125m",
@@ -91,7 +99,15 @@ def hf_auth_kwargs() -> dict:
 
 
 def maybe_convert_model_to_torchao_float8_training(model, enabled: bool):
+    total_linear_layers = sum(1 for _, module in model.named_modules() if isinstance(module, torch.nn.Linear))
     if not bool(enabled):
+        update_model_run_metadata(
+            model,
+            fp8_mode="none",
+            converted_linear_layers=0,
+            total_linear_layers=total_linear_layers,
+            skipped_layer_names=[],
+        )
         return model
     try:
         from torchao.float8 import convert_to_float8_training
@@ -149,6 +165,13 @@ def maybe_convert_model_to_torchao_float8_training(model, enabled: bool):
             skipped,
             suffix,
         )
+    update_model_run_metadata(
+        model,
+        fp8_mode=mode,
+        converted_linear_layers=max(0, total_linear_layers - len(incompatible_linear_fqns)),
+        total_linear_layers=total_linear_layers,
+        skipped_layer_names=sorted(incompatible_linear_fqns),
+    )
     return model
 
 
@@ -160,6 +183,44 @@ def detect_precision_label(args) -> str:
     if bool(getattr(args, "load_float16", False)):
         return "fp16"
     return "fp32"
+
+
+def infer_large_run_zo_method(args) -> str:
+    trainer_name = str(getattr(args, "trainer", "none") or "none").lower()
+    if trainer_name == "zo":
+        return "mezo"
+    if bool(getattr(args, "linear_probing", False)):
+        return "linear_probing"
+    if trainer_name == "regular":
+        return "regular"
+    if trainer_name == "none":
+        return "inference"
+    return trainer_name
+
+
+def get_single_gpu_int8_device_map(model_family: str, device_index: int = 0):
+    """
+    Force Accelerate to use hook-based dispatch for single-GPU int8 loading.
+
+    With the Transformers/Accelerate/bitsandbytes versions in this repo's
+    environment, a one-device int8 dispatch can incorrectly fall back to
+    `model.to()`, which bitsandbytes models reject. Mapping one lightweight
+    module to an equivalent CUDA device string keeps the full model on the same
+    physical GPU while still forcing the hook path.
+    """
+    split_module_by_family = {
+        "opt": "model.decoder.final_layer_norm",
+        "llama": "model.norm",
+        "mistral": "model.norm",
+        "gpt2": "transformer.ln_f",
+    }
+    split_module = split_module_by_family.get(str(model_family or "").lower())
+    if not split_module:
+        return None
+    return {
+        split_module: int(device_index),
+        "": f"cuda:{int(device_index)}",
+    }
 
 
 def _normalize_for_json(value):
@@ -448,6 +509,16 @@ class Framework:
                 load_kwargs = {}
                 if torch_dtype is not None:
                     load_kwargs["torch_dtype"] = torch_dtype
+                if bool(getattr(self.args, "load_int8", False)) and (not training_manages_devices) and torch.cuda.is_available():
+                    device_index = torch.cuda.current_device()
+                    device_map = get_single_gpu_int8_device_map(model_family, device_index=device_index)
+                    if device_map is not None:
+                        logger.info(
+                            "[model] using single-GPU int8 dispatch workaround on cuda:%d (auto-device disabled)",
+                            device_index,
+                        )
+                        load_kwargs["device_map"] = device_map
+                    load_kwargs["load_in_8bit"] = True
                 model = AutoModelForCausalLM.from_pretrained(
                     self.args.model_name,
                     config=config,
@@ -462,16 +533,35 @@ class Framework:
                     torch_dtype = torch.float16
                 elif self.args.load_bfloat16:
                     torch_dtype = torch.bfloat16
+                load_kwargs = {
+                    "config": config,
+                    "torch_dtype": torch_dtype,
+                    "load_in_8bit": self.args.load_int8,
+                    **auth_kwargs,
+                }
+                if bool(getattr(self.args, "load_int8", False)) and torch.cuda.device_count() == 1:
+                    device_index = torch.cuda.current_device()
+                    device_map = get_single_gpu_int8_device_map(model_family, device_index=device_index)
+                    if device_map is not None:
+                        logger.info(
+                            "[model] using single-GPU int8 dispatch workaround on cuda:%d for bitsandbytes compatibility",
+                            device_index,
+                        )
+                        load_kwargs["device_map"] = device_map
+                    else:
+                        load_kwargs["device_map"] = "auto"
+                        load_kwargs["max_memory"] = {device_index: f"{free_in_GB-5}GB"}
+                else:
+                    load_kwargs["device_map"] = "auto"
+                    load_kwargs["max_memory"] = {
+                        i: f"{free_in_GB-5}GB" for i in range(torch.cuda.device_count())
+                    }
                 model = AutoModelForCausalLM.from_pretrained(
                     self.args.model_name,
-                    config=config,
-                    device_map='auto',
-                    torch_dtype=torch_dtype,
-                    max_memory={i: f'{free_in_GB-5}GB' for i in range(torch.cuda.device_count())},
-                    load_in_8bit=self.args.load_int8,
-                    **auth_kwargs,
+                    **load_kwargs,
                 )
             model.eval()
+            update_model_run_metadata(model, load_int8=bool(getattr(model, "is_loaded_in_8bit", False)))
 
         # Load tokenizer
         tokenizer = AutoTokenizer.from_pretrained(self.args.model_name, use_fast=False, **auth_kwargs)
@@ -1000,6 +1090,21 @@ def main():
     )
     # Initialize trainer and load model
     framework = Framework(args, task)
+    metadata_output_dir = args.output_dir or os.path.join("result", result_file_tag(args))
+    run_metadata = collect_run_metadata(
+        zo_method=infer_large_run_zo_method(args),
+        args=args,
+        model=framework.model,
+        output_dir=metadata_output_dir,
+        model_name=args.model_name,
+        task_name=args.task_name,
+        repo_root=str(REPO_ROOT),
+    )
+    run_metadata_path = None
+    if int(getattr(args, "local_rank", -1)) <= 0:
+        run_metadata_path = write_run_metadata(run_metadata, metadata_output_dir)
+    framework.run_metadata = run_metadata
+    framework.run_metadata_path = run_metadata_path
 
     if args.train_set_seed is not None or args.num_train_sets is not None:
         # Eval samples share one (or multiple) training set(s)
@@ -1098,6 +1203,7 @@ def main():
                             "metrics_csv": train_artifacts.get("metrics_csv_path"),
                             "zo_directional_probe_csv": train_artifacts.get("zo_directional_probe_csv"),
                             "trainer_state_json": train_artifacts.get("trainer_state_path"),
+                            "run_metadata_json": getattr(framework, "run_metadata_path", None),
                         },
                         "artifacts": {
                             "train_metrics": train_artifacts.get("train_metrics"),
@@ -1107,6 +1213,7 @@ def main():
                             "zo_directional_probe_last_row": _read_last_csv_row(train_artifacts.get("zo_directional_probe_csv")),
                             "trainer_state": _read_json_if_exists(train_artifacts.get("trainer_state_path")),
                         },
+                        "run_metadata": getattr(framework, "run_metadata", None),
                         "config": vars(args),
                     }
                     with open(summary_path, "w", encoding="utf-8") as f:
