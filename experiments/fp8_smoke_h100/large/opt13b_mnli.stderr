@@ -1,0 +1,34 @@
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/deepspeed.py:23: FutureWarning: transformers.deepspeed module is deprecated and will be removed in a future version. Please import deepspeed modules directly from transformers.integrations
+  warnings.warn(
+2026-04-13 01:55:17,294 - INFO - [model] requested=opt-1.3b resolved=facebook/opt-1.3b family_hint=opt
+2026-04-13 01:55:17,294 - INFO - [data] task_name=MNLI dataset_mode=full num_k=16 data_seed=42 full_dev_ratio=0.1
+2026-04-13 01:55:27,240 - INFO - Loading model with FP16...
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+2026-04-13 01:55:27,291 - INFO - [model] disabling auto device placement for training; Trainer/Accelerate will place the model
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/modeling_utils.py:484: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  return torch.load(checkpoint_file, map_location=map_location)
+2026-04-13 01:55:37,070 - INFO - Done with 9.83s
+2026-04-13 01:55:38,371 - INFO - [fp8] converted nn.Linear modules to torchao Float8Linear for training (native mode, compute_capability=9.0)
+2026-04-13 01:55:38,473 - INFO - Preparing training/evaluation datasets...
+2026-04-13 01:55:38,473 - INFO - Done with 0.00s
+2026-04-13 01:55:38,918 - INFO - ***** Running training *****
+2026-04-13 01:55:38,918 - INFO -   Num examples = 353432
+2026-04-13 01:55:38,918 - INFO -   Num Epochs = 1
+2026-04-13 01:55:38,918 - INFO -   Instantaneous batch size per device = 16
+2026-04-13 01:55:38,918 - INFO -   Total train batch size (w. parallel, distributed & accumulation) = 16
+2026-04-13 01:55:38,918 - INFO -   Gradient Accumulation steps = 1
+2026-04-13 01:55:38,918 - INFO -   Total optimization steps = 10
+2026-04-13 01:55:38,919 - INFO -   Number of trainable parameters = 1315758080
+  0%|          | 0/10 [00:00<?, ?it/s] 10%|█         | 1/10 [00:00<00:04,  2.23it/s] 20%|██        | 2/10 [00:00<00:02,  3.00it/s] 30%|███       | 3/10 [00:00<00:02,  3.39it/s] 40%|████      | 4/10 [00:01<00:02,  2.65it/s] 50%|█████     | 5/10 [00:01<00:01,  3.05it/s] 60%|██████    | 6/10 [00:01<00:01,  3.33it/s] 70%|███████   | 7/10 [00:02<00:00,  3.31it/s] 80%|████████  | 8/10 [00:02<00:00,  3.62it/s] 90%|█████████ | 9/10 [00:02<00:00,  3.61it/s]100%|██████████| 10/10 [00:03<00:00,  3.64it/s]2026-04-13 01:55:41,941 - INFO - 
+
+Training completed. Do not forget to share your model on huggingface.co/models =)
+
+
+                                               100%|██████████| 10/10 [00:03<00:00,  3.64it/s]100%|██████████| 10/10 [00:03<00:00,  2.95it/s]

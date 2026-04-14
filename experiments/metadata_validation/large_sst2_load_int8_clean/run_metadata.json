@@ -1,0 +1,21 @@
+{
+  "metadata_schema_version": 1,
+  "zo_method": "inference",
+  "int8_snap_enabled": false,
+  "zo_quantization": "none",
+  "storage_dtype": "mixed",
+  "compute_dtype": "mixed",
+  "load_int8": true,
+  "fp8_mode": "none",
+  "fp8_native_enabled": false,
+  "converted_linear_layers": 0,
+  "total_linear_layers": 73,
+  "skipped_layer_names": [],
+  "device_type": "NVIDIA H100 80GB HBM3",
+  "model_name": "facebook/opt-125m",
+  "task_name": "SST2",
+  "seed": 42,
+  "run_output_dir": "/scratch/jy03364/MeZO_/experiments/metadata_validation/large_sst2_load_int8_clean",
+  "git_commit": "4d18dbcf34b060eb0c63545cd1a5a77d066e440e",
+  "hostname": "ra7-2"
+}

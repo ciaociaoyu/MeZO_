@@ -1,0 +1,95 @@
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/deepspeed.py:23: FutureWarning: transformers.deepspeed module is deprecated and will be removed in a future version. Please import deepspeed modules directly from transformers.integrations
+  warnings.warn(
+2026-04-13 01:23:52,505 - INFO - [model] requested=opt-1.3b resolved=facebook/opt-1.3b family_hint=opt
+2026-04-13 01:23:52,506 - INFO - [data] task_name=SST5 dataset_mode=full num_k=16 data_seed=42 full_dev_ratio=0.1
+Repo card metadata block was not found. Setting CardData to empty.
+2026-04-13 01:23:52,764 - WARNING - Repo card metadata block was not found. Setting CardData to empty.
+2026-04-13 01:23:53,417 - INFO - Loading model with FP16...
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+2026-04-13 01:23:53,530 - INFO - [model] disabling auto device placement for training; Trainer/Accelerate will place the model
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/modeling_utils.py:484: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  return torch.load(checkpoint_file, map_location=map_location)
+2026-04-13 01:24:03,418 - INFO - Done with 10.00s
+2026-04-13 01:24:04,538 - INFO - [fp8] converted nn.Linear modules to torchao Float8Linear for training (emulated mode, compute_capability=8.9)
+2026-04-13 01:24:04,540 - INFO - Preparing training/evaluation datasets...
+2026-04-13 01:24:04,540 - INFO - Done with 0.00s
+2026-04-13 01:24:04,992 - INFO - ***** Running training *****
+2026-04-13 01:24:04,992 - INFO -   Num examples = 7690
+2026-04-13 01:24:04,992 - INFO -   Num Epochs = 1
+2026-04-13 01:24:04,992 - INFO -   Instantaneous batch size per device = 16
+2026-04-13 01:24:04,992 - INFO -   Total train batch size (w. parallel, distributed & accumulation) = 16
+2026-04-13 01:24:04,992 - INFO -   Gradient Accumulation steps = 1
+2026-04-13 01:24:04,992 - INFO -   Total optimization steps = 20
+2026-04-13 01:24:04,993 - INFO -   Number of trainable parameters = 1315758080
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:05<01:48,  5.70s/it] 10%|█         | 2/20 [00:08<01:16,  4.26s/it] 15%|█▌        | 3/20 [00:12<01:08,  4.01s/it] 20%|██        | 4/20 [00:15<00:56,  3.53s/it] 25%|██▌       | 5/20 [00:18<00:51,  3.44s/it] 30%|███       | 6/20 [00:22<00:49,  3.53s/it] 35%|███▌      | 7/20 [00:25<00:44,  3.45s/it] 40%|████      | 8/20 [00:29<00:40,  3.42s/it] 45%|████▌     | 9/20 [00:32<00:37,  3.41s/it] 50%|█████     | 10/20 [00:36<00:35,  3.54s/it] 55%|█████▌    | 11/20 [00:39<00:31,  3.49s/it] 60%|██████    | 12/20 [00:44<00:30,  3.76s/it] 65%|██████▌   | 13/20 [00:47<00:25,  3.68s/it] 70%|███████   | 14/20 [00:51<00:21,  3.64s/it] 75%|███████▌  | 15/20 [00:54<00:18,  3.71s/it] 80%|████████  | 16/20 [00:59<00:15,  3.92s/it] 85%|████████▌ | 17/20 [01:02<00:11,  3.76s/it] 90%|█████████ | 18/20 [01:07<00:07,  3.96s/it] 95%|█████████▌| 19/20 [01:11<00:03,  3.95s/it]100%|██████████| 20/20 [01:15<00:00,  3.95s/it]2026-04-13 01:25:20,066 - INFO - 
+
+Training completed. Do not forget to share your model on huggingface.co/models =)
+
+
+                                               100%|██████████| 20/20 [01:15<00:00,  3.95s/it]100%|██████████| 20/20 [01:15<00:00,  3.77s/it]
+2026-04-13 01:25:20,458 - INFO - There are 0 training samples and 1101 validation samples
+  0%|          | 0/1101 [00:00<?, ?it/s]2026-04-13 01:25:20,472 - INFO - ========= Example =========
+2026-04-13 01:25:20,472 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-13 01:25:20,472 - INFO - Correct candidate: 2
+2026-04-13 01:25:21,025 - INFO - === Candidate 0 ===
+2026-04-13 01:25:21,025 - INFO - <s>in his first stab at the form, jacquot takes a slightly anarchic approach that works only sporadically. It was terrible
+2026-04-13 01:25:21,313 - INFO - Log probabilities of the option tokens: tensor([-12.2656], dtype=torch.float16)
+2026-04-13 01:25:21,615 - INFO - === Candidate 1 (without context)===
+2026-04-13 01:25:21,616 - INFO - <s>in his first stab at the form, jacquot takes a slightly anarchic approach that works only sporadically. It was bad
+2026-04-13 01:25:21,616 - INFO - Log probabilities of the option tokens: tensor([-10.0391], dtype=torch.float16)
+2026-04-13 01:25:21,851 - INFO - === Candidate 2 (without context)===
+2026-04-13 01:25:21,851 - INFO - <s>in his first stab at the form, jacquot takes a slightly anarchic approach that works only sporadically. It was okay
+2026-04-13 01:25:21,852 - INFO - Log probabilities of the option tokens: tensor([-12.0234], dtype=torch.float16)
+2026-04-13 01:25:22,086 - INFO - === Candidate 3 (without context)===
+2026-04-13 01:25:22,087 - INFO - <s>in his first stab at the form, jacquot takes a slightly anarchic approach that works only sporadically. It was good
+2026-04-13 01:25:22,087 - INFO - Log probabilities of the option tokens: tensor([-8.7344], dtype=torch.float16)
+2026-04-13 01:25:22,323 - INFO - === Candidate 4 (without context)===
+2026-04-13 01:25:22,323 - INFO - <s>in his first stab at the form, jacquot takes a slightly anarchic approach that works only sporadically. It was great
+2026-04-13 01:25:22,323 - INFO - Log probabilities of the option tokens: tensor([-8.1328], dtype=torch.float16)
+2026-04-13 01:25:22,342 - INFO - Prediction scores: [-12.265625, -10.0390625, -12.0234375, -8.734375, -8.1328125]
+  0%|          | 1/1101 [00:01<34:35,  1.89s/it]2026-04-13 01:25:22,359 - INFO - ========= Example =========
+2026-04-13 01:25:22,359 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-13 01:25:22,359 - INFO - Correct candidate: 1
+2026-04-13 01:25:22,603 - INFO - === Candidate 0 ===
+2026-04-13 01:25:22,603 - INFO - <s>one long string of cliches. It was terrible
+2026-04-13 01:25:22,603 - INFO - Log probabilities of the option tokens: tensor([-12.2734], dtype=torch.float16)
+2026-04-13 01:25:22,837 - INFO - === Candidate 1 (without context)===
+2026-04-13 01:25:22,837 - INFO - <s>one long string of cliches. It was bad
+2026-04-13 01:25:22,838 - INFO - Log probabilities of the option tokens: tensor([-9.8281], dtype=torch.float16)
+2026-04-13 01:25:23,072 - INFO - === Candidate 2 (without context)===
+2026-04-13 01:25:23,073 - INFO - <s>one long string of cliches. It was okay
+2026-04-13 01:25:23,073 - INFO - Log probabilities of the option tokens: tensor([-11.6016], dtype=torch.float16)
+2026-04-13 01:25:23,307 - INFO - === Candidate 3 (without context)===
+2026-04-13 01:25:23,308 - INFO - <s>one long string of cliches. It was good
+2026-04-13 01:25:23,308 - INFO - Log probabilities of the option tokens: tensor([-8.7500], dtype=torch.float16)
+2026-04-13 01:25:23,543 - INFO - === Candidate 4 (without context)===
+2026-04-13 01:25:23,544 - INFO - <s>one long string of cliches. It was great
+2026-04-13 01:25:23,544 - INFO - Log probabilities of the option tokens: tensor([-8.6328], dtype=torch.float16)
+2026-04-13 01:25:23,544 - INFO - Prediction scores: [-12.2734375, -9.828125, -11.6015625, -8.75, -8.6328125]
+  0%|          | 2/1101 [00:03<27:00,  1.47s/it]2026-04-13 01:25:23,544 - INFO - ========= Example =========
+2026-04-13 01:25:23,544 - INFO - Candidate: [0, 1, 2, 3, 4]
+2026-04-13 01:25:23,544 - INFO - Correct candidate: 1
+2026-04-13 01:25:23,785 - INFO - === Candidate 0 ===
+2026-04-13 01:25:23,785 - INFO - <s>if you've ever entertained the notion of doing what the title of this film implies, what sex with strangers actually shows may put you off the idea forever. It was terrible
+2026-04-13 01:25:23,786 - INFO - Log probabilities of the option tokens: tensor([-12.], dtype=torch.float16)
+2026-04-13 01:25:24,023 - INFO - === Candidate 1 (without context)===
+2026-04-13 01:25:24,024 - INFO - <s>if you've ever entertained the notion of doing what the title of this film implies, what sex with strangers actually shows may put you off the idea forever. It was bad
+2026-04-13 01:25:24,024 - INFO - Log probabilities of the option tokens: tensor([-9.6797], dtype=torch.float16)
+2026-04-13 01:25:24,262 - INFO - === Candidate 2 (without context)===
+2026-04-13 01:25:24,263 - INFO - <s>if you've ever entertained the notion of doing what the title of this film implies, what sex with strangers actually shows may put you off the idea forever. It was okay
+2026-04-13 01:25:24,263 - INFO - Log probabilities of the option tokens: tensor([-11.6484], dtype=torch.float16)
+2026-04-13 01:25:24,502 - INFO - === Candidate 3 (without context)===
+2026-04-13 01:25:24,503 - INFO - <s>if you've ever entertained the notion of doing what the title of this film implies, what sex with strangers actually shows may put you off the idea forever. It was good
+2026-04-13 01:25:24,503 - INFO - Log probabilities of the option tokens: tensor([-8.0859], dtype=torch.float16)
+2026-04-13 01:25:24,742 - INFO - === Candidate 4 (without context)===
+2026-04-13 01:25:24,742 - INFO - <s>if you've ever entertained the notion of doing what the title of this film implies, what sex with strangers actually shows may put you off the idea forever. It was great
+2026-04-13 01:25:24,743 - INFO - Log probabilities of the option tokens: tensor([-7.7344], dtype=torch.float16)
+2026-04-13 01:25:24,743 - INFO - Prediction scores: [-12.0, -9.6796875, -11.6484375, -8.0859375, -7.734375]
+  0%|          | 3/1101 [00:04<24:40,  1.35s/it]  0%|          | 4/1101 [00:05<23:54,  1.31s/it]  0%|          | 5/1101 [00:06<23:01,  1.26s/it]  1%|          | 6/1101 [00:07<22:37,  1.24s/it]  1%|          | 7/1101 [00:09<22:15,  1.22s/it]  1%|          | 8/1101 [00:10<22:06,  1.21s/it]  1%|          | 9/1101 [00:11<21:54,  1.20s/it]  1%|          | 10/1101 [00:12<21:42,  1.19s/it]  1%|          | 11/1101 [00:13<21:34,  1.19s/it]  1%|          | 12/1101 [00:15<21:38,  1.19s/it]  1%|          | 13/1101 [00:16<21:34,  1.19s/it]  1%|▏         | 14/1101 [00:17<21:31,  1.19s/it]  1%|▏         | 15/1101 [00:18<21:28,  1.19s/it]  1%|▏         | 16/1101 [00:19<21:32,  1.19s/it]  2%|▏         | 17/1101 [00:20<21:27,  1.19s/it]  2%|▏         | 18/1101 [00:22<21:22,  1.18s/it]  2%|▏         | 19/1101 [00:23<21:19,  1.18s/it]  2%|▏         | 20/1101 [00:24<21:25,  1.19s/it]  2%|▏         | 21/1101 [00:25<21:20,  1.19s/it]  2%|▏         | 22/1101 [00:26<21:23,  1.19s/it]  2%|▏         | 23/1101 [00:28<21:19,  1.19s/it]  2%|▏         | 24/1101 [00:29<21:16,  1.19s/it]  2%|▏         | 25/1101 [00:30<21:13,  1.18s/it]  2%|▏         | 26/1101 [00:31<21:11,  1.18s/it]  2%|▏         | 27/1101 [00:32<21:25,  1.20s/it]  3%|▎         | 28/1101 [00:34<21:19,  1.19s/it]  3%|▎         | 29/1101 [00:35<21:13,  1.19s/it]  3%|▎         | 30/1101 [00:36<21:08,  1.18s/it]  3%|▎         | 31/1101 [00:37<21:04,  1.18s/it]  3%|▎         | 32/1101 [00:38<21:01,  1.18s/it]  3%|▎         | 33/1101 [00:39<20:58,  1.18s/it]  3%|▎         | 34/1101 [00:41<21:02,  1.18s/it]  3%|▎         | 35/1101 [00:42<20:58,  1.18s/it]  3%|▎         | 36/1101 [00:43<20:57,  1.18s/it]  3%|▎         | 37/1101 [00:44<21:00,  1.19s/it]  3%|▎         | 38/1101 [00:45<21:05,  1.19s/it]  4%|▎         | 39/1101 [00:47<24:34,  1.39s/it]  4%|▎         | 40/1101 [00:50<30:50,  1.74s/it]  4%|▎         | 41/1101 [00:51<28:20,  1.60s/it]  4%|▍         | 42/1101 [00:52<26:02,  1.48s/it]  4%|▍         | 43/1101 [00:53<24:25,  1.38s/it]  4%|▍         | 44/1101 [00:55<23:19,  1.32s/it]  4%|▍         | 45/1101 [00:56<23:10,  1.32s/it]  4%|▍         | 46/1101 [00:57<22:39,  1.29s/it]  4%|▍         | 47/1101 [00:58<22:04,  1.26s/it]  4%|▍         | 48/1101 [00:59<21:39,  1.23s/it]  4%|▍         | 49/1101 [01:01<21:26,  1.22s/it]  5%|▍         | 50/1101 [01:02<21:10,  1.21s/it]  5%|▍         | 51/1101 [01:03<21:00,  1.20s/it]  5%|▍         | 52/1101 [01:04<20:58,  1.20s/it]  5%|▍         | 53/1101 [01:05<20:50,  1.19s/it]  5%|▍         | 54/1101 [01:07<21:43,  1.24s/it]  5%|▍         | 55/1101 [01:08<21:26,  1.23s/it]  5%|▌         | 56/1101 [01:09<21:08,  1.21s/it]  5%|▌         | 57/1101 [01:11<23:48,  1.37s/it]  5%|▌         | 58/1101 [01:13<26:44,  1.54s/it]  5%|▌         | 59/1101 [01:14<25:02,  1.44s/it]  5%|▌         | 60/1101 [01:15<23:49,  1.37s/it]  6%|▌         | 61/1101 [01:16<22:46,  1.31s/it]  6%|▌         | 62/1101 [01:18<22:09,  1.28s/it]  6%|▌         | 63/1101 [01:19<21:37,  1.25s/it]  6%|▌         | 64/1101 [01:20<21:15,  1.23s/it]  6%|▌         | 65/1101 [01:21<22:01,  1.28s/it]  6%|▌         | 66/1101 [01:23<23:30,  1.36s/it]

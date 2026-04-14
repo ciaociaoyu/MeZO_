@@ -149,6 +149,16 @@ cython_debug/
 !experiments/h_sweep_14h/jobs/*.sh
 !experiments/h_sweep_14h/logs/
 !experiments/h_sweep_14h/logs/.gitkeep
+experiments/**/__pycache__/
+experiments/**/*.py[cod]
+experiments/**/*.lock
+experiments/**/data_args.bin
+experiments/**/model_args.bin
+experiments/**/merges.txt
+experiments/**/special_tokens_map.json
+experiments/**/tokenizer.json
+experiments/**/tokenizer_config.json
+experiments/**/vocab.json
 .venv
 .vscode
 data

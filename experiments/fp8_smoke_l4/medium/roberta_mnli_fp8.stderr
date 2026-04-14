@@ -1,0 +1,312 @@
+WARNING:__main__:Process rank: -1, device: cuda:0, n_gpu: 1, distributed training: False, 16-bits training: False
+INFO:__main__:Training/evaluation parameters DynamicTrainingArguments(
+_n_gpu=1,
+accelerator_config={'split_batches': False, 'dispatch_batches': None, 'even_batches': True, 'use_seedable_sampler': True, 'non_blocking': False, 'gradient_accumulation_kwargs': None, 'use_configured_state': False},
+adafactor=False,
+adam_beta1=0.9,
+adam_beta2=0.999,
+adam_epsilon=1e-08,
+adaptive_h_ema_beta=0.1,
+adaptive_h_estimate_num_batches=4,
+adaptive_h_estimate_num_directions=3,
+adaptive_h_estimate_reduce=mean,
+adaptive_h_max=0.5,
+adaptive_h_min=1e-05,
+adaptive_h_probe_buffer_size=64,
+adjust_for_init=False,
+array_id=-1,
+auto_find_batch_size=False,
+average_tokens_across_devices=False,
+batch_eval_metrics=False,
+bf16=False,
+bf16_full_eval=False,
+binary_classification=False,
+change_grad_estimate=False,
+data_seed=16,
+dataloader_drop_last=False,
+dataloader_num_workers=0,
+dataloader_persistent_workers=False,
+dataloader_pin_memory=True,
+dataloader_prefetch_factor=None,
+dataloader_shuffle=False,
+ddp_backend=None,
+ddp_broadcast_buffers=None,
+ddp_bucket_cap_mb=None,
+ddp_find_unused_parameters=None,
+ddp_timeout=1800,
+debug=[],
+deepspeed=None,
+dh_h_growth=2.0,
+dh_max_trials=10,
+dh_test_h=0.01,
+disable_tqdm=False,
+do_eval=True,
+do_predict=True,
+do_train=True,
+efficient_zero_order=True,
+efficient_zero_order_fp16=False,
+enable_additive_h_estimation=False,
+enable_two_point_h_estimation=False,
+eval_accumulation_steps=None,
+eval_delay=0,
+eval_do_concat_batches=True,
+eval_on_start=False,
+eval_steps=1000.0,
+eval_strategy=IntervalStrategy.NO,
+eval_use_gather_object=False,
+evaluate_during_training=True,
+exclude_embeddings=False,
+exclude_first_layers=-1,
+exclude_head=False,
+f0_scaling=1.0,
+fix_layers=0,
+fp16=False,
+fp16_backend=auto,
+fp16_full_eval=False,
+fp16_opt_level=O1,
+from_linearhead=False,
+fsdp=[],
+fsdp_config={'min_num_params': 0, 'xla': False, 'xla_fsdp_v2': False, 'xla_fsdp_grad_ckpt': False},
+fsdp_min_num_params=0,
+fsdp_transformer_layer_cls_to_wrap=None,
+full_determinism=False,
+gradient_accumulation_steps=1,
+gradient_checkpointing=False,
+gradient_checkpointing_kwargs=None,
+greater_is_better=None,
+group_by_length=False,
+h_estimation_active_source=fixed,
+h_trunc_alpha=1.0,
+half_precision_backend=auto,
+head_tuning=False,
+hf_inference_model=False,
+hub_always_push=False,
+hub_model_id=None,
+hub_private_repo=None,
+hub_revision=None,
+hub_strategy=HubStrategy.EVERY_SAVE,
+hub_token=<HUB_TOKEN>,
+ignore_data_skip=False,
+include_for_metrics=[],
+include_inputs_for_metrics=False,
+include_num_input_tokens_seen=False,
+include_tokens_per_second=False,
+initial_h=0.001,
+jit_mode_eval=False,
+kernel_formula=sgd,
+kernel_gamma=1.0,
+kernel_regularization=0.0,
+kernel_solver=logistic,
+label_names=None,
+label_smoothing_factor=0.0,
+layer_wise_optim=False,
+learning_rate=1e-06,
+length_column_name=length,
+liger_kernel_config=None,
+load_best_model_at_end=False,
+load_kernels=None,
+local_rank=-1,
+log_file=log-USE_H0-USE_C0,
+log_level=passive,
+log_level_replica=warning,
+log_on_each_node=True,
+logging_dir=/scratch/jy03364/MeZO_/experiments/fp8_smoke_l4/medium/roberta_mnli_fp8/run_fp8/seed16/runs/Apr13_01-29-03_ra8-7,
+logging_first_step=False,
+logging_nan_inf_filter=True,
+logging_steps=10,
+logging_strategy=IntervalStrategy.STEPS,
+lp_early_stopping=False,
+lr_scheduler_kwargs={},
+lr_scheduler_type=SchedulerType.CONSTANT,
+max_grad_norm=1.0,
+max_steps=20,
+max_zo_forward_steps=0,
+mc_tol=0.1,
+metric_for_best_model=None,
+model_id=-1,
+mp_parameters=,
+neftune_noise_alpha=None,
+no_cuda=False,
+no_predict=False,
+no_reparam=False,
+no_train=False,
+norm_running_update=False,
+nu3_retry=3,
+num_hvp_vecs=128,
+num_prefix=10,
+num_train_epochs=3.0,
+only_biases=False,
+optim=OptimizerNames.ADAMW_TORCH,
+optim_args=None,
+optim_target_modules=None,
+optimize_acc=False,
+optimizer=sgd,
+optimizer_variant=,
+output_dir=/scratch/jy03364/MeZO_/experiments/fp8_smoke_l4/medium/roberta_mnli_fp8/run_fp8/seed16,
+overwrite_kernels=False,
+overwrite_output_dir=True,
+parallelism_config=None,
+past_index=-1,
+per_device_eval_batch_size=4,
+per_device_train_batch_size=16,
+prediction_loss_only=False,
+prefix_init_by_real_act=False,
+prefix_tuning=False,
+prob_as_feature=False,
+push_to_hub=False,
+push_to_hub_model_id=None,
+push_to_hub_organization=None,
+push_to_hub_token=<PUSH_TO_HUB_TOKEN>,
+random_model_init=False,
+ray_scope=last,
+recompute_norms=False,
+remove_unused_columns=True,
+report_to=[],
+restore_callback_states_from_checkpoint=False,
+resume_from_checkpoint=None,
+run_name=None,
+save_at_last=False,
+save_logit=False,
+save_logit_dir=None,
+save_on_each_node=False,
+save_only_model=False,
+save_safetensors=True,
+save_steps=500,
+save_strategy=SaveStrategy.STEPS,
+save_total_limit=None,
+scale_lr_with_samples=False,
+scale_norm_by_num_params=False,
+seed=16,
+skip_memory_metrics=True,
+sweep=False,
+sync_embedding_layers=False,
+tf32=None,
+tie_emb=False,
+torch_compile=False,
+torch_compile_backend=None,
+torch_compile_mode=None,
+torch_empty_cache_steps=None,
+torchdynamo=None,
+tpu_metrics_debug=False,
+tpu_num_cores=None,
+trainer=standard,
+two_point_h_beta=0.5,
+two_point_h_c2=1.0,
+two_point_h_delta_sample_size=4096,
+two_point_h_eps_num=1e-12,
+two_point_h_fixed_probe_batch=True,
+two_point_h_log_csv=True,
+two_point_h_max=0.5,
+two_point_h_min=1e-05,
+two_point_h_num_directions_g=4,
+two_point_h_num_directions_l=4,
+two_point_h_q_l=0.5,
+two_point_h_refresh_every=100,
+two_point_h_window_delta=3,
+two_point_h_window_g=5,
+two_point_h_window_l=5,
+untie_emb=False,
+update_noise_every=1000,
+use_adaptive_h=False,
+use_c_scale=False,
+use_cpu=False,
+use_ipex=False,
+use_legacy_prediction_loop=False,
+use_liger_kernel=False,
+use_mps_device=False,
+use_torchao_float8=True,
+use_zo_grad_est=False,
+warmup_ratio=0.0,
+warmup_steps=0,
+weight_decay=0.0,
+zero_order_clip_grad=False,
+zero_order_eps=1e-05,
+zero_order_optim=True,
+zero_order_sample=1,
+zero_order_sample_scheduler=None,
+zero_order_use_trainer_optim=False,
+zo_by_layer=False,
+zo_probe_every=0,
+zo_probe_log_csv=False,
+zo_probe_num_seeds=1,
+zo_quantization_bits=32,
+zo_two_point_precision=fp16,
+zo_use_true_directional_derivative=False,
+zo_variant=None,
+)
+INFO:__main__:[zo-config] zo_two_point_precision=fp16 | zero_order_eps=1e-05 | zo_use_true_directional_derivative=False
+INFO:__main__:[quzo-config] zo_quantization_bits=32 | quzo_enabled=False
+INFO:__main__:Task name: mnli, number of labels: 3, output mode: classification
+INFO:__main__:[data] dataset_mode requested=full resolved=full
+INFO:__main__:[data] task_dir=MNLI data_seed=16
+INFO:__main__:[data] auto_download=0 original_data_root=/scratch/jy03364/MeZO_/medium_models/data/original
+INFO:__main__:[data] auto_generate=0 target=/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16
+INFO:__main__:[data] resolved_data_dir=/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16
+WARNING:src.models:By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+INFO:src.dataset:Label contradiction to word ĠNo (440)
+INFO:src.dataset:Label entailment to word ĠYes (3216)
+INFO:src.dataset:Label neutral to word ĠMaybe (5359)
+INFO:src.dataset:Total num_sample for mode train: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16
+INFO:src.dataset:[FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+INFO:src.dataset:Creating features from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16
+INFO:src.dataset:Label contradiction to word ĠNo (440)
+INFO:src.dataset:Label entailment to word ĠYes (3216)
+INFO:src.dataset:Label neutral to word ĠMaybe (5359)
+INFO:src.dataset:Total num_sample for mode dev: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16
+/scratch/jy03364/MeZO_/medium_models/src/dataset.py:363: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  self.support_examples, self.query_examples = torch.load(cached_features_file)
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16/cached_dev_RobertaTokenizerFast-roberta_256_mnli [took 1.242 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: dev_matched-263856
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 487, 4132, 298, 1180, 18, 82, 32, 481, 7, 989, 5, 2946, 6, 53, 683, 51, 517, 5140, 6, 51, 189, 28, 3179, 5537, 7, 671, 116, 50264, 6, 71, 1375, 8, 1618, 5, 2946, 6, 234, 4132, 298, 1180, 18, 82, 189, 45, 28, 576, 5537, 7, 671, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=1, mask_pos=[28], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>Niihau's people are free to leave the island, but once they move elsewhere, they may be refused permission to return?<mask>, after moving and leaving the island, Niihau's people may not be given permission to return.</s>
+WARNING:src.dataset:Input exceeds max_length limit: <s>uh-huh oh i feel that is certainly if you're going to carry one you need to be uh very comfortable with the piece and have enough uh knowledge and insight for your own self on whether or not you're going to use it in that situation and not pull it unless you intend to because i i feel like that's you know i mean i'm i'm i'm all for uh people having having firearms or having whatever form of protection they prefer because you know even though the odds is you know the criminal ends up getting the gun and shooting the people to begin with you know the people that had it in the beginning but if the if if you're talking about uh two people if you're talking about a criminal an assailant that is coming at you with a gun and you don't have a gun at all well the chances are a hundred percent they're going to get you if you if you both of you have a firearm you've at least got that fifty percent chance that you may get them first and so i believe in that but i i've not ever felt comfortable in it i guess it's  i'm glad i  i'm glad i um i'm that i'm married to someone?<mask>, i think you need to know a lot about guns if you're goign to carry one.</s>
+WARNING:src.dataset:Input exceeds max_length limit: <s>we went uh and did a a thing through IBS which is a like a financial consultant  type thing here in Dallas and uh one of the things that we talked about with the counselor there was you know they work up this whole big you know proposal profile for you that every all the things that you need to work on and you need to do and then one of the things that we talked about with her was you know the need to save for our son's education we have a two year old you know and and you know we can't start saving for college when he's sixteen you know we have to do that now and and uh they have a way that they can figure you know what you know and he's two now in sixteen years when he's ready to go to college this is how much it'll cost you know and it's just really scary the thought of how much it's going to it's what it costs now is ridiculous what it's going to cost sixteen years from now is just really scary and they sat down and figured up that we needed to save like fifteen between fifteen and seventeen hundred dollars a year at a oh you know six percent interest rate to be able to have you know?<mask>, we worked with a financial consultant through IBS in Dallas.</s>
+WARNING:src.dataset:Input exceeds max_length limit: <s>yes i'm i'm i have some great concerns about uh my my parents and my relatives reaching that age um around here where i live in Maryland in the Washington area there's there's and uh i used to live down in Dallas there was just so many stories about uh rest homes where the people are being abused where the people are being kept in filthy conditions in fact here in Baltimore they've actually shut a couple of them down and taken all the people out of them because they were so uh bug infested and rat infested and it i you know really concerns me that um first of all that anyone could let someone live like that but if you have to you know how do you make sure i mean i'm sure when you make your appointment and go by everybody puts on a happy face um you know how are you sure that the home is really as good as it is because once you put someone into there you know they may not like the fact that they've been put in there and they might complain about the place all the time even though it's the best place in the whole world they could be just because they want to make you feel guilty for putting them in there and you kno?<mask>, i am worried about how landlords could let people live in such poor conditions.</s>
+INFO:src.dataset:Label contradiction to word ĠNo (440)
+INFO:src.dataset:Label entailment to word ĠYes (3216)
+INFO:src.dataset:Label neutral to word ĠMaybe (5359)
+INFO:src.dataset:Total num_sample for mode test: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/MNLI/full-16/cached_test_RobertaTokenizerFast-roberta_256_mnli [took 0.727 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: test_matched-0
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 133, 92, 659, 32, 2579, 1177, 13098, 116, 50264, 6, 961, 269, 3829, 5, 8946, 1795, 1437, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=2, mask_pos=[9], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>The new rights are nice enoug?<mask>, everyone really likes the newest benefits </s>
+INFO:__main__:[fp8] converted nn.Linear modules to torchao Float8Linear for training (emulated mode, compute_capability=8.9)
+INFO:src.trainer:[dataloader][debug] self class=Trainer, get_train_dataloader=<bound method Trainer.get_train_dataloader of <src.trainer.Trainer object at 0x149d404aac90>>
+INFO:src.trainer:[dataloader][override] Trainer.get_train_dataloader active. shuffle_raw=False type=bool -> shuffle=False; data_seed=16 seed=16 local_rank=-1
+INFO:src.trainer:[dataloader][override] selected sampler=SequentialSampler
+INFO:src.trainer:[dataloader] sampler=SequentialSampler, batch_sampler=BatchSampler
+INFO:src.trainer:[dataloader] training uses SequentialSampler (no shuffle).
+INFO:src.trainer:[dataloader] args.dataloader_shuffle=False
+INFO:src.trainer:[dataloader] args.data_seed=16 args.seed=16
+INFO:src.trainer:***** Running training *****
+INFO:src.trainer:  Num examples = 353432
+INFO:src.trainer:  Num Epochs = 1
+INFO:src.trainer:  Instantaneous batch size per device = 16
+INFO:src.trainer:  Total train batch size (w. parallel, distributed & accumulation) = 16
+INFO:src.trainer:  Gradient Accumulation steps = 1
+INFO:src.trainer:  Total optimization steps = 20
+INFO:src.trainer:[zo-config] zo_two_point_precision=fp16 | zero_order_eps=1e-05 | zo_use_true_directional_derivative=False
+INFO:src.trainer:[h_estimation][init] h0=1.000e-03 active_source=fixed additive=False two_point=False
+You're using a RobertaTokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+/scratch/jy03364/MeZO_/medium_models/src/trainer.py:2057: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  return autocast(dtype=torch.float16)
+INFO:src.trainer:{'loss': 1.33709716796875, 'learning_rate': 1e-06, 'global_step': 0, 'zo_forward_step': 2, 'max_steps': 20, 'max_zo_forward_steps': 0, 'time': 1, 'eps': 1e-05}
+INFO:src.trainer:{'loss': 1.174072265625, 'learning_rate': 1e-06, 'global_step': 10, 'zo_forward_step': 22, 'max_steps': 20, 'max_zo_forward_steps': 0, 'time': 6, 'eps': 1e-05}
+INFO:src.trainer:{'loss': 1.1793212890625, 'learning_rate': 1e-06, 'global_step': 20, 'zo_forward_step': 42, 'max_steps': 20, 'max_zo_forward_steps': 0, 'time': 11, 'eps': 1e-05}
+INFO:src.trainer:
+
+Training completed. Do not forget to share your model on huggingface.co/models =)
+
+
+INFO:__main__:evaluate_during_training=True but no in-memory best checkpoint was recorded; keeping the current model weights.
+INFO:__main__:*** Validate ***
+/home/jy03364/.conda/envs/ciao/lib/python3.12/site-packages/transformers/trainer_pt_utils.py:476: FutureWarning: DistributedTensorGatherer is deprecated and will be removed in v5 of Transformers.
+  warnings.warn(
+  0%|          | 0/9818 [00:00<?, ?it/s]  0%|          | 3/9818 [00:00<07:59, 20.46it/s]  0%|          | 6/9818 [00:00<10:18, 15.87it/s]  0%|          | 8/9818 [00:00<10:52, 15.03it/s]  0%|          | 10/9818 [00:00<11:11, 14.60it/s]  0%|          | 12/9818 [00:00<11:25, 14.30it/s]  0%|          | 14/9818 [00:00<11:35, 14.10it/s]  0%|          | 16/9818 [00:01<11:40, 13.99it/s]  0%|          | 18/9818 [00:01<11:44, 13.91it/s]  0%|          | 20/9818 [00:01<11:47, 13.85it/s]  0%|          | 22/9818 [00:01<11:49, 13.82it/s]  0%|          | 24/9818 [00:01<11:50, 13.79it/s]  0%|          | 26/9818 [00:01<11:55, 13.69it/s]  0%|          | 28/9818 [00:01<11:59, 13.60it/s]  0%|          | 30/9818 [00:02<12:01, 13.56it/s]  0%|          | 32/9818 [00:02<12:03, 13.52it/s]  0%|          | 34/9818 [00:02<12:05, 13.49it/s]  0%|          | 36/9818 [00:02<12:06, 13.46it/s]  0%|          | 38/9818 [00:02<12:11, 13.37it/s]  0%|          | 40/9818 [00:02<12:11, 13.37it/s]  0%|          | 42/9818 [00:03<12:11, 13.36it/s]  0%|          | 44/9818 [00:03<12:07, 13.44it/s]  0%|          | 46/9818 [00:03<12:02, 13.52it/s]  0%|          | 48/9818 [00:03<11:59, 13.58it/s]  1%|          | 50/9818 [00:03<11:56, 13.64it/s]  1%|          | 52/9818 [00:03<11:54, 13.67it/s]  1%|          | 54/9818 [00:03<11:53, 13.69it/s]  1%|          | 56/9818 [00:04<11:51, 13.71it/s]  1%|          | 58/9818 [00:04<11:50, 13.73it/s]  1%|          | 60/9818 [00:04<11:50, 13.74it/s]  1%|          | 62/9818 [00:04<11:49, 13.74it/s]  1%|          | 64/9818 [00:04<11:49, 13.74it/s]  1%|          | 66/9818 [00:04<11:49, 13.75it/s]  1%|          | 68/9818 [00:04<11:48, 13.76it/s]  1%|          | 70/9818 [00:05<11:49, 13.75it/s]  1%|          | 72/9818 [00:05<11:48, 13.76it/s]  1%|          | 74/9818 [00:05<11:48, 13.76it/s]  1%|          | 76/9818 [00:05<12:05, 13.43it/s]  1%|          | 78/9818 [00:05<11:59, 13.53it/s]  1%|          | 80/9818 [00:05<11:56, 13.59it/s]  1%|          | 82/9818 [00:05<11:53, 13.65it/s]  1%|          | 84/9818 [00:06<11:56, 13.59it/s]  1%|          | 86/9818 [00:06<11:54, 13.63it/s]  1%|          | 88/9818 [00:06<11:51, 13.68it/s]  1%|          | 90/9818 [00:06<11:50, 13.70it/s]  1%|          | 92/9818 [00:06<11:51, 13.68it/s]  1%|          | 94/9818 [00:06<11:49, 13.71it/s]  1%|          | 96/9818 [00:06<11:48, 13.72it/s]  1%|          | 98/9818 [00:07<11:47, 13.75it/s]  1%|          | 100/9818 [00:07<11:47, 13.74it/s]  1%|          | 102/9818 [00:07<11:55, 13.58it/s]  1%|          | 104/9818 [00:07<11:52, 13.64it/s]  1%|          | 106/9818 [00:07<11:50, 13.67it/s]  1%|          | 108/9818 [00:07<11:49, 13.69it/s]  1%|          | 110/9818 [00:07<11:48, 13.71it/s]  1%|          | 112/9818 [00:08<11:47, 13.72it/s]  1%|          | 114/9818 [00:08<11:46, 13.73it/s]  1%|          | 116/9818 [00:08<11:46, 13.74it/s]  1%|          | 118/9818 [00:08<11:47, 13.72it/s]  1%|          | 120/9818 [00:08<11:46, 13.73it/s]  1%|          | 122/9818 [00:08<11:45, 13.73it/s]  1%|▏         | 124/9818 [00:09<11:45, 13.75it/s]  1%|▏         | 126/9818 [00:09<11:45, 13.73it/s]  1%|▏         | 128/9818 [00:09<11:44, 13.75it/s]  1%|▏         | 130/9818 [00:09<11:44, 13.76it/s]  1%|▏         | 132/9818 [00:09<11:44, 13.74it/s]  1%|▏         | 134/9818 [00:09<11:43, 13.76it/s]  1%|▏         | 136/9818 [00:09<11:43, 13.76it/s]  1%|▏         | 138/9818 [00:10<11:43, 13.76it/s]  1%|▏         | 140/9818 [00:10<11:42, 13.77it/s]  1%|▏         | 142/9818 [00:10<11:42, 13.77it/s]  1%|▏         | 144/9818 [00:10<11:51, 13.60it/s]  1%|▏         | 146/9818 [00:10<13:18, 12.12it/s]  2%|▏         | 148/9818 [00:10<14:33, 11.07it/s]  2%|▏         | 150/9818 [00:11<14:38, 11.00it/s]  2%|▏         | 152/9818 [00:11<14:43, 10.94it/s]  2%|▏         | 154/9818 [00:11<15:46, 10.21it/s]  2%|▏         | 156/9818 [00:11<19:08,  8.41it/s]  2%|▏         | 157/9818 [00:11<20:01,  8.04it/s]  2%|▏         | 158/9818 [00:12<20:13,  7.96it/s]  2%|▏         | 159/9818 [00:12<20:39,  7.79it/s]  2%|▏         | 160/9818 [00:12<21:27,  7.50it/s]  2%|▏         | 161/9818 [00:12<21:43,  7.41it/s]  2%|▏         | 162/9818 [00:12<23:06,  6.97it/s]  2%|▏         | 163/9818 [00:12<21:56,  7.33it/s]  2%|▏         | 165/9818 [00:12<18:13,  8.82it/s]  2%|▏         | 167/9818 [00:13<16:13,  9.91it/s]  2%|▏         | 169/9818 [00:13<15:05, 10.66it/s]  2%|▏         | 171/9818 [00:13<14:21, 11.20it/s]  2%|▏         | 173/9818 [00:13<14:01, 11.46it/s]  2%|▏         | 175/9818 [00:13<13:56, 11.53it/s]  2%|▏         | 177/9818 [00:13<13:50, 11.60it/s]  2%|▏         | 179/9818 [00:14<13:16, 12.10it/s]  2%|▏         | 181/9818 [00:14<12:48, 12.54it/s]  2%|▏         | 183/9818 [00:14<12:29, 12.85it/s]  2%|▏         | 185/9818 [00:14<12:15, 13.09it/s]  2%|▏         | 187/9818 [00:14<12:08, 13.23it/s]  2%|▏         | 189/9818 [00:14<12:11, 13.16it/s]  2%|▏         | 191/9818 [00:15<12:05, 13.27it/s]  2%|▏         | 193/9818 [00:15<12:01, 13.34it/s]  2%|▏         | 195/9818 [00:15<11:56, 13.43it/s]  2%|▏         | 197/9818 [00:15<11:54, 13.46it/s]  2%|▏         | 199/9818 [00:15<11:57, 13.41it/s]  2%|▏         | 201/9818 [00:15<11:54, 13.45it/s]  2%|▏         | 203/9818 [00:15<11:51, 13.51it/s]  2%|▏         | 205/9818 [00:16<11:50, 13.52it/s]  2%|▏         | 207/9818 [00:16<11:51, 13.51it/s]  2%|▏         | 209/9818 [00:16<11:51, 13.51it/s]  2%|▏         | 211/9818 [00:16<11:50, 13.52it/s]  2%|▏         | 213/9818 [00:16<11:49, 13.54it/s]  2%|▏         | 215/9818 [00:16<11:49, 13.53it/s]  2%|▏         | 217/9818 [00:16<11:50, 13.51it/s]  2%|▏         | 219/9818 [00:17<11:51, 13.50it/s]  2%|▏         | 221/9818 [00:17<11:51, 13.49it/s]  2%|▏         | 223/9818 [00:17<11:49, 13.52it/s]  2%|▏         | 225/9818 [00:17<11:50, 13.51it/s]  2%|▏         | 227/9818 [00:17<11:47, 13.55it/s]  2%|▏         | 229/9818 [00:17<11:48, 13.54it/s]  2%|▏         | 231/9818 [00:17<11:50, 13.49it/s]  2%|▏         | 233/9818 [00:18<11:47, 13.54it/s]  2%|▏         | 235/9818 [00:18<11:47, 13.54it/s]  2%|▏         | 237/9818 [00:18<11:45, 13.58it/s]  2%|▏         | 239/9818 [00:18<11:45, 13.57it/s]  2%|▏         | 241/9818 [00:18<12:00, 13.29it/s]  2%|▏         | 243/9818 [00:18<12:06, 13.17it/s]  2%|▏         | 245/9818 [00:19<11:57, 13.33it/s]  3%|▎         | 247/9818 [00:19<11:52, 13.44it/s]  3%|▎         | 249/9818 [00:19<11:46, 13.54it/s]  3%|▎         | 251/9818 [00:19<11:42, 13.61it/s]  3%|▎         | 253/9818 [00:19<11:39, 13.67it/s]  3%|▎         | 255/9818 [00:19<11:38, 13.69it/s]  3%|▎         | 257/9818 [00:19<11:38, 13.69it/s]  3%|▎         | 259/9818 [00:20<11:37, 13.70it/s]  3%|▎         | 261/9818 [00:20<11:42, 13.60it/s]  3%|▎         | 263/9818 [00:20<11:40, 13.65it/s]  3%|▎         | 265/9818 [00:20<11:39, 13.66it/s]  3%|▎         | 267/9818 [00:20<11:37, 13.70it/s]  3%|▎         | 269/9818 [00:20<11:37, 13.70it/s]  3%|▎         | 271/9818 [00:20<11:36, 13.70it/s]  3%|▎         | 273/9818 [00:21<11:35, 13.72it/s]  3%|▎         | 275/9818 [00:21<11:35, 13.73it/s]  3%|▎         | 277/9818 [00:21<11:33, 13.75it/s]  3%|▎         | 279/9818 [00:21<11:33, 13.75it/s]  3%|▎         | 281/9818 [00:21<11:33, 13.74it/s]  3%|▎         | 283/9818 [00:21<11:38, 13.65it/s]  3%|▎         | 285/9818 [00:21<11:36, 13.68it/s]  3%|▎         | 287/9818 [00:22<11:35, 13.70it/s]  3%|▎         | 289/9818 [00:22<11:34, 13.71it/s]  3%|▎         | 291/9818 [00:22<11:33, 13.73it/s]  3%|▎         | 293/9818 [00:22<11:33, 13.73it/s]  3%|▎         | 295/9818 [00:22<11:33, 13.72it/s]  3%|▎         | 297/9818 [00:22<11:32, 13.74it/s]  3%|▎         | 299/9818 [00:22<11:32, 13.74it/s]  3%|▎         | 301/9818 [00:23<11:32, 13.74it/s]  3%|▎         | 303/9818 [00:23<11:32, 13.74it/s]  3%|▎         | 305/9818 [00:23<11:33, 13.72it/s]  3%|▎         | 307/9818 [00:23<11:32, 13.73it/s]  3%|▎         | 309/9818 [00:23<11:32, 13.72it/s]  3%|▎         | 311/9818 [00:23<12:59, 12.20it/s]  3%|▎         | 313/9818 [00:24<12:33, 12.61it/s]  3%|▎         | 315/9818 [00:24<12:26, 12.73it/s]  3%|▎         | 317/9818 [00:24<12:19, 12.85it/s]  3%|▎         | 319/9818 [00:24<12:10, 13.01it/s]  3%|▎         | 321/9818 [00:24<11:58, 13.22it/s]  3%|▎         | 323/9818 [00:24<11:50, 13.37it/s]  3%|▎         | 325/9818 [00:24<11:43, 13.49it/s]  3%|▎         | 327/9818 [00:25<11:40, 13.55it/s]  3%|▎         | 329/9818 [00:25<11:49, 13.37it/s]  3%|▎         | 331/9818 [00:25<11:44, 13.46it/s]  3%|▎         | 333/9818 [00:25<11:39, 13.56it/s]  3%|▎         | 335/9818 [00:25<11:37, 13.60it/s]  3%|▎         | 337/9818 [00:25<11:33, 13.67it/s]  3%|▎         | 339/9818 [00:25<11:31, 13.70it/s]  3%|▎         | 341/9818 [00:26<11:31, 13.70it/s]  3%|▎         | 343/9818 [00:26<11:30, 13.72it/s]  4%|▎         | 345/9818 [00:26<11:29, 13.75it/s]  4%|▎         | 347/9818 [00:26<11:28, 13.75it/s]  4%|▎         | 349/9818 [00:26<11:28, 13.75it/s]  4%|▎         | 351/9818 [00:26<11:28, 13.74it/s]  4%|▎         | 353/9818 [00:26<11:27, 13.76it/s]  4%|▎         | 355/9818 [00:27<11:28, 13.75it/s]  4%|▎         | 357/9818 [00:27<11:33, 13.64it/s]  4%|▎         | 359/9818 [00:27<11:32, 13.66it/s]  4%|▎         | 361/9818 [00:27<11:33, 13.63it/s]  4%|▎         | 363/9818 [00:27<11:42, 13.47it/s]  4%|▎         | 365/9818 [00:27<11:39, 13.51it/s]  4%|▎         | 367/9818 [00:28<11:37, 13.54it/s]  4%|▍         | 369/9818 [00:28<11:34, 13.61it/s]  4%|▍         | 371/9818 [00:28<11:33, 13.63it/s]  4%|▍         | 373/9818 [00:28<11:30, 13.68it/s]  4%|▍         | 375/9818 [00:28<11:31, 13.66it/s]  4%|▍         | 377/9818 [00:28<11:29, 13.69it/s]  4%|▍         | 379/9818 [00:28<12:00, 13.10it/s]  4%|▍         | 381/9818 [00:29<11:50, 13.28it/s]  4%|▍         | 383/9818 [00:29<11:43, 13.41it/s]  4%|▍         | 385/9818 [00:29<11:37, 13.52it/s]  4%|▍         | 387/9818 [00:29<11:33, 13.59it/s]  4%|▍         | 389/9818 [00:29<11:30, 13.65it/s]  4%|▍         | 391/9818 [00:29<11:29, 13.68it/s]  4%|▍         | 393/9818 [00:29<11:27, 13.70it/s]  4%|▍         | 395/9818 [00:30<11:26, 13.72it/s]  4%|▍         | 397/9818 [00:30<11:25, 13.74it/s]  4%|▍         | 399/9818 [00:30<11:25, 13.75it/s]  4%|▍         | 401/9818 [00:30<11:23, 13.78it/s]  4%|▍         | 403/9818 [00:30<11:26, 13.71it/s]  4%|▍         | 405/9818 [00:30<11:24, 13.75it/s]  4%|▍         | 407/9818 [00:30<11:25, 13.74it/s]  4%|▍         | 409/9818 [00:31<11:24, 13.75it/s]  4%|▍         | 411/9818 [00:31<11:23, 13.76it/s]  4%|▍         | 413/9818 [00:31<11:24, 13.75it/s]  4%|▍         | 415/9818 [00:31<11:22, 13.77it/s]  4%|▍         | 417/9818 [00:31<11:22, 13.78it/s]  4%|▍         | 419/9818 [00:31<11:22, 13.76it/s]  4%|▍         | 421/9818 [00:31<11:22, 13.78it/s]  4%|▍         | 423/9818 [00:32<11:22, 13.77it/s]  4%|▍         | 425/9818 [00:32<11:23, 13.74it/s]  4%|▍         | 427/9818 [00:32<11:24, 13.73it/s]  4%|▍         | 429/9818 [00:32<11:22, 13.75it/s]  4%|▍         | 431/9818 [00:32<11:23, 13.74it/s]  4%|▍         | 433/9818 [00:32<11:47, 13.27it/s]  4%|▍         | 435/9818 [00:33<14:30, 10.78it/s]  4%|▍         | 437/9818 [00:33<16:19,  9.58it/s]  4%|▍         | 439/9818 [00:33<17:07,  9.13it/s]  4%|▍         | 440/9818 [00:33<17:24,  8.98it/s]  5%|▍         | 442/9818 [00:34<18:40,  8.36it/s]  5%|▍         | 443/9818 [00:34<22:36,  6.91it/s]  5%|▍         | 444/9818 [00:34<25:17,  6.18it/s]  5%|▍         | 445/9818 [00:34<27:51,  5.61it/s]  5%|▍         | 446/9818 [00:34<29:27,  5.30it/s]  5%|▍         | 447/9818 [00:35<27:59,  5.58it/s]  5%|▍         | 448/9818 [00:35<29:41,  5.26it/s]  5%|▍         | 449/9818 [00:35<30:32,  5.11it/s]  5%|▍         | 450/9818 [00:35<30:57,  5.04it/s]  5%|▍         | 451/9818 [00:35<32:13,  4.84it/s]  5%|▍         | 452/9818 [00:36<29:17,  5.33it/s]  5%|▍         | 454/9818 [00:36<22:57,  6.80it/s]  5%|▍         | 456/9818 [00:36<19:32,  7.98it/s]  5%|▍         | 458/9818 [00:36<17:34,  8.88it/s]  5%|▍         | 460/9818 [00:36<16:39,  9.36it/s]  5%|▍         | 461/9818 [00:36<16:42,  9.33it/s]  5%|▍         | 462/9818 [00:37<17:39,  8.83it/s]  5%|▍         | 463/9818 [00:37<17:27,  8.93it/s]  5%|▍         | 465/9818 [00:37<14:57, 10.42it/s]  5%|▍         | 467/9818 [00:37<13:47, 11.30it/s]  5%|▍         | 469/9818 [00:37<13:03, 11.94it/s]  5%|▍         | 471/9818 [00:37<14:02, 11.09it/s]  5%|▍         | 473/9818 [00:37<13:10, 11.82it/s]  5%|▍         | 475/9818 [00:38<12:47, 12.18it/s]  5%|▍         | 477/9818 [00:38<12:27, 12.50it/s]  5%|▍         | 479/9818 [00:38<12:05, 12.87it/s]  5%|▍         | 481/9818 [00:38<11:53, 13.08it/s]  5%|▍         | 483/9818 [00:38<11:42, 13.30it/s]  5%|▍         | 485/9818 [00:38<11:34, 13.44it/s]  5%|▍         | 487/9818 [00:39<11:29, 13.54it/s]  5%|▍         | 489/9818 [00:39<11:24, 13.62it/s]  5%|▌         | 491/9818 [00:39<11:22, 13.66it/s]  5%|▌         | 493/9818 [00:39<11:20, 13.70it/s]  5%|▌         | 495/9818 [00:39<11:19, 13.72it/s]  5%|▌         | 497/9818 [00:39<11:19, 13.73it/s]  5%|▌         | 499/9818 [00:39<11:17, 13.75it/s]  5%|▌         | 501/9818 [00:40<11:20, 13.69it/s]  5%|▌         | 503/9818 [00:40<11:19, 13.72it/s]  5%|▌         | 505/9818 [00:40<11:18, 13.73it/s]  5%|▌         | 507/9818 [00:40<11:18, 13.72it/s]  5%|▌         | 509/9818 [00:40<11:18, 13.73it/s]  5%|▌         | 511/9818 [00:40<11:17, 13.74it/s]  5%|▌         | 513/9818 [00:40<11:16, 13.75it/s]  5%|▌         | 515/9818 [00:41<11:19, 13.70it/s]  5%|▌         | 517/9818 [00:41<11:18, 13.70it/s]  5%|▌         | 519/9818 [00:41<11:34, 13.39it/s]  5%|▌         | 521/9818 [00:41<11:29, 13.49it/s]  5%|▌         | 523/9818 [00:41<11:27, 13.52it/s]  5%|▌         | 525/9818 [00:41<11:24, 13.57it/s]  5%|▌         | 527/9818 [00:41<11:21, 13.63it/s]  5%|▌         | 529/9818 [00:42<11:32, 13.42it/s]  5%|▌         | 531/9818 [00:42<13:05, 11.82it/s]  5%|▌         | 533/9818 [00:42<13:52, 11.15it/s]  5%|▌         | 535/9818 [00:42<14:03, 11.01it/s]  5%|▌         | 537/9818 [00:42<14:01, 11.03it/s]  5%|▌         | 539/9818 [00:43<14:44, 10.49it/s]  6%|▌         | 541/9818 [00:43<17:28,  8.84it/s]  6%|▌         | 542/9818 [00:43<19:10,  8.07it/s]  6%|▌         | 543/9818 [00:43<19:24,  7.96it/s]  6%|▌         | 544/9818 [00:43<19:33,  7.91it/s]  6%|▌         | 545/9818 [00:43<20:31,  7.53it/s]  6%|▌         | 546/9818 [00:44<21:02,  7.34it/s]  6%|▌         | 547/9818 [00:44<21:31,  7.18it/s]  6%|▌         | 548/9818 [00:44<21:16,  7.26it/s]  6%|▌         | 550/9818 [00:44<17:28,  8.84it/s]  6%|▌         | 552/9818 [00:44<15:32,  9.94it/s]  6%|▌         | 554/9818 [00:44<14:31, 10.63it/s]  6%|▌         | 556/9818 [00:45<13:48, 11.19it/s]  6%|▌         | 558/9818 [00:45<13:27, 11.47it/s]  6%|▌         | 560/9818 [00:45<13:20, 11.56it/s]

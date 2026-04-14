@@ -1,0 +1,96 @@
++ ml jq
+++ /apps/lmod/lmod/libexec/ml_cmd jq
++ eval 'module  load '\''jq'\'''
+++ module load jq
+++ '[' -z '' ']'
+++ case "$-" in
+++ __lmod_sh_dbg=x
+++ '[' -n x ']'
+++ set +x
+Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for Lmod's output
+Shell debugging restarted
+++ unset __lmod_sh_dbg
+++ return 0
++ source /home/jy03364/miniconda3/etc/profile.d/conda.sh
+++ export CONDA_EXE=/home/jy03364/miniconda3/bin/conda
+++ CONDA_EXE=/home/jy03364/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/home/jy03364/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/home/jy03364/miniconda3/bin/python
+++ '[' -z x ']'
++ conda activate ciao
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate ciao
++ '[' -n '' ']'
++ local ask_conda
+++ PS1=
+++ __conda_exe shell.posix activate ciao
+++ '[' -n '' ']'
+++ /home/jy03364/miniconda3/bin/conda shell.posix activate ciao
++ ask_conda='unset _CE_M
+unset _CE_CONDA
+PS1='\''(ciao) '\''
+export PATH='\''/apps/eb/jq/1.6-GCCcore-12.3.0/bin:/apps/eb/GCCcore/12.3.0/bin:/home/jy03364/.codex/tmp/arg0/codex-arg0YFYYB8:/home/jy03364/.nvm/versions/node/v24.14.1/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/path:/home/jy03364/.nvm/versions/node/v24.14.1/bin:/home/jy03364/.conda/envs/ciao/bin:/home/jy03364/miniconda3/condabin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin'\''
+export CONDA_PREFIX='\''/home/jy03364/.conda/envs/ciao'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''ciao'\''
+export CONDA_PROMPT_MODIFIER='\''(ciao) '\''
+export CONDA_PREFIX_1='\''/home/jy03364/miniconda3'\''
+export CONDA_EXE='\''/home/jy03364/miniconda3/bin/conda'\''
+export CONDA_PYTHON_EXE='\''/home/jy03364/miniconda3/bin/python'\'''
++ eval 'unset _CE_M
+unset _CE_CONDA
+PS1='\''(ciao) '\''
+export PATH='\''/apps/eb/jq/1.6-GCCcore-12.3.0/bin:/apps/eb/GCCcore/12.3.0/bin:/home/jy03364/.codex/tmp/arg0/codex-arg0YFYYB8:/home/jy03364/.nvm/versions/node/v24.14.1/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/path:/home/jy03364/.nvm/versions/node/v24.14.1/bin:/home/jy03364/.conda/envs/ciao/bin:/home/jy03364/miniconda3/condabin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin'\''
+export CONDA_PREFIX='\''/home/jy03364/.conda/envs/ciao'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''ciao'\''
+export CONDA_PROMPT_MODIFIER='\''(ciao) '\''
+export CONDA_PREFIX_1='\''/home/jy03364/miniconda3'\''
+export CONDA_EXE='\''/home/jy03364/miniconda3/bin/conda'\''
+export CONDA_PYTHON_EXE='\''/home/jy03364/miniconda3/bin/python'\'''
+++ unset _CE_M
+++ unset _CE_CONDA
+++ PS1='(ciao) '
+++ export PATH=/apps/eb/jq/1.6-GCCcore-12.3.0/bin:/apps/eb/GCCcore/12.3.0/bin:/home/jy03364/.codex/tmp/arg0/codex-arg0YFYYB8:/home/jy03364/.nvm/versions/node/v24.14.1/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/path:/home/jy03364/.nvm/versions/node/v24.14.1/bin:/home/jy03364/.conda/envs/ciao/bin:/home/jy03364/miniconda3/condabin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin
+++ PATH=/apps/eb/jq/1.6-GCCcore-12.3.0/bin:/apps/eb/GCCcore/12.3.0/bin:/home/jy03364/.codex/tmp/arg0/codex-arg0YFYYB8:/home/jy03364/.nvm/versions/node/v24.14.1/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/path:/home/jy03364/.nvm/versions/node/v24.14.1/bin:/home/jy03364/.conda/envs/ciao/bin:/home/jy03364/miniconda3/condabin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin
+++ export CONDA_PREFIX=/home/jy03364/.conda/envs/ciao
+++ CONDA_PREFIX=/home/jy03364/.conda/envs/ciao
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=ciao
+++ CONDA_DEFAULT_ENV=ciao
+++ export 'CONDA_PROMPT_MODIFIER=(ciao) '
+++ CONDA_PROMPT_MODIFIER='(ciao) '
+++ export CONDA_PREFIX_1=/home/jy03364/miniconda3
+++ CONDA_PREFIX_1=/home/jy03364/miniconda3
+++ export CONDA_EXE=/home/jy03364/miniconda3/bin/conda
+++ CONDA_EXE=/home/jy03364/miniconda3/bin/conda
+++ export CONDA_PYTHON_EXE=/home/jy03364/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/home/jy03364/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ which python
++ /usr/bin/which --tty-only --read-alias --read-functions --show-tilde --show-dot python
++ alias
++ eval declare -f
+++ declare -f
+/home/jy03364/.conda/envs/ciao/bin/python
++ python --version
+Python 3.12.0
++ command -v jq
+/apps/eb/jq/1.6-GCCcore-12.3.0/bin/jq
++ jq --version
+jq-1.6
++ nvidia-smi -L
+GPU 0: NVIDIA H100 80GB HBM3 (UUID: GPU-ad4f26ea-172a-2cd6-53e7-a60a934dd601)
++ python -
+cuda_available True
+device_count 1
+cuda_version 12.1

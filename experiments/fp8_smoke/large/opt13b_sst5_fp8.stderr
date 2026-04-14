@@ -1,0 +1,91 @@
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/deepspeed.py:23: FutureWarning: transformers.deepspeed module is deprecated and will be removed in a future version. Please import deepspeed modules directly from transformers.integrations
+  warnings.warn(
+2026-04-13 01:13:13,458 - INFO - [model] requested=opt-1.3b resolved=facebook/opt-1.3b family_hint=opt
+2026-04-13 01:13:13,458 - INFO - [data] task_name=SST5 dataset_mode=full num_k=16 data_seed=42 full_dev_ratio=0.1
+Repo card metadata block was not found. Setting CardData to empty.
+2026-04-13 01:13:13,968 - WARNING - Repo card metadata block was not found. Setting CardData to empty.
+2026-04-13 01:13:15,589 - INFO - Loading model with FP16...
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+2026-04-13 01:13:15,724 - INFO - [model] disabling auto device placement for training; Trainer/Accelerate will place the model
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/modeling_utils.py:484: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  return torch.load(checkpoint_file, map_location=map_location)
+2026-04-13 01:14:30,239 - INFO - Done with 74.65s
+2026-04-13 01:14:31,658 - INFO - [fp8] converted nn.Linear modules to torchao Float8Linear for training
+2026-04-13 01:14:31,661 - INFO - Preparing training/evaluation datasets...
+2026-04-13 01:14:31,661 - INFO - Done with 0.00s
+2026-04-13 01:14:32,050 - INFO - ***** Running training *****
+2026-04-13 01:14:32,050 - INFO -   Num examples = 7690
+2026-04-13 01:14:32,050 - INFO -   Num Epochs = 1
+2026-04-13 01:14:32,050 - INFO -   Instantaneous batch size per device = 16
+2026-04-13 01:14:32,050 - INFO -   Total train batch size (w. parallel, distributed & accumulation) = 16
+2026-04-13 01:14:32,050 - INFO -   Gradient Accumulation steps = 1
+2026-04-13 01:14:32,050 - INFO -   Total optimization steps = 50
+2026-04-13 01:14:32,050 - INFO -   Number of trainable parameters = 1315758080
+  0%|          | 0/50 [00:00<?, ?it/s]Traceback (most recent call last):
+  File "/scratch/jy03364/MeZO_/large_models/run.py", line 1080, in <module>
+    main()
+  File "/scratch/jy03364/MeZO_/large_models/run.py", line 992, in main
+    framework.train(train_samples, dev_samples if dev_samples is not None else eval_samples)
+  File "/scratch/jy03364/MeZO_/large_models/run.py", line 861, in train
+    train_result = trainer.train(resume_from_checkpoint=last_checkpoint)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/trainer.py", line 1555, in train
+    return inner_training_loop(
+  File "/scratch/jy03364/MeZO_/large_models/trainer.py", line 656, in _inner_training_loop
+    tr_loss_step = self.zo_step(model, inputs)
+  File "/scratch/jy03364/MeZO_/large_models/trainer.py", line 1218, in zo_step
+    loss1 = self.zo_forward(model, inputs)
+  File "/scratch/jy03364/MeZO_/large_models/trainer.py", line 1151, in zo_forward
+    loss = self.compute_loss(model, inputs)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/trainer.py", line 2748, in compute_loss
+    outputs = model(**inputs)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/scratch/jy03364/MeZO_/large_models/utils.py", line 44, in forward_wrap_with_option_len
+    outputs = self.original_forward(input_ids=input_ids, **kwargs)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/models/opt/modeling_opt.py", line 879, in forward
+    outputs = self.model.decoder(
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/models/opt/modeling_opt.py", line 645, in forward
+    layer_outputs = decoder_layer(
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/models/opt/modeling_opt.py", line 299, in forward
+    hidden_states, self_attn_weights, present_key_value = self.self_attn(
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/models/opt/modeling_opt.py", line 142, in forward
+    query_states = self.q_proj(hidden_states) * self.scaling
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torchao/float8/float8_linear.py", line 340, in forward
+    output = matmul_with_hp_or_float8_args.apply(
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torch/autograd/function.py", line 575, in apply
+    return super().apply(*args, **kwargs)  # type: ignore[misc]
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torchao/float8/float8_linear.py", line 120, in forward
+    res_bits = torch.mm(input_maybe_fp8_reshaped, weight_maybe_fp8_t)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torchao/float8/float8_tensor.py", line 374, in __torch_dispatch__
+    return FLOAT8_OPS_TABLE[func](func, args, kwargs)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torchao/float8/float8_ops.py", line 382, in float8_mm
+    tensor_out = addmm_float8_unwrapped(
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/torchao/float8/float8_ops.py", line 69, in addmm_float8_unwrapped
+    output = torch._scaled_mm(
+RuntimeError: CUDA error: CUBLAS_STATUS_NOT_SUPPORTED when calling `cublasLtMatmulAlgoGetHeuristic( ltHandle, computeDesc.descriptor(), Adesc.descriptor(), Bdesc.descriptor(), Cdesc.descriptor(), Ddesc.descriptor(), preference.descriptor(), 1, &heuristicResult, &returnedResult)`
+  0%|          | 0/50 [00:02<?, ?it/s]

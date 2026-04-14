@@ -1,0 +1,89 @@
++ source /home/jy03364/miniconda3/etc/profile.d/conda.sh
+++ export CONDA_EXE=/home/jy03364/miniconda3/bin/conda
+++ CONDA_EXE=/home/jy03364/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/home/jy03364/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/home/jy03364/miniconda3/bin/python
+++ '[' -z x ']'
++ conda activate mezo-env
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate mezo-env
++ '[' -n '' ']'
++ local ask_conda
+++ PS1=
+++ __conda_exe shell.posix activate mezo-env
+++ '[' -n '' ']'
+++ /home/jy03364/miniconda3/bin/conda shell.posix activate mezo-env
++ ask_conda='unset _CE_M
+unset _CE_CONDA
+PS1='\''(mezo-env) '\''
+export PATH='\''/home/jy03364/.codex/tmp/arg0/codex-arg0YFYYB8:/home/jy03364/.nvm/versions/node/v24.14.1/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/path:/home/jy03364/.nvm/versions/node/v24.14.1/bin:/home/jy03364/miniconda3/envs/mezo-env/bin:/home/jy03364/miniconda3/condabin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin'\''
+export CONDA_PREFIX='\''/home/jy03364/miniconda3/envs/mezo-env'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''mezo-env'\''
+export CONDA_PROMPT_MODIFIER='\''(mezo-env) '\''
+export CONDA_PREFIX_1='\''/home/jy03364/miniconda3'\''
+export CONDA_EXE='\''/home/jy03364/miniconda3/bin/conda'\''
+export CONDA_PYTHON_EXE='\''/home/jy03364/miniconda3/bin/python'\''
+. "/home/jy03364/miniconda3/envs/mezo-env/etc/conda/activate.d/libglib_activate.sh"'
++ eval 'unset _CE_M
+unset _CE_CONDA
+PS1='\''(mezo-env) '\''
+export PATH='\''/home/jy03364/.codex/tmp/arg0/codex-arg0YFYYB8:/home/jy03364/.nvm/versions/node/v24.14.1/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/path:/home/jy03364/.nvm/versions/node/v24.14.1/bin:/home/jy03364/miniconda3/envs/mezo-env/bin:/home/jy03364/miniconda3/condabin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin'\''
+export CONDA_PREFIX='\''/home/jy03364/miniconda3/envs/mezo-env'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''mezo-env'\''
+export CONDA_PROMPT_MODIFIER='\''(mezo-env) '\''
+export CONDA_PREFIX_1='\''/home/jy03364/miniconda3'\''
+export CONDA_EXE='\''/home/jy03364/miniconda3/bin/conda'\''
+export CONDA_PYTHON_EXE='\''/home/jy03364/miniconda3/bin/python'\''
+. "/home/jy03364/miniconda3/envs/mezo-env/etc/conda/activate.d/libglib_activate.sh"'
+++ unset _CE_M
+++ unset _CE_CONDA
+++ PS1='(mezo-env) '
+++ export PATH=/home/jy03364/.codex/tmp/arg0/codex-arg0YFYYB8:/home/jy03364/.nvm/versions/node/v24.14.1/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/path:/home/jy03364/.nvm/versions/node/v24.14.1/bin:/home/jy03364/miniconda3/envs/mezo-env/bin:/home/jy03364/miniconda3/condabin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin
+++ PATH=/home/jy03364/.codex/tmp/arg0/codex-arg0YFYYB8:/home/jy03364/.nvm/versions/node/v24.14.1/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/path:/home/jy03364/.nvm/versions/node/v24.14.1/bin:/home/jy03364/miniconda3/envs/mezo-env/bin:/home/jy03364/miniconda3/condabin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin
+++ export CONDA_PREFIX=/home/jy03364/miniconda3/envs/mezo-env
+++ CONDA_PREFIX=/home/jy03364/miniconda3/envs/mezo-env
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=mezo-env
+++ CONDA_DEFAULT_ENV=mezo-env
+++ export 'CONDA_PROMPT_MODIFIER=(mezo-env) '
+++ CONDA_PROMPT_MODIFIER='(mezo-env) '
+++ export CONDA_PREFIX_1=/home/jy03364/miniconda3
+++ CONDA_PREFIX_1=/home/jy03364/miniconda3
+++ export CONDA_EXE=/home/jy03364/miniconda3/bin/conda
+++ CONDA_EXE=/home/jy03364/miniconda3/bin/conda
+++ export CONDA_PYTHON_EXE=/home/jy03364/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/home/jy03364/miniconda3/bin/python
+++ . /home/jy03364/miniconda3/envs/mezo-env/etc/conda/activate.d/libglib_activate.sh
++++ export GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ export GSETTINGS_SCHEMA_DIR=/home/jy03364/miniconda3/envs/mezo-env/share/glib-2.0/schemas
++++ GSETTINGS_SCHEMA_DIR=/home/jy03364/miniconda3/envs/mezo-env/share/glib-2.0/schemas
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ which python
++ /usr/bin/which --tty-only --read-alias --read-functions --show-tilde --show-dot python
++ alias
++ eval declare -f
+++ declare -f
+/home/jy03364/miniconda3/envs/mezo-env/bin/python
++ python --version
+Python 3.10.19
++ nvidia-smi -L
+GPU 0: NVIDIA H100 80GB HBM3 (UUID: GPU-aa6bb752-0330-7839-e311-dc9e9fd73703)
++ python -
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+cuda_available True
+device_count 1
+cuda_version 12.1
+transformers 4.35.2

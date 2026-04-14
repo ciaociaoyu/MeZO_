@@ -1,0 +1,34 @@
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/deepspeed.py:23: FutureWarning: transformers.deepspeed module is deprecated and will be removed in a future version. Please import deepspeed modules directly from transformers.integrations
+  warnings.warn(
+2026-04-11 12:54:50,349 - INFO - [model] requested=opt-1.3b resolved=facebook/opt-1.3b family_hint=opt
+2026-04-11 12:54:50,349 - INFO - [data] task_name=SST5 dataset_mode=full num_k=16 data_seed=42 full_dev_ratio=0.1
+Repo card metadata block was not found. Setting CardData to empty.
+2026-04-11 12:54:50,642 - WARNING - Repo card metadata block was not found. Setting CardData to empty.
+2026-04-11 12:54:51,191 - INFO - Loading model with FP16...
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+2026-04-11 12:54:51,234 - INFO - [model] disabling auto device placement for training; Trainer/Accelerate will place the model
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/modeling_utils.py:484: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  return torch.load(checkpoint_file, map_location=map_location)
+2026-04-11 12:55:00,798 - INFO - Done with 9.61s
+2026-04-11 12:55:01,617 - INFO - [quzo-config] quantized model parameters in-place at 16 bits before ZO training
+2026-04-11 12:55:01,621 - INFO - Preparing training/evaluation datasets...
+2026-04-11 12:55:01,621 - INFO - Done with 0.00s
+Traceback (most recent call last):
+  File "/scratch/jy03364/MeZO_/large_models/run.py", line 1034, in <module>
+    main()
+  File "/scratch/jy03364/MeZO_/large_models/run.py", line 946, in main
+    framework.train(train_samples, dev_samples if dev_samples is not None else eval_samples)
+  File "/scratch/jy03364/MeZO_/large_models/run.py", line 789, in train
+    trainer = OurTrainer(
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/trainer.py", line 342, in __init__
+    self.create_accelerator_and_postprocess()
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/trainer.py", line 3925, in create_accelerator_and_postprocess
+    self.accelerator = Accelerator(
+TypeError: Accelerator.__init__() got an unexpected keyword argument 'dispatch_batches'
