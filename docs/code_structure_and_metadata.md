@@ -314,3 +314,147 @@
 - 大模型 metadata 文件：`<large_models 运行 output_dir>/run_metadata.json`
 - 中模型 metadata 文件：`<medium_models 运行 output_dir>/run_metadata.json`
 - 新文档：`docs/code_structure_and_metadata.md`
+
+## 10. Sparse MeZO 扩展
+
+这份文档现在把 `docs/code_structure_and_metadata.md` 视为仓库内的 canonical 说明文件；当前没有第二份需要同步维护的 `code_structure_and_metadata*` 副本。
+
+### 10.1 新增 / 修改文件
+
+- 新增：
+  - `large_models/sparse_mezo.py`
+  - `medium_models/src/sparse_mezo.py`
+  - `experiments/h_sweep_14h/jobs/roberta_mnli_sparse_mezo16_14h.sh`
+  - `experiments/h_sweep_14h/jobs/roberta_sst5_sparse_mezo16_14h.sh`
+  - `experiments/h_sweep_14h/submit_sparse_mezo16_searches.sh`
+- 修改：
+  - `large_models/run.py`
+  - `large_models/trainer.py`
+  - `medium_models/run.py`
+  - `medium_models/src/trainer.py`
+  - `run_metadata.py`
+  - `docs/code_structure_and_metadata.md`
+
+### 10.2 稳定方法名与 CLI
+
+- 稳定方法名：`sparse_mezo`
+- 新增 CLI 参数：
+  - `--sparse_ratio`，默认 `1.0`
+  - `--sparse_mask_strategy`，默认 `percentile_per_layer`
+  - `--sparse_scope`，默认 `trainable_only`
+  - `--sparse_log_active_fraction`，默认 `True`
+
+语义约定：
+
+- `sparse_ratio` 表示“每个 trainable tensor 内期望保留为 active 的坐标比例”。
+- 当前 `percentile_per_layer` 实现会在每个 trainable tensor 内保留约 `sparse_ratio` 比例的低 `|param|` 坐标为 active。
+- `sparse_ratio=1.0` 会关闭稀疏 masking，并回退为 vanilla MeZO。
+- `sparse_scope=trainable_only` 表示只对当前 trainable 参数建立 mask；冻结参数不会被意外稀疏化。
+- 训练日志与 `run_summary.json` 会记录实际 `active_fraction`，避免把配置值和实际激活比例混淆。
+
+### 10.3 Sparse MeZO 与 QuZO 的组合顺序
+
+当前组合顺序是显式固定的：
+
+1. 先按现有 MeZO / QuZO 逻辑构造方向向量。
+2. 再把 Sparse MeZO mask 施加到 trainable 参数对应的方向张量上。
+3. 如果当前是 QuZO 低比特路径（`zo_quantization_bits in {8, 4}`），则在 masked perturbation / update 之后继续沿用原有的参数 snapping / quantization 投影。
+
+因此日志和 metadata 的区分方式为：
+
+- `zo_method=mezo` + `zo_quantization=none/fp16`：vanilla MeZO
+- `zo_method=mezo` + `zo_quantization=int8/int4`：MeZO + QuZO
+- `zo_method=sparse_mezo` + `zo_quantization=none/fp16`：Sparse MeZO
+- `zo_method=sparse_mezo` + `zo_quantization=int8/int4`：Sparse MeZO + QuZO
+
+### 10.4 Metadata 记录
+
+`run_metadata.json` 当前会稳定记录以下 Sparse MeZO 字段：
+
+- `metadata_schema_version=1`
+- `zo_method`
+- `sparse_mezo_enabled`
+- `sparse_ratio`
+- `sparse_mask_strategy`
+- `sparse_scope`
+- `sparse_log_active_fraction`
+- 以及原有的 `zo_quantization` / `storage_dtype` / `compute_dtype`
+
+medium 路径的 `run_summary.json` 还会在 `artifacts.sparse_mezo_last_stats` 里保存最近一次 step 的实际统计，包括：
+
+- `configured_ratio`
+- `active_params`
+- `total_trainable_params`
+- `active_fraction`
+- `mask_strategy`
+- `scope`
+- `global_step`
+
+## 11. MNLI / SST-5 的当前实验路径与 16-bit 约定
+
+### 11.1 当前 h-search 路径
+
+仓库内现成的 14-value rough-search / h-sweep 路径位于：
+
+- `experiments/h_sweep_14h/`
+- 14-value 网格定义在：`experiments/h_sweep_14h/h_values.sh`
+- 当前 RoBERTa MNLI / SST-5 搜索脚本位于：
+  - `experiments/h_sweep_14h/jobs/roberta_mnli_quzo16_14h.sh`
+  - `experiments/h_sweep_14h/jobs/roberta_sst5_quzo16_14h.sh`
+
+本轮 Sparse MeZO 的正式 14-value 搜索沿用这一条 medium / RoBERTa 路径。
+
+### 11.2 当前“16-bit”含义
+
+MNLI / SST-5 在当前 medium h-search 路径里的 16-bit 约定保持不变：
+
+- `--zo_two_point_precision fp16`
+- `--zo_quantization_bits 16`
+
+这里的 `16-bit` 语义仍然是仓库当前的“FP16 MeZO path”，而不是把 `8/4-bit QuZO` 的量化投影逻辑强行应用到 16-bit 上。
+
+### 11.3 当前 14-value h grid
+
+当前仓库里已经存在精确的 14 个候选值，本轮直接复用：
+
+- `1e-8`
+- `3e-8`
+- `1e-7`
+- `3e-7`
+- `1e-6`
+- `3e-6`
+- `1e-5`
+- `3e-5`
+- `1e-4`
+- `3e-4`
+- `1e-3`
+- `3e-3`
+- `1e-2`
+- `3e-2`
+
+## 12. Smoke Test 与 Launcher
+
+### 12.1 H100 smoke test 覆盖
+
+本轮 smoke test 先覆盖当前真正用于 MNLI / SST-5 h-search 的 medium / RoBERTa 路径：
+
+- `roberta-large + MNLI + sparse_mezo + 16-bit`
+- `roberta-large + SST-5 + sparse_mezo + 16-bit`
+
+验证点包括：
+
+- 模型加载
+- 当前 16-bit 路径
+- Sparse MeZO step
+- directional probe CSV
+- `run_summary.json`
+- `run_metadata.json`
+- 稀疏 active fraction 日志
+
+### 12.2 正式 launcher 位置
+
+- `experiments/h_sweep_14h/jobs/roberta_mnli_sparse_mezo16_14h.sh`
+- `experiments/h_sweep_14h/jobs/roberta_sst5_sparse_mezo16_14h.sh`
+- `experiments/h_sweep_14h/submit_sparse_mezo16_searches.sh`
+
+`submit_sparse_mezo16_searches.sh` 采用当前仓库的 Slurm / `sbatch` 风格，并通过 dependency 把两个 full search 串起来，保证单卡环境下同一时刻只会有一个 full GPU 训练作业处于活动状态。

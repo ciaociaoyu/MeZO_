@@ -95,6 +95,7 @@ import torch.nn.functional as F
 
 from src.linearhead_trainer import LinearHeadTrainer
 from src.quzo import make_quzo_direction_pair, quantize_tensor
+from src.sparse_mezo import apply_sparse_mask, build_sparse_masks, sparse_mezo_enabled
 from transformers.trainer_callback import TrainerState
 
 import copy
@@ -1985,6 +1986,54 @@ class Trainer(LinearHeadTrainer):
         # INT8/INT4 use the QuZO perturbation/update path; FP16 stays on the plain MeZO path.
         return self._zo_quant_bits() in {8, 4}
 
+    def _sparse_enabled(self) -> bool:
+        return sparse_mezo_enabled(getattr(self.args, "sparse_ratio", 1.0))
+
+    def _sparse_should_log_active_fraction(self, global_step: int) -> bool:
+        if not bool(getattr(self.args, "sparse_log_active_fraction", True)):
+            return False
+        if int(global_step) <= 1:
+            return True
+        logging_steps = int(getattr(self.args, "logging_steps", 0) or 0)
+        return logging_steps <= 0 or int(global_step) % logging_steps == 0
+
+    def _sparse_prepare_step_state(self) -> None:
+        if not self._sparse_enabled():
+            return
+        global_step = int(getattr(self.state, "global_step", 0))
+        if getattr(self, "_sparse_step_masks_step", None) == global_step and getattr(self, "_sparse_step_masks", None) is not None:
+            return
+        masks, stats = build_sparse_masks(
+            self.named_parameters_to_optim,
+            ratio=float(getattr(self.args, "sparse_ratio", 1.0)),
+            mask_strategy=str(getattr(self.args, "sparse_mask_strategy", "percentile_per_layer")),
+            scope=str(getattr(self.args, "sparse_scope", "trainable_only")),
+        )
+        stats["global_step"] = global_step
+        self._sparse_step_masks = masks
+        self._sparse_step_masks_step = global_step
+        self.latest_sparse_mezo_stats = stats
+        if self._sparse_should_log_active_fraction(global_step):
+            if getattr(self, "_sparse_last_logged_step", None) != global_step:
+                logger.info(
+                    "[sparse-mezo] global_step=%d active_fraction=%.6f active_params=%d/%d configured_ratio=%.6f mask_strategy=%s scope=%s",
+                    global_step,
+                    float(stats["active_fraction"]),
+                    int(stats["active_params"]),
+                    int(stats["total_trainable_params"]),
+                    float(stats["configured_ratio"]),
+                    str(stats["mask_strategy"]),
+                    str(stats["scope"]),
+                )
+                self._sparse_last_logged_step = global_step
+
+    def _sparse_mask_tensor(self, name: str, tensor: torch.Tensor) -> torch.Tensor:
+        if not self._sparse_enabled():
+            return tensor
+        self._sparse_prepare_step_state()
+        mask = None if getattr(self, "_sparse_step_masks", None) is None else self._sparse_step_masks.get(name)
+        return apply_sparse_mask(tensor, mask)
+
     def _quzo_get_bundle(
         self,
         name: str,
@@ -2002,6 +2051,12 @@ class Trainer(LinearHeadTrainer):
             step_seed=step_seed,
             target_dtype=param.data.dtype,
         )
+        if self._sparse_enabled():
+            # Sparse MeZO masks the already-constructed direction pair; if QuZO
+            # is active, parameter snapping still happens after the masked step.
+            bundle = dict(bundle)
+            bundle["u1"] = self._sparse_mask_tensor(name, bundle["u1"])
+            bundle["u2"] = self._sparse_mask_tensor(name, bundle["u2"])
         if random_vector is not None:
             random_vector[name] = bundle
         return bundle
@@ -2031,14 +2086,22 @@ class Trainer(LinearHeadTrainer):
         bundle: Optional[Dict[str, torch.Tensor]] = None,
     ) -> None:
         pg = float(projected_grad.detach().float().item()) if isinstance(projected_grad, torch.Tensor) else float(projected_grad)
-        if not self._zo_use_quzo():
+        if (not self._zo_use_quzo()) and (not self._sparse_enabled()):
             if weight_decay != 0.0 and self._hprobe_use_wd(name):
                 param.data.mul_(1.0 - float(learning_rate) * float(weight_decay))
             param.data.add_(direction.detach().to(dtype=param.data.dtype), alpha=-(float(learning_rate) * pg))
             return
-        update = float(learning_rate) * (pg * direction.detach().float())
+        update_direction = pg * direction.detach().float()
         if weight_decay != 0.0 and self._hprobe_use_wd(name):
-            update = update + float(learning_rate) * float(weight_decay) * param.data.detach().float()
+            update_direction = update_direction + float(weight_decay) * param.data.detach().float()
+        if self._sparse_enabled():
+            update_direction = self._sparse_mask_tensor(name, update_direction)
+        update = float(learning_rate) * update_direction
+        if not self._zo_use_quzo():
+            param.data.add_(update.to(dtype=param.data.dtype), alpha=-1.0)
+            return
+        # QuZO composition order is: build direction -> apply sparse mask ->
+        # project the updated parameter back to the quantized grid.
         seed_val = None if bundle is None else bundle.get("state_seed", None)
         seed = int(seed_val.item()) if isinstance(seed_val, torch.Tensor) else None
         param.data.copy_(
@@ -2320,6 +2383,7 @@ class Trainer(LinearHeadTrainer):
             and (not self.args.change_grad_estimate)
         )
 
+        self._sparse_prepare_step_state()
         proj = None
         for (name, param), g in zip(named_params, grads):
             if g is None:
@@ -2349,9 +2413,11 @@ class Trainer(LinearHeadTrainer):
                 z = bundle["u2"]
             elif random_seed is not None:
                 z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                z = self._sparse_mask_tensor(name, z)
             else:
                 if random_vector is None or name not in random_vector:
                     z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                    z = self._sparse_mask_tensor(name, z)
                 else:
                     z = random_vector[name]
 
@@ -2374,6 +2440,7 @@ class Trainer(LinearHeadTrainer):
         return loss.detach(), proj.detach()
 
     def efficient_perturb_parameters(self, model: nn.Module, random_seed: int, scaling_factor=1):
+        self._sparse_prepare_step_state()
         if self._zo_use_quzo():
             for name, param in self.named_parameters_to_optim:
                 bundle = self._quzo_get_bundle(name, param, random_seed=random_seed)
@@ -2387,6 +2454,7 @@ class Trainer(LinearHeadTrainer):
         # 需要 name 以支持按层操作
         for name, param in self.named_parameters_to_optim:
             z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+            z = self._sparse_mask_tensor(name, z)
             # === Begin Adaptive h (Berahas et al.) ===
             eps = float(self._get_training_step_size())
             delta = z * (float(scaling_factor) * eps)
@@ -2400,6 +2468,7 @@ class Trainer(LinearHeadTrainer):
         if random_vector is None:
             random_vector = {}
 
+        self._sparse_prepare_step_state()
         for name, param in self.named_parameters_to_optim:
             bundle = None
             if self._zo_use_quzo():
@@ -2410,6 +2479,7 @@ class Trainer(LinearHeadTrainer):
                     z = random_vector[name]
                 else:
                     z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                    z = self._sparse_mask_tensor(name, z)
                     random_vector[name] = z
 
             cname = self.retrieve_c(name)
@@ -2440,6 +2510,7 @@ class Trainer(LinearHeadTrainer):
         if random_vector is None:
             random_vector = {}
 
+        self._sparse_prepare_step_state()
         for name, param in self.named_parameters_to_optim:
             bundle = None
             if self._zo_use_quzo():
@@ -2450,6 +2521,7 @@ class Trainer(LinearHeadTrainer):
                     z = random_vector[name]
                 else:
                     z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                    z = self._sparse_mask_tensor(name, z)
                     random_vector[name] = z
             # === Begin Adaptive h (Berahas et al.) ===
             eps = float(self._get_training_step_size())
@@ -2467,6 +2539,7 @@ class Trainer(LinearHeadTrainer):
         if random_vector is None:
             random_vector = {}
 
+        self._sparse_prepare_step_state()
         for name, param in self.named_parameters_to_optim:
             cname = self.retrieve_c(name)
             if cname == layer_name:
@@ -2479,6 +2552,7 @@ class Trainer(LinearHeadTrainer):
                         z = random_vector[name]
                     else:
                         z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                        z = self._sparse_mask_tensor(name, z)
                         random_vector[name] = z
                 # === Begin Adaptive h (Berahas et al.) ===
                 eps = float(self._get_training_step_size())
@@ -2880,6 +2954,7 @@ class Trainer(LinearHeadTrainer):
                     for name, param in model.named_parameters():
                         if self.should_optim(name, param):
                             self.named_parameters_to_optim.append((name, param))
+                    self._sparse_prepare_step_state()
                     self._zo_maybe_run_directional_probe(model, inputs)
 
                     if self.args.zo_by_layer:
@@ -3058,6 +3133,7 @@ class Trainer(LinearHeadTrainer):
                                             z = self._quzo_get_bundle(name, param, random_seed=random_seed)["u2"]
                                         else:
                                             z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                                            z = self._sparse_mask_tensor(name, z)
                                     else:
                                         z = random_vector[name]["u2"] if self._zo_use_quzo() else random_vector[name]
 
@@ -3149,6 +3225,8 @@ class Trainer(LinearHeadTrainer):
                                 if grad_l1_step is not None and grad_l2_step is not None:
                                     logs["grad_l1_norm"] = float(grad_l1_step)
                                     logs["grad_l2_norm"] = float(grad_l2_step)
+                                if self._sparse_enabled() and getattr(self, "latest_sparse_mezo_stats", None):
+                                    logs["sparse_active_fraction"] = float(self.latest_sparse_mezo_stats.get("active_fraction", 0.0))
                                 self.log(logs)
                                 logger.info(str(logs))
                                 # === CSV：记录本 step 的训练度量，评估结果稍后补充 ===
@@ -3161,6 +3239,8 @@ class Trainer(LinearHeadTrainer):
                                 }
 
                             model.zero_grad()
+                            self._sparse_step_masks = None
+                            self._sparse_step_masks_step = None
                             self.state.global_step += 1
                             self.epoch = epoch + (step + 1) / len(epoch_iterator)
                     # if not using the trainer, the updates are resampled and directly applied to the parameters
@@ -3185,6 +3265,7 @@ class Trainer(LinearHeadTrainer):
                                     z = bundle["u2"]
                                 else:
                                     z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                                    z = self._sparse_mask_tensor(name, z)
                             else:
                                 if self._zo_use_quzo():
                                     bundle = random_vector[name]
@@ -3196,7 +3277,7 @@ class Trainer(LinearHeadTrainer):
                                 g = grad_est.detach().float()
                                 grad_l1_acc += float(torch.sum(torch.abs(g)).item())
                                 grad_l2_sq_acc += float(torch.sum(g * g).item())
-                            if self._zo_use_quzo():
+                            if self._zo_use_quzo() or self._sparse_enabled():
                                 self._quzo_apply_update_to_param(
                                     name,
                                     param,
@@ -3236,6 +3317,8 @@ class Trainer(LinearHeadTrainer):
                                 if grad_l1_step is not None and grad_l2_step is not None:
                                     logs["grad_l1_norm"] = float(grad_l1_step)
                                     logs["grad_l2_norm"] = float(grad_l2_step)
+                                if self._sparse_enabled() and getattr(self, "latest_sparse_mezo_stats", None):
+                                    logs["sparse_active_fraction"] = float(self.latest_sparse_mezo_stats.get("active_fraction", 0.0))
                                 self.log(logs)
                                 logger.info(str(logs))
                                 # === CSV：记录本 step 的训练度量，评估结果稍后补充 ===
@@ -3247,7 +3330,8 @@ class Trainer(LinearHeadTrainer):
                                     "train_acc": (None if train_acc_csv is None else float(train_acc_csv)),
                                 }
 
-
+                        self._sparse_step_masks = None
+                        self._sparse_step_masks_step = None
                         self.state.global_step += 1
                         self.epoch = epoch + (step + 1) / len(epoch_iterator)
 

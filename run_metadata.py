@@ -128,6 +128,27 @@ def _infer_zo_quantization(bits_value) -> str:
     return "none"
 
 
+def _infer_sparse_ratio(args) -> float:
+    try:
+        return float(getattr(args, "sparse_ratio", 1.0))
+    except Exception:
+        return 1.0
+
+
+def _infer_sparse_mask_strategy(args) -> str:
+    value = getattr(args, "sparse_mask_strategy", "percentile_per_layer")
+    return str(value or "percentile_per_layer")
+
+
+def _infer_sparse_scope(args) -> str:
+    value = getattr(args, "sparse_scope", "trainable_only")
+    return str(value or "trainable_only")
+
+
+def _infer_sparse_log_active_fraction(args) -> bool:
+    return bool(getattr(args, "sparse_log_active_fraction", True))
+
+
 def _count_linear_layers(model) -> int:
     if model is None:
         return 0
@@ -221,6 +242,11 @@ def collect_run_metadata(
     storage_dtype = "mixed" if load_int8 else _infer_storage_dtype_from_model(model)
     compute_dtype = _infer_compute_dtype(args, storage_dtype, fp8_mode, load_int8)
     zo_quantization = _infer_zo_quantization(getattr(args, "zo_quantization_bits", None))
+    sparse_ratio = _infer_sparse_ratio(args)
+    sparse_mezo_enabled = False
+    trainer_name = str(getattr(args, "trainer", "") or "").lower()
+    if bool(getattr(args, "zero_order_optim", False)) or trainer_name == "zo":
+        sparse_mezo_enabled = sparse_ratio < 1.0
     total_linear_layers = _safe_int(model_metadata.get("total_linear_layers"), default=None)
     if total_linear_layers is None:
         total_linear_layers = _count_linear_layers(model)
@@ -232,6 +258,11 @@ def collect_run_metadata(
         "zo_method": str(zo_method or getattr(args, "trainer", None) or "unknown"),
         "int8_snap_enabled": zo_quantization in {"int8", "int4"},
         "zo_quantization": zo_quantization,
+        "sparse_mezo_enabled": bool(sparse_mezo_enabled),
+        "sparse_ratio": float(sparse_ratio),
+        "sparse_mask_strategy": _infer_sparse_mask_strategy(args),
+        "sparse_scope": _infer_sparse_scope(args),
+        "sparse_log_active_fraction": _infer_sparse_log_active_fraction(args),
         "storage_dtype": storage_dtype,
         "compute_dtype": compute_dtype,
         "load_int8": load_int8,

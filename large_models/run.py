@@ -26,6 +26,12 @@ from torch.utils.data import Dataset
 from torch.distributed.fsdp.fully_sharded_data_parallel import FullyShardedDataParallel as FSDP
 from metrics import calculate_metric
 from quzo import quzo_enabled, quantize_model_in_place, validate_quzo_bits
+from sparse_mezo import (
+    normalize_sparse_mask_strategy,
+    normalize_sparse_scope,
+    sparse_mezo_enabled,
+    validate_sparse_ratio,
+)
 from utils import *
 from trainer import OurTrainer
 import random
@@ -188,6 +194,8 @@ def detect_precision_label(args) -> str:
 def infer_large_run_zo_method(args) -> str:
     trainer_name = str(getattr(args, "trainer", "none") or "none").lower()
     if trainer_name == "zo":
+        if sparse_mezo_enabled(getattr(args, "sparse_ratio", 1.0)):
+            return "sparse_mezo"
         return "mezo"
     if bool(getattr(args, "linear_probing", False)):
         return "linear_probing"
@@ -325,6 +333,26 @@ class OurArguments(TrainingArguments):
     zo_eps: float = 1e-3 # eps in MeZO
     zo_quantization_bits: int = 32 # 32 keeps original MeZO; 16 keeps the FP16 MeZO path; 8/4 use the QuZO perturbation/update path
     zo_quantization: Optional[str] = None # string alias for ZO quantization: fp32/off/none, fp16, int8, int4
+    sparse_ratio: float = field(
+        default=1.0,
+        metadata={
+            "help": "Sparse MeZO target active fraction per trainable tensor. 1.0 disables masking and recovers vanilla MeZO."
+        },
+    )
+    sparse_mask_strategy: str = field(
+        default="percentile_per_layer",
+        metadata={
+            "help": "Sparse MeZO mask rule. percentile_per_layer keeps the lowest-|param| sparse_ratio fraction active in each trainable tensor."
+        },
+    )
+    sparse_scope: str = field(
+        default="trainable_only",
+        metadata={"help": "Sparse MeZO scope. Current implementation only supports trainable_only."},
+    )
+    sparse_log_active_fraction: bool = field(
+        default=True,
+        metadata={"help": "If true, log the realized Sparse MeZO active-parameter fraction during training."},
+    )
     zo_probe_every: int = 0 # run G-vs-D directional probe every N optimizer steps; 0 disables it
     zo_probe_num_seeds: int = 16 # number of probe directions per diagnostic step
     zo_probe_log_csv: bool = True # write directional probe rows to output_dir/zo_directional_probe.csv
@@ -381,6 +409,9 @@ def parse_args():
         args.zo_quantization_bits = validate_quzo_bits(zo_quantization_alias)
     else:
         args.zo_quantization_bits = validate_quzo_bits(getattr(args, "zo_quantization_bits", 32))
+    args.sparse_ratio = validate_sparse_ratio(getattr(args, "sparse_ratio", 1.0))
+    args.sparse_mask_strategy = normalize_sparse_mask_strategy(getattr(args, "sparse_mask_strategy", "percentile_per_layer"))
+    args.sparse_scope = normalize_sparse_scope(getattr(args, "sparse_scope", "trainable_only"))
     if int(getattr(args, "zo_probe_num_seeds", 16)) <= 0:
         raise ValueError("--zo_probe_num_seeds must be > 0")
     if int(getattr(args, "zo_probe_every", 0)) < 0:
@@ -616,6 +647,18 @@ class Framework:
             logger.info(
                 "[quzo-config] quantized model parameters in-place at %d bits before ZO training",
                 int(self.args.zo_quantization_bits),
+            )
+        if self.args.trainer == "zo":
+            logger.info(
+                "[sparse-mezo-config] enabled=%s | sparse_ratio=%s | sparse_mask_strategy=%s | sparse_scope=%s | sparse_log_active_fraction=%s",
+                bool(sparse_mezo_enabled(getattr(self.args, "sparse_ratio", 1.0))),
+                float(getattr(self.args, "sparse_ratio", 1.0)),
+                str(getattr(self.args, "sparse_mask_strategy", "percentile_per_layer")),
+                str(getattr(self.args, "sparse_scope", "trainable_only")),
+                bool(getattr(self.args, "sparse_log_active_fraction", True)),
+            )
+            logger.info(
+                "[sparse-mezo-config] ratio semantics: sparse_ratio targets the active fraction per trainable tensor; ratio=1.0 disables masking. Order: construct direction -> apply sparse mask -> apply QuZO snapping after masked perturb/update when low-bit QuZO is active."
             )
 
         return model, tokenizer
@@ -1009,6 +1052,7 @@ class Framework:
             "metrics_csv_path": metrics_recorder.writer.csv_path,
             "zo_directional_probe_csv": getattr(trainer, "_zo_probe_csv_path", None),
             "zo_directional_probe_last_row": getattr(trainer, "latest_zo_probe_row", None),
+            "sparse_mezo_last_stats": getattr(trainer, "latest_sparse_mezo_stats", None),
             "train_metrics": getattr(train_result, "metrics", None),
             "best_metric": getattr(trainer.state, "best_metric", None),
             "best_model_checkpoint": getattr(trainer.state, "best_model_checkpoint", None),
@@ -1211,6 +1255,7 @@ def main():
                             "best_model_checkpoint": train_artifacts.get("best_model_checkpoint"),
                             "metrics_csv_last_row": _read_last_csv_row(train_artifacts.get("metrics_csv_path")),
                             "zo_directional_probe_last_row": _read_last_csv_row(train_artifacts.get("zo_directional_probe_csv")),
+                            "sparse_mezo_last_stats": train_artifacts.get("sparse_mezo_last_stats"),
                             "trainer_state": _read_json_if_exists(train_artifacts.get("trainer_state_path")),
                         },
                         "run_metadata": getattr(framework, "run_metadata", None),

@@ -37,6 +37,7 @@ import copy
 from metrics import f1
 import numpy as np
 from quzo import make_quzo_direction_pair, quantize_tensor
+from sparse_mezo import apply_sparse_mask, build_sparse_masks, sparse_mezo_enabled
 
 from tqdm.auto import tqdm
 from transformers import Trainer
@@ -867,14 +868,69 @@ class OurTrainer(Trainer):
     def _zo_use_weight_decay(self, name: str) -> bool:
         return "bias" not in name and "layer_norm" not in name and "layernorm" not in name
 
+    def _sparse_enabled(self) -> bool:
+        return sparse_mezo_enabled(getattr(self.args, "sparse_ratio", 1.0))
+
+    def _sparse_should_log_active_fraction(self, global_step: int) -> bool:
+        if not bool(getattr(self.args, "sparse_log_active_fraction", True)):
+            return False
+        if int(global_step) <= 1:
+            return True
+        logging_steps = int(getattr(self.args, "logging_steps", 0) or 0)
+        return logging_steps <= 0 or int(global_step) % logging_steps == 0
+
+    def _sparse_prepare_step_state(self) -> None:
+        if not self._sparse_enabled():
+            return
+        global_step = int(getattr(self.state, "global_step", 0))
+        if getattr(self, "_sparse_step_masks_step", None) == global_step and getattr(self, "_sparse_step_masks", None) is not None:
+            return
+        masks, stats = build_sparse_masks(
+            self.named_parameters_to_optim,
+            ratio=float(getattr(self.args, "sparse_ratio", 1.0)),
+            mask_strategy=str(getattr(self.args, "sparse_mask_strategy", "percentile_per_layer")),
+            scope=str(getattr(self.args, "sparse_scope", "trainable_only")),
+        )
+        stats["global_step"] = global_step
+        self._sparse_step_masks = masks
+        self._sparse_step_masks_step = global_step
+        self.latest_sparse_mezo_stats = stats
+        if self._sparse_should_log_active_fraction(global_step):
+            if getattr(self, "_sparse_last_logged_step", None) != global_step:
+                logger.info(
+                    "[sparse-mezo] global_step=%d active_fraction=%.6f active_params=%d/%d configured_ratio=%.6f mask_strategy=%s scope=%s",
+                    global_step,
+                    float(stats["active_fraction"]),
+                    int(stats["active_params"]),
+                    int(stats["total_trainable_params"]),
+                    float(stats["configured_ratio"]),
+                    str(stats["mask_strategy"]),
+                    str(stats["scope"]),
+                )
+                self._sparse_last_logged_step = global_step
+
+    def _sparse_mask_tensor(self, name: str, tensor: torch.Tensor) -> torch.Tensor:
+        if not self._sparse_enabled():
+            return tensor
+        self._sparse_prepare_step_state()
+        mask = None if getattr(self, "_sparse_step_masks", None) is None else self._sparse_step_masks.get(name)
+        return apply_sparse_mask(tensor, mask)
+
     def _quzo_get_bundle(self, name, param, step_seed: int):
-        return make_quzo_direction_pair(
+        bundle = make_quzo_direction_pair(
             param.data,
             bits=self._zo_quant_bits(),
             key=name,
             step_seed=int(step_seed),
             target_dtype=param.data.dtype,
         )
+        if self._sparse_enabled():
+            # Sparse MeZO masks the already-constructed direction pair; if QuZO
+            # is active, parameter snapping still happens after the masked step.
+            bundle = dict(bundle)
+            bundle["u1"] = self._sparse_mask_tensor(name, bundle["u1"])
+            bundle["u2"] = self._sparse_mask_tensor(name, bundle["u2"])
+        return bundle
 
     def _quzo_quantize_param_from_bundle(self, param, bundle):
         if not self._zo_use_quzo():
@@ -891,14 +947,22 @@ class OurTrainer(Trainer):
         )
 
     def _quzo_apply_update_to_param(self, name, param, direction, projected_grad, learning_rate, bundle):
-        if not self._zo_use_quzo():
+        if (not self._zo_use_quzo()) and (not self._sparse_enabled()):
             if self.args.weight_decay > 0 and self._zo_use_weight_decay(name):
                 param.data.mul_(1.0 - float(learning_rate) * float(self.args.weight_decay))
             param.data.add_(direction.detach().to(dtype=param.data.dtype), alpha=-(float(learning_rate) * float(projected_grad)))
             return
-        update = float(learning_rate) * (float(projected_grad) * direction.detach().float())
+        update_direction = float(projected_grad) * direction.detach().float()
         if self.args.weight_decay > 0 and self._zo_use_weight_decay(name):
-            update = update + float(learning_rate) * float(self.args.weight_decay) * param.data.detach().float()
+            update_direction = update_direction + float(self.args.weight_decay) * param.data.detach().float()
+        if self._sparse_enabled():
+            update_direction = self._sparse_mask_tensor(name, update_direction)
+        update = float(learning_rate) * update_direction
+        if not self._zo_use_quzo():
+            param.data.add_(update.to(dtype=param.data.dtype), alpha=-1.0)
+            return
+        # QuZO composition order is: build direction -> apply sparse mask ->
+        # project the updated parameter back to the quantized grid.
         seed_val = bundle.get("state_seed", None)
         seed = int(seed_val.item()) if isinstance(seed_val, torch.Tensor) else None
         param.data.copy_(
@@ -991,12 +1055,14 @@ class OurTrainer(Trainer):
             if torch.cuda.is_available():
                 torch.cuda.manual_seed_all(int(random_seed))
 
+        self._sparse_prepare_step_state()
         proj = None
         for (name, param), grad in zip(self.named_parameters_to_optim, grads):
             if self._zo_use_quzo():
                 z = self._quzo_get_bundle(name, param, int(random_seed))["u2"]
             else:
                 z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                z = self._sparse_mask_tensor(name, z)
 
             if grad is None:
                 continue
@@ -1026,6 +1092,7 @@ class OurTrainer(Trainer):
 
         fd_vals: List[float] = []
         td_vals: List[float] = []
+        self._sparse_prepare_step_state()
 
         torch_state = torch.random.get_rng_state()
         cuda_states = None
@@ -1121,6 +1188,7 @@ class OurTrainer(Trainer):
         """
 
         step_seed = int(random_seed if random_seed is not None else self.zo_random_seed)
+        self._sparse_prepare_step_state()
         if self._zo_use_quzo():
             for name, param in self.named_parameters_to_optim:
                 bundle = self._quzo_get_bundle(name, param, step_seed)
@@ -1133,6 +1201,7 @@ class OurTrainer(Trainer):
 
         for name, param in self.named_parameters_to_optim:
             z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+            z = self._sparse_mask_tensor(name, z)
             param.data = param.data + scaling_factor * z * self.args.zo_eps
 
 
@@ -1208,6 +1277,7 @@ class OurTrainer(Trainer):
             if param.requires_grad:
                 self.named_parameters_to_optim.append((name, param))
 
+        self._sparse_prepare_step_state()
         self._zo_maybe_run_directional_probe(model, inputs)
 
         # Sample the random seed for sampling z
@@ -1257,7 +1327,7 @@ class OurTrainer(Trainer):
         # Keep the original update formula when there is no gradient accumulation.
         if len(self.zo_random_seed_buffer) == 1:
             self.zo_random_seed, self.projected_grad = self.zo_random_seed_buffer[0]
-            if self._zo_use_quzo():
+            if self._zo_use_quzo() or self._sparse_enabled():
                 for name, param in self.named_parameters_to_optim:
                     bundle = self._quzo_get_bundle(name, param, int(self.zo_random_seed))
                     self._quzo_apply_update_to_param(name, param, bundle["u2"], self.projected_grad, learning_rate, bundle)
@@ -1274,7 +1344,7 @@ class OurTrainer(Trainer):
             # We keep finite-difference + random-direction logic unchanged per micro-step.
             num_micro_batches = len(self.zo_random_seed_buffer)
             for zo_random_seed, projected_grad in self.zo_random_seed_buffer:
-                if self._zo_use_quzo():
+                if self._zo_use_quzo() or self._sparse_enabled():
                     for name, param in self.named_parameters_to_optim:
                         bundle = self._quzo_get_bundle(name, param, int(zo_random_seed))
                         self._quzo_apply_update_to_param(
@@ -1292,12 +1362,14 @@ class OurTrainer(Trainer):
                         param.data = param.data - learning_rate * ((projected_grad / num_micro_batches) * z)
 
             # Apply weight decay once per optimizer update (excluding bias/layernorm params).
-            if (not self._zo_use_quzo()) and args.weight_decay > 0:
+            if (not self._zo_use_quzo()) and (not self._sparse_enabled()) and args.weight_decay > 0:
                 for name, param in self.named_parameters_to_optim:
                     if self._zo_use_weight_decay(name):
                         param.data = param.data - learning_rate * (args.weight_decay * param.data)
 
         self.zo_random_seed_buffer = []
+        self._sparse_step_masks = None
+        self._sparse_step_masks_step = None
 
         self.lr_scheduler.step()
 

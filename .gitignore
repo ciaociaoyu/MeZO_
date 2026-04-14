@@ -147,6 +147,7 @@ cython_debug/
 !experiments/h_sweep_14h/h_values.sh
 !experiments/h_sweep_14h/jobs/
 !experiments/h_sweep_14h/jobs/*.sh
+!experiments/h_sweep_14h/submit_sparse_mezo16_searches.sh
 !experiments/h_sweep_14h/logs/
 !experiments/h_sweep_14h/logs/.gitkeep
 experiments/**/__pycache__/
