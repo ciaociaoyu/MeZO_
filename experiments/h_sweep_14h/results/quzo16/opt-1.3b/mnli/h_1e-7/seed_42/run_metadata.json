@@ -1,0 +1,21 @@
+{
+  "metadata_schema_version": 1,
+  "zo_method": "mezo",
+  "int8_snap_enabled": false,
+  "zo_quantization": "fp16",
+  "storage_dtype": "fp16",
+  "compute_dtype": "fp16",
+  "load_int8": false,
+  "fp8_mode": "none",
+  "fp8_native_enabled": false,
+  "converted_linear_layers": 0,
+  "total_linear_layers": 145,
+  "skipped_layer_names": [],
+  "device_type": "NVIDIA H100 80GB HBM3",
+  "model_name": "facebook/opt-1.3b",
+  "task_name": "MNLI",
+  "seed": 42,
+  "run_output_dir": "/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli/h_1e-7/seed_42",
+  "git_commit": "fbe065f03be4f4981ba9305bdb66701b1a07ee92",
+  "hostname": "ra7-1"
+}

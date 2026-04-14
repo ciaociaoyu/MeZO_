@@ -74,22 +74,37 @@
 - 本次重新提交日志：
   - `/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/submit_sparse_mezo16_20260414_035459.log`
 
-## 4. 当前队列快照
+## 4. 其他已完成实验
+
+### 4.1 `opt-1.3b + MNLI + quzo16`
+
+- Slurm job id：`44197021`
+- 状态：`COMPLETED`
+- 结果目录：
+  - `/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli`
+- 日志目录：
+  - `/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/quzo16/opt-1.3b/mnli`
+- `summary.jsonl` 汇总：
+  - `14` 个 `h` 全部结束
+  - `3 completed`
+  - `11 failed`
+- `completed` 的 `h`：
+  - `1e-8`
+  - `3e-8`
+  - `1e-7`
+
+## 5. 当前队列快照
 
 以下状态是写本文档时的快照：
 
 - `44285153` `hsweep14h_sparsemezo16_roberta_mnli`
   - 状态：`RUNNING`
 - `44285154` `hsweep14h_sparsemezo16_roberta_sst5`
-  - 状态：`PENDING`
-  - 当前无 dependency，处于普通排队状态
-
-另外还有一个旧作业仍在运行，但不是本轮 Sparse MeZO 新提交的任务：
-
-- `44197021` `hsweep14h_quzo16_opt13b_mnli`
   - 状态：`RUNNING`
+- `44197021` `hsweep14h_quzo16_opt13b_mnli`
+  - 状态：`COMPLETED`
 
-## 5. 当前使用的 14 个 h 值
+## 6. 当前使用的 14 个 h 值
 
 来自 `experiments/h_sweep_14h/h_values.sh`：
 
