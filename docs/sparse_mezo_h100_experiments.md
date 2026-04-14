@@ -78,20 +78,22 @@
 
 ### 4.1 `opt-1.3b + MNLI + quzo16`
 
-- Slurm job id：`44197021`
-- 状态：`COMPLETED`
-- 结果目录：
+- 旧 job：`44197021`
+- 问题：
+  - 在后半段 sweep 中触发 `large_models/run.py` 的代码回归，`field` 未从 `dataclasses` 导入，导致 `OurArguments` 在解释阶段直接报 `NameError`
+- 修复：
+  - 已补回 `large_models/run.py` 中的 `field` 导入
+  - 已在 H100 上用 `h=3e-7` 做完整 smoke 验证，确认可成功运行并写出 `run_summary.json` / `run_metadata.json`
+- smoke 输出目录：
+  - `/scratch/jy03364/MeZO_/experiments/smoke_fix/large/opt13b_mnli_quzo16_h3e-7_numeval32`
+- 重新提交后的新 job：
+  - `44302039`
+- 当前状态：
+  - `RUNNING`
+- 当前正式结果目录：
   - `/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli`
-- 日志目录：
+- 当前正式日志目录：
   - `/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/quzo16/opt-1.3b/mnli`
-- `summary.jsonl` 汇总：
-  - `14` 个 `h` 全部结束
-  - `3 completed`
-  - `11 failed`
-- `completed` 的 `h`：
-  - `1e-8`
-  - `3e-8`
-  - `1e-7`
 
 ## 5. 当前队列快照
 
@@ -101,8 +103,8 @@
   - 状态：`RUNNING`
 - `44285154` `hsweep14h_sparsemezo16_roberta_sst5`
   - 状态：`RUNNING`
-- `44197021` `hsweep14h_quzo16_opt13b_mnli`
-  - 状态：`COMPLETED`
+- `44302039` `hsweep14h_quzo16_opt13b_mnli`
+  - 状态：`RUNNING`
 
 ## 6. 当前使用的 14 个 h 值
 
