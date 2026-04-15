@@ -613,13 +613,13 @@ class DynamicTrainingArguments(TrainingArguments):
     zo_quantization_bits: int = field(
         default=32,
         metadata={
-            "help": "Quantization used by ZO training. 32 keeps original MeZO. 16 keeps the FP16 MeZO path. 8/4 use the QuZO perturbation/update path."
+            "help": "ZO-side method switch for medium_models. 32 keeps plain MeZO. 16 keeps the repo's FP16 MeZO convention. 8/4 use the QuZO perturbation/update path. medium_models has no separate load_int8 path."
         }
     )
     zo_quantization: Optional[str] = field(
         default=None,
         metadata={
-            "help": "String alias for ZO quantization. Supported values: fp32/off/none, fp16, int8, int4. Overrides --zo_quantization_bits when set."
+            "help": "String alias for the same ZO-side method switch. Supported values: fp32/off/none, fp16, int8, int4. Overrides --zo_quantization_bits when set. In medium_models, int8 means QuZO int8, not model-loading int8."
         }
     )
     sparse_ratio: float = field(

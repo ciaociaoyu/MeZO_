@@ -106,7 +106,228 @@
 - `44302039` `hsweep14h_quzo16_opt13b_mnli`
   - 状态：`RUNNING`
 
-## 6. 当前使用的 14 个 h 值
+## 6. H100 上 `opt-1.3b` 速度基准
+
+目标：在当前 H100 环境下，测 `opt-1.3b` 在 `MNLI / SST-5 / BoolQ / SQuAD` 上的短程训练速度，对比 `fp16` 和 `int8` 两种当前仓库已有的 large-model 精度路径。
+
+注意：本节最早记录的 `int8` 是 `--load_int8 --zo_quantization_bits 32`，也就是 “int8 模型加载 + plain MeZO”，不是 QuZO int8。后文会单独补真正 `--zo_quantization int8` 的 QuZO int8 结果。
+
+### 6.1 测试参数确认
+
+8 组速度测试统一使用：
+
+- `model_name = facebook/opt-1.3b`
+- `trainer = zo`
+- `dataset_mode = full`
+- `num_k = 16`
+- `data_seed = 42`
+- `train_set_seed = 42`
+- `learning_rate = 1e-6`
+- `zo_eps = 1e-4`
+- `num_train_epochs = 1`
+- `max_steps = 20`
+- `per_device_train_batch_size = 16`
+- `gradient_accumulation_steps = 1`
+- `lr_scheduler_type = constant`
+- `save_strategy = no`
+- `no_eval = True`
+- `logging_steps = 1`
+- `zo_probe_every = 0`
+
+结论：
+
+- 梯度累计已关闭：`gradient_accumulation_steps = 1`
+- batch size 不小：`per_device_train_batch_size = 16`
+
+本次这一组 benchmark 的“精度”定义按当前仓库 large-model 语义执行：
+
+- `fp16`：
+  - `--load_float16`
+  - `--zo_quantization_bits 16`
+- `int8`：
+  - `--load_int8`
+  - `--zo_quantization_bits 32`
+
+也就是说，这一组里的 `int8` 指的是模型加载路径，不是 QuZO int8 扰动/更新路径。
+
+### 6.2 结果目录
+
+- 总目录：
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/opt13b_h100_20260414_195901`
+- 汇总文件：
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/opt13b_h100_20260414_195901/summary.jsonl`
+
+每个任务/精度组合都包含：
+
+- `command.sh`
+- `combined.log`
+- `time.txt`
+- `run/`
+
+### 6.3 吞吐结果
+
+以下以 `train_steps_per_second` 作为主要训练速度指标；`wall_seconds` 包含模型加载和短程启动开销。
+
+| task | mode | train_steps_per_second | train_runtime (20 step) | wall_seconds |
+|---|---|---:|---:|---:|
+| MNLI | fp16 | 4.584 | 4.3626 | 30.41 |
+| SST-5 | fp16 | 6.516 | 3.0694 | 19.10 |
+| BoolQ | fp16 | 3.774 | 5.2991 | 27.64 |
+| SQuAD | fp16 | 4.643 | 4.3080 | 25.78 |
+| MNLI | int8 | 1.315 | 15.2137 | 38.42 |
+| SST-5 | int8 | 1.563 | 12.7955 | 25.68 |
+| BoolQ | int8 | 0.820 | 24.3757 | 38.32 |
+| SQuAD | int8 | 1.196 | 16.7278 | 33.35 |
+
+### 6.4 折算到 10,000 step 的训练时间
+
+下面的估算基于 `train_steps_per_second`，只反映训练 step 时间，不把短程测试里模型加载的固定开销线性放大。
+
+| task | mode | estimated seconds for 10k steps | estimated time for 10k steps |
+|---|---|---:|---|
+| MNLI | fp16 | 2181.5 | 0h36m21.5s |
+| SST-5 | fp16 | 1534.7 | 0h25m34.7s |
+| BoolQ | fp16 | 2649.7 | 0h44m09.7s |
+| SQuAD | fp16 | 2153.8 | 0h35m53.8s |
+| MNLI | int8 | 7604.6 | 2h06m44.6s |
+| SST-5 | int8 | 6398.0 | 1h46m38.0s |
+| BoolQ | int8 | 12195.1 | 3h23m15.1s |
+| SQuAD | int8 | 8361.2 | 2h19m21.2s |
+
+### 6.5 简要结论
+
+- 在当前 `opt-1.3b` large-model 训练路径上，`int8` 明显慢于 `fp16`
+- 相对 `fp16`，`int8` 大约慢：
+  - `MNLI`: `3.49x`
+  - `SST-5`: `4.17x`
+  - `BoolQ`: `4.60x`
+  - `SQuAD`: `3.88x`
+- 因此，如果目标是当前仓库上的训练吞吐，`fp16` 仍然是更优选择
+
+### 6.6 真正的 QuZO int8 (`--zo_quantization int8`) 补测
+
+上面 `6.1` 到 `6.5` 的 `int8` 是 `--load_int8 --zo_quantization_bits 32`，也就是 “int8 模型加载 + plain MeZO”。为了和 `medium_models` 里的 `roberta int8` 公平对齐，我另外补跑了一组真正的 QuZO int8：
+
+- `--load_float16`
+- `--zo_quantization int8`
+
+也就是说，这组结果对应的是：
+
+- FP16 模型加载
+- QuZO 8-bit 扰动 / 更新路径
+
+结果目录：
+
+- `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/opt13b_quzo_int8_h100_final_20260414_215951`
+- 汇总文件：
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/opt13b_quzo_int8_h100_final_20260414_215951/summary.jsonl`
+
+其中 `SQuAD` 这次为了避开本地 `datasets` 的损坏缓存，使用了隔离的 `HF_DATASETS_CACHE` 重跑；训练逻辑没有改。
+
+| task | mode | train_steps_per_second | train_runtime (20 step) | wall_seconds |
+|---|---|---:|---:|---:|
+| MNLI | quzo_int8 | 0.791 | 25.2814 | 58.71 |
+| SST-5 | quzo_int8 | 0.881 | 22.6969 | 45.03 |
+| BoolQ | quzo_int8 | 0.654 | 30.5612 | 53.29 |
+| SQuAD | quzo_int8 | 0.811 | 24.6578 | 54.42 |
+
+按 `10,000 step` 折算：
+
+| task | mode | estimated seconds for 10k steps | estimated time for 10k steps |
+|---|---|---:|---|
+| MNLI | quzo_int8 | 12642.2 | 3h30m42.2s |
+| SST-5 | quzo_int8 | 11350.7 | 3h09m10.7s |
+| BoolQ | quzo_int8 | 15290.5 | 4h14m50.5s |
+| SQuAD | quzo_int8 | 12330.5 | 3h25m30.5s |
+
+和 `6.3` 里的 `fp16` 相比，真正的 QuZO int8 更慢：
+
+- `MNLI`: `5.80x`
+- `SST-5`: `7.40x`
+- `BoolQ`: `5.77x`
+- `SQuAD`: `5.72x`
+
+这也是为什么前面如果把 `load_int8 + plain MeZO` 和 `QuZO int8` 混在一起看，会得出错误的速度结论。
+
+## 7. H100 上 `roberta-large` 速度基准
+
+目标：补齐当前正式 `medium_models` 路径上 `roberta-large` 的短程训练吞吐对比。这里不重跑已经测过的 `opt-1.3b`，只新增 `MNLI / SST-5` 的 `16-bit` 与 `int8`。
+
+### 7.1 路径与范围说明
+
+- 当前正式 `roberta-large` 训练路径是 `medium_models`
+- 该路径当前用于正式实验的任务是：
+  - `MNLI`
+  - `SST-5`
+- `BoolQ / SQuAD` 不属于当前 `roberta / medium_models` 这条正式训练路径，因此本轮没有为 `roberta-large` 额外发明一条新训练路径去测它们
+
+### 7.2 测试参数确认
+
+4 组 `roberta-large` 速度测试统一使用：
+
+- `model = roberta-large`
+- `trainer = standard + zero_order_optim`
+- `dataset_mode = full`
+- `num_k = 16`
+- `seed = 16`
+- `data_seed = 16`
+- `learning_rate = 1e-6`
+- `zero_order_eps = 1e-4`
+- `max_steps = 20`
+- `per_device_train_batch_size = 32`
+- `gradient_accumulation_steps = 1`
+- `dataloader_shuffle = False`
+- `use_adaptive_h = False`
+- `use_c_scale = False`
+- `zo_probe_every = 0`
+
+本次“精度”定义按当前仓库 `medium_models` 语义执行：
+
+- `fp16`：
+  - `--zo_two_point_precision fp16`
+  - `--zo_quantization_bits 16`
+- `int8`：
+  - `--zo_two_point_precision fp16`
+  - `--zo_quantization int8`
+
+### 7.3 结果目录
+
+- 早期目录：
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_20260414`
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_20260414_mini`
+- 当前以 `BS=32` 重测结果为准：
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_bs32_rerun_20260414_212842`
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_bs32_rerun_20260414_212842/summary.jsonl`
+
+### 7.4 吞吐结果
+
+`medium_models` 的 `run_summary.json` 不直接写 `train_steps_per_second`，这里使用训练日志中 `global_step=20` 时的 `time=` 近似换算训练吞吐。下面以这次 `BS=32` 重测结果为准。
+
+| task | mode | approx train time for 20 steps | approx train_steps_per_second |
+|---|---|---:|---:|
+| MNLI | fp16 | 2s | 10.00 |
+| MNLI | int8 | 16s | 1.25 |
+| SST-5 | fp16 | 2s | 10.00 |
+| SST-5 | int8 | 15s | 1.33 |
+
+### 7.5 折算到 10,000 step 的训练时间
+
+| task | mode | estimated seconds for 10k steps | estimated time for 10k steps |
+|---|---|---:|---|
+| MNLI | fp16 | 1000.0 | 0h16m40s |
+| MNLI | int8 | 8000.0 | 2h13m20s |
+| SST-5 | fp16 | 1000.0 | 0h16m40s |
+| SST-5 | int8 | 7500.0 | 2h05m00s |
+
+### 7.6 简要结论
+
+- 在当前 `roberta-large` medium-model 训练路径上，`int8` 同样明显慢于 `fp16`
+- 相对 `fp16`，`int8` 大约慢：
+  - `MNLI`: `8.00x`
+  - `SST-5`: `7.50x`
+- 所以当前仓库下，无论 `opt-1.3b` 还是 `roberta-large`，训练吞吐都仍然是 `fp16` 更占优
+
+## 8. 当前使用的 14 个 h 值
 
 来自 `experiments/h_sweep_14h/h_values.sh`：
 

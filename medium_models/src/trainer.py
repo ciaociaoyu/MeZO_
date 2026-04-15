@@ -1983,7 +1983,9 @@ class Trainer(LinearHeadTrainer):
         return int(getattr(self.args, "zo_quantization_bits", 32))
 
     def _zo_use_quzo(self) -> bool:
-        # INT8/INT4 use the QuZO perturbation/update path; FP16 stays on the plain MeZO path.
+        # medium_models has no separate load_int8 model-loading flag.
+        # This switch depends only on zo_quantization_bits / zo_quantization:
+        # 8/4 -> QuZO perturb/update path, 16 -> repo's FP16 MeZO convention.
         return self._zo_quant_bits() in {8, 4}
 
     def _sparse_enabled(self) -> bool:

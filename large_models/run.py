@@ -309,9 +309,9 @@ class OurArguments(TrainingArguments):
 
     # Model loading
     model_name: str = "facebook/opt-125m" # HuggingFace model name
-    load_float16: bool = False # load model parameters as float16
-    load_bfloat16: bool = False # load model parameters as bfloat16
-    load_int8: bool = False # load model parameters as int8
+    load_float16: bool = False # model-loading/storage flag: load base model weights in float16 before any ZO/QuZO logic
+    load_bfloat16: bool = False # model-loading/storage flag: load base model weights in bfloat16 before any ZO/QuZO logic
+    load_int8: bool = False # model-loading/storage flag: use HF/bitsandbytes-style int8 loading; this is NOT the QuZO int8 perturb/update path
     use_torchao_float8: bool = False # swap nn.Linear modules with torchao Float8Linear for training
     max_length: int = 2048 # max length the model can take
     no_auto_device: bool = False # do not load model by auto device; should turn this on when using FSDP
@@ -331,8 +331,8 @@ class OurArguments(TrainingArguments):
 
     # MeZO
     zo_eps: float = 1e-3 # eps in MeZO
-    zo_quantization_bits: int = 32 # 32 keeps original MeZO; 16 keeps the FP16 MeZO path; 8/4 use the QuZO perturbation/update path
-    zo_quantization: Optional[str] = None # string alias for ZO quantization: fp32/off/none, fp16, int8, int4
+    zo_quantization_bits: int = 32 # ZO-side method switch: 32 -> plain MeZO, 16 -> repo's FP16 MeZO convention, 8/4 -> QuZO perturb/update path
+    zo_quantization: Optional[str] = None # string alias for the same ZO-side method switch: fp32/off/none -> plain MeZO, fp16 -> FP16 MeZO path, int8/int4 -> QuZO low-bit path
     sparse_ratio: float = field(
         default=1.0,
         metadata={
