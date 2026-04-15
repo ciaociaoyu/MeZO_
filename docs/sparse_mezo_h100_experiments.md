@@ -110,6 +110,8 @@
 
 目标：在当前 H100 环境下，测 `opt-1.3b` 在 `MNLI / SST-5 / BoolQ / SQuAD` 上的短程训练速度，对比 `fp16` 和 `int8` 两种当前仓库已有的 large-model 精度路径。
 
+注意：本节最早记录的 `int8` 是 `--load_int8 --zo_quantization_bits 32`，也就是 “int8 模型加载 + plain MeZO”，不是 QuZO int8。后文会单独补真正 `--zo_quantization int8` 的 QuZO int8 结果。
+
 ### 6.1 测试参数确认
 
 8 组速度测试统一使用：
@@ -137,7 +139,7 @@
 - 梯度累计已关闭：`gradient_accumulation_steps = 1`
 - batch size 不小：`per_device_train_batch_size = 16`
 
-本次“精度”定义按当前仓库 large-model 语义执行：
+本次这一组 benchmark 的“精度”定义按当前仓库 large-model 语义执行：
 
 - `fp16`：
   - `--load_float16`
@@ -145,6 +147,8 @@
 - `int8`：
   - `--load_int8`
   - `--zo_quantization_bits 32`
+
+也就是说，这一组里的 `int8` 指的是模型加载路径，不是 QuZO int8 扰动/更新路径。
 
 ### 6.2 结果目录
 
@@ -199,6 +203,51 @@
   - `BoolQ`: `4.60x`
   - `SQuAD`: `3.88x`
 - 因此，如果目标是当前仓库上的训练吞吐，`fp16` 仍然是更优选择
+
+### 6.6 真正的 QuZO int8 (`--zo_quantization int8`) 补测
+
+上面 `6.1` 到 `6.5` 的 `int8` 是 `--load_int8 --zo_quantization_bits 32`，也就是 “int8 模型加载 + plain MeZO”。为了和 `medium_models` 里的 `roberta int8` 公平对齐，我另外补跑了一组真正的 QuZO int8：
+
+- `--load_float16`
+- `--zo_quantization int8`
+
+也就是说，这组结果对应的是：
+
+- FP16 模型加载
+- QuZO 8-bit 扰动 / 更新路径
+
+结果目录：
+
+- `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/opt13b_quzo_int8_h100_final_20260414_215951`
+- 汇总文件：
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/opt13b_quzo_int8_h100_final_20260414_215951/summary.jsonl`
+
+其中 `SQuAD` 这次为了避开本地 `datasets` 的损坏缓存，使用了隔离的 `HF_DATASETS_CACHE` 重跑；训练逻辑没有改。
+
+| task | mode | train_steps_per_second | train_runtime (20 step) | wall_seconds |
+|---|---|---:|---:|---:|
+| MNLI | quzo_int8 | 0.791 | 25.2814 | 58.71 |
+| SST-5 | quzo_int8 | 0.881 | 22.6969 | 45.03 |
+| BoolQ | quzo_int8 | 0.654 | 30.5612 | 53.29 |
+| SQuAD | quzo_int8 | 0.811 | 24.6578 | 54.42 |
+
+按 `10,000 step` 折算：
+
+| task | mode | estimated seconds for 10k steps | estimated time for 10k steps |
+|---|---|---:|---|
+| MNLI | quzo_int8 | 12642.2 | 3h30m42.2s |
+| SST-5 | quzo_int8 | 11350.7 | 3h09m10.7s |
+| BoolQ | quzo_int8 | 15290.5 | 4h14m50.5s |
+| SQuAD | quzo_int8 | 12330.5 | 3h25m30.5s |
+
+和 `6.3` 里的 `fp16` 相比，真正的 QuZO int8 更慢：
+
+- `MNLI`: `5.80x`
+- `SST-5`: `7.40x`
+- `BoolQ`: `5.77x`
+- `SQuAD`: `5.72x`
+
+这也是为什么前面如果把 `load_int8 + plain MeZO` 和 `QuZO int8` 混在一起看，会得出错误的速度结论。
 
 ## 7. H100 上 `roberta-large` 速度基准
 

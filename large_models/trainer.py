@@ -91,7 +91,11 @@ from transformers import __version__
 from transformers.configuration_utils import PretrainedConfig
 from transformers.data.data_collator import DataCollator, DataCollatorWithPadding, default_data_collator
 from transformers.debug_utils import DebugOption, DebugUnderflowOverflow
-from transformers.deepspeed import deepspeed_init, is_deepspeed_zero3_enabled
+try:
+    from transformers.deepspeed import deepspeed_init, is_deepspeed_zero3_enabled
+except ModuleNotFoundError:
+    # transformers>=4.56 moved the public deepspeed helpers under integrations.
+    from transformers.integrations.deepspeed import deepspeed_init, is_deepspeed_zero3_enabled
 from transformers.dependency_versions_check import dep_version_check
 from transformers.modelcard import TrainingSummary
 from transformers.modeling_utils import PreTrainedModel, load_sharded_checkpoint, unwrap_model
@@ -167,19 +171,26 @@ from transformers.utils import (
     is_sagemaker_dp_enabled,
     is_sagemaker_mp_enabled,
     is_torch_tensorrt_fx_available,
-    is_torch_tpu_available,
     is_torchdynamo_available,
     logging,
 )
+try:
+    from transformers.utils import is_torch_tpu_available
+except ImportError:
+    from transformers.utils import is_torch_xla_available as _is_torch_xla_available
+
+    def is_torch_tpu_available(check_device: bool = True):
+        return _is_torch_xla_available()
 from transformers.utils.generic import ContextManagers
 
 try:
     from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS, is_torch_greater_or_equal_than_1_10, is_torch_less_than_1_11
 except ImportError:
-    from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS, is_torch_less_than_1_11
+    from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS
 
     parsed_torch_version_base = version.parse(version.parse(torch.__version__).base_version)
     is_torch_greater_or_equal_than_1_10 = parsed_torch_version_base >= version.parse("1.10")
+    is_torch_less_than_1_11 = parsed_torch_version_base < version.parse("1.11")
 
 try:
     from transformers.trainer_utils import ShardedDDPOption
@@ -277,6 +288,32 @@ class OurTrainer(Trainer):
 
     from transformers.trainer_pt_utils import _get_learning_rate, log_metrics, metrics_format, save_metrics, save_state
 
+    def _maybe_log_save_evaluate(
+        self,
+        tr_loss,
+        model=None,
+        trial=None,
+        epoch=None,
+        ignore_keys_for_eval=None,
+        start_time=None,
+        grad_norm=None,
+        learning_rate=None,
+    ):
+        # Bridge the older local trainer call sites to the newer HF Trainer
+        # signature that now expects grad_norm and start_time explicitly.
+        if start_time is None:
+            start_time = getattr(self, "_mezo_train_start_time", time.time())
+        return super()._maybe_log_save_evaluate(
+            tr_loss,
+            grad_norm,
+            model,
+            trial,
+            epoch,
+            ignore_keys_for_eval,
+            start_time,
+            learning_rate,
+        )
+
     def create_accelerator_and_postprocess(self):
         grad_acc_kwargs = {"num_steps": self.args.gradient_accumulation_steps}
         if version.parse(accelerate_version) > version.parse("0.20.3"):
@@ -287,19 +324,23 @@ class OurTrainer(Trainer):
             "deepspeed_plugin": self.args.deepspeed_plugin,
             "gradient_accumulation_plugin": gradient_accumulation_plugin,
         }
+        split_batches = getattr(self.args, "split_batches", False)
+        dispatch_batches = getattr(self.args, "dispatch_batches", None)
         if "DataLoaderConfiguration" in globals():
             accelerator_kwargs["dataloader_config"] = DataLoaderConfiguration(
-                split_batches=self.args.split_batches,
-                dispatch_batches=self.args.dispatch_batches,
+                split_batches=split_batches,
+                dispatch_batches=dispatch_batches,
             )
         else:
-            accelerator_kwargs["split_batches"] = self.args.split_batches
-            accelerator_kwargs["dispatch_batches"] = self.args.dispatch_batches
+            accelerator_kwargs["split_batches"] = split_batches
+            accelerator_kwargs["dispatch_batches"] = dispatch_batches
 
         self.accelerator = Accelerator(**accelerator_kwargs)
 
         self.is_deepspeed_enabled = getattr(self.accelerator.state, "deepspeed_plugin", None) is not None
         self.is_fsdp_enabled = getattr(self.accelerator.state, "fsdp_plugin", None) is not None
+        if not hasattr(self, "fsdp"):
+            self.fsdp = None
 
         if self.is_fsdp_enabled:
             fsdp_plugin = self.accelerator.state.fsdp_plugin
@@ -520,6 +561,7 @@ class OurTrainer(Trainer):
 
         self.state.epoch = 0
         start_time = time.time()
+        self._mezo_train_start_time = start_time
         epochs_trained = 0
         steps_trained_in_current_epoch = 0
         steps_trained_progress_bar = None
@@ -862,7 +904,9 @@ class OurTrainer(Trainer):
         return int(getattr(self.args, "zo_quantization_bits", 32))
 
     def _zo_use_quzo(self) -> bool:
-        # INT8/INT4 use the QuZO perturbation/update path; FP16 stays on the plain MeZO path.
+        # This switch depends only on zo_quantization_bits.
+        # load_int8 is a separate model-loading/storage path and does not by itself
+        # enable the QuZO perturb/update logic.
         return self._zo_quant_bits() in {8, 4}
 
     def _zo_use_weight_decay(self, name: str) -> bool:

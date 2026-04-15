@@ -175,6 +175,33 @@
   - 位于 `medium_models/run.py` 的模型创建区段
   - 常见相关参数：`fp16`、`bf16`、`efficient_zero_order_fp16`
 
+参数语义必须分开理解：
+
+- `load_float16` / `load_bfloat16` / `load_int8`
+  - 这些是“模型加载 / 存储 dtype”参数。
+  - 它们控制底座模型以什么格式加载，不直接决定是否进入 QuZO 低比特扰动/更新路径。
+- `zo_quantization_bits` / `zo_quantization`
+  - 这些是“ZO / MeZO / QuZO 方法选择”参数。
+  - 它们控制 plain MeZO、仓库当前的 FP16 MeZO 约定、以及 QuZO 8/4-bit 路径。
+
+当前推荐按下面这个映射理解：
+
+| 路径 | 关键参数组合 | 实际方法语义 |
+|---|---|---|
+| `large_models` | `--load_float16 --zo_quantization_bits 16` | FP16 模型加载 + 仓库当前 16-bit MeZO 约定 |
+| `large_models` | `--load_int8 --zo_quantization_bits 32` | HF/bitsandbytes 风格 int8 模型加载 + plain MeZO；这不是 QuZO int8 |
+| `large_models` | `--load_float16 --zo_quantization int8` | FP16 模型加载 + QuZO int8 扰动/更新路径 |
+| `large_models` | `--load_float16 --zo_quantization int4` | FP16 模型加载 + QuZO int4 扰动/更新路径 |
+| `medium_models` | `--zo_two_point_precision fp16 --zo_quantization_bits 16` | 仓库当前 16-bit MeZO 约定 |
+| `medium_models` | `--zo_two_point_precision fp16 --zo_quantization int8` | QuZO int8 扰动/更新路径 |
+| `medium_models` | `--zo_two_point_precision fp16 --zo_quantization int4` | QuZO int4 扰动/更新路径 |
+
+速度对比或实验汇总时，必须先确认比较的是同一种方法语义：
+
+- `load_int8 + zo_quantization_bits=32` 是 “int8 模型加载 + plain MeZO”
+- `load_float16 + zo_quantization=int8` 才是 “FP16 模型加载 + QuZO int8”
+- 这两者都可能在表格里被简称成 “int8”，但它们不是同一个 baseline
+
 ### 3.5 低精度 / 量化 / FP8
 
 - 两条主线都在各自 `run.py` 中提供 `maybe_convert_model_to_torchao_float8_training(...)`
