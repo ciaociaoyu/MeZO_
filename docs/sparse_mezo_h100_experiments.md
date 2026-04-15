@@ -243,37 +243,39 @@
 
 ### 7.3 结果目录
 
-- 正式目录：
+- 早期目录：
   - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_20260414`
-- 为补精确训练时间单独开的最小目录：
   - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_20260414_mini`
+- 当前以 `BS=32` 重测结果为准：
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_bs32_rerun_20260414_212842`
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_bs32_rerun_20260414_212842/summary.jsonl`
 
 ### 7.4 吞吐结果
 
-`medium_models` 的 `run_summary.json` 不直接写 `train_steps_per_second`，这里使用训练日志中 `global_step=20` 时的 `time=` 近似换算训练吞吐。
+`medium_models` 的 `run_summary.json` 不直接写 `train_steps_per_second`，这里使用训练日志中 `global_step=20` 时的 `time=` 近似换算训练吞吐。下面以这次 `BS=32` 重测结果为准。
 
 | task | mode | approx train time for 20 steps | approx train_steps_per_second |
 |---|---|---:|---:|
-| MNLI | fp16 | 6s | 3.33 |
+| MNLI | fp16 | 2s | 10.00 |
 | MNLI | int8 | 16s | 1.25 |
-| SST-5 | fp16 | 3s | 6.67 |
+| SST-5 | fp16 | 2s | 10.00 |
 | SST-5 | int8 | 15s | 1.33 |
 
 ### 7.5 折算到 10,000 step 的训练时间
 
 | task | mode | estimated seconds for 10k steps | estimated time for 10k steps |
 |---|---|---:|---|
-| MNLI | fp16 | 3000.0 | 0h50m00s |
+| MNLI | fp16 | 1000.0 | 0h16m40s |
 | MNLI | int8 | 8000.0 | 2h13m20s |
-| SST-5 | fp16 | 1500.0 | 0h25m00s |
+| SST-5 | fp16 | 1000.0 | 0h16m40s |
 | SST-5 | int8 | 7500.0 | 2h05m00s |
 
 ### 7.6 简要结论
 
 - 在当前 `roberta-large` medium-model 训练路径上，`int8` 同样明显慢于 `fp16`
 - 相对 `fp16`，`int8` 大约慢：
-  - `MNLI`: `2.67x`
-  - `SST-5`: `5.00x`
+  - `MNLI`: `8.00x`
+  - `SST-5`: `7.50x`
 - 所以当前仓库下，无论 `opt-1.3b` 还是 `roberta-large`，训练吞吐都仍然是 `fp16` 更占优
 
 ## 8. 当前使用的 14 个 h 值
