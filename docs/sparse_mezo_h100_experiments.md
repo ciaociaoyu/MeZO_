@@ -200,7 +200,83 @@
   - `SQuAD`: `3.88x`
 - 因此，如果目标是当前仓库上的训练吞吐，`fp16` 仍然是更优选择
 
-## 7. 当前使用的 14 个 h 值
+## 7. H100 上 `roberta-large` 速度基准
+
+目标：补齐当前正式 `medium_models` 路径上 `roberta-large` 的短程训练吞吐对比。这里不重跑已经测过的 `opt-1.3b`，只新增 `MNLI / SST-5` 的 `16-bit` 与 `int8`。
+
+### 7.1 路径与范围说明
+
+- 当前正式 `roberta-large` 训练路径是 `medium_models`
+- 该路径当前用于正式实验的任务是：
+  - `MNLI`
+  - `SST-5`
+- `BoolQ / SQuAD` 不属于当前 `roberta / medium_models` 这条正式训练路径，因此本轮没有为 `roberta-large` 额外发明一条新训练路径去测它们
+
+### 7.2 测试参数确认
+
+4 组 `roberta-large` 速度测试统一使用：
+
+- `model = roberta-large`
+- `trainer = standard + zero_order_optim`
+- `dataset_mode = full`
+- `num_k = 16`
+- `seed = 16`
+- `data_seed = 16`
+- `learning_rate = 1e-6`
+- `zero_order_eps = 1e-4`
+- `max_steps = 20`
+- `per_device_train_batch_size = 32`
+- `gradient_accumulation_steps = 1`
+- `dataloader_shuffle = False`
+- `use_adaptive_h = False`
+- `use_c_scale = False`
+- `zo_probe_every = 0`
+
+本次“精度”定义按当前仓库 `medium_models` 语义执行：
+
+- `fp16`：
+  - `--zo_two_point_precision fp16`
+  - `--zo_quantization_bits 16`
+- `int8`：
+  - `--zo_two_point_precision fp16`
+  - `--zo_quantization int8`
+
+### 7.3 结果目录
+
+- 正式目录：
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_20260414`
+- 为补精确训练时间单独开的最小目录：
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_20260414_mini`
+
+### 7.4 吞吐结果
+
+`medium_models` 的 `run_summary.json` 不直接写 `train_steps_per_second`，这里使用训练日志中 `global_step=20` 时的 `time=` 近似换算训练吞吐。
+
+| task | mode | approx train time for 20 steps | approx train_steps_per_second |
+|---|---|---:|---:|
+| MNLI | fp16 | 6s | 3.33 |
+| MNLI | int8 | 16s | 1.25 |
+| SST-5 | fp16 | 3s | 6.67 |
+| SST-5 | int8 | 15s | 1.33 |
+
+### 7.5 折算到 10,000 step 的训练时间
+
+| task | mode | estimated seconds for 10k steps | estimated time for 10k steps |
+|---|---|---:|---|
+| MNLI | fp16 | 3000.0 | 0h50m00s |
+| MNLI | int8 | 8000.0 | 2h13m20s |
+| SST-5 | fp16 | 1500.0 | 0h25m00s |
+| SST-5 | int8 | 7500.0 | 2h05m00s |
+
+### 7.6 简要结论
+
+- 在当前 `roberta-large` medium-model 训练路径上，`int8` 同样明显慢于 `fp16`
+- 相对 `fp16`，`int8` 大约慢：
+  - `MNLI`: `2.67x`
+  - `SST-5`: `5.00x`
+- 所以当前仓库下，无论 `opt-1.3b` 还是 `roberta-large`，训练吞吐都仍然是 `fp16` 更占优
+
+## 8. 当前使用的 14 个 h 值
 
 来自 `experiments/h_sweep_14h/h_values.sh`：
 
