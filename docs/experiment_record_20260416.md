@@ -2,6 +2,29 @@
 
 This file is a lightweight status snapshot of the main experiments currently active in this repository.
 
+## 0. Pilot Matrix Status
+
+The table below reflects the current status of the pilot matrix as of `2026-04-16`.
+
+| Model | Baseline | Dataset | Precision | Current status | Notes |
+|---|---|---|---|---|---|
+| OPT-1.3B | MeZO | MNLI | FP16 | Running | Relaunched cleanly as job `44457037`; current fresh result dir has no finished `summary.jsonl` yet |
+| OPT-1.3B | MeZO | SST-5 | FP16 | Completed | `14/14 completed` |
+| RoBERTa-large | MeZO | MNLI | FP16 | Completed | `9 completed + 5 skipped_nan_guard` |
+| RoBERTa-large | MeZO | SST-5 | FP16 | Completed | `9 completed + 5 skipped_nan_guard` |
+| OPT-1.3B | MeZO | MNLI | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465908` |
+| OPT-1.3B | MeZO | SST-5 | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465909` |
+| RoBERTa-large | MeZO | MNLI | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465906` |
+| RoBERTa-large | MeZO | SST-5 | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465907` |
+| OPT-1.3B | Sparse MeZO | MNLI | FP16 | Not run | No `sparse_mezo16` OPT full job has been launched yet |
+| OPT-1.3B | Sparse MeZO | SST-5 | FP16 | Not run | No `sparse_mezo16` OPT full job has been launched yet |
+| RoBERTa-large | Sparse MeZO | MNLI | FP16 | Running | Current partial summary: `1 completed + 4 skipped_nan_guard` |
+| RoBERTa-large | Sparse MeZO | SST-5 | FP16 | Running | Current partial summary: `2 completed + 4 skipped_nan_guard` |
+| OPT-1.3B | Sparse MeZO | MNLI | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465912` |
+| OPT-1.3B | Sparse MeZO | SST-5 | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465913` |
+| RoBERTa-large | Sparse MeZO | MNLI | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465910` |
+| RoBERTa-large | Sparse MeZO | SST-5 | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465911` |
+
 ## 1. Currently Running
 
 As of 2026-04-16, the following experiment jobs are running:
@@ -93,9 +116,9 @@ These runs already have partial sweep summaries but are still running.
 
 - Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/roberta-large/sst5/summary.jsonl)
 - Current recorded status counts:
-  - `completed`: `1`
+  - `completed`: `2`
   - `skipped_nan_guard`: `4`
-- Last recorded finished `h`: `1e-6`
+- Last recorded finished `h`: `3e-6`
 
 ## 4. Smoke / Debug Runs Already Completed
 
