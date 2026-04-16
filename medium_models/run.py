@@ -658,6 +658,14 @@ class DynamicTrainingArguments(TrainingArguments):
         default=True,
         metadata={"help": "If true, append directional-derivative probe metrics to output_dir/zo_directional_probe.csv."}
     )
+    measure_perf_tail: bool = field(
+        default=True,
+        metadata={"help": "If true, measure wallclock/step, samples/sec, and max GPU memory once over the final tail window of optimizer steps."}
+    )
+    measure_perf_tail_window_steps: int = field(
+        default=10,
+        metadata={"help": "Number of final optimizer steps used for the one-shot tail performance snapshot when measure_perf_tail is enabled."}
+    )
     prob_as_feature: bool = field(
         default=False,
         metadata={'help': 'in linear head, use log prob as feature'}
@@ -1035,6 +1043,8 @@ def main():
     training_args.sparse_ratio = validate_sparse_ratio(getattr(training_args, "sparse_ratio", 1.0))
     training_args.sparse_mask_strategy = normalize_sparse_mask_strategy(getattr(training_args, "sparse_mask_strategy", "percentile_per_layer"))
     training_args.sparse_scope = normalize_sparse_scope(getattr(training_args, "sparse_scope", "trainable_only"))
+    if int(getattr(training_args, "measure_perf_tail_window_steps", 10)) <= 0:
+        raise ValueError("--measure_perf_tail_window_steps must be > 0")
     if int(getattr(training_args, "zo_probe_num_seeds", 16)) <= 0:
         raise ValueError("--zo_probe_num_seeds must be > 0")
     training_args.h_estimation_active_source = str(
@@ -1702,6 +1712,7 @@ def main():
                 "metrics_csv_last_row": _read_last_csv_row(metrics_csv_path),
                 "zo_directional_probe_last_row": _read_last_csv_row(zo_probe_csv_path),
                 "sparse_mezo_last_stats": getattr(trainer, "latest_sparse_mezo_stats", None),
+                "tail_perf_metrics": getattr(trainer, "latest_perf_tail_metrics", None),
                 "h_estimation_last_row": _read_last_csv_row(h_estimation_csv_path),
                 "eval_loss_last5": _read_json_if_exists(eval_loss_last5_path),
             },

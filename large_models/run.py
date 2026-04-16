@@ -356,6 +356,18 @@ class OurArguments(TrainingArguments):
     zo_probe_every: int = 0 # run G-vs-D directional probe every N optimizer steps; 0 disables it
     zo_probe_num_seeds: int = 16 # number of probe directions per diagnostic step
     zo_probe_log_csv: bool = True # write directional probe rows to output_dir/zo_directional_probe.csv
+    measure_perf_tail: bool = field(
+        default=True,
+        metadata={
+            "help": "If true, measure wallclock/step, samples/sec, and max GPU memory once over the final tail window of optimizer steps."
+        },
+    )
+    measure_perf_tail_window_steps: int = field(
+        default=10,
+        metadata={
+            "help": "Number of final optimizer steps used for the one-shot tail performance snapshot when --measure_perf_tail is enabled."
+        },
+    )
 
     # Prefix tuning
     prefix_tuning: bool = False # whether to use prefix tuning
@@ -416,6 +428,8 @@ def parse_args():
         raise ValueError("--zo_probe_num_seeds must be > 0")
     if int(getattr(args, "zo_probe_every", 0)) < 0:
         raise ValueError("--zo_probe_every must be >= 0")
+    if int(getattr(args, "measure_perf_tail_window_steps", 10)) <= 0:
+        raise ValueError("--measure_perf_tail_window_steps must be > 0")
     print(args)
     return args
 
@@ -1053,6 +1067,7 @@ class Framework:
             "zo_directional_probe_csv": getattr(trainer, "_zo_probe_csv_path", None),
             "zo_directional_probe_last_row": getattr(trainer, "latest_zo_probe_row", None),
             "sparse_mezo_last_stats": getattr(trainer, "latest_sparse_mezo_stats", None),
+            "tail_perf_metrics": getattr(trainer, "latest_perf_tail_metrics", None),
             "train_metrics": getattr(train_result, "metrics", None),
             "best_metric": getattr(trainer.state, "best_metric", None),
             "best_model_checkpoint": getattr(trainer.state, "best_model_checkpoint", None),
@@ -1256,6 +1271,7 @@ def main():
                             "metrics_csv_last_row": _read_last_csv_row(train_artifacts.get("metrics_csv_path")),
                             "zo_directional_probe_last_row": _read_last_csv_row(train_artifacts.get("zo_directional_probe_csv")),
                             "sparse_mezo_last_stats": train_artifacts.get("sparse_mezo_last_stats"),
+                            "tail_perf_metrics": train_artifacts.get("tail_perf_metrics"),
                             "trainer_state": _read_json_if_exists(train_artifacts.get("trainer_state_path")),
                         },
                         "run_metadata": getattr(framework, "run_metadata", None),

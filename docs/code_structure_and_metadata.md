@@ -55,7 +55,9 @@
 | 路径 | 作用 |
 | --- | --- |
 | `experiments/h_sweep_14h/` | 当前 MNLI / SST-5 的 14-value `h` 搜索目录。这里的 “14h” 表示 14 个候选 `h` 值，不表示 14 小时。 |
+| `experiments/h_sweep_8h/` | 当前 low-bit pilot 搜索目录。这里的 “8h” 表示 8 个候选 `h` 值，不表示 8 小时。当前 `int8` / `int4` pilot 都放在这里。 |
 | `experiments/h_sweep_14h/jobs/` | 正式 `sbatch` 作业脚本，包括 `quzo16`、`quzo8`、`sparse_mezo16` 等。 |
+| `experiments/h_sweep_8h/jobs/` | pilot `sbatch` 作业脚本，包括 `mezo_int8`、`sparse_mezo_int8`、`mezo_int4`、`sparse_mezo_int4`。 |
 | `experiments/h_sweep_14h/results/` | sweep 结果目录，按方法 / 模型 / 任务分层。 |
 | `experiments/h_sweep_14h/logs/` | sweep 日志目录，包括 `slurm_*.out` 和每个 `h` 的 `train.log` / `train.err`。 |
 | `experiments/sparse_mezo_smoke/` | Sparse MeZO 的 smoke test 结果。 |
@@ -346,6 +348,53 @@
   - 建议继续使用 `update_model_run_metadata(...)`。
 - 新方法/模型即使只在单一路径存在，也要保证输出 `run_metadata.json`
 
+### 6.1 统一尾部性能测量接口
+
+当前 `large_models` 和 `medium_models` 都已经接入统一的“尾部一次性性能快照”接口，用来在一次训练里只测一次下面三项指标：
+
+- `wallclock/step`
+- `samples/sec`
+- `max GPU memory`
+
+这组指标默认开启，目标是避免在整个训练过程中持续 profile，同时又能在靠近收尾的稳定区间给出一组可比较的吞吐和显存数字。
+
+统一 CLI 参数如下：
+
+- `--measure_perf_tail`
+  - 默认 `True`
+  - 控制是否启用尾部性能快照
+- `--measure_perf_tail_window_steps`
+  - 默认 `10`
+  - 表示在训练最后若干个 optimizer step 上做一次性测量
+
+统一行为约定如下：
+
+- 每次训练只测一次，不会在所有 step 上持续记录
+- 测量区间默认位于“最后 10 个 optimizer step”
+- 测量开始时会重置一次 CUDA peak memory 统计
+- 测量结束时统一写出：
+  - `tail_perf_wallclock_per_step`
+  - `tail_perf_samples_per_second`
+  - `tail_perf_max_gpu_memory_gb`
+  - `tail_perf_window_steps`
+  - `tail_perf_measured_steps`
+
+当前落盘位置：
+
+- `large_models`
+  - `run_summary.json -> artifacts.tail_perf_metrics`
+  - 同时 train metrics 里也会带上这几个 `tail_perf_*` 字段
+- `medium_models`
+  - `run_summary.json -> artifacts.tail_perf_metrics`
+
+新方法 / 新模型接入时，必须适配这组统一接口：
+
+1. 不要另起一套私有吞吐统计参数名。
+2. 新 trainer / 新优化路径如果有自己的 optimizer-step 主循环，必须在真正的“step 边界”上接入同一套 tail snapshot helper。
+3. 新路径结束训练后必须把结果暴露为 `latest_perf_tail_metrics`，并继续写入 `run_summary.json -> artifacts.tail_perf_metrics`。
+4. 如果新模型 / 新算法不支持 CUDA 显存统计，仍要保留相同字段；`tail_perf_max_gpu_memory_gb` 可为 `null`，不能私自改 schema。
+5. 如果新增路径改变了“一个 step 对应多少样本”的定义，必须继续用实际 `total_train_batch_size` 计算 `samples/sec`，不能改成别的口径。
+
 ## 7. 新增方法 / 新增模型 checklist
 
 ### 7.1 新增方法
@@ -395,9 +444,13 @@
 - canonical 结构文档：`docs/code_structure_and_metadata.md`
 - 最近实验记录：`docs/sparse_mezo_h100_experiments.md`
 - 当前 14-value `h` 网格：`experiments/h_sweep_14h/h_values.sh`
+- 当前 8-value pilot `h` 网格：`experiments/h_sweep_8h/h_values.sh`
 - 当前正式 sweep 脚本目录：`experiments/h_sweep_14h/jobs/`
+- 当前 low-bit pilot 脚本目录：`experiments/h_sweep_8h/jobs/`
 - 当前正式 sweep 结果目录：`experiments/h_sweep_14h/results/`
+- 当前 low-bit pilot 结果目录：`experiments/h_sweep_8h/results/`
 - 当前正式 sweep 日志目录：`experiments/h_sweep_14h/logs/`
+- 当前 low-bit pilot 日志目录：`experiments/h_sweep_8h/logs/`
 
 ## 10. Sparse MeZO 扩展
 
@@ -496,6 +549,29 @@ medium 路径的 `run_summary.json` 还会在 `artifacts.sparse_mezo_last_stats`
 - medium / RoBERTa 路径
 - large / OPT-1.3B 路径
 
+当前 low-bit pilot 路径位于：
+
+- `experiments/h_sweep_8h/`
+- 8-value 网格定义在：`experiments/h_sweep_8h/h_values.sh`
+- 当前 int8 / int4 pilot 共用：
+  - `experiments/h_sweep_8h/run_medium_sweep.sh`
+  - `experiments/h_sweep_8h/run_large_sweep.sh`
+- 其中低比特语义由环境变量控制：
+  - `ZO_QUANTIZATION_ALIAS=int8|int4`
+  - `PRECISION_LABEL=int8|int4`
+
+当前 INT4 pilot 脚本位于：
+
+- `experiments/h_sweep_8h/jobs/roberta_mnli_mezo_int4_8h.sh`
+- `experiments/h_sweep_8h/jobs/roberta_sst5_mezo_int4_8h.sh`
+- `experiments/h_sweep_8h/jobs/opt13b_mnli_mezo_int4_8h.sh`
+- `experiments/h_sweep_8h/jobs/opt13b_sst5_mezo_int4_8h.sh`
+- `experiments/h_sweep_8h/jobs/roberta_mnli_sparse_mezo_int4_8h.sh`
+- `experiments/h_sweep_8h/jobs/roberta_sst5_sparse_mezo_int4_8h.sh`
+- `experiments/h_sweep_8h/jobs/opt13b_mnli_sparse_mezo_int4_8h.sh`
+- `experiments/h_sweep_8h/jobs/opt13b_sst5_sparse_mezo_int4_8h.sh`
+- `experiments/h_sweep_8h/submit_int4_pilot_searches.sh`
+
 ### 11.2 当前“16-bit”含义
 
 MNLI / SST-5 在当前 medium h-search 路径里的 16-bit 约定保持不变：
@@ -524,6 +600,19 @@ MNLI / SST-5 在当前 medium h-search 路径里的 16-bit 约定保持不变：
 - `1e-2`
 - `3e-2`
 
+### 11.4 当前 8-value low-bit pilot h grid
+
+当前 low-bit pilot 统一使用下面这 8 个候选值：
+
+- `1e-6`
+- `3e-6`
+- `1e-5`
+- `3e-5`
+- `1e-4`
+- `3e-4`
+- `1e-3`
+- `3e-3`
+
 ## 12. Smoke Test 与 Launcher
 
 ### 12.1 H100 smoke test 覆盖
@@ -535,14 +624,27 @@ MNLI / SST-5 在当前 medium h-search 路径里的 16-bit 约定保持不变：
 - `opt-1.3b + MNLI + sparse_mezo + 16-bit`
 - `opt-1.3b + SST-5 + sparse_mezo + 16-bit`
 
+并且已额外完成当前 low-bit pilot 的 INT4 smoke matrix：
+
+- `roberta-large + MNLI + mezo + int4`
+- `roberta-large + SST-5 + mezo + int4`
+- `roberta-large + MNLI + sparse_mezo + int4`
+- `roberta-large + SST-5 + sparse_mezo + int4`
+- `opt-1.3b + MNLI + mezo + int4`
+- `opt-1.3b + SST5 + mezo + int4`
+- `opt-1.3b + MNLI + sparse_mezo + int4`
+- `opt-1.3b + SST5 + sparse_mezo + int4`
+
 验证点包括：
 
 - 模型加载
 - 当前 16-bit 路径
+- 当前 INT4 QuZO 路径
 - Sparse MeZO step
 - directional probe CSV
 - `run_summary.json`
 - `run_metadata.json`
+- tail performance metrics
 - 稀疏 active fraction 日志
 
 ### 12.2 正式 launcher 位置
@@ -554,3 +656,19 @@ MNLI / SST-5 在当前 medium h-search 路径里的 16-bit 约定保持不变：
 - `experiments/h_sweep_14h/submit_sparse_mezo16_searches.sh`
 
 `submit_sparse_mezo16_searches.sh` 采用当前仓库的 Slurm / `sbatch` 风格，并通过 dependency 把两个 full search 串起来，保证单卡环境下同一时刻只会有一个 full GPU 训练作业处于活动状态。
+
+### 12.3 当前 INT4 smoke 结果位置
+
+RoBERTa-large / medium 路径：
+
+- `experiments/smoke_fix/int4_matrix_final/medium/mezo/roberta_mnli/run_smoke/run_summary.json`
+- `experiments/smoke_fix/int4_matrix_final/medium/mezo/roberta_sst5/run_smoke/run_summary.json`
+- `experiments/smoke_fix/int4_matrix_final/medium/sparse_mezo/roberta_mnli/run_smoke/run_summary.json`
+- `experiments/smoke_fix/int4_matrix_final/medium/sparse_mezo/roberta_sst5/run_smoke/run_summary.json`
+
+OPT-1.3B / large 路径：
+
+- `experiments/smoke_fix/int4_matrix_final/large/mezo/opt13b_mnli/run_summary.json`
+- `experiments/smoke_fix/int4_matrix_final/large/mezo/opt13b_sst5/run_summary.json`
+- `experiments/smoke_fix/int4_matrix_final/large/sparse_mezo/opt13b_mnli/run_summary.json`
+- `experiments/smoke_fix/int4_matrix_final/large/sparse_mezo/opt13b_sst5/run_summary.json`

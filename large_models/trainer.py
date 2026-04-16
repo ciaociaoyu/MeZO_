@@ -624,6 +624,8 @@ class OurTrainer(Trainer):
         # _total_loss_scalar is updated everytime .item() has to be called on tr_loss and stores the sum of all losses
         self._total_loss_scalar = 0.0
         self._globalstep_last_logged = self.state.global_step
+        self._perf_tail_snapshot = None
+        self.latest_perf_tail_metrics = None
         model.zero_grad()
 
         self.control = self.callback_handler.on_train_begin(args, self.state, self.control)
@@ -749,6 +751,11 @@ class OurTrainer(Trainer):
                     steps_in_epoch <= args.gradient_accumulation_steps
                     and (step + 1) == steps_in_epoch
                 ):
+                    self._perf_tail_maybe_start(
+                        total_train_batch_size=total_train_batch_size,
+                        max_steps=max_steps,
+                        next_global_step=int(self.state.global_step) + 1,
+                    )
                     # MeZO added: update model with the estimated gradient
                     if args.trainer == "zo":
                         self.zo_update(model)
@@ -804,6 +811,7 @@ class OurTrainer(Trainer):
                         model.zero_grad()
 
                     self.state.global_step += 1
+                    self._perf_tail_record_step(self.state.global_step)
                     self.state.epoch = epoch + (step + 1) / steps_in_epoch
                     self.control = self.callback_handler.on_step_end(args, self.state, self.control)
 
@@ -883,6 +891,9 @@ class OurTrainer(Trainer):
         self.store_flos()
         metrics["total_flos"] = self.state.total_flos
         metrics["train_loss"] = train_loss
+        perf_tail_metrics = self._perf_tail_finalize()
+        if perf_tail_metrics:
+            metrics.update({k: v for k, v in perf_tail_metrics.items() if v is not None})
 
         self.is_in_train = False
 
@@ -1035,6 +1046,108 @@ class OurTrainer(Trainer):
                 target_dtype=param.data.dtype,
             )
         )
+
+    def _perf_tail_enabled(self) -> bool:
+        return bool(getattr(self.args, "measure_perf_tail", True))
+
+    def _perf_tail_window_steps(self, max_steps: int) -> int:
+        configured = max(1, int(getattr(self.args, "measure_perf_tail_window_steps", 10)))
+        return max(1, min(int(max_steps), configured))
+
+    def _perf_tail_cuda_device(self):
+        if not torch.cuda.is_available():
+            return None
+        device = getattr(self.args, "device", None)
+        if isinstance(device, torch.device) and device.type == "cuda":
+            return device if device.index is not None else torch.device("cuda", torch.cuda.current_device())
+        return torch.device("cuda", torch.cuda.current_device())
+
+    def _perf_tail_sync_cuda(self, device=None) -> None:
+        if device is None or not torch.cuda.is_available():
+            return
+        try:
+            torch.cuda.synchronize(device)
+        except Exception:
+            torch.cuda.synchronize()
+
+    def _perf_tail_maybe_start(self, total_train_batch_size: int, max_steps: int, next_global_step: int) -> None:
+        if (not self._perf_tail_enabled()) or getattr(self, "_perf_tail_snapshot", None) is not None:
+            return
+        if int(max_steps) <= 0:
+            return
+        window_steps = self._perf_tail_window_steps(max_steps)
+        tail_start_step = max(1, int(max_steps) - window_steps + 1)
+        if int(next_global_step) != int(tail_start_step):
+            return
+        device = self._perf_tail_cuda_device()
+        self._perf_tail_sync_cuda(device)
+        if device is not None:
+            try:
+                torch.cuda.reset_peak_memory_stats(device)
+            except Exception:
+                pass
+        self._perf_tail_snapshot = {
+            "tail_start_step": int(tail_start_step),
+            "window_steps": int(window_steps),
+            "measured_steps": 0,
+            "last_recorded_step": None,
+            "total_train_batch_size": int(total_train_batch_size),
+            "start_time": time.time(),
+            "device": device,
+        }
+        logger.info(
+            "[perf-tail] measurement enabled: start_step=%d window_steps=%d total_train_batch_size=%d",
+            int(tail_start_step),
+            int(window_steps),
+            int(total_train_batch_size),
+        )
+
+    def _perf_tail_record_step(self, global_step: int) -> None:
+        snapshot = getattr(self, "_perf_tail_snapshot", None)
+        if snapshot is None:
+            return
+        if snapshot.get("last_recorded_step") == int(global_step):
+            return
+        if int(global_step) < int(snapshot["tail_start_step"]):
+            return
+        snapshot["measured_steps"] += 1
+        snapshot["last_recorded_step"] = int(global_step)
+
+    def _perf_tail_finalize(self) -> Optional[Dict[str, float]]:
+        snapshot = getattr(self, "_perf_tail_snapshot", None)
+        if snapshot is None or snapshot.get("finalized"):
+            return getattr(self, "latest_perf_tail_metrics", None)
+        device = snapshot.get("device")
+        self._perf_tail_sync_cuda(device)
+        elapsed = max(0.0, float(time.time() - float(snapshot["start_time"])))
+        measured_steps = int(snapshot.get("measured_steps", 0))
+        metrics = {
+            "tail_perf_window_steps": int(snapshot.get("window_steps", 0)),
+            "tail_perf_measured_steps": measured_steps,
+            "tail_perf_wallclock_per_step": (elapsed / measured_steps) if measured_steps > 0 else None,
+            "tail_perf_samples_per_second": (
+                (float(snapshot.get("total_train_batch_size", 0)) * measured_steps) / elapsed
+                if measured_steps > 0 and elapsed > 0.0
+                else None
+            ),
+            "tail_perf_max_gpu_memory_gb": None,
+        }
+        if device is not None:
+            try:
+                peak_bytes = torch.cuda.max_memory_allocated(device)
+                metrics["tail_perf_max_gpu_memory_gb"] = float(peak_bytes) / float(1024 ** 3)
+            except Exception:
+                pass
+        snapshot["finalized"] = True
+        self.latest_perf_tail_metrics = metrics
+        logger.info(
+            "[perf-tail] measured_steps=%d wallclock_per_step=%s samples_per_second=%s max_gpu_memory_gb=%s",
+            measured_steps,
+            "None" if metrics["tail_perf_wallclock_per_step"] is None else f"{metrics['tail_perf_wallclock_per_step']:.6f}",
+            "None" if metrics["tail_perf_samples_per_second"] is None else f"{metrics['tail_perf_samples_per_second']:.6f}",
+            "None" if metrics["tail_perf_max_gpu_memory_gb"] is None else f"{metrics['tail_perf_max_gpu_memory_gb']:.4f}",
+        )
+        return metrics
 
     def _setup_zo_probe_csv(self):
         self._zo_probe_csv_path = None
