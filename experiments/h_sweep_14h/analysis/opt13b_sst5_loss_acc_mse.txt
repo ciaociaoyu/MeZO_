@@ -1,0 +1,5 @@
+opt-1.3b / SST5
+best eval_loss: 1e-3 (1.176758)
+best eval_acc: 1e-3 (0.495316)
+best probe_mse: 1e-4 (137.631214)
+note: probe_mse comes from zo_directional_probe.csv, not the evaluation loss.
