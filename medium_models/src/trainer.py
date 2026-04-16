@@ -2057,8 +2057,19 @@ class Trainer(LinearHeadTrainer):
             # Sparse MeZO masks the already-constructed direction pair; if QuZO
             # is active, parameter snapping still happens after the masked step.
             bundle = dict(bundle)
-            bundle["u1"] = self._sparse_mask_tensor(name, bundle["u1"])
-            bundle["u2"] = self._sparse_mask_tensor(name, bundle["u2"])
+            if "u1" in bundle and "u2" in bundle:
+                bundle["u1"] = self._sparse_mask_tensor(name, bundle["u1"])
+                bundle["u2"] = self._sparse_mask_tensor(name, bundle["u2"])
+            elif "z" in bundle:
+                # 16-bit MeZO uses a single Gaussian direction. Sparse MeZO
+                # masks that dense direction and reuses it for both the
+                # perturbation and update call sites that expect u1/u2.
+                masked_z = self._sparse_mask_tensor(name, bundle["z"])
+                bundle["z"] = masked_z
+                bundle["u1"] = masked_z
+                bundle["u2"] = masked_z
+            else:
+                raise KeyError(f"Unsupported direction bundle for {name}: {sorted(bundle.keys())}")
         if random_vector is not None:
             random_vector[name] = bundle
         return bundle

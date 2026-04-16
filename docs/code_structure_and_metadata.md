@@ -408,6 +408,8 @@
 - 新增：
   - `large_models/sparse_mezo.py`
   - `medium_models/src/sparse_mezo.py`
+  - `experiments/h_sweep_14h/jobs/opt13b_mnli_sparse_mezo16_14h.sh`
+  - `experiments/h_sweep_14h/jobs/opt13b_sst5_sparse_mezo16_14h.sh`
   - `experiments/h_sweep_14h/jobs/roberta_mnli_sparse_mezo16_14h.sh`
   - `experiments/h_sweep_14h/jobs/roberta_sst5_sparse_mezo16_14h.sh`
   - `experiments/h_sweep_14h/submit_sparse_mezo16_searches.sh`
@@ -485,8 +487,14 @@ medium 路径的 `run_summary.json` 还会在 `artifacts.sparse_mezo_last_stats`
 - 当前 RoBERTa MNLI / SST-5 搜索脚本位于：
   - `experiments/h_sweep_14h/jobs/roberta_mnli_quzo16_14h.sh`
   - `experiments/h_sweep_14h/jobs/roberta_sst5_quzo16_14h.sh`
+- 当前 OPT-1.3B MNLI / SST-5 搜索脚本位于：
+  - `experiments/h_sweep_14h/jobs/opt13b_mnli_quzo16_14h.sh`
+  - `experiments/h_sweep_14h/jobs/opt13b_sst5_quzo16_14h.sh`
 
-本轮 Sparse MeZO 的正式 14-value 搜索沿用这一条 medium / RoBERTa 路径。
+本轮 Sparse MeZO 的正式 14-value 搜索已经覆盖：
+
+- medium / RoBERTa 路径
+- large / OPT-1.3B 路径
 
 ### 11.2 当前“16-bit”含义
 
@@ -520,10 +528,12 @@ MNLI / SST-5 在当前 medium h-search 路径里的 16-bit 约定保持不变：
 
 ### 12.1 H100 smoke test 覆盖
 
-本轮 smoke test 先覆盖当前真正用于 MNLI / SST-5 h-search 的 medium / RoBERTa 路径：
+本轮 smoke test 已覆盖当前实际使用的两条 MNLI / SST-5 h-search 路径：
 
 - `roberta-large + MNLI + sparse_mezo + 16-bit`
 - `roberta-large + SST-5 + sparse_mezo + 16-bit`
+- `opt-1.3b + MNLI + sparse_mezo + 16-bit`
+- `opt-1.3b + SST-5 + sparse_mezo + 16-bit`
 
 验证点包括：
 
@@ -539,6 +549,8 @@ MNLI / SST-5 在当前 medium h-search 路径里的 16-bit 约定保持不变：
 
 - `experiments/h_sweep_14h/jobs/roberta_mnli_sparse_mezo16_14h.sh`
 - `experiments/h_sweep_14h/jobs/roberta_sst5_sparse_mezo16_14h.sh`
+- `experiments/h_sweep_14h/jobs/opt13b_mnli_sparse_mezo16_14h.sh`
+- `experiments/h_sweep_14h/jobs/opt13b_sst5_sparse_mezo16_14h.sh`
 - `experiments/h_sweep_14h/submit_sparse_mezo16_searches.sh`
 
 `submit_sparse_mezo16_searches.sh` 采用当前仓库的 Slurm / `sbatch` 风格，并通过 dependency 把两个 full search 串起来，保证单卡环境下同一时刻只会有一个 full GPU 训练作业处于活动状态。
