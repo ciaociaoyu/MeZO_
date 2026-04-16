@@ -299,11 +299,18 @@ class OurTrainer(Trainer):
         grad_norm=None,
         learning_rate=None,
     ):
-        # Bridge the older local trainer call sites to the newer HF Trainer
-        # signature that now expects grad_norm and start_time explicitly.
+        # HF changed the parent signature across transformers versions.
+        # Keep local call sites stable and dispatch based on the installed
+        # parent method instead of hard-coding one specific version shape.
+        parent = super()._maybe_log_save_evaluate
+        parent_params = list(inspect.signature(parent).parameters)
+
+        if parent_params == ["tr_loss", "model", "trial", "epoch", "ignore_keys_for_eval"]:
+            return parent(tr_loss, model, trial, epoch, ignore_keys_for_eval)
+
         if start_time is None:
             start_time = getattr(self, "_mezo_train_start_time", time.time())
-        return super()._maybe_log_save_evaluate(
+        return parent(
             tr_loss,
             grad_norm,
             model,
