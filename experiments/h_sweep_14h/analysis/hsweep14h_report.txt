@@ -1,0 +1,4 @@
+roberta-large/sst5: valid_loss=10/14, valid_acc=10/14, best_loss=3e-4 (1.0390), best_acc=3e-4 (0.5410)
+roberta-large/mnli: valid_loss=10/14, valid_acc=10/14, best_loss=1e-4 (0.7412), best_acc=1e-4 (0.7027)
+opt-1.3b/sst5: valid_loss=9/14, valid_acc=14/14, best_loss=1e-3 (1.1768), best_acc=1e-3 (0.4953)
+opt-1.3b/mnli: valid_loss=0/14, valid_acc=3/14, best_loss=n/a, best_acc=1e-8 (0.3545)
