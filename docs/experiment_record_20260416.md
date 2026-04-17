@@ -4,26 +4,26 @@ This file is a lightweight status snapshot of the main experiments currently act
 
 ## 0. Pilot Matrix Status
 
-The table below reflects the current status of the pilot matrix as of `2026-04-16`.
+The table below reflects the current status of the pilot matrix as of `2026-04-17`.
 
 | Model | Baseline | Dataset | Precision | Current status | Notes |
 |---|---|---|---|---|---|
-| OPT-1.3B | MeZO | MNLI | FP16 | Running | Relaunched cleanly as job `44457037`; current fresh result dir has no finished `summary.jsonl` yet |
+| OPT-1.3B | MeZO | MNLI | FP16 | Running | Relaunched cleanly as job `44457037`; current fresh result dir already has `5 completed` points through `h=1e-6` |
 | OPT-1.3B | MeZO | SST-5 | FP16 | Completed | `14/14 completed` |
 | RoBERTa-large | MeZO | MNLI | FP16 | Completed | `9 completed + 5 skipped_nan_guard` |
 | RoBERTa-large | MeZO | SST-5 | FP16 | Completed | `9 completed + 5 skipped_nan_guard` |
 | OPT-1.3B | MeZO | MNLI | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465908` |
 | OPT-1.3B | MeZO | SST-5 | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465909` |
-| RoBERTa-large | MeZO | MNLI | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465906` |
+| RoBERTa-large | MeZO | MNLI | INT8 | Running | New 8-value / 10k-step pilot running as job `44465906` |
 | RoBERTa-large | MeZO | SST-5 | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465907` |
-| OPT-1.3B | Sparse MeZO | MNLI | FP16 | Submitted, pending | Smoke passed; full 14-value search queued as job `44526707` |
-| OPT-1.3B | Sparse MeZO | SST-5 | FP16 | Submitted, pending | Smoke passed; full 14-value search queued as job `44526706` |
-| RoBERTa-large | Sparse MeZO | MNLI | FP16 | Running | Current partial summary: `1 completed + 4 skipped_nan_guard` |
-| RoBERTa-large | Sparse MeZO | SST-5 | FP16 | Running | Current partial summary: `2 completed + 4 skipped_nan_guard` |
-| OPT-1.3B | Sparse MeZO | MNLI | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465912` |
-| OPT-1.3B | Sparse MeZO | SST-5 | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465913` |
-| RoBERTa-large | Sparse MeZO | MNLI | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465910` |
-| RoBERTa-large | Sparse MeZO | SST-5 | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44465911` |
+| OPT-1.3B | Sparse MeZO | MNLI | FP16 | Submitted, pending | Old run `44526707` was cancelled after zero-mask collapse at tiny `h`; relaunched cleanly as `44567785` |
+| OPT-1.3B | Sparse MeZO | SST-5 | FP16 | Running | Full 14-value search running as job `44526706`; low-`h` completed points `1e-8, 3e-8, 1e-7, 3e-7` are numerically invalid because `active_fraction=0` |
+| RoBERTa-large | Sparse MeZO | MNLI | FP16 | Partial, timed out | Job `44285153` hit Slurm time limit after `2 completed + 4 skipped_nan_guard` |
+| RoBERTa-large | Sparse MeZO | SST-5 | FP16 | Partial, timed out | Job `44285154` hit Slurm time limit after `3 completed + 4 skipped_nan_guard` |
+| OPT-1.3B | Sparse MeZO | MNLI | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44567783` |
+| OPT-1.3B | Sparse MeZO | SST-5 | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44567784` |
+| RoBERTa-large | Sparse MeZO | MNLI | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44567781` |
+| RoBERTa-large | Sparse MeZO | SST-5 | INT8 | Submitted, pending | New 8-value / 10k-step pilot queued as job `44567782` |
 
 ## 0.1 Experiment Setting Sheet
 
@@ -62,7 +62,7 @@ The table below records the current hyperparameter settings for the main experim
 
 ## 1. Running / Pending Full H-Sweeps
 
-As of 2026-04-16, the following experiment jobs are running:
+As of 2026-04-17, the following experiment jobs are running:
 
 ### 1.1 QuZO 16-bit OPT-1.3B MNLI
 
@@ -77,36 +77,63 @@ Notes:
 - This is the relaunched run after fixing the `Trainer._maybe_log_save_evaluate` compatibility bug in `large_models/trainer.py`.
 - The current run starts clean in a fresh result/log directory.
 - The first `h` is `1e-8`, which historically is numerically fragile for `opt-1.3b + MNLI + fp16/quzo16`.
+- Current partial summary already records `5 completed` points through `h=1e-6`.
 
-### 1.2 Sparse MeZO 16-bit RoBERTa-large MNLI
+### 1.2 MeZO INT8 RoBERTa-large MNLI
+
+- Job ID: `44465906`
+- Job name: `hsweep8h_mezo_int8_roberta_mnli`
+- Status: `RUNNING`
+- Result directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_8h/results/mezo_int8/roberta-large/mnli](/scratch/jy03364/MeZO_/experiments/h_sweep_8h/results/mezo_int8/roberta-large/mnli)
+- Log directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_8h/logs/mezo_int8/roberta-large/mnli](/scratch/jy03364/MeZO_/experiments/h_sweep_8h/logs/mezo_int8/roberta-large/mnli)
+
+Notes:
+- This is the new 8-value / 10k-step INT8 pilot on the medium-model path.
+- The current pilot uses QuZO low-bit semantics (`--zo_quantization int8`), not `load_int8`.
+
+### 1.3 Sparse MeZO 16-bit OPT-1.3B SST-5
+
+- Job ID: `44526706`
+- Job name: `hsweep14h_sparsemezo16_opt13b_sst5`
+- Status: `RUNNING`
+- Launcher: [opt13b_sst5_sparse_mezo16_14h.sh](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/jobs/opt13b_sst5_sparse_mezo16_14h.sh)
+- Result directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/opt-1.3b/sst5](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/opt-1.3b/sst5)
+- Log directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/opt-1.3b/sst5](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/opt-1.3b/sst5)
+
+Notes:
+- Current summary records `6 completed` points through `h=3e-6`.
+- The low-`h` completed points `1e-8, 3e-8, 1e-7, 3e-7` are numerically invalid because `sparse_mezo_last_stats.active_fraction = 0.0`.
+- The valid completed points so far are `1e-6` and `3e-6`, where `active_fraction ≈ 0.25`.
+
+### 1.4 Sparse MeZO 16-bit RoBERTa-large MNLI
 
 - Job ID: `44285153`
 - Job name: `hsweep14h_sparsemezo16_roberta_mnli`
-- Status: `RUNNING`
+- Status: `TIMEOUT`
 - Result directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/roberta-large/mnli](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/roberta-large/mnli)
 - Log directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/roberta-large/mnli](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/roberta-large/mnli)
 
-Latest observed progress:
-- Current `h`: `3e-6`
-- Latest observed global step: about `35770 / 50000`
-- `sparse_active_fraction` remains around `0.25`
+Latest recorded progress before timeout:
+- Last recorded finished `h`: `3e-6`
+- Current partial summary: `2 completed + 4 skipped_nan_guard`
+- The run ended due to Slurm time limit, not a Python crash.
 
-### 1.3 Sparse MeZO 16-bit RoBERTa-large SST-5
+### 1.5 Sparse MeZO 16-bit RoBERTa-large SST-5
 
 - Job ID: `44285154`
 - Job name: `hsweep14h_sparsemezo16_roberta_sst5`
-- Status: `RUNNING`
+- Status: `TIMEOUT`
 - Result directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/roberta-large/sst5](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/roberta-large/sst5)
 - Log directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/roberta-large/sst5](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/roberta-large/sst5)
 
-Latest observed progress:
-- Current `h`: `3e-6`
-- Latest observed global step: about `46110 / 50000`
-- `sparse_active_fraction` remains around `0.25`
+Latest recorded progress before timeout:
+- Last recorded finished `h`: `1e-5`
+- Current partial summary: `3 completed + 4 skipped_nan_guard`
+- The run ended due to Slurm time limit, not a Python crash.
 
-### 1.4 Sparse MeZO 16-bit OPT-1.3B MNLI
+### 1.6 Sparse MeZO 16-bit OPT-1.3B MNLI
 
-- Job ID: `44526707`
+- Job ID: `44567785`
 - Job name: `hsweep14h_sparsemezo16_opt13b_mnli`
 - Status: `PENDING`
 - Launcher: [opt13b_mnli_sparse_mezo16_14h.sh](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/jobs/opt13b_mnli_sparse_mezo16_14h.sh)
@@ -115,19 +142,8 @@ Latest observed progress:
 
 Notes:
 - A targeted smoke test at `h=1e-4` completed successfully before submission.
-- Current queue reason is `Priority`; the job is not blocked by a dependency.
-
-### 1.5 Sparse MeZO 16-bit OPT-1.3B SST-5
-
-- Job ID: `44526706`
-- Job name: `hsweep14h_sparsemezo16_opt13b_sst5`
-- Status: `PENDING`
-- Launcher: [opt13b_sst5_sparse_mezo16_14h.sh](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/jobs/opt13b_sst5_sparse_mezo16_14h.sh)
-- Result directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/opt-1.3b/sst5](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/opt-1.3b/sst5)
-- Log directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/opt-1.3b/sst5](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/opt-1.3b/sst5)
-
-Notes:
-- A targeted smoke test at `h=1e-4` completed successfully before submission.
+- The previous job `44526707` was cancelled after `h=1e-8` produced a zero-mask collapse (`active_fraction=0`).
+- `nan_guard` has since been tightened so the first non-ignored `nan` now skips the current `h`.
 - Current queue reason is `Priority`; the job is not blocked by a dependency.
 
 ## 2. Completed Main H-Sweeps
@@ -154,32 +170,37 @@ These runs already have finished `summary.jsonl` files and can be treated as com
 - Status counts:
   - `completed`: `14`
 
-### 2.4 QuZO 8-bit RoBERTa-large SST-5
-
-- Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo8/roberta-large/sst5/summary.jsonl)
-- Status counts:
-  - `completed`: `10`
-  - `skipped_nan_guard`: `4`
-
 ## 3. In-Progress Sparse MeZO Summaries
 
-These runs already have partial sweep summaries but are still running.
+These runs already have partial sweep summaries. The RoBERTa jobs timed out; the OPT SST-5 job is still running.
 
 ### 3.1 Sparse MeZO 16-bit RoBERTa-large MNLI
 
 - Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/roberta-large/mnli/summary.jsonl)
 - Current recorded status counts:
-  - `completed`: `1`
+  - `completed`: `2`
   - `skipped_nan_guard`: `4`
 - Last recorded finished `h`: `1e-6`
+- Terminal job state: `TIMEOUT`
 
 ### 3.2 Sparse MeZO 16-bit RoBERTa-large SST-5
 
 - Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/roberta-large/sst5/summary.jsonl)
 - Current recorded status counts:
-  - `completed`: `2`
+  - `completed`: `3`
   - `skipped_nan_guard`: `4`
+- Last recorded finished `h`: `1e-5`
+- Terminal job state: `TIMEOUT`
+
+### 3.3 Sparse MeZO 16-bit OPT-1.3B SST-5
+
+- Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/opt-1.3b/sst5/summary.jsonl)
+- Current recorded status counts:
+  - `completed`: `6`
 - Last recorded finished `h`: `3e-6`
+- Validity note:
+  - `1e-8`, `3e-8`, `1e-7`, `3e-7` are completed but numerically invalid because `artifacts.sparse_mezo_last_stats.active_fraction = 0.0`
+  - `1e-6` and `3e-6` are the first valid completed points
 
 ## 4. Smoke / Debug Runs Already Completed
 
@@ -263,6 +284,14 @@ Archived directories:
 - [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/quzo16/opt-1.3b/mnli_pre_maybe_log_fix_20260416_013126](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/quzo16/opt-1.3b/mnli_pre_maybe_log_fix_20260416_013126)
 - [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli_relaunch_prep_20260416_073136](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli_relaunch_prep_20260416_073136)
 - [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/quzo16/opt-1.3b/mnli_relaunch_prep_20260416_073136](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/quzo16/opt-1.3b/mnli_relaunch_prep_20260416_073136)
+- [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/opt-1.3b/mnli_pre_zero_mask_relaunch_20260417_122235](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/opt-1.3b/mnli_pre_zero_mask_relaunch_20260417_122235)
+- [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/opt-1.3b/mnli_pre_zero_mask_relaunch_20260417_122235](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/opt-1.3b/mnli_pre_zero_mask_relaunch_20260417_122235)
+
+## 6. Guard Behavior
+
+- `experiments/h_sweep_14h/nan_guard.py` now defaults to `--max-consecutive-nan=1`.
+- The 14-value sweep scripts set `NAN_GUARD_LIMIT=1`, so the first non-ignored `nan` in the child logs now skips the current `h`.
+- This change was made after `opt-1.3b + Sparse MeZO + MNLI + fp16` showed that repeated `eval_loss=nan` could be masked by interleaved `loss=0.0` lines and never reach the old threshold of 100.
 
 ## 6. Notes
 

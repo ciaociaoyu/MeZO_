@@ -60,6 +60,7 @@
 | `experiments/h_sweep_8h/jobs/` | pilot `sbatch` 作业脚本，包括 `mezo_int8`、`sparse_mezo_int8`、`mezo_int4`、`sparse_mezo_int4`。 |
 | `experiments/h_sweep_14h/results/` | sweep 结果目录，按方法 / 模型 / 任务分层。 |
 | `experiments/h_sweep_14h/logs/` | sweep 日志目录，包括 `slurm_*.out` 和每个 `h` 的 `train.log` / `train.err`。 |
+| `experiments/h_sweep_14h/nan_guard.py` | h-sweep 运行时 NaN 保护脚本。当前 14-value 脚本统一把阈值设为 `1`，也就是第一次有效 `nan` 就跳过当前 `h`。 |
 | `experiments/sparse_mezo_smoke/` | Sparse MeZO 的 smoke test 结果。 |
 | `experiments/fp8_smoke*` | FP8 smoke test 结果。 |
 

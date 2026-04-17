@@ -1,0 +1,56 @@
+{
+  "task": "SST5",
+  "model_name": "facebook/opt-1.3b",
+  "precision": "fp16",
+  "zo_quantization_bits": 16,
+  "config": {
+    "dataset_mode": "full",
+    "num_k": 16,
+    "seed": 42,
+    "data_seed": 42,
+    "train_set_seed": 42,
+    "learning_rate": 1e-06,
+    "zo_eps": 0.0001,
+    "max_steps": 10,
+    "per_device_train_batch_size": 16,
+    "gradient_accumulation_steps": 1
+  },
+  "train_split_size": 7690,
+  "eval_split_size": 854,
+  "train_metrics": {
+    "train_runtime": 1.4054,
+    "train_samples_per_second": 113.845,
+    "train_steps_per_second": 7.115,
+    "train_loss": 1.98310546875,
+    "epoch": 0.02
+  },
+  "train_wall_seconds": 1.410698413848877,
+  "post_train_global_step": 10,
+  "pre_train_probe_loss": 2.0096921920776367,
+  "post_train_probe_loss": 1.9702329635620117,
+  "debug": {
+    "probe_loss": 1.9702329635620117,
+    "single_seed": 42000147,
+    "single_seed_eps_est": 0.002078049179198114,
+    "single_seed_nu3_est": 100423814.72885607,
+    "single_seed_nu3_chosen_h": 0.0008,
+    "single_seed_delta3": 0.10283398628234863
+  },
+  "additive_h_estimation": {
+    "h_additive": 0.0004517579013883607,
+    "eps_est": 0.0014565692337372173,
+    "nu3_est": 251360577.7494376,
+    "num_valid_estimates": 12
+  },
+  "two_point_h_estimation": {
+    "h_two_point": 9.047379702129518e-05,
+    "h_two_point_tilde": 9.047379702129518e-05,
+    "delta_tilde": 1.657284337852616e-05,
+    "g_tilde": 58.450510920909245,
+    "l_tilde": 2.2485557819052037e-05,
+    "delta_hat": 1.657284337852616e-05,
+    "g_hat": 58.450510920909245,
+    "l_hat": 2.2485557819052037e-05,
+    "h2": 0.004070975728068906
+  }
+}

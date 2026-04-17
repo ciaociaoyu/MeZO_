@@ -32,8 +32,8 @@ def parse_args():
     parser.add_argument(
         "--max-consecutive-nan",
         type=int,
-        default=100,
-        help="Terminate the child process after this many consecutive NaN tokens are observed.",
+        default=1,
+        help="Terminate the child process after this many consecutive NaN tokens are observed. Default=1 means the first non-ignorable NaN will skip the current h.",
     )
     parser.add_argument("command", nargs=argparse.REMAINDER, help="Command to run after '--'.")
     args = parser.parse_args()
