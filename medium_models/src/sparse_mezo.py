@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Iterable, Optional, Tuple
 
 import torch
 
@@ -44,9 +44,57 @@ def sparse_mezo_enabled(ratio: float) -> bool:
     return validate_sparse_ratio(ratio) < 1.0
 
 
-def build_sparse_masks(
+def build_sparse_thresholds(
     named_parameters: Iterable[Tuple[str, torch.nn.Parameter]],
     *,
+    ratio: float,
+    mask_strategy: str,
+    scope: str,
+) -> Tuple[Dict[str, torch.Tensor], Dict[str, float]]:
+    ratio = validate_sparse_ratio(ratio)
+    mask_strategy = normalize_sparse_mask_strategy(mask_strategy)
+    scope = normalize_sparse_scope(scope)
+    if scope != "trainable_only":
+        raise ValueError(f"Only sparse_scope=trainable_only is supported right now, got {scope!r}")
+    if mask_strategy != "percentile_per_layer":
+        raise ValueError(f"Unsupported sparse_mask_strategy={mask_strategy!r}")
+
+    thresholds: Dict[str, torch.Tensor] = {}
+    total_params = 0
+    thresholded_tensors = 0
+
+    for name, param in named_parameters:
+        data = param.data.detach()
+        numel = int(data.numel())
+        total_params += numel
+        if numel == 0 or ratio >= 1.0:
+            continue
+
+        k = max(int(math.floor(ratio * numel)), 1)
+        flat_abs = data.abs().reshape(-1)
+        if k >= numel:
+            threshold = torch.max(flat_abs)
+        else:
+            # percentile_per_layer follows Sparse MeZO: keep the lowest-|param|
+            # fraction active in each trainable tensor.
+            threshold = torch.kthvalue(flat_abs, k).values
+        thresholds[name] = threshold.detach()
+        thresholded_tensors += 1
+
+    stats = {
+        "configured_ratio": float(ratio),
+        "total_trainable_params": int(total_params),
+        "thresholded_tensors": int(thresholded_tensors),
+        "mask_strategy": mask_strategy,
+        "scope": scope,
+    }
+    return thresholds, stats
+
+
+def build_sparse_masks_from_thresholds(
+    named_parameters: Iterable[Tuple[str, torch.nn.Parameter]],
+    *,
+    thresholds: Dict[str, torch.Tensor],
     ratio: float,
     mask_strategy: str,
     scope: str,
@@ -74,15 +122,10 @@ def build_sparse_masks(
             active_params += numel
             continue
 
-        k = max(int(math.floor(ratio * numel)), 1)
-        if k >= numel:
-            mask = torch.ones_like(data, dtype=torch.bool)
-        else:
-            # percentile_per_layer follows Sparse MeZO: keep the lowest-|param|
-            # fraction active in each trainable tensor.
-            flat_abs = data.abs().reshape(-1)
-            threshold = torch.kthvalue(flat_abs, k).values
-            mask = (flat_abs <= threshold).reshape_as(data)
+        threshold = thresholds.get(name)
+        if threshold is None:
+            raise KeyError(f"Missing sparse threshold for parameter {name!r}")
+        mask = data.abs() <= threshold.to(device=data.device, dtype=data.dtype)
         masks[name] = mask
         active_params += int(mask.sum().item())
 
@@ -98,7 +141,60 @@ def build_sparse_masks(
     return masks, stats
 
 
+def build_sparse_masks(
+    named_parameters: Iterable[Tuple[str, torch.nn.Parameter]],
+    *,
+    ratio: float,
+    mask_strategy: str,
+    scope: str,
+) -> Tuple[Dict[str, torch.Tensor], Dict[str, float]]:
+    thresholds, _ = build_sparse_thresholds(
+        named_parameters,
+        ratio=ratio,
+        mask_strategy=mask_strategy,
+        scope=scope,
+    )
+    return build_sparse_masks_from_thresholds(
+        named_parameters,
+        thresholds=thresholds,
+        ratio=ratio,
+        mask_strategy=mask_strategy,
+        scope=scope,
+    )
+
+
 def apply_sparse_mask(direction: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     if mask is None:
         return direction
     return direction * mask.to(device=direction.device, dtype=direction.dtype)
+
+
+def sample_masked_normal_like(
+    tensor: torch.Tensor,
+    *,
+    mask: Optional[torch.Tensor] = None,
+    seed: Optional[int] = None,
+    dtype: Optional[torch.dtype] = None,
+) -> torch.Tensor:
+    out_dtype = dtype if dtype is not None else tensor.dtype
+    generator = None
+    if seed is not None:
+        generator = torch.Generator(device=tensor.device.type)
+        generator.manual_seed(int(seed))
+
+    if mask is None:
+        return torch.empty_like(tensor, dtype=out_dtype).normal_(mean=0.0, std=1.0, generator=generator)
+
+    active_mask = mask.to(device=tensor.device, dtype=torch.bool)
+    out = torch.zeros_like(tensor, dtype=out_dtype)
+    active_count = int(active_mask.sum().item())
+    if active_count <= 0:
+        return out
+
+    samples = torch.empty((active_count,), device=tensor.device, dtype=out_dtype).normal_(
+        mean=0.0,
+        std=1.0,
+        generator=generator,
+    )
+    out[active_mask] = samples
+    return out

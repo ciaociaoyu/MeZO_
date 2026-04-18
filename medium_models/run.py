@@ -642,6 +642,12 @@ class DynamicTrainingArguments(TrainingArguments):
         default=True,
         metadata={"help": "If true, log the realized Sparse MeZO active-parameter fraction during training."}
     )
+    sparse_mask_refresh_steps: int = field(
+        default=100,
+        metadata={
+            "help": "Sparse MeZO mask refresh cadence. 0 freezes the initial mask for the full run, 1 refreshes every optimizer step, and N>1 refreshes every N steps."
+        }
+    )
     use_torchao_float8: bool = field(
         default=False,
         metadata={"help": "Swap nn.Linear modules with torchao Float8Linear for training."}
@@ -1043,6 +1049,9 @@ def main():
     training_args.sparse_ratio = validate_sparse_ratio(getattr(training_args, "sparse_ratio", 1.0))
     training_args.sparse_mask_strategy = normalize_sparse_mask_strategy(getattr(training_args, "sparse_mask_strategy", "percentile_per_layer"))
     training_args.sparse_scope = normalize_sparse_scope(getattr(training_args, "sparse_scope", "trainable_only"))
+    training_args.sparse_mask_refresh_steps = int(getattr(training_args, "sparse_mask_refresh_steps", 100))
+    if training_args.sparse_mask_refresh_steps < 0:
+        raise ValueError("--sparse_mask_refresh_steps must be >= 0")
     if int(getattr(training_args, "measure_perf_tail_window_steps", 10)) <= 0:
         raise ValueError("--measure_perf_tail_window_steps must be > 0")
     if int(getattr(training_args, "zo_probe_num_seeds", 16)) <= 0:
@@ -1191,15 +1200,16 @@ def main():
     )
     if bool(getattr(training_args, "zero_order_optim", False)):
         logger.info(
-            "[sparse-mezo-config] enabled=%s | sparse_ratio=%s | sparse_mask_strategy=%s | sparse_scope=%s | sparse_log_active_fraction=%s",
+            "[sparse-mezo-config] enabled=%s | sparse_ratio=%s | sparse_mask_strategy=%s | sparse_scope=%s | sparse_log_active_fraction=%s | sparse_mask_refresh_steps=%s",
             bool(sparse_mezo_enabled(getattr(training_args, "sparse_ratio", 1.0))),
             float(getattr(training_args, "sparse_ratio", 1.0)),
             str(getattr(training_args, "sparse_mask_strategy", "percentile_per_layer")),
             str(getattr(training_args, "sparse_scope", "trainable_only")),
             bool(getattr(training_args, "sparse_log_active_fraction", True)),
+            int(getattr(training_args, "sparse_mask_refresh_steps", 100)),
         )
         logger.info(
-            "[sparse-mezo-config] ratio semantics: sparse_ratio targets the active fraction per trainable tensor; ratio=1.0 disables masking. Order: construct direction -> apply sparse mask -> apply QuZO snapping after masked perturb/update when low-bit QuZO is active."
+            "[sparse-mezo-config] ratio semantics: sparse_ratio targets the active fraction per trainable tensor; ratio=1.0 disables masking. Order: refresh thresholds+mask on the configured cadence -> sample sparse-aware direction -> apply QuZO snapping after the sparse perturb/update path when low-bit QuZO is active."
         )
 
     # Set seed

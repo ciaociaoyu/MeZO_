@@ -95,7 +95,13 @@ import torch.nn.functional as F
 
 from src.linearhead_trainer import LinearHeadTrainer
 from src.quzo import make_quzo_direction_pair, quantize_tensor
-from src.sparse_mezo import apply_sparse_mask, build_sparse_masks, sparse_mezo_enabled
+from src.sparse_mezo import (
+    apply_sparse_mask,
+    build_sparse_masks_from_thresholds,
+    build_sparse_thresholds,
+    sample_masked_normal_like,
+    sparse_mezo_enabled,
+)
 from transformers.trainer_callback import TrainerState
 
 import copy
@@ -1991,6 +1997,10 @@ class Trainer(LinearHeadTrainer):
     def _sparse_enabled(self) -> bool:
         return sparse_mezo_enabled(getattr(self.args, "sparse_ratio", 1.0))
 
+    def _sparse_mask_refresh_steps(self) -> int:
+        value = int(getattr(self.args, "sparse_mask_refresh_steps", 100))
+        return max(value, 0)
+
     def _sparse_should_log_active_fraction(self, global_step: int) -> bool:
         if not bool(getattr(self.args, "sparse_log_active_fraction", True)):
             return False
@@ -2005,13 +2015,40 @@ class Trainer(LinearHeadTrainer):
         global_step = int(getattr(self.state, "global_step", 0))
         if getattr(self, "_sparse_step_masks_step", None) == global_step and getattr(self, "_sparse_step_masks", None) is not None:
             return
-        masks, stats = build_sparse_masks(
-            self.named_parameters_to_optim,
-            ratio=float(getattr(self.args, "sparse_ratio", 1.0)),
-            mask_strategy=str(getattr(self.args, "sparse_mask_strategy", "percentile_per_layer")),
-            scope=str(getattr(self.args, "sparse_scope", "trainable_only")),
-        )
+        refresh_steps = self._sparse_mask_refresh_steps()
+        last_refresh_step = getattr(self, "_sparse_refresh_masks_step", None)
+        refresh_due = getattr(self, "_sparse_refresh_masks", None) is None or last_refresh_step is None
+        if (not refresh_due) and refresh_steps > 0:
+            refresh_due = (global_step - int(last_refresh_step)) >= refresh_steps
+
+        if refresh_due:
+            thresholds, threshold_stats = build_sparse_thresholds(
+                self.named_parameters_to_optim,
+                ratio=float(getattr(self.args, "sparse_ratio", 1.0)),
+                mask_strategy=str(getattr(self.args, "sparse_mask_strategy", "percentile_per_layer")),
+                scope=str(getattr(self.args, "sparse_scope", "trainable_only")),
+            )
+            masks, stats = build_sparse_masks_from_thresholds(
+                self.named_parameters_to_optim,
+                thresholds=thresholds,
+                ratio=float(getattr(self.args, "sparse_ratio", 1.0)),
+                mask_strategy=str(getattr(self.args, "sparse_mask_strategy", "percentile_per_layer")),
+                scope=str(getattr(self.args, "sparse_scope", "trainable_only")),
+            )
+            self._sparse_thresholds = thresholds
+            self._sparse_thresholds_step = global_step
+            self._sparse_threshold_stats = threshold_stats
+            self._sparse_refresh_masks = masks
+            self._sparse_refresh_masks_step = global_step
+            self._sparse_refresh_stats = dict(stats)
+        else:
+            masks = self._sparse_refresh_masks
+            stats = dict(getattr(self, "_sparse_refresh_stats", {}))
+
         stats["global_step"] = global_step
+        stats["mask_refresh_steps"] = refresh_steps
+        stats["mask_refresh_step"] = int(getattr(self, "_sparse_refresh_masks_step", global_step))
+        stats["threshold_refresh_step"] = int(getattr(self, "_sparse_thresholds_step", global_step))
         self._sparse_step_masks = masks
         self._sparse_step_masks_step = global_step
         self.latest_sparse_mezo_stats = stats
@@ -2029,12 +2066,31 @@ class Trainer(LinearHeadTrainer):
                 )
                 self._sparse_last_logged_step = global_step
 
-    def _sparse_mask_tensor(self, name: str, tensor: torch.Tensor) -> torch.Tensor:
+    def _sparse_get_mask(self, name: str) -> Optional[torch.Tensor]:
         if not self._sparse_enabled():
-            return tensor
+            return None
         self._sparse_prepare_step_state()
-        mask = None if getattr(self, "_sparse_step_masks", None) is None else self._sparse_step_masks.get(name)
-        return apply_sparse_mask(tensor, mask)
+        if getattr(self, "_sparse_step_masks", None) is None:
+            return None
+        return self._sparse_step_masks.get(name)
+
+    def _sparse_mask_tensor(self, name: str, tensor: torch.Tensor) -> torch.Tensor:
+        return apply_sparse_mask(tensor, self._sparse_get_mask(name))
+
+    def _sample_sparse_noise_like(
+        self,
+        name: str,
+        tensor: torch.Tensor,
+        *,
+        seed: Optional[int] = None,
+        dtype: Optional[torch.dtype] = None,
+    ) -> torch.Tensor:
+        return sample_masked_normal_like(
+            tensor,
+            mask=self._sparse_get_mask(name),
+            seed=seed,
+            dtype=dtype,
+        )
 
     def _quzo_get_bundle(
         self,
@@ -2046,30 +2102,19 @@ class Trainer(LinearHeadTrainer):
         if random_vector is not None and name in random_vector:
             return random_vector[name]
         step_seed = int(random_seed if random_seed is not None else np.random.randint(2147483647))
+        mask = self._sparse_get_mask(name)
         bundle = make_quzo_direction_pair(
             param.data,
             bits=self._zo_quant_bits(),
             key=name,
             step_seed=step_seed,
+            mask=mask,
             target_dtype=param.data.dtype,
         )
-        if self._sparse_enabled():
-            # Sparse MeZO masks the already-constructed direction pair; if QuZO
-            # is active, parameter snapping still happens after the masked step.
+        if self._zo_quant_bits() == 16 and "z" in bundle:
             bundle = dict(bundle)
-            if "u1" in bundle and "u2" in bundle:
-                bundle["u1"] = self._sparse_mask_tensor(name, bundle["u1"])
-                bundle["u2"] = self._sparse_mask_tensor(name, bundle["u2"])
-            elif "z" in bundle:
-                # 16-bit MeZO uses a single Gaussian direction. Sparse MeZO
-                # masks that dense direction and reuses it for both the
-                # perturbation and update call sites that expect u1/u2.
-                masked_z = self._sparse_mask_tensor(name, bundle["z"])
-                bundle["z"] = masked_z
-                bundle["u1"] = masked_z
-                bundle["u2"] = masked_z
-            else:
-                raise KeyError(f"Unsupported direction bundle for {name}: {sorted(bundle.keys())}")
+            bundle["u1"] = bundle["z"]
+            bundle["u2"] = bundle["z"]
         if random_vector is not None:
             random_vector[name] = bundle
         return bundle
@@ -2106,14 +2151,15 @@ class Trainer(LinearHeadTrainer):
             return
         update_direction = pg * direction.detach().float()
         if weight_decay != 0.0 and self._hprobe_use_wd(name):
-            update_direction = update_direction + float(weight_decay) * param.data.detach().float()
-        if self._sparse_enabled():
-            update_direction = self._sparse_mask_tensor(name, update_direction)
+            wd_direction = param.data.detach().float()
+            if self._sparse_enabled():
+                wd_direction = self._sparse_mask_tensor(name, wd_direction)
+            update_direction = update_direction + float(weight_decay) * wd_direction
         update = float(learning_rate) * update_direction
         if not self._zo_use_quzo():
             param.data.add_(update.to(dtype=param.data.dtype), alpha=-1.0)
             return
-        # QuZO composition order is: build direction -> apply sparse mask ->
+        # QuZO composition order is: build sparse-aware direction -> update ->
         # project the updated parameter back to the quantized grid.
         seed_val = None if bundle is None else bundle.get("state_seed", None)
         seed = int(seed_val.item()) if isinstance(seed_val, torch.Tensor) else None
@@ -2507,13 +2553,7 @@ class Trainer(LinearHeadTrainer):
                     if self._zo_use_quzo():
                         _ = self._quzo_get_bundle(name, param, random_seed=random_seed)
                     else:
-                        _ = torch.normal(
-                            mean=0,
-                            std=1,
-                            size=param.data.size(),
-                            device=param.data.device,
-                            dtype=param.data.dtype,
-                        )
+                        _ = self._sample_sparse_noise_like(name, param.data)
                 continue
 
             if self._zo_use_quzo():
@@ -2527,12 +2567,10 @@ class Trainer(LinearHeadTrainer):
                     bundle = random_vector[name]
                 z = bundle["u2"]
             elif random_seed is not None:
-                z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                z = self._sparse_mask_tensor(name, z)
+                z = self._sample_sparse_noise_like(name, param.data)
             else:
                 if random_vector is None or name not in random_vector:
-                    z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                    z = self._sparse_mask_tensor(name, z)
+                    z = self._sample_sparse_noise_like(name, param.data)
                 else:
                     z = random_vector[name]
 
@@ -2568,8 +2606,7 @@ class Trainer(LinearHeadTrainer):
         torch.manual_seed(random_seed)
         # 需要 name 以支持按层操作
         for name, param in self.named_parameters_to_optim:
-            z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-            z = self._sparse_mask_tensor(name, z)
+            z = self._sample_sparse_noise_like(name, param.data)
             # === Begin Adaptive h (Berahas et al.) ===
             eps = float(self._get_training_step_size())
             delta = z * (float(scaling_factor) * eps)
@@ -2593,8 +2630,7 @@ class Trainer(LinearHeadTrainer):
                 if name in random_vector:
                     z = random_vector[name]
                 else:
-                    z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                    z = self._sparse_mask_tensor(name, z)
+                    z = self._sample_sparse_noise_like(name, param.data)
                     random_vector[name] = z
 
             cname = self.retrieve_c(name)
@@ -2635,8 +2671,7 @@ class Trainer(LinearHeadTrainer):
                 if name in random_vector:
                     z = random_vector[name]
                 else:
-                    z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                    z = self._sparse_mask_tensor(name, z)
+                    z = self._sample_sparse_noise_like(name, param.data)
                     random_vector[name] = z
             # === Begin Adaptive h (Berahas et al.) ===
             eps = float(self._get_training_step_size())
@@ -2666,8 +2701,7 @@ class Trainer(LinearHeadTrainer):
                     if name in random_vector:
                         z = random_vector[name]
                     else:
-                        z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                        z = self._sparse_mask_tensor(name, z)
+                        z = self._sample_sparse_noise_like(name, param.data)
                         random_vector[name] = z
                 # === Begin Adaptive h (Berahas et al.) ===
                 eps = float(self._get_training_step_size())
@@ -3249,8 +3283,7 @@ class Trainer(LinearHeadTrainer):
                                         if self._zo_use_quzo():
                                             z = self._quzo_get_bundle(name, param, random_seed=random_seed)["u2"]
                                         else:
-                                            z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                                            z = self._sparse_mask_tensor(name, z)
+                                            z = self._sample_sparse_noise_like(name, param.data)
                                     else:
                                         z = random_vector[name]["u2"] if self._zo_use_quzo() else random_vector[name]
 
@@ -3392,8 +3425,7 @@ class Trainer(LinearHeadTrainer):
                                     bundle = self._quzo_get_bundle(name, param, random_seed=random_seed)
                                     z = bundle["u2"]
                                 else:
-                                    z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                                    z = self._sparse_mask_tensor(name, z)
+                                    z = self._sample_sparse_noise_like(name, param.data)
                             else:
                                 if self._zo_use_quzo():
                                     bundle = random_vector[name]

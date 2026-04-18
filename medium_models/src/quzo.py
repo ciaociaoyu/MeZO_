@@ -5,6 +5,8 @@ from typing import Dict, Optional
 import torch
 from torch import nn
 
+from src.sparse_mezo import sample_masked_normal_like
+
 
 SUPPORTED_QUZO_BITS = {16, 8, 4}
 QUZO_BIT_ALIASES = {
@@ -58,11 +60,14 @@ def _rand_like_with_seed(tensor: torch.Tensor, seed: int) -> torch.Tensor:
     return torch.rand(tensor.size(), device=tensor.device, dtype=torch.float32, generator=generator)
 
 
-def _normal_like_with_seed(tensor: torch.Tensor, seed: int, dtype: Optional[torch.dtype] = None) -> torch.Tensor:
-    out_dtype = dtype if dtype is not None else tensor.dtype
-    generator = torch.Generator(device=tensor.device.type)
-    generator.manual_seed(int(seed))
-    return torch.empty_like(tensor, dtype=out_dtype).normal_(mean=0.0, std=1.0, generator=generator)
+def _normal_like_with_seed(
+    tensor: torch.Tensor,
+    seed: int,
+    dtype: Optional[torch.dtype] = None,
+    *,
+    mask: Optional[torch.Tensor] = None,
+) -> torch.Tensor:
+    return sample_masked_normal_like(tensor, mask=mask, seed=int(seed), dtype=dtype)
 
 
 def quantize_tensor(
@@ -110,6 +115,7 @@ def make_quzo_direction_pair(
     bits: int,
     key: str,
     step_seed: int,
+    mask: Optional[torch.Tensor] = None,
     target_dtype: Optional[torch.dtype] = None,
 ) -> Dict[str, torch.Tensor]:
     bits = validate_quzo_bits(bits)
@@ -118,7 +124,7 @@ def make_quzo_direction_pair(
 
     if bits == 16:
         z_dtype = torch.float16
-        z = _normal_like_with_seed(tensor, int(step_seed), dtype=z_dtype)
+        z = _normal_like_with_seed(tensor, int(step_seed), dtype=z_dtype, mask=mask)
         return {
             "z": z,
             "seed": torch.tensor(int(step_seed), device=tensor.device, dtype=torch.int64),
@@ -130,7 +136,7 @@ def make_quzo_direction_pair(
     update_seed = _seed_from_parts(step_seed, key, "update")
     state_seed = _seed_from_parts(step_seed, key, "state")
 
-    u = _normal_like_with_seed(tensor, gaussian_seed, dtype=direction_dtype)
+    u = _normal_like_with_seed(tensor, gaussian_seed, dtype=direction_dtype, mask=mask)
     u1 = quantize_tensor(u, bits, seed=perturb_seed, target_dtype=target_dtype)
     u2 = quantize_tensor(u, bits, seed=update_seed, target_dtype=target_dtype)
     return {

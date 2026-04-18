@@ -299,3 +299,40 @@ Archived directories:
 - Extremely small `h` values on `opt-1.3b + MNLI + fp16/quzo16`, especially `1e-8`, remain numerically risky.
 - A direct 100-step diagnostic showed `h=1e-4` is stable, while `h=1e-8` can corrupt parameters with `NaN`s in fp16.
 - `Sparse MeZO` on the large-model 16-bit path required one compatibility fix: when QuZO 16-bit uses a single dense direction `z`, the sparse mask now applies to `z` and reuses the masked direction for both perturb/update call sites.
+
+## 7. Sparse MeZO Runtime Optimization Update
+
+Motivation:
+
+- The previous local Sparse MeZO path was much slower than dense MeZO because it recomputed per-layer percentile thresholds with `torch.kthvalue` at every optimizer step, then generated dense random directions and masked them afterward.
+- That implementation detail was substantially heavier than the official SparseMeZO repo, which precomputes threshold statistics and uses a lighter per-step masking path.
+
+Code changes:
+
+- Added `--sparse_mask_refresh_steps` in `medium_models/run.py`.
+- Semantics:
+  - `0`: freeze the initial sparse mask for the entire run.
+  - `1`: refresh the sparse mask every optimizer step.
+  - `N > 1`: refresh the sparse mask every `N` optimizer steps.
+- Refactored `medium_models/src/sparse_mezo.py` into two phases:
+  - `build_sparse_thresholds(...)` computes and caches per-layer thresholds.
+  - `build_sparse_masks_from_thresholds(...)` rebuilds masks from cached thresholds.
+- Added `sample_masked_normal_like(...)` so sparse runs sample Gaussian noise only on active coordinates instead of materializing a full dense direction first.
+- Updated `medium_models/src/quzo.py` so `make_quzo_direction_pair(...)` can consume a sparse mask directly and generate sparse-aware `u1/u2/z`.
+- Updated `medium_models/src/trainer.py` so:
+  - sparse thresholds and masks are cached across steps according to `sparse_mask_refresh_steps`;
+  - QuZO directions are constructed with the sparse mask directly;
+  - repeated `direction -> sparse mask -> update -> sparse mask` behavior is removed from the main update path.
+
+Default behavior after this update:
+
+- `sparse_mask_refresh_steps` defaults to `100`.
+- This default keeps the mask dynamic but avoids paying the old percentile-selection cost at every step.
+
+Validation:
+
+- `python -m py_compile medium_models/src/sparse_mezo.py medium_models/src/quzo.py medium_models/src/trainer.py medium_models/run.py`
+- Lightweight smoke test in conda env `ciao`:
+  - verified cached-threshold mask construction;
+  - verified masked Gaussian sampling only produces nonzero values on active entries;
+  - verified QuZO `u1/u2` remain zero on inactive entries under a sparse mask.
