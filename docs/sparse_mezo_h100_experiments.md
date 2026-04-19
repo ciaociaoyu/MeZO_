@@ -396,6 +396,111 @@
   - `roberta-large + BoolQ + {mezo,sparse_mezo,lozo,hizoo} + fp16` 全部完成
   - `roberta-large + BoolQ + {mezo,sparse_mezo} + int8` 也已完成
 
+### 8.0 已完成测速总表
+
+下面这组表只列出已经 `completed` 的格子，不再混入 `unsupported`。如果只想看当前已经跑完的结果，直接看这一节即可。
+
+按每个 `model + task + precision` 取最快方法：
+
+`fp16`
+
+| model | task | fastest method | samples/sec | sec/step |
+|---|---|---|---:|---:|
+| roberta-large | MNLI | mezo | 508.972 | 0.063 |
+| roberta-large | SST-5 | mezo | 588.180 | 0.054 |
+| roberta-large | BoolQ | mezo | 171.657 | 0.186 |
+| opt-1.3b | MNLI | lozo | 221.612 | 0.072 |
+| opt-1.3b | SST-5 | lozo | 316.942 | 0.050 |
+| opt-1.3b | BoolQ | lozo | 135.139 | 0.118 |
+| mistral-7b | MNLI | lozo | 61.473 | 0.260 |
+| mistral-7b | SST-5 | lozo | 89.184 | 0.179 |
+| mistral-7b | BoolQ | lozo | 31.739 | 0.504 |
+
+`int8`
+
+| model | task | fastest method | samples/sec | sec/step |
+|---|---|---|---:|---:|
+| roberta-large | MNLI | mezo | 55.100 | 0.581 |
+| roberta-large | SST-5 | mezo | 55.358 | 0.578 |
+| roberta-large | BoolQ | mezo | 22.628 | 1.414 |
+| opt-1.3b | MNLI | lozo | 46.553 | 0.344 |
+| opt-1.3b | SST-5 | lozo | 63.654 | 0.251 |
+| opt-1.3b | BoolQ | lozo | 25.916 | 0.617 |
+| mistral-7b | MNLI | lozo | 9.233 | 1.733 |
+| mistral-7b | SST-5 | lozo | 14.344 | 1.115 |
+| mistral-7b | BoolQ | lozo | 4.678 | 3.420 |
+
+完整 `completed` 明细表：
+
+| model | task | method | precision | samples/sec | sec/step |
+|---|---|---|---|---:|---:|
+| roberta-large | MNLI | mezo | fp16 | 508.972 | 0.063 |
+| roberta-large | MNLI | mezo | int8 | 55.100 | 0.581 |
+| roberta-large | MNLI | sparse_mezo | fp16 | 171.801 | 0.186 |
+| roberta-large | MNLI | sparse_mezo | int8 | 45.342 | 0.706 |
+| roberta-large | MNLI | lozo | fp16 | 282.549 | 0.113 |
+| roberta-large | MNLI | hizoo | fp16 | 177.368 | 0.180 |
+| roberta-large | SST-5 | mezo | fp16 | 588.180 | 0.054 |
+| roberta-large | SST-5 | mezo | int8 | 55.358 | 0.578 |
+| roberta-large | SST-5 | sparse_mezo | fp16 | 184.020 | 0.174 |
+| roberta-large | SST-5 | sparse_mezo | int8 | 45.754 | 0.699 |
+| roberta-large | SST-5 | lozo | fp16 | 353.764 | 0.090 |
+| roberta-large | SST-5 | hizoo | fp16 | 238.266 | 0.134 |
+| roberta-large | BoolQ | mezo | fp16 | 171.657 | 0.186 |
+| roberta-large | BoolQ | mezo | int8 | 22.628 | 1.414 |
+| roberta-large | BoolQ | sparse_mezo | fp16 | 74.567 | 0.429 |
+| roberta-large | BoolQ | sparse_mezo | int8 | 21.697 | 1.475 |
+| roberta-large | BoolQ | lozo | fp16 | 69.843 | 0.458 |
+| roberta-large | BoolQ | hizoo | fp16 | 45.123 | 0.709 |
+| opt-1.3b | MNLI | mezo | fp16 | 180.961 | 0.088 |
+| opt-1.3b | MNLI | mezo | int8 | 42.263 | 0.379 |
+| opt-1.3b | MNLI | sparse_mezo | fp16 | 7.201 | 2.222 |
+| opt-1.3b | MNLI | sparse_mezo | int8 | 3.256 | 4.915 |
+| opt-1.3b | MNLI | lozo | fp16 | 221.612 | 0.072 |
+| opt-1.3b | MNLI | lozo | int8 | 46.553 | 0.344 |
+| opt-1.3b | MNLI | hizoo | fp16 | 142.566 | 0.112 |
+| opt-1.3b | MNLI | hizoo | int8 | 29.884 | 0.535 |
+| opt-1.3b | SST-5 | mezo | fp16 | 218.605 | 0.073 |
+| opt-1.3b | SST-5 | mezo | int8 | 56.297 | 0.284 |
+| opt-1.3b | SST-5 | sparse_mezo | fp16 | 7.239 | 2.210 |
+| opt-1.3b | SST-5 | sparse_mezo | int8 | 3.310 | 4.834 |
+| opt-1.3b | SST-5 | lozo | fp16 | 316.942 | 0.050 |
+| opt-1.3b | SST-5 | lozo | int8 | 63.654 | 0.251 |
+| opt-1.3b | SST-5 | hizoo | fp16 | 192.834 | 0.083 |
+| opt-1.3b | SST-5 | hizoo | int8 | 40.920 | 0.391 |
+| opt-1.3b | BoolQ | mezo | fp16 | 113.712 | 0.141 |
+| opt-1.3b | BoolQ | mezo | int8 | 24.446 | 0.655 |
+| opt-1.3b | BoolQ | sparse_mezo | fp16 | 5.997 | 2.668 |
+| opt-1.3b | BoolQ | sparse_mezo | int8 | 3.072 | 5.209 |
+| opt-1.3b | BoolQ | lozo | fp16 | 135.139 | 0.118 |
+| opt-1.3b | BoolQ | lozo | int8 | 25.916 | 0.617 |
+| opt-1.3b | BoolQ | hizoo | fp16 | 88.523 | 0.181 |
+| opt-1.3b | BoolQ | hizoo | int8 | 16.893 | 0.947 |
+| mistral-7b | MNLI | mezo | fp16 | 44.190 | 0.362 |
+| mistral-7b | MNLI | mezo | int8 | 8.394 | 1.906 |
+| mistral-7b | MNLI | sparse_mezo | fp16 | 1.178 | 13.577 |
+| mistral-7b | MNLI | sparse_mezo | int8 | 0.561 | 28.529 |
+| mistral-7b | MNLI | lozo | fp16 | 61.473 | 0.260 |
+| mistral-7b | MNLI | lozo | int8 | 9.233 | 1.733 |
+| mistral-7b | MNLI | hizoo | fp16 | 35.588 | 0.450 |
+| mistral-7b | MNLI | hizoo | int8 | 5.910 | 2.707 |
+| mistral-7b | SST-5 | mezo | fp16 | 56.054 | 0.285 |
+| mistral-7b | SST-5 | mezo | int8 | 12.373 | 1.293 |
+| mistral-7b | SST-5 | sparse_mezo | fp16 | 1.215 | 13.167 |
+| mistral-7b | SST-5 | sparse_mezo | int8 | 0.563 | 28.426 |
+| mistral-7b | SST-5 | lozo | fp16 | 89.184 | 0.179 |
+| mistral-7b | SST-5 | lozo | int8 | 14.344 | 1.115 |
+| mistral-7b | SST-5 | hizoo | fp16 | 45.613 | 0.351 |
+| mistral-7b | SST-5 | hizoo | int8 | 8.809 | 1.816 |
+| mistral-7b | BoolQ | mezo | fp16 | 16.667 | 0.960 |
+| mistral-7b | BoolQ | mezo | int8 | 4.433 | 3.610 |
+| mistral-7b | BoolQ | sparse_mezo | fp16 | 1.180 | 13.555 |
+| mistral-7b | BoolQ | sparse_mezo | int8 | 0.527 | 30.351 |
+| mistral-7b | BoolQ | lozo | fp16 | 31.739 | 0.504 |
+| mistral-7b | BoolQ | lozo | int8 | 4.678 | 3.420 |
+| mistral-7b | BoolQ | hizoo | fp16 | 20.830 | 0.768 |
+| mistral-7b | BoolQ | hizoo | int8 | 3.058 | 5.233 |
+
 速度解读摘要：
 
 - `roberta-large` 上，`Sparse MeZO` 比 `MeZO` 慢，但量级还是同一档：
