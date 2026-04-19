@@ -1,209 +1,0 @@
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
-  _torch_pytree._register_pytree_node(
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
-  _torch_pytree._register_pytree_node(
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
-  _torch_pytree._register_pytree_node(
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/deepspeed.py:23: FutureWarning: transformers.deepspeed module is deprecated and will be removed in a future version. Please import deepspeed modules directly from transformers.integrations
-  warnings.warn(
-2026-04-14 20:01:30,431 - INFO - [model] requested=facebook/opt-1.3b resolved=facebook/opt-1.3b family_hint=opt
-2026-04-14 20:01:30,431 - INFO - [data] task_name=SST5 dataset_mode=full num_k=16 data_seed=42 full_dev_ratio=0.1
-Repo card metadata block was not found. Setting CardData to empty.
-2026-04-14 20:01:30,676 - WARNING - Repo card metadata block was not found. Setting CardData to empty.
-2026-04-14 20:01:31,286 - INFO - Loading model with FP32...
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
-  warnings.warn(
-2026-04-14 20:01:31,327 - INFO - [model] disabling auto device placement for training; Trainer/Accelerate will place the model
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/modeling_utils.py:484: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
-  return torch.load(checkpoint_file, map_location=map_location)
-2026-04-14 20:01:38,106 - INFO - Done with 6.82s
-2026-04-14 20:01:38,211 - INFO - [sparse-mezo-config] enabled=False | sparse_ratio=1.0 | sparse_mask_strategy=percentile_per_layer | sparse_scope=trainable_only | sparse_log_active_fraction=True
-2026-04-14 20:01:38,211 - INFO - [sparse-mezo-config] ratio semantics: sparse_ratio targets the active fraction per trainable tensor; ratio=1.0 disables masking. Order: construct direction -> apply sparse mask -> apply QuZO snapping after masked perturb/update when low-bit QuZO is active.
-2026-04-14 20:01:38,224 - INFO - Preparing training/evaluation datasets...
-2026-04-14 20:01:38,224 - INFO - Done with 0.00s
-2026-04-14 20:01:38,923 - INFO - ***** Running training *****
-2026-04-14 20:01:38,923 - INFO -   Num examples = 7690
-2026-04-14 20:01:38,923 - INFO -   Num Epochs = 1
-2026-04-14 20:01:38,923 - INFO -   Instantaneous batch size per device = 16
-2026-04-14 20:01:38,923 - INFO -   Total train batch size (w. parallel, distributed & accumulation) = 16
-2026-04-14 20:01:38,923 - INFO -   Gradient Accumulation steps = 1
-2026-04-14 20:01:38,923 - INFO -   Total optimization steps = 20
-2026-04-14 20:01:38,924 - INFO -   Number of trainable parameters = 1315758080
-OurArguments(
-_n_gpu=1,
-adafactor=False,
-adam_beta1=0.9,
-adam_beta2=0.999,
-adam_epsilon=1e-08,
-auto_find_batch_size=False,
-bf16=False,
-bf16_full_eval=False,
-data_seed=42,
-dataloader_drop_last=False,
-dataloader_num_workers=0,
-dataloader_pin_memory=True,
-dataset_mode=full,
-ddp_backend=None,
-ddp_broadcast_buffers=None,
-ddp_bucket_cap_mb=None,
-ddp_find_unused_parameters=None,
-ddp_timeout=1800,
-debug=[],
-deepspeed=None,
-disable_tqdm=False,
-dispatch_batches=None,
-do_eval=False,
-do_predict=False,
-do_train=False,
-eos_token=<EOS_TOKEN>,
-eval_accumulation_steps=None,
-eval_delay=0,
-eval_steps=None,
-evaluation_strategy=no,
-fp16=False,
-fp16_backend=auto,
-fp16_full_eval=False,
-fp16_opt_level=O1,
-fsdp=[],
-fsdp_config={'min_num_params': 0, 'xla': False, 'xla_fsdp_grad_ckpt': False},
-fsdp_min_num_params=0,
-fsdp_transformer_layer_cls_to_wrap=None,
-full_determinism=False,
-full_dev_ratio=0.1,
-gradient_accumulation_steps=1,
-gradient_checkpointing=False,
-gradient_checkpointing_kwargs=None,
-greater_is_better=None,
-group_by_length=False,
-half_precision_backend=auto,
-head_tuning=False,
-hub_always_push=False,
-hub_model_id=None,
-hub_private_repo=False,
-hub_strategy=every_save,
-hub_token=<HUB_TOKEN>,
-icl_sfc=False,
-ignore_data_skip=False,
-include_inputs_for_metrics=False,
-include_tokens_per_second=False,
-jit_mode_eval=False,
-label_names=None,
-label_smoothing_factor=0.0,
-learning_rate=1e-06,
-length_column_name=length,
-linear_probing=False,
-load_best_model_at_end=False,
-load_bfloat16=False,
-load_float16=False,
-load_int8=True,
-local_rank=0,
-log_level=passive,
-log_level_replica=warning,
-log_on_each_node=True,
-logging_dir=/scratch/jy03364/MeZO_/experiments/speed_bench_h100/opt13b_h100_20260414_195901/SST5_int8/run/runs/Apr14_20-01-30_ra8-4,
-logging_first_step=False,
-logging_nan_inf_filter=True,
-logging_steps=1.0,
-logging_strategy=steps,
-lora=False,
-lora_alpha=16,
-lora_r=8,
-lp_early_stopping=False,
-lr_scheduler_type=constant,
-max_grad_norm=1.0,
-max_length=2048,
-max_new_tokens=50,
-max_steps=20,
-metric_for_best_model=None,
-model_name=facebook/opt-1.3b,
-mp_parameters=,
-neftune_noise_alpha=None,
-no_auto_device=False,
-no_cuda=False,
-no_eval=True,
-no_reparam=True,
-non_diff=False,
-num_beams=1,
-num_dev=None,
-num_eval=None,
-num_k=16,
-num_prefix=5,
-num_train=0,
-num_train_epochs=1.0,
-num_train_sets=None,
-only_train_option=True,
-optim=adamw_torch,
-optim_args=None,
-output_dir=/scratch/jy03364/MeZO_/experiments/speed_bench_h100/opt13b_h100_20260414_195901/SST5_int8/run,
-overwrite_output_dir=True,
-past_index=-1,
-per_device_eval_batch_size=8,
-per_device_train_batch_size=16,
-prediction_loss_only=False,
-prefix_init_by_real_act=True,
-prefix_tuning=False,
-push_to_hub=False,
-push_to_hub_model_id=None,
-push_to_hub_organization=None,
-push_to_hub_token=<PUSH_TO_HUB_TOKEN>,
-ray_scope=last,
-remove_unused_columns=True,
-report_to=[],
-result_file=None,
-resume_from_checkpoint=None,
-run_name=/scratch/jy03364/MeZO_/experiments/speed_bench_h100/opt13b_h100_20260414_195901/SST5_int8/run,
-sampling=False,
-save_model=False,
-save_on_each_node=False,
-save_on_interrupt=False,
-save_safetensors=True,
-save_steps=500,
-save_strategy=no,
-save_total_limit=None,
-seed=42,
-sfc=False,
-skip_memory_metrics=True,
-sparse_log_active_fraction=True,
-sparse_mask_strategy=percentile_per_layer,
-sparse_ratio=1.0,
-sparse_scope=trainable_only,
-split_batches=False,
-tag=speedbench-int8-SST5,
-task_name=SST5,
-temperature=1.0,
-tf32=None,
-top_k=None,
-top_p=0.95,
-torch_compile=False,
-torch_compile_backend=None,
-torch_compile_mode=None,
-torchdynamo=None,
-tpu_metrics_debug=False,
-tpu_num_cores=None,
-train_as_classification=True,
-train_set_seed=42,
-trainer=zo,
-untie_emb=False,
-use_cpu=False,
-use_ipex=False,
-use_legacy_prediction_loop=False,
-use_mps_device=False,
-use_torchao_float8=False,
-verbose=False,
-warmup_ratio=0.0,
-warmup_steps=0,
-weight_decay=0.0,
-zo_eps=0.0001,
-zo_probe_every=0,
-zo_probe_log_csv=True,
-zo_probe_num_seeds=16,
-zo_quantization=None,
-zo_quantization_bits=32,
-)
-  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:00<00:16,  1.18it/s] 10%|█         | 2/20 [00:01<00:12,  1.45it/s] 15%|█▌        | 3/20 [00:02<00:11,  1.44it/s] 20%|██        | 4/20 [00:02<00:10,  1.58it/s] 25%|██▌       | 5/20 [00:03<00:09,  1.65it/s] 30%|███       | 6/20 [00:03<00:08,  1.57it/s] 35%|███▌      | 7/20 [00:04<00:07,  1.64it/s] 40%|████      | 8/20 [00:05<00:07,  1.68it/s] 45%|████▌     | 9/20 [00:05<00:06,  1.72it/s] 50%|█████     | 10/20 [00:06<00:06,  1.60it/s] 55%|█████▌    | 11/20 [00:06<00:05,  1.65it/s] 60%|██████    | 12/20 [00:07<00:05,  1.57it/s] 65%|██████▌   | 13/20 [00:08<00:04,  1.63it/s] 70%|███████   | 14/20 [00:08<00:03,  1.68it/s] 75%|███████▌  | 15/20 [00:09<00:03,  1.59it/s] 80%|████████  | 16/20 [00:10<00:02,  1.54it/s] 85%|████████▌ | 17/20 [00:10<00:01,  1.61it/s] 90%|█████████ | 18/20 [00:11<00:01,  1.54it/s] 95%|█████████▌| 19/20 [00:12<00:00,  1.50it/s]100%|██████████| 20/20 [00:12<00:00,  1.48it/s]2026-04-14 20:01:51,705 - INFO - 
-
-Training completed. Do not forget to share your model on huggingface.co/models =)
-
-
-                                               100%|██████████| 20/20 [00:12<00:00,  1.48it/s]100%|██████████| 20/20 [00:13<00:00,  1.50it/s]
-{'train_runtime': 12.7955, 'train_samples_per_second': 25.009, 'train_steps_per_second': 1.563, 'train_loss': 1.8458393096923829, 'epoch': 0.04}

@@ -1,174 +1,0 @@
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
-  _torch_pytree._register_pytree_node(
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
-  _torch_pytree._register_pytree_node(
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
-  _torch_pytree._register_pytree_node(
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/deepspeed.py:23: FutureWarning: transformers.deepspeed module is deprecated and will be removed in a future version. Please import deepspeed modules directly from transformers.integrations
-  warnings.warn(
-2026-04-16 08:27:06,225 - INFO - [model] requested=opt-1.3b resolved=facebook/opt-1.3b family_hint=opt
-2026-04-16 08:27:06,225 - INFO - [data] task_name=MNLI dataset_mode=full num_k=16 data_seed=42 full_dev_ratio=0.1
-2026-04-16 08:27:16,243 - INFO - Loading model with FP16...
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
-  warnings.warn(
-2026-04-16 08:27:16,305 - INFO - [model] disabling auto device placement for training; Trainer/Accelerate will place the model
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/modeling_utils.py:484: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
-  return torch.load(checkpoint_file, map_location=map_location)
-2026-04-16 08:27:26,092 - INFO - Done with 9.85s
-2026-04-16 08:27:38,421 - INFO - [quzo-config] quantized model parameters in-place at 8 bits before ZO training
-2026-04-16 08:27:38,421 - INFO - [sparse-mezo-config] enabled=False | sparse_ratio=1.0 | sparse_mask_strategy=percentile_per_layer | sparse_scope=trainable_only | sparse_log_active_fraction=True
-2026-04-16 08:27:38,421 - INFO - [sparse-mezo-config] ratio semantics: sparse_ratio targets the active fraction per trainable tensor; ratio=1.0 disables masking. Order: construct direction -> apply sparse mask -> apply QuZO snapping after masked perturb/update when low-bit QuZO is active.
-2026-04-16 08:27:38,430 - INFO - Preparing training/evaluation datasets...
-2026-04-16 08:27:38,430 - INFO - Done with 0.00s
-2026-04-16 08:27:38,873 - INFO - ***** Running training *****
-2026-04-16 08:27:38,873 - INFO -   Num examples = 392702
-2026-04-16 08:27:38,873 - INFO -   Num Epochs = 1
-2026-04-16 08:27:38,873 - INFO -   Instantaneous batch size per device = 16
-2026-04-16 08:27:38,873 - INFO -   Total train batch size (w. parallel, distributed & accumulation) = 16
-2026-04-16 08:27:38,873 - INFO -   Gradient Accumulation steps = 1
-2026-04-16 08:27:38,873 - INFO -   Total optimization steps = 10
-2026-04-16 08:27:38,873 - INFO -   Number of trainable parameters = 1315758080
-  0%|          | 0/10 [00:00<?, ?it/s] 10%|█         | 1/10 [00:02<00:24,  2.71s/it] 20%|██        | 2/10 [00:05<00:23,  2.89s/it] 30%|███       | 3/10 [00:06<00:14,  2.12s/it] 40%|████      | 4/10 [00:08<00:10,  1.74s/it] 50%|█████     | 5/10 [00:09<00:07,  1.58s/it] 60%|██████    | 6/10 [00:10<00:05,  1.43s/it] 70%|███████   | 7/10 [00:11<00:04,  1.34s/it] 80%|████████  | 8/10 [00:12<00:02,  1.29s/it] 90%|█████████ | 9/10 [00:14<00:01,  1.25s/it]100%|██████████| 10/10 [00:15<00:00,  1.23s/it]2026-04-16 08:27:54,074 - INFO - 
-
-Training completed. Do not forget to share your model on huggingface.co/models =)
-
-
-                                               100%|██████████| 10/10 [00:15<00:00,  1.23s/it]100%|██████████| 10/10 [00:17<00:00,  1.80s/it]
-2026-04-16 08:27:56,841 - INFO - There are 0 training samples and 8 validation samples
-  0%|          | 0/8 [00:00<?, ?it/s]2026-04-16 08:27:56,842 - INFO - ========= Example =========
-2026-04-16 08:27:56,842 - INFO - Candidate: [0, 1, 2]
-2026-04-16 08:27:56,842 - INFO - Correct candidate: 2
-2026-04-16 08:27:56,862 - INFO - === Candidate 0 ===
-2026-04-16 08:27:56,862 - INFO - <s>Premise: yeah well losing is i mean i'm i'm originally from Saint Louis and Saint Louis Cardinals when they were there were uh a mostly a losing team but
-Hypothesis: The St. Louis Cardinals have always won.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Yes
-2026-04-16 08:27:56,864 - INFO - Log probabilities of the option tokens: tensor([-4.6016], dtype=torch.float16)
-2026-04-16 08:27:56,872 - INFO - === Candidate 1 (without context)===
-2026-04-16 08:27:56,873 - INFO - <s>Premise: yeah well losing is i mean i'm i'm originally from Saint Louis and Saint Louis Cardinals when they were there were uh a mostly a losing team but
-Hypothesis: The St. Louis Cardinals have always won.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Maybe
-2026-04-16 08:27:56,873 - INFO - Log probabilities of the option tokens: tensor([-6.6367], dtype=torch.float16)
-2026-04-16 08:27:56,881 - INFO - === Candidate 2 (without context)===
-2026-04-16 08:27:56,882 - INFO - <s>Premise: yeah well losing is i mean i'm i'm originally from Saint Louis and Saint Louis Cardinals when they were there were uh a mostly a losing team but
-Hypothesis: The St. Louis Cardinals have always won.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-No
-2026-04-16 08:27:56,882 - INFO - Log probabilities of the option tokens: tensor([-4.9844], dtype=torch.float16)
-2026-04-16 08:27:56,882 - INFO - Prediction scores: [-4.6015625, -6.63671875, -4.984375]
-2026-04-16 08:27:56,882 - INFO - ========= Example =========
-2026-04-16 08:27:56,882 - INFO - Candidate: [0, 1, 2]
-2026-04-16 08:27:56,882 - INFO - Correct candidate: 1
-2026-04-16 08:27:56,892 - INFO - === Candidate 0 ===
-2026-04-16 08:27:56,893 - INFO - <s>Premise: Beside the fortress lies an 18th-century caravanserai, or inn, which has been converted into a hotel, and now hosts regular folklore evenings of Turkish dance and music.
-Hypothesis: The fortress was built a number of years after the caravanserai.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Yes
-2026-04-16 08:27:56,893 - INFO - Log probabilities of the option tokens: tensor([-4.4688], dtype=torch.float16)
-2026-04-16 08:27:56,901 - INFO - === Candidate 1 (without context)===
-2026-04-16 08:27:56,902 - INFO - <s>Premise: Beside the fortress lies an 18th-century caravanserai, or inn, which has been converted into a hotel, and now hosts regular folklore evenings of Turkish dance and music.
-Hypothesis: The fortress was built a number of years after the caravanserai.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Maybe
-2026-04-16 08:27:56,902 - INFO - Log probabilities of the option tokens: tensor([-7.4570], dtype=torch.float16)
-2026-04-16 08:27:56,910 - INFO - === Candidate 2 (without context)===
-2026-04-16 08:27:56,910 - INFO - <s>Premise: Beside the fortress lies an 18th-century caravanserai, or inn, which has been converted into a hotel, and now hosts regular folklore evenings of Turkish dance and music.
-Hypothesis: The fortress was built a number of years after the caravanserai.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-No
-2026-04-16 08:27:56,911 - INFO - Log probabilities of the option tokens: tensor([-4.7031], dtype=torch.float16)
-2026-04-16 08:27:56,911 - INFO - Prediction scores: [-4.46875, -7.45703125, -4.703125]
-2026-04-16 08:27:56,911 - INFO - ========= Example =========
-2026-04-16 08:27:56,911 - INFO - Candidate: [0, 1, 2]
-2026-04-16 08:27:56,911 - INFO - Correct candidate: 0
-2026-04-16 08:27:56,921 - INFO - === Candidate 0 ===
-2026-04-16 08:27:56,921 - INFO - <s>Premise: The twenty mastic villages known collectively as mastihohoria were built by the Genoese in the 14 15th centuries.
-Hypothesis: Mastihohoria is a collection of twenty mastic villages built be the genoese.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Yes
-2026-04-16 08:27:56,921 - INFO - Log probabilities of the option tokens: tensor([-4.8477], dtype=torch.float16)
-2026-04-16 08:27:56,929 - INFO - === Candidate 1 (without context)===
-2026-04-16 08:27:56,930 - INFO - <s>Premise: The twenty mastic villages known collectively as mastihohoria were built by the Genoese in the 14 15th centuries.
-Hypothesis: Mastihohoria is a collection of twenty mastic villages built be the genoese.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Maybe
-2026-04-16 08:27:56,930 - INFO - Log probabilities of the option tokens: tensor([-7.8125], dtype=torch.float16)
-2026-04-16 08:27:56,938 - INFO - === Candidate 2 (without context)===
-2026-04-16 08:27:56,938 - INFO - <s>Premise: The twenty mastic villages known collectively as mastihohoria were built by the Genoese in the 14 15th centuries.
-Hypothesis: Mastihohoria is a collection of twenty mastic villages built be the genoese.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-No
-2026-04-16 08:27:56,939 - INFO - Log probabilities of the option tokens: tensor([-5.4805], dtype=torch.float16)
-2026-04-16 08:27:56,939 - INFO - Prediction scores: [-4.84765625, -7.8125, -5.48046875]
- 50%|█████     | 4/8 [00:00<00:00, 32.14it/s]100%|██████████| 8/8 [00:00<00:00, 36.04it/s]100%|██████████| 8/8 [00:00<00:00, 35.38it/s]
-2026-04-16 08:27:57,068 - INFO - There are 0 training samples and 8 validation samples
-  0%|          | 0/8 [00:00<?, ?it/s]2026-04-16 08:27:57,068 - INFO - ========= Example =========
-2026-04-16 08:27:57,068 - INFO - Candidate: [0, 1, 2]
-2026-04-16 08:27:57,068 - INFO - Correct candidate: 1
-2026-04-16 08:27:57,078 - INFO - === Candidate 0 ===
-2026-04-16 08:27:57,079 - INFO - <s>Premise: And so, uh, those things come about through the work of reading rather than through listening to some person on the street corner or, uh, gazing on TV.
-Hypothesis: Reading is greater than watching television, it makes you smarter.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Yes
-2026-04-16 08:27:57,079 - INFO - Log probabilities of the option tokens: tensor([-4.9180], dtype=torch.float16)
-2026-04-16 08:27:57,087 - INFO - === Candidate 1 (without context)===
-2026-04-16 08:27:57,087 - INFO - <s>Premise: And so, uh, those things come about through the work of reading rather than through listening to some person on the street corner or, uh, gazing on TV.
-Hypothesis: Reading is greater than watching television, it makes you smarter.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Maybe
-2026-04-16 08:27:57,087 - INFO - Log probabilities of the option tokens: tensor([-6.4961], dtype=torch.float16)
-2026-04-16 08:27:57,095 - INFO - === Candidate 2 (without context)===
-2026-04-16 08:27:57,096 - INFO - <s>Premise: And so, uh, those things come about through the work of reading rather than through listening to some person on the street corner or, uh, gazing on TV.
-Hypothesis: Reading is greater than watching television, it makes you smarter.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-No
-2026-04-16 08:27:57,096 - INFO - Log probabilities of the option tokens: tensor([-5.6211], dtype=torch.float16)
-2026-04-16 08:27:57,096 - INFO - Prediction scores: [-4.91796875, -6.49609375, -5.62109375]
-2026-04-16 08:27:57,096 - INFO - ========= Example =========
-2026-04-16 08:27:57,096 - INFO - Candidate: [0, 1, 2]
-2026-04-16 08:27:57,096 - INFO - Correct candidate: 0
-2026-04-16 08:27:57,106 - INFO - === Candidate 0 ===
-2026-04-16 08:27:57,107 - INFO - <s>Premise: Concurrently, we are undertaking three new program  an undergraduate program in civil engineering with an emphasis on the environment; an undergraduate program in industrial engineering with a focus on manufacturing; and graduate programs leading to the M.S.
-Hypothesis: The organization wants to fund three new projects.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Yes
-2026-04-16 08:27:57,107 - INFO - Log probabilities of the option tokens: tensor([-5.2305], dtype=torch.float16)
-2026-04-16 08:27:57,116 - INFO - === Candidate 1 (without context)===
-2026-04-16 08:27:57,116 - INFO - <s>Premise: Concurrently, we are undertaking three new program  an undergraduate program in civil engineering with an emphasis on the environment; an undergraduate program in industrial engineering with a focus on manufacturing; and graduate programs leading to the M.S.
-Hypothesis: The organization wants to fund three new projects.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Maybe
-2026-04-16 08:27:57,116 - INFO - Log probabilities of the option tokens: tensor([-7.8672], dtype=torch.float16)
-2026-04-16 08:27:57,124 - INFO - === Candidate 2 (without context)===
-2026-04-16 08:27:57,125 - INFO - <s>Premise: Concurrently, we are undertaking three new program  an undergraduate program in civil engineering with an emphasis on the environment; an undergraduate program in industrial engineering with a focus on manufacturing; and graduate programs leading to the M.S.
-Hypothesis: The organization wants to fund three new projects.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-No
-2026-04-16 08:27:57,125 - INFO - Log probabilities of the option tokens: tensor([-5.6641], dtype=torch.float16)
-2026-04-16 08:27:57,125 - INFO - Prediction scores: [-5.23046875, -7.8671875, -5.6640625]
-2026-04-16 08:27:57,125 - INFO - ========= Example =========
-2026-04-16 08:27:57,125 - INFO - Candidate: [0, 1, 2]
-2026-04-16 08:27:57,125 - INFO - Correct candidate: 2
-2026-04-16 08:27:57,134 - INFO - === Candidate 0 ===
-2026-04-16 08:27:57,134 - INFO - <s>Premise: Or do would they rather you have stay in Nursing?
-Hypothesis: Maybe you should quit Nursing and go into another line of work.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Yes
-2026-04-16 08:27:57,135 - INFO - Log probabilities of the option tokens: tensor([-4.7578], dtype=torch.float16)
-2026-04-16 08:27:57,142 - INFO - === Candidate 1 (without context)===
-2026-04-16 08:27:57,143 - INFO - <s>Premise: Or do would they rather you have stay in Nursing?
-Hypothesis: Maybe you should quit Nursing and go into another line of work.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Maybe
-2026-04-16 08:27:57,143 - INFO - Log probabilities of the option tokens: tensor([-5.1094], dtype=torch.float16)
-2026-04-16 08:27:57,151 - INFO - === Candidate 2 (without context)===
-2026-04-16 08:27:57,151 - INFO - <s>Premise: Or do would they rather you have stay in Nursing?
-Hypothesis: Maybe you should quit Nursing and go into another line of work.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-No
-2026-04-16 08:27:57,151 - INFO - Log probabilities of the option tokens: tensor([-5.0156], dtype=torch.float16)
-2026-04-16 08:27:57,151 - INFO - Prediction scores: [-4.7578125, -5.109375, -5.015625]
- 50%|█████     | 4/8 [00:00<00:00, 37.09it/s]100%|██████████| 8/8 [00:00<00:00, 38.25it/s]100%|██████████| 8/8 [00:00<00:00, 38.06it/s]
-2026-04-16 08:27:57,278 - INFO - ===== Train set 42 =====
-2026-04-16 08:27:57,279 - INFO - {'accuracy': np.float64(0.25), 'valid_mismatched_accuracy': np.float64(0.375)}

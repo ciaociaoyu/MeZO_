@@ -1,2 +1,0 @@
-cd /scratch/jy03364/MeZO_/medium_models
-TASK=MNLI K=16 SEED=16 DATA_SEED=16 DATASET_MODE=full BS=32 LR=1e-6 WD=0 STEP=20 EVAL_STEP=5000 MODEL=roberta-large USE_H=False USE_C=False DATALOADER_SHUFFLE=False EPS=1e-4 EXTRA_TAG=speedbench-rerun-fp16-MNLI bash ./mezo.sh --result_root /scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_bs32_rerun_20260414_212842/MNLI_fp16 --job_name run --zo_two_point_precision fp16 --zo_quantization_bits 16 --zo_probe_every 0

@@ -1,7 +1,0 @@
-2026-04-14 21:47:59,686 - INFO - PyTorch version 2.5.1+cu121 available.
-Traceback (most recent call last):
-  File "/scratch/jy03364/MeZO_/large_models/run.py", line 36, in <module>
-    from trainer import OurTrainer
-  File "/scratch/jy03364/MeZO_/large_models/trainer.py", line 160, in <module>
-    from transformers.utils import (
-ImportError: cannot import name 'is_torch_tpu_available' from 'transformers.utils' (/home/jy03364/.conda/envs/ciao/lib/python3.12/site-packages/transformers/utils/__init__.py). Did you mean: 'is_torch_hpu_available'?

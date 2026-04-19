@@ -15,7 +15,7 @@ The current repository setup uses different conda environments for different mod
 Environment note:
 
 - `mezo-mistral` is intentionally separate from `mezo-env`.
-- The resumable method-speed matrix launcher at [run_zo_method_speed_matrix.py](/scratch/jy03364/MeZO_/experiments/speed_bench_h100/run_zo_method_speed_matrix.py) follows the same mapping:
+- The resumable method-speed matrix launcher at [run_zo_method_speed_matrix.py](/scratch/jy03364/MeZO_/experiments/pilot/_shared/speed_bench_h100/run_zo_method_speed_matrix.py) follows the same mapping:
   - `roberta-large -> ciao`
   - `opt-1.3b -> mezo-env`
   - `mistral-7b -> mezo-mistral`
@@ -84,9 +84,9 @@ As of `2026-04-18`, the dedicated H100 multi-method speed matrix has finished. T
 
 Matrix location:
 
-- Script: [run_zo_method_speed_matrix.py](/scratch/jy03364/MeZO_/experiments/speed_bench_h100/run_zo_method_speed_matrix.py)
-- Output root: [/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418](/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418)
-- Summary: [/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/summary.jsonl](/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/summary.jsonl)
+- Script: [run_zo_method_speed_matrix.py](/scratch/jy03364/MeZO_/experiments/pilot/_shared/speed_bench_h100/run_zo_method_speed_matrix.py)
+- Output tree: `experiments/pilot/<method>/<model>/<task>/<precision>/speed_bench_h100/zo_method_matrix_20260418`
+- Summary: [/scratch/jy03364/MeZO_/experiments/pilot/_shared/speed_bench_h100/zo_method_matrix_20260418/summary.jsonl](/scratch/jy03364/MeZO_/experiments/pilot/_shared/speed_bench_h100/zo_method_matrix_20260418/summary.jsonl)
 - Full write-up: [docs/sparse_mezo_h100_experiments.md](/scratch/jy03364/MeZO_/docs/sparse_mezo_h100_experiments.md)
 
 Final status:
@@ -126,9 +126,9 @@ As of 2026-04-17, the following experiment jobs are running:
 - Job ID: `44457037`
 - Job name: `hsweep14h_quzo16_opt13b_mnli`
 - Status: `RUNNING`
-- Launcher: [opt13b_mnli_quzo16_14h.sh](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/jobs/opt13b_mnli_quzo16_14h.sh)
-- Result directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli)
-- Log directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/quzo16/opt-1.3b/mnli](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/quzo16/opt-1.3b/mnli)
+- Launcher: [opt13b_mnli_quzo16_14h.sh](/scratch/jy03364/MeZO_/experiments/main/mezo/opt-1.3b/mnli/fp16/h_sweep_14h/jobs/opt13b_mnli_quzo16_14h.sh)
+- Result directory: [/scratch/jy03364/MeZO_/experiments/main/mezo/opt-1.3b/mnli/fp16/h_sweep_14h/results](/scratch/jy03364/MeZO_/experiments/main/mezo/opt-1.3b/mnli/fp16/h_sweep_14h/results)
+- Log directory: removed during cleanup because this sweep did not finish.
 
 Notes:
 - This is the relaunched run after fixing the `Trainer._maybe_log_save_evaluate` compatibility bug in `large_models/trainer.py`.
@@ -141,8 +141,8 @@ Notes:
 - Job ID: `44465906`
 - Job name: `hsweep8h_mezo_int8_roberta_mnli`
 - Status: `RUNNING`
-- Result directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_8h/results/mezo_int8/roberta-large/mnli](/scratch/jy03364/MeZO_/experiments/h_sweep_8h/results/mezo_int8/roberta-large/mnli)
-- Log directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_8h/logs/mezo_int8/roberta-large/mnli](/scratch/jy03364/MeZO_/experiments/h_sweep_8h/logs/mezo_int8/roberta-large/mnli)
+- Result directory: [/scratch/jy03364/MeZO_/experiments/pilot/mezo/roberta-large/mnli/int8/h_sweep_8h/results](/scratch/jy03364/MeZO_/experiments/pilot/mezo/roberta-large/mnli/int8/h_sweep_8h/results)
+- Log directory: [/scratch/jy03364/MeZO_/experiments/pilot/mezo/roberta-large/mnli/int8/h_sweep_8h/logs](/scratch/jy03364/MeZO_/experiments/pilot/mezo/roberta-large/mnli/int8/h_sweep_8h/logs)
 
 Notes:
 - This is the new 8-value / 10k-step INT8 pilot on the medium-model path.
@@ -153,9 +153,9 @@ Notes:
 - Job ID: `44526706`
 - Job name: `hsweep14h_sparsemezo16_opt13b_sst5`
 - Status: `RUNNING`
-- Launcher: [opt13b_sst5_sparse_mezo16_14h.sh](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/jobs/opt13b_sst5_sparse_mezo16_14h.sh)
-- Result directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/opt-1.3b/sst5](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/opt-1.3b/sst5)
-- Log directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/opt-1.3b/sst5](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/opt-1.3b/sst5)
+- Launcher: [opt13b_sst5_sparse_mezo16_14h.sh](/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/opt-1.3b/sst5/fp16/h_sweep_14h/jobs/opt13b_sst5_sparse_mezo16_14h.sh)
+- Result directory: [/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/opt-1.3b/sst5/fp16/h_sweep_14h/results](/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/opt-1.3b/sst5/fp16/h_sweep_14h/results)
+- Log directory: [/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/opt-1.3b/sst5/fp16/h_sweep_14h/logs](/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/opt-1.3b/sst5/fp16/h_sweep_14h/logs)
 
 Notes:
 - Current summary records `6 completed` points through `h=3e-6`.
@@ -167,8 +167,8 @@ Notes:
 - Job ID: `44285153`
 - Job name: `hsweep14h_sparsemezo16_roberta_mnli`
 - Status: `TIMEOUT`
-- Result directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/roberta-large/mnli](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/roberta-large/mnli)
-- Log directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/roberta-large/mnli](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/roberta-large/mnli)
+- Result directory: [/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/roberta-large/mnli/fp16/h_sweep_14h/results](/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/roberta-large/mnli/fp16/h_sweep_14h/results)
+- Log directory: removed during cleanup because this task timed out.
 
 Latest recorded progress before timeout:
 - Last recorded finished `h`: `3e-6`
@@ -180,8 +180,8 @@ Latest recorded progress before timeout:
 - Job ID: `44285154`
 - Job name: `hsweep14h_sparsemezo16_roberta_sst5`
 - Status: `TIMEOUT`
-- Result directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/roberta-large/sst5](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/roberta-large/sst5)
-- Log directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/roberta-large/sst5](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/roberta-large/sst5)
+- Result directory: [/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/roberta-large/sst5/fp16/h_sweep_14h/results](/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/roberta-large/sst5/fp16/h_sweep_14h/results)
+- Log directory: removed during cleanup because this task timed out.
 
 Latest recorded progress before timeout:
 - Last recorded finished `h`: `1e-5`
@@ -193,9 +193,9 @@ Latest recorded progress before timeout:
 - Job ID: `44567785`
 - Job name: `hsweep14h_sparsemezo16_opt13b_mnli`
 - Status: `PENDING`
-- Launcher: [opt13b_mnli_sparse_mezo16_14h.sh](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/jobs/opt13b_mnli_sparse_mezo16_14h.sh)
-- Result directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/opt-1.3b/mnli](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/opt-1.3b/mnli)
-- Log directory: [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/opt-1.3b/mnli](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/opt-1.3b/mnli)
+- Launcher: [opt13b_mnli_sparse_mezo16_14h.sh](/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/opt-1.3b/mnli/fp16/h_sweep_14h/jobs/opt13b_mnli_sparse_mezo16_14h.sh)
+- Result directory: [/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/opt-1.3b/mnli/fp16/h_sweep_14h/results](/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/opt-1.3b/mnli/fp16/h_sweep_14h/results)
+- Log directory: removed during cleanup because this task never completed.
 
 Notes:
 - A targeted smoke test at `h=1e-4` completed successfully before submission.
@@ -209,21 +209,21 @@ These runs already have finished `summary.jsonl` files and can be treated as com
 
 ### 2.1 QuZO 16-bit RoBERTa-large SST-5
 
-- Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/roberta-large/sst5/summary.jsonl)
+- Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/main/mezo/roberta-large/sst5/fp16/h_sweep_14h/results/summary.jsonl)
 - Status counts:
   - `completed`: `9`
   - `skipped_nan_guard`: `5`
 
 ### 2.2 QuZO 16-bit RoBERTa-large MNLI
 
-- Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/roberta-large/mnli/summary.jsonl)
+- Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/main/mezo/roberta-large/mnli/fp16/h_sweep_14h/results/summary.jsonl)
 - Status counts:
   - `completed`: `9`
   - `skipped_nan_guard`: `5`
 
 ### 2.3 QuZO 16-bit OPT-1.3B SST-5
 
-- Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/sst5/summary.jsonl)
+- Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/main/mezo/opt-1.3b/sst5/fp16/h_sweep_14h/results/summary.jsonl)
 - Status counts:
   - `completed`: `14`
 
@@ -233,7 +233,7 @@ These runs already have partial sweep summaries. The RoBERTa jobs timed out; the
 
 ### 3.1 Sparse MeZO 16-bit RoBERTa-large MNLI
 
-- Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/roberta-large/mnli/summary.jsonl)
+- Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/roberta-large/mnli/fp16/h_sweep_14h/results/summary.jsonl)
 - Current recorded status counts:
   - `completed`: `2`
   - `skipped_nan_guard`: `4`
@@ -242,7 +242,7 @@ These runs already have partial sweep summaries. The RoBERTa jobs timed out; the
 
 ### 3.2 Sparse MeZO 16-bit RoBERTa-large SST-5
 
-- Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/roberta-large/sst5/summary.jsonl)
+- Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/roberta-large/sst5/fp16/h_sweep_14h/results/summary.jsonl)
 - Current recorded status counts:
   - `completed`: `3`
   - `skipped_nan_guard`: `4`
@@ -251,7 +251,7 @@ These runs already have partial sweep summaries. The RoBERTa jobs timed out; the
 
 ### 3.3 Sparse MeZO 16-bit OPT-1.3B SST-5
 
-- Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/opt-1.3b/sst5/summary.jsonl)
+- Summary: [summary.jsonl](/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/opt-1.3b/sst5/fp16/h_sweep_14h/results/summary.jsonl)
 - Current recorded status counts:
   - `completed`: `6`
 - Last recorded finished `h`: `3e-6`
@@ -264,26 +264,26 @@ These runs already have partial sweep summaries. The RoBERTa jobs timed out; the
 ### 4.1 Sparse MeZO smoke tests
 
 - MNLI:
-  - [/scratch/jy03364/MeZO_/experiments/sparse_mezo_smoke/medium/roberta_mnli/run_sparse_mezo16/seed16/run_summary.json](/scratch/jy03364/MeZO_/experiments/sparse_mezo_smoke/medium/roberta_mnli/run_sparse_mezo16/seed16/run_summary.json)
+  - [/scratch/jy03364/MeZO_/experiments/smoke/sparse_mezo/roberta-large/mnli/fp16/sparse_mezo_smoke/run_sparse_mezo16/seed16/run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/sparse_mezo/roberta-large/mnli/fp16/sparse_mezo_smoke/run_sparse_mezo16/seed16/run_summary.json)
 - SST-5:
-  - [/scratch/jy03364/MeZO_/experiments/sparse_mezo_smoke/medium/roberta_sst5/run_sparse_mezo16/seed16/run_summary.json](/scratch/jy03364/MeZO_/experiments/sparse_mezo_smoke/medium/roberta_sst5/run_sparse_mezo16/seed16/run_summary.json)
+  - [/scratch/jy03364/MeZO_/experiments/smoke/sparse_mezo/roberta-large/sst5/fp16/sparse_mezo_smoke/run_sparse_mezo16/seed16/run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/sparse_mezo/roberta-large/sst5/fp16/sparse_mezo_smoke/run_sparse_mezo16/seed16/run_summary.json)
 
 ### 4.2 OPT-1.3B MNLI quzo16 compatibility / numeric smoke runs
 
 - One-step compatibility check:
-  - [/scratch/jy03364/MeZO_/experiments/smoke_fix/large/opt13b_mnli_quzo16_one_step_eval/run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke_fix/large/opt13b_mnli_quzo16_one_step_eval/run_summary.json)
+  - [/scratch/jy03364/MeZO_/experiments/smoke/mezo/opt-1.3b/mnli/fp16/smoke_fix/opt13b_mnli_quzo16_one_step_eval/run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/mezo/opt-1.3b/mnli/fp16/smoke_fix/opt13b_mnli_quzo16_one_step_eval/run_summary.json)
 - 100-step `h=1e-8` numeric check:
-  - [/scratch/jy03364/MeZO_/experiments/smoke_fix/large/opt13b_mnli_quzo16_100step_eval/run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke_fix/large/opt13b_mnli_quzo16_100step_eval/run_summary.json)
+  - [/scratch/jy03364/MeZO_/experiments/smoke/mezo/opt-1.3b/mnli/fp16/smoke_fix/opt13b_mnli_quzo16_100step_eval/run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/mezo/opt-1.3b/mnli/fp16/smoke_fix/opt13b_mnli_quzo16_100step_eval/run_summary.json)
 - 100-step `h=1e-4` stability check:
-  - metrics only at [/scratch/jy03364/MeZO_/experiments/smoke_fix/large/opt13b_mnli_quzo16_h1e4_param_scan](/scratch/jy03364/MeZO_/experiments/smoke_fix/large/opt13b_mnli_quzo16_h1e4_param_scan)
+  - metrics only at [/scratch/jy03364/MeZO_/experiments/smoke/mezo/opt-1.3b/mnli/fp16/smoke_fix/opt13b_mnli_quzo16_h1e4_param_scan](/scratch/jy03364/MeZO_/experiments/smoke/mezo/opt-1.3b/mnli/fp16/smoke_fix/opt13b_mnli_quzo16_h1e4_param_scan)
 
 ### 4.3 OPT-1.3B Sparse MeZO fp16 targeted smoke runs
 
 - MNLI `h=1e-4` smoke:
-  - [/scratch/jy03364/MeZO_/experiments/smoke_fix/large/opt13b_sparse_mezo16_mnli_h1e4_smoke/run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke_fix/large/opt13b_sparse_mezo16_mnli_h1e4_smoke/run_summary.json)
+  - [/scratch/jy03364/MeZO_/experiments/smoke/sparse_mezo/opt-1.3b/mnli/fp16/smoke_fix/opt13b_sparse_mezo16_mnli_h1e4_smoke/run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/sparse_mezo/opt-1.3b/mnli/fp16/smoke_fix/opt13b_sparse_mezo16_mnli_h1e4_smoke/run_summary.json)
   - Final metrics: `accuracy=0.375`, `valid_mismatched_accuracy=0.5`
 - SST-5 `h=1e-4` smoke:
-  - [/scratch/jy03364/MeZO_/experiments/smoke_fix/large/opt13b_sparse_mezo16_sst5_h1e4_smoke/run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke_fix/large/opt13b_sparse_mezo16_sst5_h1e4_smoke/run_summary.json)
+  - [/scratch/jy03364/MeZO_/experiments/smoke/sparse_mezo/opt-1.3b/sst5/fp16/smoke_fix/opt13b_sparse_mezo16_sst5_h1e4_smoke/run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/sparse_mezo/opt-1.3b/sst5/fp16/smoke_fix/opt13b_sparse_mezo16_sst5_h1e4_smoke/run_summary.json)
   - Final metrics: `accuracy=0.125`, `dev_accuracy=0.2423887587822014`
 
 ### 4.4 INT4 pilot smoke matrix
@@ -306,10 +306,10 @@ Results:
 
 | Model | Baseline | Dataset | Summary | Tail perf | Sparse stats |
 | --- | --- | --- | --- | --- | --- |
-| RoBERTa-large | MeZO | MNLI | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke_fix/int4_matrix_final/medium/mezo/roberta_mnli/run_smoke/run_summary.json) | `wallclock/step = 10.4256`, `samples/sec = 3.0694`, `max_gpu_memory_gb = 3.8519` | – |
-| RoBERTa-large | MeZO | SST-5 | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke_fix/int4_matrix_final/medium/mezo/roberta_sst5/run_smoke/run_summary.json) | `wallclock/step = 0.9236`, `samples/sec = 34.6487`, `max_gpu_memory_gb = 3.8519` | – |
-| RoBERTa-large | Sparse MeZO | MNLI | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke_fix/int4_matrix_final/medium/sparse_mezo/roberta_mnli/run_smoke/run_summary.json) | `wallclock/step = 12.4283`, `samples/sec = 2.5748`, `max_gpu_memory_gb = 4.2336` | `active_fraction = 0.5230` at the last logged step |
-| RoBERTa-large | Sparse MeZO | SST-5 | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke_fix/int4_matrix_final/medium/sparse_mezo/roberta_sst5/run_smoke/run_summary.json) | `wallclock/step = 3.0360`, `samples/sec = 10.5402`, `max_gpu_memory_gb = 4.2342` | `active_fraction = 0.5066` at the last logged step |
+| RoBERTa-large | MeZO | MNLI | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/mezo/roberta-large/mnli/int4/smoke_fix/int4_matrix_final/roberta_mnli/run_smoke/run_summary.json) | `wallclock/step = 10.4256`, `samples/sec = 3.0694`, `max_gpu_memory_gb = 3.8519` | – |
+| RoBERTa-large | MeZO | SST-5 | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/mezo/roberta-large/sst5/int4/smoke_fix/int4_matrix_final/roberta_sst5/run_smoke/run_summary.json) | `wallclock/step = 0.9236`, `samples/sec = 34.6487`, `max_gpu_memory_gb = 3.8519` | – |
+| RoBERTa-large | Sparse MeZO | MNLI | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/sparse_mezo/roberta-large/mnli/int4/smoke_fix/int4_matrix_final/roberta_mnli/run_smoke/run_summary.json) | `wallclock/step = 12.4283`, `samples/sec = 2.5748`, `max_gpu_memory_gb = 4.2336` | `active_fraction = 0.5230` at the last logged step |
+| RoBERTa-large | Sparse MeZO | SST-5 | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/sparse_mezo/roberta-large/sst5/int4/smoke_fix/int4_matrix_final/roberta_sst5/run_smoke/run_summary.json) | `wallclock/step = 3.0360`, `samples/sec = 10.5402`, `max_gpu_memory_gb = 4.2342` | `active_fraction = 0.5066` at the last logged step |
 
 #### Large path: OPT-1.3B + QuZO int4
 
@@ -327,26 +327,26 @@ Results:
 
 | Model | Baseline | Dataset | Summary | Tail perf | Sparse stats |
 | --- | --- | --- | --- | --- | --- |
-| OPT-1.3B | MeZO | MNLI | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke_fix/int4_matrix_final/large/mezo/opt13b_mnli/run_summary.json) | `wallclock/step = 1.1113`, `samples/sec = 14.3980`, `max_gpu_memory_gb = 6.7519` | – |
-| OPT-1.3B | MeZO | SST5 | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke_fix/int4_matrix_final/large/mezo/opt13b_sst5/run_summary.json) | `wallclock/step = 1.0896`, `samples/sec = 14.6850`, `max_gpu_memory_gb = 6.5094` | – |
-| OPT-1.3B | Sparse MeZO | MNLI | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke_fix/int4_matrix_final/large/sparse_mezo/opt13b_mnli/run_summary.json) | `wallclock/step = 4.6403`, `samples/sec = 3.4480`, `max_gpu_memory_gb = 7.9778` | `active_fraction = 0.4801` at the last logged step |
-| OPT-1.3B | Sparse MeZO | SST5 | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke_fix/int4_matrix_final/large/sparse_mezo/opt13b_sst5/run_summary.json) | `wallclock/step = 4.6098`, `samples/sec = 3.4708`, `max_gpu_memory_gb = 7.7357` | `active_fraction = 0.6042` at the last logged step |
+| OPT-1.3B | MeZO | MNLI | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/mezo/opt-1.3b/mnli/int4/smoke_fix/int4_matrix_final/opt13b_mnli/run_summary.json) | `wallclock/step = 1.1113`, `samples/sec = 14.3980`, `max_gpu_memory_gb = 6.7519` | – |
+| OPT-1.3B | MeZO | SST5 | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/mezo/opt-1.3b/sst5/int4/smoke_fix/int4_matrix_final/opt13b_sst5/run_summary.json) | `wallclock/step = 1.0896`, `samples/sec = 14.6850`, `max_gpu_memory_gb = 6.5094` | – |
+| OPT-1.3B | Sparse MeZO | MNLI | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/sparse_mezo/opt-1.3b/mnli/int4/smoke_fix/int4_matrix_final/opt13b_mnli/run_summary.json) | `wallclock/step = 4.6403`, `samples/sec = 3.4480`, `max_gpu_memory_gb = 7.9778` | `active_fraction = 0.4801` at the last logged step |
+| OPT-1.3B | Sparse MeZO | SST5 | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/sparse_mezo/opt-1.3b/sst5/int4/smoke_fix/int4_matrix_final/opt13b_sst5/run_summary.json) | `wallclock/step = 4.6098`, `samples/sec = 3.4708`, `max_gpu_memory_gb = 7.7357` | `active_fraction = 0.6042` at the last logged step |
 
 ## 5. Archived / Relaunched Runs
 
 The previous partial or broken `opt-1.3b / MNLI / quzo16` runs were preserved instead of overwritten.
 
 Archived directories:
-- [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli_pre_maybe_log_fix_20260416_013126](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli_pre_maybe_log_fix_20260416_013126)
-- [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/quzo16/opt-1.3b/mnli_pre_maybe_log_fix_20260416_013126](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/quzo16/opt-1.3b/mnli_pre_maybe_log_fix_20260416_013126)
-- [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli_relaunch_prep_20260416_073136](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli_relaunch_prep_20260416_073136)
-- [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/quzo16/opt-1.3b/mnli_relaunch_prep_20260416_073136](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/quzo16/opt-1.3b/mnli_relaunch_prep_20260416_073136)
-- [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/opt-1.3b/mnli_pre_zero_mask_relaunch_20260417_122235](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/opt-1.3b/mnli_pre_zero_mask_relaunch_20260417_122235)
-- [/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/opt-1.3b/mnli_pre_zero_mask_relaunch_20260417_122235](/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/opt-1.3b/mnli_pre_zero_mask_relaunch_20260417_122235)
+- [/scratch/jy03364/MeZO_/experiments/main/mezo/opt-1.3b/mnli/fp16/h_sweep_14h/archive_runs/mnli_pre_maybe_log_fix_20260416_013126/results](/scratch/jy03364/MeZO_/experiments/main/mezo/opt-1.3b/mnli/fp16/h_sweep_14h/archive_runs/mnli_pre_maybe_log_fix_20260416_013126/results)
+- [/scratch/jy03364/MeZO_/experiments/main/mezo/opt-1.3b/mnli/fp16/h_sweep_14h/archive_runs/mnli_pre_maybe_log_fix_20260416_013126/logs](/scratch/jy03364/MeZO_/experiments/main/mezo/opt-1.3b/mnli/fp16/h_sweep_14h/archive_runs/mnli_pre_maybe_log_fix_20260416_013126/logs)
+- [/scratch/jy03364/MeZO_/experiments/main/mezo/opt-1.3b/mnli/fp16/h_sweep_14h/archive_runs/mnli_relaunch_prep_20260416_073136/results](/scratch/jy03364/MeZO_/experiments/main/mezo/opt-1.3b/mnli/fp16/h_sweep_14h/archive_runs/mnli_relaunch_prep_20260416_073136/results)
+- Historical partial logs for `mnli_relaunch_prep_20260416_073136` were deleted during cleanup.
+- [/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/opt-1.3b/mnli/fp16/h_sweep_14h/archive_runs/mnli_pre_zero_mask_relaunch_20260417_122235/results](/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/opt-1.3b/mnli/fp16/h_sweep_14h/archive_runs/mnli_pre_zero_mask_relaunch_20260417_122235/results)
+- Historical partial logs for `mnli_pre_zero_mask_relaunch_20260417_122235` were deleted during cleanup.
 
 ## 6. Guard Behavior
 
-- `experiments/h_sweep_14h/nan_guard.py` now defaults to `--max-consecutive-nan=1`.
+- `experiments/main/_shared/h_sweep_14h/nan_guard.py` now defaults to `--max-consecutive-nan=1`.
 - The 14-value sweep scripts set `NAN_GUARD_LIMIT=1`, so the first non-ignored `nan` in the child logs now skips the current `h`.
 - This change was made after `opt-1.3b + Sparse MeZO + MNLI + fp16` showed that repeated `eval_loss=nan` could be masked by interleaved `loss=0.0` lines and never reach the old threshold of 100.
 
@@ -454,10 +454,10 @@ Run summaries:
 
 | Method | Summary | Tail perf | Notes |
 | --- | --- | --- | --- |
-| MeZO | [run_summary.json](/scratch/jy03364/MeZO_/medium_models/result/smoke_mezo_base/seed0/run_summary.json) | `wallclock/step = 0.0753`, `samples/sec = 13.2879`, `max_gpu_memory_gb = 3.6459` | 2 forward passes / step |
-| LOZO | [run_summary.json](/scratch/jy03364/MeZO_/medium_models/result/smoke_lozo/seed0/run_summary.json) | `wallclock/step = 0.1039`, `samples/sec = 9.6223`, `max_gpu_memory_gb = 1.5717` | slower than MeZO here, but much lower peak memory |
-| HiZOO | [run_summary.json](/scratch/jy03364/MeZO_/medium_models/result/smoke_hizoo/seed0/run_summary.json) | `wallclock/step = 0.1223`, `samples/sec = 8.1792`, `max_gpu_memory_gb = 4.0293` | expected slowdown from 3 forward passes / step |
-| Sparse MeZO (`ratio=0.2`) | [run_summary.json](/scratch/jy03364/MeZO_/medium_models/result/smoke_sparse/seed0/run_summary.json) | `wallclock/step = 0.1004`, `samples/sec = 9.9573`, `max_gpu_memory_gb = 4.0274` | `active_fraction = 0.200077`, frozen mask |
+| MeZO | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/mezo/roberta-large/sst2/fp16/medium_models_result/smoke_mezo_base/seed0/run_summary.json) | `wallclock/step = 0.0753`, `samples/sec = 13.2879`, `max_gpu_memory_gb = 3.6459` | 2 forward passes / step |
+| LOZO | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/lozo/roberta-large/sst2/fp16/medium_models_result/smoke_lozo/seed0/run_summary.json) | `wallclock/step = 0.1039`, `samples/sec = 9.6223`, `max_gpu_memory_gb = 1.5717` | slower than MeZO here, but much lower peak memory |
+| HiZOO | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/hizoo/roberta-large/sst2/fp16/medium_models_result/smoke_hizoo/seed0/run_summary.json) | `wallclock/step = 0.1223`, `samples/sec = 8.1792`, `max_gpu_memory_gb = 4.0293` | expected slowdown from 3 forward passes / step |
+| Sparse MeZO (`ratio=0.2`) | [run_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/sparse_mezo/roberta-large/sst2/fp16/medium_models_result/smoke_sparse/seed0/run_summary.json) | `wallclock/step = 0.1004`, `samples/sec = 9.9573`, `max_gpu_memory_gb = 4.0274` | `active_fraction = 0.200077`, frozen mask |
 
 Relative slowdown vs dense MeZO on this smoke test:
 

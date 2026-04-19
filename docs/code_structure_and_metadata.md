@@ -54,15 +54,14 @@
 
 | 路径 | 作用 |
 | --- | --- |
-| `experiments/h_sweep_14h/` | 当前 MNLI / SST-5 的 14-value `h` 搜索目录。这里的 “14h” 表示 14 个候选 `h` 值，不表示 14 小时。 |
-| `experiments/h_sweep_8h/` | 当前 low-bit pilot 搜索目录。这里的 “8h” 表示 8 个候选 `h` 值，不表示 8 小时。当前 `int8` / `int4` pilot 都放在这里。 |
-| `experiments/h_sweep_14h/jobs/` | 正式 `sbatch` 作业脚本，包括 `quzo16`、`quzo8`、`sparse_mezo16` 等。 |
-| `experiments/h_sweep_8h/jobs/` | pilot `sbatch` 作业脚本，包括 `mezo_int8`、`sparse_mezo_int8`、`mezo_int4`、`sparse_mezo_int4`。 |
-| `experiments/h_sweep_14h/results/` | sweep 结果目录，按方法 / 模型 / 任务分层。 |
-| `experiments/h_sweep_14h/logs/` | sweep 日志目录，包括 `slurm_*.out` 和每个 `h` 的 `train.log` / `train.err`。 |
-| `experiments/h_sweep_14h/nan_guard.py` | h-sweep 运行时 NaN 保护脚本。当前 14-value 脚本统一把阈值设为 `1`，也就是第一次有效 `nan` 就跳过当前 `h`。 |
-| `experiments/sparse_mezo_smoke/` | Sparse MeZO 的 smoke test 结果。 |
-| `experiments/fp8_smoke*` | FP8 smoke test 结果。 |
+| `experiments/main/` | 正式 sweep 根目录。当前层级固定为 `方法 / 模型 / 任务 / 精度 / h_sweep_14h / {jobs,results,logs}`。 |
+| `experiments/pilot/` | pilot 与 benchmark 根目录。当前层级固定为 `方法 / 模型 / 任务 / 精度 / <experiment_family>`。 |
+| `experiments/smoke/` | smoke / validation / targeted checks 根目录。 |
+| `experiments/main/_shared/h_sweep_14h/` | 正式 14-value h-sweep 的共享 helper、README、分析脚本与提交器。 |
+| `experiments/pilot/_shared/h_sweep_8h/` | pilot 8-value h-sweep 的共享 helper 与提交器。 |
+| `experiments/main/_shared/h_sweep_14h/nan_guard.py` | h-sweep 运行时 NaN 保护脚本。当前 14-value 脚本统一把阈值设为 `1`，也就是第一次有效 `nan` 就跳过当前 `h`。 |
+| `experiments/smoke/sparse_mezo/...` | Sparse MeZO smoke test 的新目录。 |
+| `experiments/smoke/mezo/.../fp8/` | FP8 smoke test 的新目录。 |
 
 当前仓库的正式批量实验提交风格是：
 
@@ -444,14 +443,14 @@
 - 中模型 metadata 文件：`<medium_models 运行 output_dir>/run_metadata.json`
 - canonical 结构文档：`docs/code_structure_and_metadata.md`
 - 最近实验记录：`docs/sparse_mezo_h100_experiments.md`
-- 当前 14-value `h` 网格：`experiments/h_sweep_14h/h_values.sh`
-- 当前 8-value pilot `h` 网格：`experiments/h_sweep_8h/h_values.sh`
-- 当前正式 sweep 脚本目录：`experiments/h_sweep_14h/jobs/`
-- 当前 low-bit pilot 脚本目录：`experiments/h_sweep_8h/jobs/`
-- 当前正式 sweep 结果目录：`experiments/h_sweep_14h/results/`
-- 当前 low-bit pilot 结果目录：`experiments/h_sweep_8h/results/`
-- 当前正式 sweep 日志目录：`experiments/h_sweep_14h/logs/`
-- 当前 low-bit pilot 日志目录：`experiments/h_sweep_8h/logs/`
+- 当前 14-value `h` 网格：`experiments/main/_shared/h_sweep_14h/h_values.sh`
+- 当前 8-value pilot `h` 网格：`experiments/pilot/_shared/h_sweep_8h/h_values.sh`
+- 当前正式 sweep 脚本目录：`experiments/main/<method>/<model>/<task>/<precision>/h_sweep_14h/jobs/`
+- 当前 low-bit pilot 脚本目录：`experiments/pilot/<method>/<model>/<task>/<precision>/h_sweep_8h/jobs/`
+- 当前正式 sweep 结果目录：`experiments/main/<method>/<model>/<task>/<precision>/h_sweep_14h/results/`
+- 当前 low-bit pilot 结果目录：`experiments/pilot/<method>/<model>/<task>/<precision>/h_sweep_8h/results/`
+- 当前正式 sweep 日志目录：`experiments/main/<method>/<model>/<task>/<precision>/h_sweep_14h/logs/`
+- 当前 low-bit pilot 日志目录：`experiments/pilot/<method>/<model>/<task>/<precision>/h_sweep_8h/logs/`
 
 ## 10. Sparse MeZO 扩展
 
@@ -462,11 +461,11 @@
 - 新增：
   - `large_models/sparse_mezo.py`
   - `medium_models/src/sparse_mezo.py`
-  - `experiments/h_sweep_14h/jobs/opt13b_mnli_sparse_mezo16_14h.sh`
-  - `experiments/h_sweep_14h/jobs/opt13b_sst5_sparse_mezo16_14h.sh`
-  - `experiments/h_sweep_14h/jobs/roberta_mnli_sparse_mezo16_14h.sh`
-  - `experiments/h_sweep_14h/jobs/roberta_sst5_sparse_mezo16_14h.sh`
-  - `experiments/h_sweep_14h/submit_sparse_mezo16_searches.sh`
+  - `experiments/main/sparse_mezo/opt-1.3b/mnli/fp16/h_sweep_14h/jobs/opt13b_mnli_sparse_mezo16_14h.sh`
+  - `experiments/main/sparse_mezo/opt-1.3b/sst5/fp16/h_sweep_14h/jobs/opt13b_sst5_sparse_mezo16_14h.sh`
+  - `experiments/main/sparse_mezo/roberta-large/mnli/fp16/h_sweep_14h/jobs/roberta_mnli_sparse_mezo16_14h.sh`
+  - `experiments/main/sparse_mezo/roberta-large/sst5/fp16/h_sweep_14h/jobs/roberta_sst5_sparse_mezo16_14h.sh`
+  - `experiments/main/_shared/h_sweep_14h/submit_sparse_mezo16_searches.sh`
 - 修改：
   - `large_models/run.py`
   - `large_models/trainer.py`
@@ -536,14 +535,14 @@ medium 路径的 `run_summary.json` 还会在 `artifacts.sparse_mezo_last_stats`
 
 仓库内现成的 14-value rough-search / h-sweep 路径位于：
 
-- `experiments/h_sweep_14h/`
-- 14-value 网格定义在：`experiments/h_sweep_14h/h_values.sh`
+- `experiments/main/`
+- 14-value 网格定义在：`experiments/main/_shared/h_sweep_14h/h_values.sh`
 - 当前 RoBERTa MNLI / SST-5 搜索脚本位于：
-  - `experiments/h_sweep_14h/jobs/roberta_mnli_quzo16_14h.sh`
-  - `experiments/h_sweep_14h/jobs/roberta_sst5_quzo16_14h.sh`
+  - `experiments/main/mezo/roberta-large/mnli/fp16/h_sweep_14h/jobs/roberta_mnli_quzo16_14h.sh`
+  - `experiments/main/mezo/roberta-large/sst5/fp16/h_sweep_14h/jobs/roberta_sst5_quzo16_14h.sh`
 - 当前 OPT-1.3B MNLI / SST-5 搜索脚本位于：
-  - `experiments/h_sweep_14h/jobs/opt13b_mnli_quzo16_14h.sh`
-  - `experiments/h_sweep_14h/jobs/opt13b_sst5_quzo16_14h.sh`
+  - `experiments/main/mezo/opt-1.3b/mnli/fp16/h_sweep_14h/jobs/opt13b_mnli_quzo16_14h.sh`
+  - `experiments/main/mezo/opt-1.3b/sst5/fp16/h_sweep_14h/jobs/opt13b_sst5_quzo16_14h.sh`
 
 本轮 Sparse MeZO 的正式 14-value 搜索已经覆盖：
 
@@ -552,26 +551,26 @@ medium 路径的 `run_summary.json` 还会在 `artifacts.sparse_mezo_last_stats`
 
 当前 low-bit pilot 路径位于：
 
-- `experiments/h_sweep_8h/`
-- 8-value 网格定义在：`experiments/h_sweep_8h/h_values.sh`
+- `experiments/pilot/`
+- 8-value 网格定义在：`experiments/pilot/_shared/h_sweep_8h/h_values.sh`
 - 当前 int8 / int4 pilot 共用：
-  - `experiments/h_sweep_8h/run_medium_sweep.sh`
-  - `experiments/h_sweep_8h/run_large_sweep.sh`
+  - `experiments/pilot/_shared/h_sweep_8h/run_medium_sweep.sh`
+  - `experiments/pilot/_shared/h_sweep_8h/run_large_sweep.sh`
 - 其中低比特语义由环境变量控制：
   - `ZO_QUANTIZATION_ALIAS=int8|int4`
   - `PRECISION_LABEL=int8|int4`
 
 当前 INT4 pilot 脚本位于：
 
-- `experiments/h_sweep_8h/jobs/roberta_mnli_mezo_int4_8h.sh`
-- `experiments/h_sweep_8h/jobs/roberta_sst5_mezo_int4_8h.sh`
-- `experiments/h_sweep_8h/jobs/opt13b_mnli_mezo_int4_8h.sh`
-- `experiments/h_sweep_8h/jobs/opt13b_sst5_mezo_int4_8h.sh`
-- `experiments/h_sweep_8h/jobs/roberta_mnli_sparse_mezo_int4_8h.sh`
-- `experiments/h_sweep_8h/jobs/roberta_sst5_sparse_mezo_int4_8h.sh`
-- `experiments/h_sweep_8h/jobs/opt13b_mnli_sparse_mezo_int4_8h.sh`
-- `experiments/h_sweep_8h/jobs/opt13b_sst5_sparse_mezo_int4_8h.sh`
-- `experiments/h_sweep_8h/submit_int4_pilot_searches.sh`
+- `experiments/pilot/mezo/roberta-large/mnli/int4/h_sweep_8h/jobs/roberta_mnli_mezo_int4_8h.sh`
+- `experiments/pilot/mezo/roberta-large/sst5/int4/h_sweep_8h/jobs/roberta_sst5_mezo_int4_8h.sh`
+- `experiments/pilot/mezo/opt-1.3b/mnli/int4/h_sweep_8h/jobs/opt13b_mnli_mezo_int4_8h.sh`
+- `experiments/pilot/mezo/opt-1.3b/sst5/int4/h_sweep_8h/jobs/opt13b_sst5_mezo_int4_8h.sh`
+- `experiments/pilot/sparse_mezo/roberta-large/mnli/int4/h_sweep_8h/jobs/roberta_mnli_sparse_mezo_int4_8h.sh`
+- `experiments/pilot/sparse_mezo/roberta-large/sst5/int4/h_sweep_8h/jobs/roberta_sst5_sparse_mezo_int4_8h.sh`
+- `experiments/pilot/sparse_mezo/opt-1.3b/mnli/int4/h_sweep_8h/jobs/opt13b_mnli_sparse_mezo_int4_8h.sh`
+- `experiments/pilot/sparse_mezo/opt-1.3b/sst5/int4/h_sweep_8h/jobs/opt13b_sst5_sparse_mezo_int4_8h.sh`
+- `experiments/pilot/_shared/h_sweep_8h/submit_int4_pilot_searches.sh`
 
 ### 11.2 当前“16-bit”含义
 
@@ -650,11 +649,11 @@ MNLI / SST-5 在当前 medium h-search 路径里的 16-bit 约定保持不变：
 
 ### 12.2 正式 launcher 位置
 
-- `experiments/h_sweep_14h/jobs/roberta_mnli_sparse_mezo16_14h.sh`
-- `experiments/h_sweep_14h/jobs/roberta_sst5_sparse_mezo16_14h.sh`
-- `experiments/h_sweep_14h/jobs/opt13b_mnli_sparse_mezo16_14h.sh`
-- `experiments/h_sweep_14h/jobs/opt13b_sst5_sparse_mezo16_14h.sh`
-- `experiments/h_sweep_14h/submit_sparse_mezo16_searches.sh`
+- `experiments/main/sparse_mezo/roberta-large/mnli/fp16/h_sweep_14h/jobs/roberta_mnli_sparse_mezo16_14h.sh`
+- `experiments/main/sparse_mezo/roberta-large/sst5/fp16/h_sweep_14h/jobs/roberta_sst5_sparse_mezo16_14h.sh`
+- `experiments/main/sparse_mezo/opt-1.3b/mnli/fp16/h_sweep_14h/jobs/opt13b_mnli_sparse_mezo16_14h.sh`
+- `experiments/main/sparse_mezo/opt-1.3b/sst5/fp16/h_sweep_14h/jobs/opt13b_sst5_sparse_mezo16_14h.sh`
+- `experiments/main/_shared/h_sweep_14h/submit_sparse_mezo16_searches.sh`
 
 `submit_sparse_mezo16_searches.sh` 采用当前仓库的 Slurm / `sbatch` 风格，并通过 dependency 把两个 full search 串起来，保证单卡环境下同一时刻只会有一个 full GPU 训练作业处于活动状态。
 
@@ -662,14 +661,14 @@ MNLI / SST-5 在当前 medium h-search 路径里的 16-bit 约定保持不变：
 
 RoBERTa-large / medium 路径：
 
-- `experiments/smoke_fix/int4_matrix_final/medium/mezo/roberta_mnli/run_smoke/run_summary.json`
-- `experiments/smoke_fix/int4_matrix_final/medium/mezo/roberta_sst5/run_smoke/run_summary.json`
-- `experiments/smoke_fix/int4_matrix_final/medium/sparse_mezo/roberta_mnli/run_smoke/run_summary.json`
-- `experiments/smoke_fix/int4_matrix_final/medium/sparse_mezo/roberta_sst5/run_smoke/run_summary.json`
+- `experiments/smoke/mezo/roberta-large/mnli/int4/smoke_fix/int4_matrix_final/roberta_mnli/run_smoke/run_summary.json`
+- `experiments/smoke/mezo/roberta-large/sst5/int4/smoke_fix/int4_matrix_final/roberta_sst5/run_smoke/run_summary.json`
+- `experiments/smoke/sparse_mezo/roberta-large/mnli/int4/smoke_fix/int4_matrix_final/roberta_mnli/run_smoke/run_summary.json`
+- `experiments/smoke/sparse_mezo/roberta-large/sst5/int4/smoke_fix/int4_matrix_final/roberta_sst5/run_smoke/run_summary.json`
 
 OPT-1.3B / large 路径：
 
-- `experiments/smoke_fix/int4_matrix_final/large/mezo/opt13b_mnli/run_summary.json`
-- `experiments/smoke_fix/int4_matrix_final/large/mezo/opt13b_sst5/run_summary.json`
-- `experiments/smoke_fix/int4_matrix_final/large/sparse_mezo/opt13b_mnli/run_summary.json`
-- `experiments/smoke_fix/int4_matrix_final/large/sparse_mezo/opt13b_sst5/run_summary.json`
+- `experiments/smoke/mezo/opt-1.3b/mnli/int4/smoke_fix/int4_matrix_final/opt13b_mnli/run_summary.json`
+- `experiments/smoke/mezo/opt-1.3b/sst5/int4/smoke_fix/int4_matrix_final/opt13b_sst5/run_summary.json`
+- `experiments/smoke/sparse_mezo/opt-1.3b/mnli/int4/smoke_fix/int4_matrix_final/opt13b_mnli/run_summary.json`
+- `experiments/smoke/sparse_mezo/opt-1.3b/sst5/int4/smoke_fix/int4_matrix_final/opt13b_sst5/run_summary.json`

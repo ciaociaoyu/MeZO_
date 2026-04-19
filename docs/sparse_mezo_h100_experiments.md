@@ -14,11 +14,11 @@
 
 与环境映射对应的可恢复测速脚本：
 
-- [run_zo_method_speed_matrix.py](/scratch/jy03364/MeZO_/experiments/speed_bench_h100/run_zo_method_speed_matrix.py)
+- [run_zo_method_speed_matrix.py](/scratch/jy03364/MeZO_/experiments/pilot/_shared/speed_bench_h100/run_zo_method_speed_matrix.py)
 - 输出目录：
-  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418`
+  - `experiments/pilot/<method>/<model>/<task>/<precision>/speed_bench_h100/zo_method_matrix_20260418`
 - 汇总文件：
-  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/summary.jsonl`
+  - `/scratch/jy03364/MeZO_/experiments/pilot/_shared/speed_bench_h100/zo_method_matrix_20260418/summary.jsonl`
 
 截至 `2026-04-18` 文档更新时，这个 H100 多方法测速矩阵已经跑完，当前最终快照如下：
 
@@ -52,7 +52,7 @@
 ### 2.1 `roberta-large + MNLI + sparse_mezo + 16-bit`
 
 - 输出目录：
-  - `/scratch/jy03364/MeZO_/experiments/sparse_mezo_smoke/medium/roberta_mnli/run_sparse_mezo16/seed16`
+  - `/scratch/jy03364/MeZO_/experiments/smoke/sparse_mezo/roberta-large/mnli/fp16/sparse_mezo_smoke/run_sparse_mezo16/seed16`
 - 关键产物：
   - `run_summary.json`
   - `run_metadata.json`
@@ -66,7 +66,7 @@
 ### 2.2 `roberta-large + SST-5 + sparse_mezo + 16-bit`
 
 - 输出目录：
-  - `/scratch/jy03364/MeZO_/experiments/sparse_mezo_smoke/medium/roberta_sst5/run_sparse_mezo16/seed16`
+  - `/scratch/jy03364/MeZO_/experiments/smoke/sparse_mezo/roberta-large/sst5/fp16/sparse_mezo_smoke/run_sparse_mezo16/seed16`
 - 关键产物：
   - `run_summary.json`
   - `run_metadata.json`
@@ -83,28 +83,28 @@
 
 - Slurm job id：`44285153`
 - 脚本：
-  - `experiments/h_sweep_14h/jobs/roberta_mnli_sparse_mezo16_14h.sh`
+  - `experiments/main/sparse_mezo/roberta-large/mnli/fp16/h_sweep_14h/jobs/roberta_mnli_sparse_mezo16_14h.sh`
 - 结果目录：
-  - `/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/roberta-large/mnli`
+  - `/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/roberta-large/mnli/fp16/h_sweep_14h/results`
 - 日志目录：
-  - `/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/roberta-large/mnli`
+  - 已在目录整理时删除，因为该任务超时未完成
 
 ### 3.2 `roberta-large + SST-5 + sparse_mezo + 16-bit`
 
 - Slurm job id：`44285154`
 - 脚本：
-  - `experiments/h_sweep_14h/jobs/roberta_sst5_sparse_mezo16_14h.sh`
+  - `experiments/main/sparse_mezo/roberta-large/sst5/fp16/h_sweep_14h/jobs/roberta_sst5_sparse_mezo16_14h.sh`
 - 结果目录：
-  - `/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/roberta-large/sst5`
+  - `/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/roberta-large/sst5/fp16/h_sweep_14h/results`
 - 日志目录：
-  - `/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/sparse_mezo16/roberta-large/sst5`
+  - 已在目录整理时删除，因为该任务超时未完成
 
 ### 3.3 提交器
 
 - 提交脚本：
-  - `experiments/h_sweep_14h/submit_sparse_mezo16_searches.sh`
+  - `experiments/main/_shared/h_sweep_14h/submit_sparse_mezo16_searches.sh`
 - 本次重新提交日志：
-  - `/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/submit_sparse_mezo16_20260414_035459.log`
+  - 后续统一写到 `experiments/main/_shared/h_sweep_14h/logs/`
 
 ## 4. 其他已完成实验
 
@@ -117,15 +117,15 @@
   - 已补回 `large_models/run.py` 中的 `field` 导入
   - 已在 H100 上用 `h=3e-7` 做完整 smoke 验证，确认可成功运行并写出 `run_summary.json` / `run_metadata.json`
 - smoke 输出目录：
-  - `/scratch/jy03364/MeZO_/experiments/smoke_fix/large/opt13b_mnli_quzo16_h3e-7_numeval32`
+  - `/scratch/jy03364/MeZO_/experiments/smoke/mezo/opt-1.3b/mnli/fp16/smoke_fix/opt13b_mnli_quzo16_h3e-7_numeval32`
 - 重新提交后的新 job：
   - `44302039`
 - 当前状态：
   - `RUNNING`
 - 当前正式结果目录：
-  - `/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli`
+  - `/scratch/jy03364/MeZO_/experiments/main/mezo/opt-1.3b/mnli/fp16/h_sweep_14h/results`
 - 当前正式日志目录：
-  - `/scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/quzo16/opt-1.3b/mnli`
+  - 已在目录整理时删除，因为该 sweep 当时未完整结束
 
 ## 5. 当前队列快照
 
@@ -185,9 +185,9 @@
 ### 6.2 结果目录
 
 - 总目录：
-  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/opt13b_h100_20260414_195901`
+  - `/scratch/jy03364/MeZO_/experiments/pilot/mezo/opt-1.3b/<task>/<precision>/speed_bench_h100/opt13b_h100_20260414_195901`
 - 汇总文件：
-  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/opt13b_h100_20260414_195901/summary.jsonl`
+  - `/scratch/jy03364/MeZO_/experiments/pilot/_shared/speed_bench_h100/opt13b_h100_20260414_195901/summary.jsonl`
 
 每个任务/精度组合都包含：
 
@@ -250,9 +250,10 @@
 
 结果目录：
 
-- `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/opt13b_quzo_int8_h100_final_20260414_215951`
+  - `/scratch/jy03364/MeZO_/experiments/pilot/mezo/opt-1.3b/<task>/int8/speed_bench_h100/opt13b_quzo_int8_h100_final_20260414_215951`
+  - `/scratch/jy03364/MeZO_/experiments/pilot/mezo/opt-1.3b/<task>/int8/speed_bench_h100/opt13b_quzo_int8_h100_final_20260414_215951`
 - 汇总文件：
-  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/opt13b_quzo_int8_h100_final_20260414_215951/summary.jsonl`
+  - `/scratch/jy03364/MeZO_/experiments/pilot/_shared/speed_bench_h100/opt13b_quzo_int8_h100_final_20260414_215951/summary.jsonl`
 
 其中 `SQuAD` 这次为了避开本地 `datasets` 的损坏缓存，使用了隔离的 `HF_DATASETS_CACHE` 重跑；训练逻辑没有改。
 
@@ -325,11 +326,11 @@
 ### 7.3 结果目录
 
 - 早期目录：
-  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_20260414`
-  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_20260414_mini`
+  - `/scratch/jy03364/MeZO_/experiments/pilot/mezo/roberta-large/<task>/<precision>/speed_bench_h100/roberta_h100_20260414`
+  - `/scratch/jy03364/MeZO_/experiments/pilot/mezo/roberta-large/<task>/<precision>/speed_bench_h100/roberta_h100_20260414_mini`
 - 当前以 `BS=32` 重测结果为准：
-  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_bs32_rerun_20260414_212842`
-  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_bs32_rerun_20260414_212842/summary.jsonl`
+  - `/scratch/jy03364/MeZO_/experiments/pilot/mezo/roberta-large/<task>/<precision>/speed_bench_h100/roberta_h100_bs32_rerun_20260414_212842`
+  - `/scratch/jy03364/MeZO_/experiments/pilot/_shared/speed_bench_h100/roberta_h100_bs32_rerun_20260414_212842/summary.jsonl`
 
 ### 7.4 吞吐结果
 
@@ -364,11 +365,11 @@
 结果位置：
 
 - 运行脚本：
-  - [run_zo_method_speed_matrix.py](/scratch/jy03364/MeZO_/experiments/speed_bench_h100/run_zo_method_speed_matrix.py)
+  - [run_zo_method_speed_matrix.py](/scratch/jy03364/MeZO_/experiments/pilot/_shared/speed_bench_h100/run_zo_method_speed_matrix.py)
 - 输出目录：
-  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418`
+  - `experiments/pilot/<method>/<model>/<task>/<precision>/speed_bench_h100/zo_method_matrix_20260418`
 - 汇总文件：
-  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/summary.jsonl`
+  - `/scratch/jy03364/MeZO_/experiments/pilot/_shared/speed_bench_h100/zo_method_matrix_20260418/summary.jsonl`
 
 矩阵定义：
 
@@ -575,7 +576,7 @@
 
 ## 8. 当前使用的 14 个 h 值
 
-来自 `experiments/h_sweep_14h/h_values.sh`：
+来自 `experiments/main/_shared/h_sweep_14h/h_values.sh`：
 
 - `1e-8`
 - `3e-8`

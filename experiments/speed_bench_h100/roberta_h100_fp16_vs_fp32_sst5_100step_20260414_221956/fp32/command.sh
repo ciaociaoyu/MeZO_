@@ -1,2 +1,0 @@
-cd /scratch/jy03364/MeZO_/medium_models
-TASK=sst-5 K=16 SEED=16 DATA_SEED=16 DATASET_MODE=full BS=32 LR=1e-6 WD=0 STEP=100 EVAL_STEP=5000 MODEL=roberta-large USE_H=False USE_C=False DATALOADER_SHUFFLE=False EPS=1e-4 EXTRA_TAG=speedbench-fp32-SST5-100step bash ./mezo.sh --result_root /scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_fp16_vs_fp32_sst5_100step_20260414_221956/fp32 --job_name run --zo_two_point_precision fp32 --zo_quantization_bits 32 --zo_probe_every 0

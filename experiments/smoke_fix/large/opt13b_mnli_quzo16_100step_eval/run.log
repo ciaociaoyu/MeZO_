@@ -1,258 +1,0 @@
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
-  _torch_pytree._register_pytree_node(
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
-  _torch_pytree._register_pytree_node(
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
-  _torch_pytree._register_pytree_node(
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/deepspeed.py:23: FutureWarning: transformers.deepspeed module is deprecated and will be removed in a future version. Please import deepspeed modules directly from transformers.integrations
-  warnings.warn(
-2026-04-16 01:18:52,982 - INFO - [model] requested=opt-1.3b resolved=facebook/opt-1.3b family_hint=opt
-2026-04-16 01:18:52,982 - INFO - [data] task_name=MNLI dataset_mode=full num_k=16 data_seed=42 full_dev_ratio=0.1
-2026-04-16 01:19:02,915 - INFO - Loading model with FP16...
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
-  warnings.warn(
-2026-04-16 01:19:02,961 - INFO - [model] disabling auto device placement for training; Trainer/Accelerate will place the model
-/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/modeling_utils.py:484: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
-  return torch.load(checkpoint_file, map_location=map_location)
-2026-04-16 01:19:12,754 - INFO - Done with 9.84s
-2026-04-16 01:19:12,859 - INFO - [quzo-config] quantized model parameters in-place at 16 bits before ZO training
-2026-04-16 01:19:12,859 - INFO - [sparse-mezo-config] enabled=False | sparse_ratio=1.0 | sparse_mask_strategy=percentile_per_layer | sparse_scope=trainable_only | sparse_log_active_fraction=True
-2026-04-16 01:19:12,859 - INFO - [sparse-mezo-config] ratio semantics: sparse_ratio targets the active fraction per trainable tensor; ratio=1.0 disables masking. Order: construct direction -> apply sparse mask -> apply QuZO snapping after masked perturb/update when low-bit QuZO is active.
-2026-04-16 01:19:12,868 - INFO - Preparing training/evaluation datasets...
-2026-04-16 01:19:12,868 - INFO - Done with 0.00s
-2026-04-16 01:19:13,306 - INFO - ***** Running training *****
-2026-04-16 01:19:13,307 - INFO -   Num examples = 392702
-2026-04-16 01:19:13,307 - INFO -   Num Epochs = 1
-2026-04-16 01:19:13,307 - INFO -   Instantaneous batch size per device = 16
-2026-04-16 01:19:13,307 - INFO -   Total train batch size (w. parallel, distributed & accumulation) = 16
-2026-04-16 01:19:13,307 - INFO -   Gradient Accumulation steps = 1
-2026-04-16 01:19:13,307 - INFO -   Total optimization steps = 100
-2026-04-16 01:19:13,307 - INFO -   Number of trainable parameters = 1315758080
-OurArguments(
-_n_gpu=1,
-adafactor=False,
-adam_beta1=0.9,
-adam_beta2=0.999,
-adam_epsilon=1e-08,
-auto_find_batch_size=False,
-bf16=False,
-bf16_full_eval=False,
-data_seed=42,
-dataloader_drop_last=False,
-dataloader_num_workers=0,
-dataloader_pin_memory=True,
-dataset_mode=full,
-ddp_backend=None,
-ddp_broadcast_buffers=None,
-ddp_bucket_cap_mb=None,
-ddp_find_unused_parameters=None,
-ddp_timeout=1800,
-debug=[],
-deepspeed=None,
-disable_tqdm=False,
-dispatch_batches=None,
-do_eval=True,
-do_predict=False,
-do_train=False,
-eos_token=<EOS_TOKEN>,
-eval_accumulation_steps=None,
-eval_delay=0,
-eval_steps=25,
-evaluation_strategy=steps,
-fp16=False,
-fp16_backend=auto,
-fp16_full_eval=False,
-fp16_opt_level=O1,
-fsdp=[],
-fsdp_config={'min_num_params': 0, 'xla': False, 'xla_fsdp_grad_ckpt': False},
-fsdp_min_num_params=0,
-fsdp_transformer_layer_cls_to_wrap=None,
-full_determinism=False,
-full_dev_ratio=0.1,
-gradient_accumulation_steps=1,
-gradient_checkpointing=False,
-gradient_checkpointing_kwargs=None,
-greater_is_better=None,
-group_by_length=False,
-half_precision_backend=auto,
-head_tuning=False,
-hub_always_push=False,
-hub_model_id=None,
-hub_private_repo=False,
-hub_strategy=every_save,
-hub_token=<HUB_TOKEN>,
-icl_sfc=False,
-ignore_data_skip=False,
-include_inputs_for_metrics=False,
-include_tokens_per_second=False,
-jit_mode_eval=False,
-label_names=None,
-label_smoothing_factor=0.0,
-learning_rate=1e-06,
-length_column_name=length,
-linear_probing=False,
-load_best_model_at_end=False,
-load_bfloat16=False,
-load_float16=True,
-load_int8=False,
-local_rank=0,
-log_level=passive,
-log_level_replica=warning,
-log_on_each_node=True,
-logging_dir=/scratch/jy03364/MeZO_/experiments/smoke_fix/large/opt13b_mnli_quzo16_100step_eval/runs/Apr16_01-18-52_ra5-4,
-logging_first_step=False,
-logging_nan_inf_filter=True,
-logging_steps=25,
-logging_strategy=steps,
-lora=False,
-lora_alpha=16,
-lora_r=8,
-lp_early_stopping=False,
-lr_scheduler_type=constant,
-max_grad_norm=1.0,
-max_length=2048,
-max_new_tokens=50,
-max_steps=100,
-metric_for_best_model=None,
-model_name=opt-1.3b,
-mp_parameters=,
-neftune_noise_alpha=None,
-no_auto_device=False,
-no_cuda=False,
-no_eval=False,
-no_reparam=True,
-non_diff=False,
-num_beams=1,
-num_dev=0,
-num_eval=1,
-num_k=16,
-num_prefix=5,
-num_train=0,
-num_train_epochs=1.0,
-num_train_sets=None,
-only_train_option=True,
-optim=adamw_torch,
-optim_args=None,
-output_dir=/scratch/jy03364/MeZO_/experiments/smoke_fix/large/opt13b_mnli_quzo16_100step_eval,
-overwrite_output_dir=True,
-past_index=-1,
-per_device_eval_batch_size=8,
-per_device_train_batch_size=16,
-prediction_loss_only=False,
-prefix_init_by_real_act=True,
-prefix_tuning=False,
-push_to_hub=False,
-push_to_hub_model_id=None,
-push_to_hub_organization=None,
-push_to_hub_token=<PUSH_TO_HUB_TOKEN>,
-ray_scope=last,
-remove_unused_columns=True,
-report_to=[],
-result_file=None,
-resume_from_checkpoint=None,
-run_name=/scratch/jy03364/MeZO_/experiments/smoke_fix/large/opt13b_mnli_quzo16_100step_eval,
-sampling=False,
-save_model=False,
-save_on_each_node=False,
-save_on_interrupt=False,
-save_safetensors=True,
-save_steps=500,
-save_strategy=no,
-save_total_limit=None,
-seed=42,
-sfc=False,
-skip_memory_metrics=True,
-sparse_log_active_fraction=True,
-sparse_mask_strategy=percentile_per_layer,
-sparse_ratio=1.0,
-sparse_scope=trainable_only,
-split_batches=False,
-tag=smoke-100step-eval,
-task_name=MNLI,
-temperature=1.0,
-tf32=None,
-top_k=None,
-top_p=0.95,
-torch_compile=False,
-torch_compile_backend=None,
-torch_compile_mode=None,
-torchdynamo=None,
-tpu_metrics_debug=False,
-tpu_num_cores=None,
-train_as_classification=True,
-train_set_seed=42,
-trainer=zo,
-untie_emb=False,
-use_cpu=False,
-use_ipex=False,
-use_legacy_prediction_loop=False,
-use_mps_device=False,
-use_torchao_float8=False,
-verbose=False,
-warmup_ratio=0.0,
-warmup_steps=0,
-weight_decay=0.0,
-zo_eps=1e-08,
-zo_probe_every=0,
-zo_probe_log_csv=True,
-zo_probe_num_seeds=16,
-zo_quantization=None,
-zo_quantization_bits=16,
-)
-  0%|          | 0/100 [00:00<?, ?it/s]  1%|          | 1/100 [00:00<00:43,  2.26it/s]  2%|▏         | 2/100 [00:00<00:27,  3.63it/s]  3%|▎         | 3/100 [00:00<00:25,  3.83it/s]  4%|▍         | 4/100 [00:00<00:20,  4.67it/s]  5%|▌         | 5/100 [00:01<00:18,  5.10it/s]  6%|▌         | 6/100 [00:01<00:16,  5.64it/s]  7%|▋         | 7/100 [00:01<00:15,  5.97it/s]  8%|▊         | 8/100 [00:01<00:15,  6.00it/s]  9%|▉         | 9/100 [00:01<00:15,  5.92it/s] 10%|█         | 10/100 [00:01<00:14,  6.08it/s] 11%|█         | 11/100 [00:02<00:13,  6.37it/s] 12%|█▏        | 12/100 [00:02<00:13,  6.59it/s] 13%|█▎        | 13/100 [00:02<00:13,  6.65it/s] 14%|█▍        | 14/100 [00:02<00:12,  6.72it/s] 15%|█▌        | 15/100 [00:02<00:12,  6.70it/s] 16%|█▌        | 16/100 [00:02<00:13,  6.21it/s] 17%|█▋        | 17/100 [00:03<00:13,  6.20it/s] 18%|█▊        | 18/100 [00:03<00:13,  6.08it/s] 19%|█▉        | 19/100 [00:03<00:13,  6.18it/s] 20%|██        | 20/100 [00:03<00:12,  6.24it/s] 21%|██        | 21/100 [00:03<00:12,  6.16it/s] 22%|██▏       | 22/100 [00:03<00:12,  6.41it/s] 23%|██▎       | 23/100 [00:03<00:12,  6.27it/s] 24%|██▍       | 24/100 [00:04<00:11,  6.59it/s] 25%|██▌       | 25/100 [00:04<00:11,  6.58it/s] 26%|██▌       | 26/100 [00:04<00:10,  6.82it/s] 27%|██▋       | 27/100 [00:04<00:10,  6.70it/s] 28%|██▊       | 28/100 [00:04<00:10,  6.61it/s] 29%|██▉       | 29/100 [00:04<00:10,  6.68it/s] 30%|███       | 30/100 [00:04<00:10,  6.68it/s] 31%|███       | 31/100 [00:05<00:11,  6.10it/s] 32%|███▏      | 32/100 [00:05<00:10,  6.21it/s] 33%|███▎      | 33/100 [00:05<00:10,  6.45it/s] 34%|███▍      | 34/100 [00:05<00:10,  6.29it/s] 35%|███▌      | 35/100 [00:05<00:11,  5.88it/s] 36%|███▌      | 36/100 [00:05<00:10,  6.22it/s] 37%|███▋      | 37/100 [00:06<00:09,  6.44it/s] 38%|███▊      | 38/100 [00:06<00:09,  6.46it/s] 39%|███▉      | 39/100 [00:06<00:09,  6.68it/s] 40%|████      | 40/100 [00:06<00:08,  6.91it/s] 41%|████      | 41/100 [00:06<00:08,  6.89it/s] 42%|████▏     | 42/100 [00:06<00:08,  6.54it/s] 43%|████▎     | 43/100 [00:07<00:09,  6.15it/s] 44%|████▍     | 44/100 [00:07<00:08,  6.33it/s] 45%|████▌     | 45/100 [00:07<00:09,  5.70it/s] 46%|████▌     | 46/100 [00:07<00:09,  5.92it/s] 47%|████▋     | 47/100 [00:07<00:08,  5.94it/s] 48%|████▊     | 48/100 [00:07<00:08,  6.20it/s] 49%|████▉     | 49/100 [00:08<00:07,  6.39it/s] 50%|█████     | 50/100 [00:08<00:07,  6.51it/s] 51%|█████     | 51/100 [00:08<00:07,  6.48it/s] 52%|█████▏    | 52/100 [00:08<00:07,  6.40it/s] 53%|█████▎    | 53/100 [00:08<00:07,  6.03it/s] 54%|█████▍    | 54/100 [00:08<00:07,  6.30it/s] 55%|█████▌    | 55/100 [00:08<00:07,  6.31it/s] 56%|█████▌    | 56/100 [00:09<00:07,  6.19it/s] 57%|█████▋    | 57/100 [00:09<00:06,  6.40it/s] 58%|█████▊    | 58/100 [00:09<00:06,  6.57it/s] 59%|█████▉    | 59/100 [00:09<00:06,  6.74it/s] 60%|██████    | 60/100 [00:09<00:05,  6.76it/s] 61%|██████    | 61/100 [00:09<00:06,  6.39it/s] 62%|██████▏   | 62/100 [00:10<00:05,  6.38it/s] 63%|██████▎   | 63/100 [00:10<00:05,  6.19it/s] 64%|██████▍   | 64/100 [00:10<00:05,  6.26it/s] 65%|██████▌   | 65/100 [00:10<00:05,  6.30it/s] 66%|██████▌   | 66/100 [00:10<00:05,  5.98it/s] 67%|██████▋   | 67/100 [00:10<00:05,  6.12it/s] 68%|██████▊   | 68/100 [00:11<00:05,  6.33it/s] 69%|██████▉   | 69/100 [00:11<00:04,  6.30it/s] 70%|███████   | 70/100 [00:11<00:04,  6.03it/s] 71%|███████   | 71/100 [00:11<00:04,  6.23it/s] 72%|███████▏  | 72/100 [00:11<00:04,  6.22it/s] 73%|███████▎  | 73/100 [00:11<00:04,  5.67it/s] 74%|███████▍  | 74/100 [00:12<00:04,  5.98it/s] 75%|███████▌  | 75/100 [00:12<00:04,  6.15it/s] 76%|███████▌  | 76/100 [00:12<00:03,  6.53it/s] 77%|███████▋  | 77/100 [00:12<00:03,  6.13it/s] 78%|███████▊  | 78/100 [00:12<00:03,  6.35it/s] 79%|███████▉  | 79/100 [00:12<00:03,  6.38it/s] 80%|████████  | 80/100 [00:12<00:03,  6.30it/s] 81%|████████  | 81/100 [00:13<00:03,  5.97it/s] 82%|████████▏ | 82/100 [00:13<00:02,  6.13it/s] 83%|████████▎ | 83/100 [00:13<00:02,  5.87it/s] 84%|████████▍ | 84/100 [00:13<00:02,  6.21it/s] 85%|████████▌ | 85/100 [00:13<00:02,  6.45it/s] 86%|████████▌ | 86/100 [00:13<00:02,  6.47it/s] 87%|████████▋ | 87/100 [00:14<00:02,  6.44it/s] 88%|████████▊ | 88/100 [00:14<00:01,  6.42it/s] 89%|████████▉ | 89/100 [00:14<00:01,  6.44it/s] 90%|█████████ | 90/100 [00:14<00:01,  6.44it/s] 91%|█████████ | 91/100 [00:14<00:01,  6.34it/s] 92%|█████████▏| 92/100 [00:14<00:01,  6.39it/s] 93%|█████████▎| 93/100 [00:15<00:01,  6.36it/s] 94%|█████████▍| 94/100 [00:15<00:00,  6.22it/s] 95%|█████████▌| 95/100 [00:15<00:00,  6.14it/s] 96%|█████████▌| 96/100 [00:15<00:00,  6.35it/s] 97%|█████████▋| 97/100 [00:15<00:00,  6.54it/s] 98%|█████████▊| 98/100 [00:15<00:00,  6.66it/s] 99%|█████████▉| 99/100 [00:15<00:00,  6.81it/s]100%|██████████| 100/100 [00:16<00:00,  6.84it/s]2026-04-16 01:19:29,399 - INFO - 
-
-Training completed. Do not forget to share your model on huggingface.co/models =)
-
-
-                                                 100%|██████████| 100/100 [00:16<00:00,  6.84it/s]100%|██████████| 100/100 [00:16<00:00,  6.05it/s]
-2026-04-16 01:19:29,851 - INFO - There are 0 training samples and 1 validation samples
-{'train_runtime': 16.0951, 'train_samples_per_second': 99.409, 'train_steps_per_second': 6.213, 'train_loss': 0.5942626953125, 'epoch': 0.0}
-  0%|          | 0/1 [00:00<?, ?it/s]2026-04-16 01:19:29,851 - INFO - ========= Example =========
-2026-04-16 01:19:29,851 - INFO - Candidate: [0, 1, 2]
-2026-04-16 01:19:29,851 - INFO - Correct candidate: 2
-2026-04-16 01:19:29,871 - INFO - === Candidate 0 ===
-2026-04-16 01:19:29,872 - INFO - <s>Premise: yeah well losing is i mean i'm i'm originally from Saint Louis and Saint Louis Cardinals when they were there were uh a mostly a losing team but
-Hypothesis: The St. Louis Cardinals have always won.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Yes
-2026-04-16 01:19:29,873 - INFO - Log probabilities of the option tokens: tensor([nan], dtype=torch.float16)
-2026-04-16 01:19:29,881 - INFO - === Candidate 1 (without context)===
-2026-04-16 01:19:29,882 - INFO - <s>Premise: yeah well losing is i mean i'm i'm originally from Saint Louis and Saint Louis Cardinals when they were there were uh a mostly a losing team but
-Hypothesis: The St. Louis Cardinals have always won.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Maybe
-2026-04-16 01:19:29,882 - INFO - Log probabilities of the option tokens: tensor([nan], dtype=torch.float16)
-2026-04-16 01:19:29,890 - INFO - === Candidate 2 (without context)===
-2026-04-16 01:19:29,890 - INFO - <s>Premise: yeah well losing is i mean i'm i'm originally from Saint Louis and Saint Louis Cardinals when they were there were uh a mostly a losing team but
-Hypothesis: The St. Louis Cardinals have always won.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-No
-2026-04-16 01:19:29,891 - INFO - Log probabilities of the option tokens: tensor([nan], dtype=torch.float16)
-2026-04-16 01:19:29,891 - INFO - Prediction scores: [nan, nan, nan]
-100%|██████████| 1/1 [00:00<00:00, 25.22it/s]
-2026-04-16 01:19:29,891 - INFO - There are 0 training samples and 1 validation samples
-  0%|          | 0/1 [00:00<?, ?it/s]2026-04-16 01:19:29,891 - INFO - ========= Example =========
-2026-04-16 01:19:29,891 - INFO - Candidate: [0, 1, 2]
-2026-04-16 01:19:29,891 - INFO - Correct candidate: 1
-2026-04-16 01:19:29,901 - INFO - === Candidate 0 ===
-2026-04-16 01:19:29,901 - INFO - <s>Premise: And so, uh, those things come about through the work of reading rather than through listening to some person on the street corner or, uh, gazing on TV.
-Hypothesis: Reading is greater than watching television, it makes you smarter.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Yes
-2026-04-16 01:19:29,901 - INFO - Log probabilities of the option tokens: tensor([nan], dtype=torch.float16)
-2026-04-16 01:19:29,909 - INFO - === Candidate 1 (without context)===
-2026-04-16 01:19:29,910 - INFO - <s>Premise: And so, uh, those things come about through the work of reading rather than through listening to some person on the street corner or, uh, gazing on TV.
-Hypothesis: Reading is greater than watching television, it makes you smarter.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-Maybe
-2026-04-16 01:19:29,910 - INFO - Log probabilities of the option tokens: tensor([nan], dtype=torch.float16)
-2026-04-16 01:19:29,918 - INFO - === Candidate 2 (without context)===
-2026-04-16 01:19:29,918 - INFO - <s>Premise: And so, uh, those things come about through the work of reading rather than through listening to some person on the street corner or, uh, gazing on TV.
-Hypothesis: Reading is greater than watching television, it makes you smarter.
-Can we infer that the hypothesis is true? Yes, No, or Maybe?
-No
-2026-04-16 01:19:29,919 - INFO - Log probabilities of the option tokens: tensor([nan], dtype=torch.float16)
-2026-04-16 01:19:29,919 - INFO - Prediction scores: [nan, nan, nan]
-100%|██████████| 1/1 [00:00<00:00, 36.47it/s]
-2026-04-16 01:19:29,919 - INFO - ===== Train set 42 =====
-2026-04-16 01:19:29,919 - INFO - {'accuracy': np.float64(0.0), 'valid_mismatched_accuracy': np.float64(0.0)}
