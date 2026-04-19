@@ -29,7 +29,7 @@ class TinyRegressionModel(nn.Module):
 
 
 class DirectionalProbeConsistencyTest(unittest.TestCase):
-    def _build_trainer(self, *, efficient_zero_order: bool):
+    def _build_trainer(self, *, efficient_zero_order: bool, zo_quantization_bits: int = 16):
         torch.manual_seed(0)
         trainer = Trainer.__new__(Trainer)
         trainer.args = SimpleNamespace(
@@ -45,7 +45,7 @@ class DirectionalProbeConsistencyTest(unittest.TestCase):
             sparse_scope="trainable_only",
             sparse_mask_refresh_steps=100,
             sparse_log_active_fraction=False,
-            zo_quantization_bits=16,
+            zo_quantization_bits=zo_quantization_bits,
             zo_two_point_precision="fp16",
             zero_order_eps=1e-3,
             init_h=1e-3,
@@ -117,6 +117,49 @@ class DirectionalProbeConsistencyTest(unittest.TestCase):
 
         self.assertTrue(torch.allclose(td_from_seed.float(), manual_proj.float(), atol=1e-6, rtol=1e-6))
         self.assertTrue(torch.allclose(td_from_vector.float(), manual_proj.float(), atol=1e-6, rtol=1e-6))
+
+    def test_quzo_true_directional_derivative_uses_u1_for_official_probe(self):
+        trainer, model = self._build_trainer(efficient_zero_order=True, zo_quantization_bits=8)
+        inputs = self._build_inputs()
+        seed = 34567
+
+        random_vector = trainer._zo_materialize_random_vector(seed)
+        loss = trainer.compute_loss(model, inputs)
+        grads = torch.autograd.grad(
+            loss,
+            [param for _, param in trainer.named_parameters_to_optim],
+            retain_graph=False,
+            create_graph=False,
+            allow_unused=True,
+        )
+
+        manual_u1 = torch.tensor(0.0, dtype=torch.float32)
+        manual_u2 = torch.tensor(0.0, dtype=torch.float32)
+        saw_distinct_direction = False
+        for (name, _), grad in zip(trainer.named_parameters_to_optim, grads):
+            if grad is None:
+                continue
+            bundle = random_vector[name]
+            manual_u1 = manual_u1 + torch.sum(grad.detach().float() * bundle["u1"].detach().float())
+            manual_u2 = manual_u2 + torch.sum(grad.detach().float() * bundle["u2"].detach().float())
+            saw_distinct_direction = saw_distinct_direction or (not torch.allclose(bundle["u1"], bundle["u2"]))
+
+        _, td_u1 = trainer.zo_true_directional_derivative(
+            model,
+            inputs,
+            random_vector=random_vector,
+            probe_direction="u1",
+        )
+        _, td_u2 = trainer.zo_true_directional_derivative(
+            model,
+            inputs,
+            random_vector=random_vector,
+            probe_direction="u2",
+        )
+
+        self.assertTrue(saw_distinct_direction)
+        self.assertTrue(torch.allclose(td_u1.float(), manual_u1.float(), atol=1e-6, rtol=1e-6))
+        self.assertTrue(torch.allclose(td_u2.float(), manual_u2.float(), atol=1e-6, rtol=1e-6))
 
     def test_efficient_perturbation_reuses_materialized_direction(self):
         trainer, model = self._build_trainer(efficient_zero_order=True)

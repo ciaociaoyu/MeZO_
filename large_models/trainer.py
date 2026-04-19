@@ -1170,11 +1170,17 @@ class OurTrainer(Trainer):
             "zo_quantization_bits",
             "fd_mean",
             "td_mean",
+            "td_u2_mean_debug",
             "mae",
             "mse",
             "rmse",
             "sign_acc",
             "corr",
+            "mae_u2_debug",
+            "mse_u2_debug",
+            "rmse_u2_debug",
+            "sign_acc_u2_debug",
+            "corr_u2_debug",
             "probe_num_seeds",
         ]
 
@@ -1223,7 +1229,36 @@ class OurTrainer(Trainer):
         except Exception as e:
             logger.warning(f"[zo_probe] failed to append CSV row: {type(e).__name__}: {e}")
 
-    def zo_true_directional_derivative(self, model, inputs, random_seed=None):
+    def _quzo_probe_direction(self, bundle: Dict[str, torch.Tensor], probe_direction: str) -> torch.Tensor:
+        key = str(probe_direction or "u1").lower()
+        if key == "u2" and "u2" in bundle:
+            return bundle["u2"]
+        if "u1" in bundle:
+            return bundle["u1"]
+        if "z" in bundle:
+            return bundle["z"]
+        raise KeyError(f"Unsupported QuZO bundle keys: {sorted(bundle.keys())}")
+
+    @staticmethod
+    def _zo_probe_metric_summary(fd_arr: np.ndarray, td_arr: np.ndarray) -> Dict[str, float]:
+        diff = fd_arr - td_arr
+        corr = float("nan")
+        if fd_arr.size >= 2:
+            std_fd = float(np.std(fd_arr))
+            std_td = float(np.std(td_arr))
+            if std_fd > 0.0 and std_td > 0.0:
+                corr = float(np.corrcoef(fd_arr, td_arr)[0, 1])
+        return {
+            "fd_mean": float(np.mean(fd_arr)),
+            "td_mean": float(np.mean(td_arr)),
+            "mae": float(np.mean(np.abs(diff))),
+            "mse": float(np.mean(diff * diff)),
+            "rmse": float(np.sqrt(np.mean(diff * diff))),
+            "sign_acc": float(np.mean(np.sign(fd_arr) == np.sign(td_arr))),
+            "corr": corr,
+        }
+
+    def _zo_true_directional_projections(self, model, inputs, random_seed=None, quzo_probe_directions: Optional[List[str]] = None):
         if self.args.non_diff:
             raise RuntimeError("Directional probe does not support non-differentiable objectives.")
 
@@ -1242,28 +1277,44 @@ class OurTrainer(Trainer):
             if torch.cuda.is_available():
                 torch.cuda.manual_seed_all(int(random_seed))
 
-        self._sparse_prepare_step_state()
-        proj = None
-        for (name, param), grad in zip(self.named_parameters_to_optim, grads):
-            if self._zo_use_quzo():
-                z = self._quzo_get_bundle(name, param, int(random_seed))["u2"]
-            else:
-                z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
-                z = self._sparse_mask_tensor(name, z)
+        direction_keys = [str(x).lower() for x in (quzo_probe_directions or ["u1"])]
+        if len(direction_keys) == 0:
+            direction_keys = ["u1"]
 
+        self._sparse_prepare_step_state()
+        proj_map: Dict[str, Optional[torch.Tensor]] = {key: None for key in direction_keys}
+        for (name, param), grad in zip(self.named_parameters_to_optim, grads):
             if grad is None:
                 continue
 
-            contrib = torch.sum(grad.detach().float() * z.detach().float())
-            proj = contrib if proj is None else proj + contrib
+            if self._zo_use_quzo():
+                bundle = self._quzo_get_bundle(name, param, int(random_seed))
+                direction_map = {key: self._quzo_probe_direction(bundle, key) for key in direction_keys}
+            else:
+                z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+                z = self._sparse_mask_tensor(name, z)
+                direction_map = {direction_keys[0]: z}
 
-        if proj is None:
-            proj = torch.tensor(0.0, device=loss.device)
-        return loss.detach(), proj.detach()
+            for key, z in direction_map.items():
+                contrib = torch.sum(grad.detach().float() * z.detach().float())
+                proj_map[key] = contrib if proj_map[key] is None else proj_map[key] + contrib
+
+        final_proj_map: Dict[str, torch.Tensor] = {}
+        for key, value in proj_map.items():
+            final_proj_map[key] = value if value is not None else torch.tensor(0.0, device=loss.device)
+        return loss.detach(), final_proj_map
+
+    def zo_true_directional_derivative(self, model, inputs, random_seed=None, probe_direction: str = "u1"):
+        loss, proj_map = self._zo_true_directional_projections(
+            model,
+            inputs,
+            random_seed=random_seed,
+            quzo_probe_directions=[probe_direction],
+        )
+        key = str(probe_direction or "u1").lower()
+        return loss.detach(), proj_map[key].detach()
 
     def _zo_maybe_run_directional_probe(self, model, inputs):
-        if self._zo_use_quzo():
-            return
         if not self._zo_probe_should_run():
             return
 
@@ -1279,6 +1330,7 @@ class OurTrainer(Trainer):
 
         fd_vals: List[float] = []
         td_vals: List[float] = []
+        td_u2_vals: List[float] = []
         self._sparse_prepare_step_state()
 
         torch_state = torch.random.get_rng_state()
@@ -1298,47 +1350,62 @@ class OurTrainer(Trainer):
                     loss2 = self.zo_forward(model, inputs)
                     self.zo_perturb_parameters(random_seed=seed, scaling_factor=1)
 
-                _, td = self.zo_true_directional_derivative(model, inputs, random_seed=seed)
+                _, proj_map = self._zo_true_directional_projections(
+                    model,
+                    inputs,
+                    random_seed=seed,
+                    quzo_probe_directions=(["u1", "u2"] if self._zo_use_quzo() else ["u1"]),
+                )
                 fd = (loss1.float() - loss2.float()) / (2.0 * eps)
                 fd_vals.append(float(fd.detach().item()))
-                td_vals.append(float(td.detach().float().item()))
+                td_vals.append(float(proj_map["u1"].detach().float().item()))
+                if self._zo_use_quzo() and "u2" in proj_map:
+                    td_u2_vals.append(float(proj_map["u2"].detach().float().item()))
 
-            fd_arr = np.asarray(fd_vals, dtype=np.float64)
-            td_arr = np.asarray(td_vals, dtype=np.float64)
-            valid = np.isfinite(fd_arr) & np.isfinite(td_arr)
-            fd_arr = fd_arr[valid]
-            td_arr = td_arr[valid]
+            fd_raw = np.asarray(fd_vals, dtype=np.float64)
+            td_raw = np.asarray(td_vals, dtype=np.float64)
+            valid = np.isfinite(fd_raw) & np.isfinite(td_raw)
+            fd_arr = fd_raw[valid]
+            td_arr = td_raw[valid]
             if fd_arr.size == 0:
                 logger.warning(f"[zo_probe] step={global_step}: no finite probe pairs; skipping row.")
                 return
 
-            diff = fd_arr - td_arr
-            fd_mean = float(np.mean(fd_arr))
-            td_mean = float(np.mean(td_arr))
-            mae = float(np.mean(np.abs(diff)))
-            mse = float(np.mean(diff * diff))
-            rmse = float(np.sqrt(np.mean(diff * diff)))
-            sign_acc = float(np.mean(np.sign(fd_arr) == np.sign(td_arr)))
-
-            corr = float("nan")
-            if fd_arr.size >= 2:
-                std_fd = float(np.std(fd_arr))
-                std_td = float(np.std(td_arr))
-                if std_fd > 0.0 and std_td > 0.0:
-                    corr = float(np.corrcoef(fd_arr, td_arr)[0, 1])
+            official_stats = self._zo_probe_metric_summary(fd_arr, td_arr)
+            debug_stats = {
+                "td_mean": None,
+                "mae": None,
+                "mse": None,
+                "rmse": None,
+                "sign_acc": None,
+                "corr": None,
+            }
+            if self._zo_use_quzo() and len(td_u2_vals) > 0:
+                td_u2_raw = np.asarray(td_u2_vals, dtype=np.float64)
+                valid_u2 = np.isfinite(fd_raw) & np.isfinite(td_u2_raw)
+                fd_u2_arr = fd_raw[valid_u2]
+                td_u2_arr = td_u2_raw[valid_u2]
+                if fd_u2_arr.size > 0:
+                    debug_stats = self._zo_probe_metric_summary(fd_u2_arr, td_u2_arr)
 
             row = {
                 "global_step": int(global_step),
                 "eps": float(eps),
                 "precision": precision,
                 "zo_quantization_bits": int(getattr(self.args, "zo_quantization_bits", 32)),
-                "fd_mean": fd_mean,
-                "td_mean": td_mean,
-                "mae": mae,
-                "mse": mse,
-                "rmse": rmse,
-                "sign_acc": sign_acc,
-                "corr": corr,
+                "fd_mean": official_stats["fd_mean"],
+                "td_mean": official_stats["td_mean"],
+                "td_u2_mean_debug": debug_stats["td_mean"],
+                "mae": official_stats["mae"],
+                "mse": official_stats["mse"],
+                "rmse": official_stats["rmse"],
+                "sign_acc": official_stats["sign_acc"],
+                "corr": official_stats["corr"],
+                "mae_u2_debug": debug_stats["mae"],
+                "mse_u2_debug": debug_stats["mse"],
+                "rmse_u2_debug": debug_stats["rmse"],
+                "sign_acc_u2_debug": debug_stats["sign_acc"],
+                "corr_u2_debug": debug_stats["corr"],
                 "probe_num_seeds": int(num_seeds),
             }
             self.latest_zo_probe_row = row
@@ -1349,11 +1416,11 @@ class OurTrainer(Trainer):
                 float(eps),
                 precision,
                 int(fd_arr.size),
-                mae,
-                mse,
-                rmse,
-                sign_acc,
-                f"{corr:.6f}" if math.isfinite(corr) else "nan",
+                official_stats["mae"],
+                official_stats["mse"],
+                official_stats["rmse"],
+                official_stats["sign_acc"],
+                f"{official_stats['corr']:.6f}" if math.isfinite(official_stats["corr"]) else "nan",
             )
         except Exception as e:
             logger.warning(f"[zo_probe] step={global_step} failed: {type(e).__name__}: {e}")

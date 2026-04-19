@@ -2329,11 +2329,17 @@ class Trainer(LinearHeadTrainer):
             "zo_two_point_precision",
             "fd_mean",
             "td_mean",
+            "td_u2_mean_debug",
             "mae",
             "mse",
             "rmse",
             "sign_acc",
             "corr",
+            "mae_u2_debug",
+            "mse_u2_debug",
+            "rmse_u2_debug",
+            "sign_acc_u2_debug",
+            "corr_u2_debug",
             "probe_num_seeds",
         ]
 
@@ -2383,9 +2389,36 @@ class Trainer(LinearHeadTrainer):
         except Exception as e:
             logger.warning(f"[zo_probe] failed to append CSV row: {type(e).__name__}: {e}")
 
+    def _quzo_probe_direction(self, bundle: Dict[str, torch.Tensor], probe_direction: str) -> torch.Tensor:
+        key = str(probe_direction or "u1").lower()
+        if key == "u2" and "u2" in bundle:
+            return bundle["u2"]
+        if "u1" in bundle:
+            return bundle["u1"]
+        if "z" in bundle:
+            return bundle["z"]
+        raise KeyError(f"Unsupported QuZO bundle keys: {sorted(bundle.keys())}")
+
+    @staticmethod
+    def _zo_probe_metric_summary(fd_arr: np.ndarray, td_arr: np.ndarray) -> Dict[str, float]:
+        diff = fd_arr - td_arr
+        corr = float("nan")
+        if fd_arr.size >= 2:
+            std_fd = float(np.std(fd_arr))
+            std_td = float(np.std(td_arr))
+            if std_fd > 0.0 and std_td > 0.0:
+                corr = float(np.corrcoef(fd_arr, td_arr)[0, 1])
+        return {
+            "fd_mean": float(np.mean(fd_arr)),
+            "td_mean": float(np.mean(td_arr)),
+            "mae": float(np.mean(np.abs(diff))),
+            "mse": float(np.mean(diff * diff)),
+            "rmse": float(np.sqrt(np.mean(diff * diff))),
+            "sign_acc": float(np.mean(np.sign(fd_arr) == np.sign(td_arr))),
+            "corr": corr,
+        }
+
     def _zo_maybe_run_directional_probe(self, model: nn.Module, inputs: Dict[str, Any]):
-        if self._zo_use_quzo():
-            return
         if not self._zo_probe_should_run():
             return
 
@@ -2397,6 +2430,7 @@ class Trainer(LinearHeadTrainer):
 
         fd_vals: List[float] = []
         td_vals: List[float] = []
+        td_u2_vals: List[float] = []
 
         zo_forward_step_backup = int(getattr(self.state, "zo_forward_step", 0))
         torch_state = torch.random.get_rng_state()
@@ -2417,7 +2451,12 @@ class Trainer(LinearHeadTrainer):
                         model = self.efficient_perturb_parameters(model, seed, scaling_factor=-2, random_vector=random_vector)
                         loss2 = self._zo_two_point_forward(model, inputs)
                         model = self.efficient_perturb_parameters(model, seed, scaling_factor=1, random_vector=random_vector)
-                    _, td = self.zo_true_directional_derivative(model, inputs, random_vector=random_vector)
+                    _, proj_map = self._zo_true_directional_projections(
+                        model,
+                        inputs,
+                        random_vector=random_vector,
+                        quzo_probe_directions=(["u1", "u2"] if self._zo_use_quzo() else ["u1"]),
+                    )
                 else:
                     # Deterministically sample the same z direction for FD and true-directional checks.
                     self._zo_reset_random_seed(int(seed))
@@ -2440,47 +2479,62 @@ class Trainer(LinearHeadTrainer):
                             model, random_vector = self.norm_perturb_parameters(model, random_vector=random_vector, scaling_factor=1)
                         else:
                             model, random_vector = self.perturb_parameters(model, random_vector=random_vector, scaling_factor=1)
-                    _, td = self.zo_true_directional_derivative(model, inputs, random_vector=random_vector)
+                    _, proj_map = self._zo_true_directional_projections(
+                        model,
+                        inputs,
+                        random_vector=random_vector,
+                        quzo_probe_directions=(["u1", "u2"] if self._zo_use_quzo() else ["u1"]),
+                    )
 
                 fd = self._zo_fd_projected_grad(loss1, loss2, eps)
                 fd_vals.append(float(fd.detach().item()))
-                td_vals.append(float(td.detach().float().item()))
+                td_vals.append(float(proj_map["u1"].detach().float().item()))
+                if self._zo_use_quzo() and "u2" in proj_map:
+                    td_u2_vals.append(float(proj_map["u2"].detach().float().item()))
 
-            fd_arr = np.asarray(fd_vals, dtype=np.float64)
-            td_arr = np.asarray(td_vals, dtype=np.float64)
-            valid = np.isfinite(fd_arr) & np.isfinite(td_arr)
-            fd_arr = fd_arr[valid]
-            td_arr = td_arr[valid]
+            fd_raw = np.asarray(fd_vals, dtype=np.float64)
+            td_raw = np.asarray(td_vals, dtype=np.float64)
+            valid = np.isfinite(fd_raw) & np.isfinite(td_raw)
+            fd_arr = fd_raw[valid]
+            td_arr = td_raw[valid]
             if fd_arr.size == 0:
                 logger.warning(f"[zo_probe] step={global_step}: no finite probe pairs; skipping row.")
                 return
 
-            diff = fd_arr - td_arr
-            fd_mean = float(np.mean(fd_arr))
-            td_mean = float(np.mean(td_arr))
-            mae = float(np.mean(np.abs(diff)))
-            mse = float(np.mean(diff * diff))
-            rmse = float(np.sqrt(np.mean(diff * diff)))
-            sign_acc = float(np.mean(np.sign(fd_arr) == np.sign(td_arr)))
-
-            corr = float("nan")
-            if fd_arr.size >= 2:
-                std_fd = float(np.std(fd_arr))
-                std_td = float(np.std(td_arr))
-                if std_fd > 0.0 and std_td > 0.0:
-                    corr = float(np.corrcoef(fd_arr, td_arr)[0, 1])
+            official_stats = self._zo_probe_metric_summary(fd_arr, td_arr)
+            debug_stats = {
+                "td_mean": None,
+                "mae": None,
+                "mse": None,
+                "rmse": None,
+                "sign_acc": None,
+                "corr": None,
+            }
+            if self._zo_use_quzo() and len(td_u2_vals) > 0:
+                td_u2_raw = np.asarray(td_u2_vals, dtype=np.float64)
+                valid_u2 = np.isfinite(fd_raw) & np.isfinite(td_u2_raw)
+                fd_u2_arr = fd_raw[valid_u2]
+                td_u2_arr = td_u2_raw[valid_u2]
+                if fd_u2_arr.size > 0:
+                    debug_stats = self._zo_probe_metric_summary(fd_u2_arr, td_u2_arr)
 
             row = {
                 "global_step": int(global_step),
                 "eps": float(eps),
                 "zo_two_point_precision": precision,
-                "fd_mean": fd_mean,
-                "td_mean": td_mean,
-                "mae": mae,
-                "mse": mse,
-                "rmse": rmse,
-                "sign_acc": sign_acc,
-                "corr": corr,
+                "fd_mean": official_stats["fd_mean"],
+                "td_mean": official_stats["td_mean"],
+                "td_u2_mean_debug": debug_stats["td_mean"],
+                "mae": official_stats["mae"],
+                "mse": official_stats["mse"],
+                "rmse": official_stats["rmse"],
+                "sign_acc": official_stats["sign_acc"],
+                "corr": official_stats["corr"],
+                "mae_u2_debug": debug_stats["mae"],
+                "mse_u2_debug": debug_stats["mse"],
+                "rmse_u2_debug": debug_stats["rmse"],
+                "sign_acc_u2_debug": debug_stats["sign_acc"],
+                "corr_u2_debug": debug_stats["corr"],
                 "probe_num_seeds": int(num_seeds),
             }
             self._zo_probe_append_csv_row(row)
@@ -2490,11 +2544,11 @@ class Trainer(LinearHeadTrainer):
                 float(eps),
                 precision,
                 int(fd_arr.size),
-                mae,
-                mse,
-                rmse,
-                sign_acc,
-                f"{corr:.6f}" if math.isfinite(corr) else "nan",
+                official_stats["mae"],
+                official_stats["mse"],
+                official_stats["rmse"],
+                official_stats["sign_acc"],
+                f"{official_stats['corr']:.6f}" if math.isfinite(official_stats["corr"]) else "nan",
             )
         except Exception as e:
             logger.warning(f"[zo_probe] step={global_step} failed: {type(e).__name__}: {e}")
@@ -2523,25 +2577,15 @@ class Trainer(LinearHeadTrainer):
         self.state.zo_forward_step += 1
         return loss.detach()
 
-    def zo_true_directional_derivative(
+    def _zo_true_directional_projections(
         self,
         model: nn.Module,
         inputs: Dict[str, Union[torch.Tensor, Any]],
         random_vector: Optional[Dict[str, Any]] = None,
         random_seed: Optional[int] = None,
         layer_name: Optional[str] = None,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Compute the true directional derivative <grad, z> for MeZO.
-
-        This is an ablation utility: keep the same sampled direction z, but replace the finite-difference
-        directional derivative (loss1-loss2)/(2*eps) with the true directional derivative <∇L(θ), z>.
-
-        Notes:
-        - If random_seed is provided, z will be regenerated once and then reused, matching the
-          same direction construction as the perturbation path.
-        - Otherwise random_vector should map parameter name -> z tensor.
-        - Uses torch.autograd.grad so it does NOT overwrite/clear param.grad (important for grad accumulation).
-        """
+        quzo_probe_directions: Optional[List[str]] = None,
+    ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
         model.eval()
         inputs = self._prepare_inputs(inputs)
         if self.args.optimize_acc:
@@ -2564,6 +2608,9 @@ class Trainer(LinearHeadTrainer):
 
         if random_seed is not None and random_vector is None:
             random_vector = self._zo_materialize_random_vector(int(random_seed))
+        direction_keys = [str(x).lower() for x in (quzo_probe_directions or ["u1"])]
+        if len(direction_keys) == 0:
+            direction_keys = ["u1"]
 
         # Match the z used later when writing pseudo-gradients.
         apply_c_scale = (
@@ -2574,8 +2621,11 @@ class Trainer(LinearHeadTrainer):
         )
 
         self._sparse_prepare_step_state()
-        proj = None
+        proj_map: Dict[str, Optional[torch.Tensor]] = {key: None for key in direction_keys}
         for (name, param), g in zip(named_params, grads):
+            if g is None:
+                continue
+
             if self._zo_use_quzo():
                 if random_vector is None or name not in random_vector:
                     bundle = self._quzo_get_bundle(name, param)
@@ -2583,7 +2633,7 @@ class Trainer(LinearHeadTrainer):
                         random_vector[name] = bundle
                 else:
                     bundle = random_vector[name]
-                z = bundle["u2"]
+                direction_map = {key: self._quzo_probe_direction(bundle, key) for key in direction_keys}
             else:
                 if random_vector is None or name not in random_vector:
                     z = self._sample_sparse_noise_like(name, param.data)
@@ -2593,27 +2643,48 @@ class Trainer(LinearHeadTrainer):
                     z = random_vector[name]
                 if not apply_c_scale:
                     z = self._zo_effective_perturb_direction(param, z)
+                direction_map = {direction_keys[0]: z}
 
-            if g is None:
-                continue
+            for key, z in direction_map.items():
+                z_local = z
+                if apply_c_scale:
+                    cname = self.retrieve_c(name)
+                    if cname in self.cs:
+                        c_val = self.cs[cname]
+                        if isinstance(c_val, torch.Tensor):
+                            c_val = float(c_val.item())
+                        if c_val != 0.0:
+                            z_local = z_local * c_val
 
-            if apply_c_scale:
-                cname = self.retrieve_c(name)
-                if cname in self.cs:
-                    c_val = self.cs[cname]
-                    if isinstance(c_val, torch.Tensor):
-                        c_val = float(c_val.item())
-                    if c_val != 0.0:
-                        z = z * c_val
+                contrib = torch.sum(g.detach().float() * z_local.detach().float())
+                proj_map[key] = contrib if proj_map[key] is None else proj_map[key] + contrib
 
-            contrib = torch.sum(g.detach().float() * z.detach().float())
-            proj = contrib if proj is None else proj + contrib
-
-        if proj is None:
-            proj = torch.tensor(0.0, device=loss.device)
+        final_proj_map: Dict[str, torch.Tensor] = {}
+        for key, value in proj_map.items():
+            final_proj_map[key] = value if value is not None else torch.tensor(0.0, device=loss.device)
 
         self.state.zo_forward_step += 1
-        return loss.detach(), proj.detach()
+        return loss.detach(), final_proj_map
+
+    def zo_true_directional_derivative(
+        self,
+        model: nn.Module,
+        inputs: Dict[str, Union[torch.Tensor, Any]],
+        random_vector: Optional[Dict[str, Any]] = None,
+        random_seed: Optional[int] = None,
+        layer_name: Optional[str] = None,
+        probe_direction: str = "u1",
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        loss, proj_map = self._zo_true_directional_projections(
+            model,
+            inputs,
+            random_vector=random_vector,
+            random_seed=random_seed,
+            layer_name=layer_name,
+            quzo_probe_directions=[probe_direction],
+        )
+        key = str(probe_direction or "u1").lower()
+        return loss.detach(), proj_map[key].detach()
 
     def efficient_perturb_parameters(
         self,
