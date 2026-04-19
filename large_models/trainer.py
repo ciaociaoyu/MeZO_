@@ -705,7 +705,13 @@ class OurTrainer(Trainer):
 
                 # MeZO added: estimate gradient
                 if args.trainer == "zo":
-                    tr_loss_step = self.zo_step(model, inputs)
+                    zo_method = self._zo_method()
+                    if zo_method in {"lozo", "lozo_m"}:
+                        tr_loss_step = self.lowrank_zo_step(model, inputs)
+                    elif zo_method == "hizoo":
+                        tr_loss_step = self.hizoo_step_update(model, inputs)
+                    else:
+                        tr_loss_step = self.zo_step(model, inputs)
                 else:
                     if (
                         ((step + 1) % args.gradient_accumulation_steps != 0)
@@ -758,7 +764,13 @@ class OurTrainer(Trainer):
                     )
                     # MeZO added: update model with the estimated gradient
                     if args.trainer == "zo":
-                        self.zo_update(model)
+                        zo_method = self._zo_method()
+                        if zo_method in {"lozo", "lozo_m"}:
+                            self.lowrank_zo_update(model)
+                        elif zo_method == "hizoo":
+                            pass
+                        else:
+                            self.zo_update(model)
                     else:
                         # Gradient clipping
                         if args.max_grad_norm is not None and args.max_grad_norm > 0 and not self.deepspeed:
@@ -1352,6 +1364,238 @@ class OurTrainer(Trainer):
                     torch.cuda.set_rng_state_all(cuda_states)
             except Exception:
                 pass
+
+    def _zo_method(self) -> str:
+        method = str(getattr(self.args, "zo_method", "") or "").strip().lower()
+        if method in {"", "none", "auto"}:
+            if self._sparse_enabled():
+                return "sparse_mezo"
+            return "mezo"
+        return method
+
+    def _zo_assert_custom_variant_supported(self) -> None:
+        method = self._zo_method()
+        if method not in {"lozo", "lozo_m", "hizoo"}:
+            return
+        if self.args.gradient_accumulation_steps != 1:
+            raise NotImplementedError(f"{method} currently requires --gradient_accumulation_steps 1")
+        if self._zo_use_quzo():
+            raise NotImplementedError(f"{method} is incompatible with QuZO low-bit perturbations")
+        if self._sparse_enabled():
+            raise NotImplementedError(f"{method} is incompatible with Sparse MeZO masking in this implementation")
+
+    def _lozo_rank(self, param: nn.Parameter) -> int:
+        if param.data.ndim < 2:
+            return 0
+        rows = int(param.data.shape[0])
+        cols = int(param.data.numel() // max(rows, 1))
+        return max(1, min(int(getattr(self.args, "lozo_rank", 2)), rows, cols))
+
+    def _lozo_step_interval(self) -> int:
+        return max(1, int(getattr(self.args, "lozo_step_interval", 50)))
+
+    def _lozo_beta1(self) -> float:
+        return float(getattr(self.args, "lozo_beta1", 0.9))
+
+    def _lozo_use_momentum(self) -> bool:
+        return self._zo_method() == "lozo_m"
+
+    def _lozo_maybe_init_state(self) -> None:
+        if not hasattr(self, "_lozo_step"):
+            self._lozo_step = -1
+            self._lozo_v = {}
+            self._lozo_v_old = {}
+            self._lozo_exp_avg_m = {}
+
+    def _hizoo_maybe_init_state(self) -> None:
+        if not hasattr(self, "_hizoo_hessian_diag"):
+            self._hizoo_hessian_diag = {}
+
+    def _hizoo_hessian_smooth(self) -> float:
+        spec = str(getattr(self.args, "hizoo_hessian_smooth_type", "constant0") or "constant0").strip().lower()
+        step = int(getattr(self.state, "global_step", 0))
+        if spec == "constant_decay1":
+            return 1e-6 if step < 9800 else 1e-8
+        if spec.startswith("constant"):
+            raw = spec[len("constant"):]
+            try:
+                return float(raw) if raw else 0.0
+            except ValueError as exc:
+                raise ValueError(f"Unsupported hizoo_hessian_smooth_type={spec!r}") from exc
+        raise ValueError(f"Unsupported hizoo_hessian_smooth_type={spec!r}")
+
+    def lowrank_zo_perturb_parameters(self, random_seed=None, scaling_factor=1):
+        self._lozo_maybe_init_state()
+        step = int(self._lozo_step)
+        step_seed = int(random_seed if random_seed is not None else self.zo_random_seed)
+
+        torch.manual_seed(step_seed)
+        with torch.no_grad():
+            for name, param in self.named_parameters_to_optim:
+                if param.data.ndim >= 2:
+                    matrix = param.data.flatten(start_dim=1)
+                    rank = self._lozo_rank(param)
+                    v = self._lozo_v.get(name)
+                    if (
+                        step % self._lozo_step_interval() == 0
+                        or v is None
+                        or v.shape[0] != matrix.shape[1]
+                        or v.shape[1] != rank
+                        or v.device != param.data.device
+                        or v.dtype != param.data.dtype
+                    ):
+                        v = torch.randn(matrix.shape[1], rank, device=param.data.device, dtype=param.data.dtype)
+                        self._lozo_v[name] = v
+                    u = torch.randn(matrix.shape[0], rank, device=param.data.device, dtype=param.data.dtype)
+                    matrix.addmm_(u, v.transpose(0, 1), beta=1.0, alpha=float(scaling_factor) * self.args.zo_eps)
+                else:
+                    z = torch.randn_like(param.data)
+                    param.data.add_(z, alpha=float(scaling_factor) * self.args.zo_eps)
+
+    def lowrank_zo_step(self, model, inputs):
+        self._zo_assert_custom_variant_supported()
+        self._lozo_maybe_init_state()
+        self._lozo_step += 1
+
+        self.named_parameters_to_optim = []
+        for name, param in model.named_parameters():
+            if param.requires_grad:
+                self.named_parameters_to_optim.append((name, param))
+
+        self.zo_random_seed = int(np.random.randint(2147483647))
+        self.lowrank_zo_perturb_parameters(scaling_factor=1)
+        loss1 = self.zo_forward(model, inputs)
+        self.lowrank_zo_perturb_parameters(scaling_factor=-2)
+        loss2 = self.zo_forward(model, inputs)
+
+        self.projected_grad = ((loss1 - loss2) / (2 * self.args.zo_eps)).item()
+        self.lowrank_zo_perturb_parameters(scaling_factor=1)
+        return loss1
+
+    def lowrank_zo_update(self, model):
+        self._lozo_maybe_init_state()
+        learning_rate = float(self._get_learning_rate())
+        weight_decay = float(getattr(self.args, "weight_decay", 0.0))
+        beta1 = self._lozo_beta1()
+        step = int(self._lozo_step)
+        step_interval = self._lozo_step_interval()
+        use_momentum = self._lozo_use_momentum()
+        projected_grad = float(getattr(self, "projected_grad", 0.0))
+
+        torch.manual_seed(int(self.zo_random_seed))
+        with torch.no_grad():
+            for name, param in self.named_parameters_to_optim:
+                if param.data.ndim >= 2:
+                    matrix = param.data.flatten(start_dim=1)
+                    v = self._lozo_v[name]
+                    rank = v.shape[1]
+                    u = torch.randn(matrix.shape[0], rank, device=param.data.device, dtype=param.data.dtype)
+                    if use_momentum:
+                        prev = self._lozo_exp_avg_m.get(name)
+                        if step % step_interval == 0:
+                            if prev is not None and name in self._lozo_v_old:
+                                v_old = self._lozo_v_old[name]
+                                alignment = torch.mm(v_old.transpose(0, 1), v) / float(max(1, v_old.shape[0]))
+                                prev = beta1 * torch.mm(prev, alignment) + (1.0 - beta1) * (projected_grad * u)
+                            else:
+                                prev = projected_grad * u
+                        else:
+                            prev = (projected_grad * u) if prev is None else (beta1 * prev + (1.0 - beta1) * (projected_grad * u))
+                            if step % step_interval == (step_interval - 1):
+                                self._lozo_v_old[name] = v.detach().clone()
+                        self._lozo_exp_avg_m[name] = prev
+                        if weight_decay > 0.0 and self._zo_use_weight_decay(name):
+                            matrix.mul_(1.0 - learning_rate * weight_decay)
+                        matrix.addmm_(prev, v.transpose(0, 1), beta=1.0, alpha=-learning_rate)
+                    else:
+                        if weight_decay > 0.0 and self._zo_use_weight_decay(name):
+                            matrix.mul_(1.0 - learning_rate * weight_decay)
+                        matrix.addmm_(u, v.transpose(0, 1), beta=1.0, alpha=-(learning_rate * projected_grad))
+                else:
+                    z = torch.randn_like(param.data)
+                    if use_momentum:
+                        prev = self._lozo_exp_avg_m.get(name)
+                        prev = (projected_grad * z) if prev is None else (beta1 * prev + (1.0 - beta1) * (projected_grad * z))
+                        self._lozo_exp_avg_m[name] = prev
+                        if weight_decay > 0.0 and self._zo_use_weight_decay(name):
+                            param.data.mul_(1.0 - learning_rate * weight_decay)
+                        param.data.add_(prev.to(dtype=param.data.dtype), alpha=-learning_rate)
+                    else:
+                        if weight_decay > 0.0 and self._zo_use_weight_decay(name):
+                            param.data.mul_(1.0 - learning_rate * weight_decay)
+                        param.data.add_(z, alpha=-(learning_rate * projected_grad))
+
+        self.lr_scheduler.step()
+
+    def hizoo_step_update(self, model, inputs):
+        self._zo_assert_custom_variant_supported()
+        self._hizoo_maybe_init_state()
+        self.named_parameters_to_optim = []
+        for name, param in model.named_parameters():
+            if param.requires_grad:
+                self.named_parameters_to_optim.append((name, param))
+
+        for name, param in self.named_parameters_to_optim:
+            hessian = self._hizoo_hessian_diag.get(name)
+            if (
+                hessian is None
+                or hessian.shape != param.data.shape
+                or hessian.device != param.data.device
+                or hessian.dtype != param.data.dtype
+            ):
+                self._hizoo_hessian_diag[name] = torch.ones_like(param.data)
+
+        learning_rate = float(self._get_learning_rate())
+        weight_decay = float(getattr(self.args, "weight_decay", 0.0))
+        hessian_smooth = float(self._hizoo_hessian_smooth())
+        self.latest_hizoo_hessian_smooth = hessian_smooth
+        random_seed = int(np.random.randint(2147483647))
+
+        with torch.no_grad():
+            loss0 = self.zo_forward(model, inputs)
+
+            torch.manual_seed(random_seed)
+            for name, param in self.named_parameters_to_optim:
+                z = torch.randn_like(param.data)
+                inv_sqrt_h = torch.rsqrt(torch.clamp(self._hizoo_hessian_diag[name], min=1e-12))
+                param.data.add_(inv_sqrt_h * z, alpha=self.args.zo_eps)
+            loss1 = self.zo_forward(model, inputs)
+
+            torch.manual_seed(random_seed)
+            for name, param in self.named_parameters_to_optim:
+                z = torch.randn_like(param.data)
+                inv_sqrt_h = torch.rsqrt(torch.clamp(self._hizoo_hessian_diag[name], min=1e-12))
+                param.data.add_(inv_sqrt_h * z, alpha=-2.0 * self.args.zo_eps)
+            loss2 = self.zo_forward(model, inputs)
+
+            torch.manual_seed(random_seed)
+            for name, param in self.named_parameters_to_optim:
+                z = torch.randn_like(param.data)
+                inv_sqrt_h = torch.rsqrt(torch.clamp(self._hizoo_hessian_diag[name], min=1e-12))
+                param.data.add_(inv_sqrt_h * z, alpha=self.args.zo_eps)
+
+            self.projected_grad = float(((loss1 - loss2) / (2 * self.args.zo_eps)).item())
+            curvature_scale = (
+                float(torch.abs(loss1.float() + loss2.float() - 2.0 * loss0.float()).item())
+                * hessian_smooth
+                / (2.0 * self.args.zo_eps * self.args.zo_eps)
+            )
+
+            torch.manual_seed(random_seed)
+            for name, param in self.named_parameters_to_optim:
+                z = torch.randn_like(param.data)
+                hessian = self._hizoo_hessian_diag[name]
+                if hessian_smooth > 0.0:
+                    estimator = hessian * (z * z)
+                    hessian.mul_(1.0 - hessian_smooth).add_(estimator, alpha=curvature_scale)
+                hessian.clamp_(min=1e-12)
+                grad = self.projected_grad * z * torch.rsqrt(hessian)
+                if weight_decay > 0.0 and self._zo_use_weight_decay(name):
+                    param.data.mul_(1.0 - learning_rate * weight_decay)
+                param.data.add_(grad.to(dtype=param.data.dtype), alpha=-learning_rate)
+
+        self.lr_scheduler.step()
+        return loss0
 
 
     def zo_perturb_parameters(self, random_seed=None, scaling_factor=1):

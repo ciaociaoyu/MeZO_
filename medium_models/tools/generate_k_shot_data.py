@@ -6,9 +6,11 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
+from datasets import load_dataset
 from pandas import DataFrame
 
 GLUE_STYLE_TASKS = {
+    "BoolQ",
     "MNLI",
     "MRPC",
     "QNLI",
@@ -22,6 +24,7 @@ GLUE_STYLE_TASKS = {
 }
 
 DEFAULT_TASKS = [
+    "BoolQ",
     "SST-2",
     "sst-5",
     "mr",
@@ -40,6 +43,7 @@ DEFAULT_TASKS = [
 ]
 
 TASK_NAME_CANONICAL = {
+    "boolq": "BoolQ",
     "cola": "CoLA",
     "mnli": "MNLI",
     "mnli-mm": "MNLI",
@@ -79,7 +83,7 @@ def get_label(task, line):
         line = line.strip().split('\t')
         if task == "CoLA":
             return line[1]
-        elif task in {"MNLI", "QNLI", "QQP", "RTE", "SNLI", "SST-2", "WNLI"}:
+        elif task in {"BoolQ", "MNLI", "QNLI", "QQP", "RTE", "SNLI", "SST-2", "WNLI"}:
             return line[-1]
         elif task == "MRPC":
             return line[0]
@@ -97,6 +101,28 @@ def required_original_files(task: str) -> List[str]:
     if task in GLUE_STYLE_TASKS:
         return ["train.tsv", "dev.tsv"]
     return ["train.csv", "test.csv"]
+
+
+def download_original_boolq_data(data_dir: str) -> str:
+    task_dir = os.path.join(data_dir, "BoolQ")
+    os.makedirs(task_dir, exist_ok=True)
+
+    dataset = load_dataset("google/boolq")
+    header = "idx\tpassage\tquestion\tlabel\n"
+
+    def _write_split(split_name: str, split) -> None:
+        out_path = os.path.join(task_dir, f"{split_name}.tsv")
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(header)
+            for idx, example in enumerate(split):
+                passage = str(example["passage"]).replace("\t", " ").replace("\n", " ").strip()
+                question = str(example["question"]).replace("\t", " ").replace("\n", " ").strip()
+                label = "1" if bool(example["answer"]) else "0"
+                f.write(f"{idx}\t{passage}\t{question}\t{label}\n")
+
+    _write_split("train", dataset["train"])
+    _write_split("dev", dataset["validation"])
+    return task_dir
 
 
 def required_materialized_files(task: str) -> List[str]:
@@ -168,7 +194,7 @@ def split_header(task, lines):
     task = canonicalize_task_name(task)
     if task in ["CoLA"]:
         return [], lines
-    elif task in ["MNLI", "MRPC", "QNLI", "QQP", "RTE", "SNLI", "SST-2", "STS-B", "WNLI"]:
+    elif task in ["BoolQ", "MNLI", "MRPC", "QNLI", "QQP", "RTE", "SNLI", "SST-2", "STS-B", "WNLI"]:
         return lines[0:1], lines[1:]
     else:
         raise ValueError("Unknown GLUE task.")

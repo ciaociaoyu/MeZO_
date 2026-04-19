@@ -20,6 +20,7 @@ set -u
 SCRATCH_ROOT="/scratch/jy03364/MeZO_"
 EXPERIMENT_ROOT="${SCRATCH_ROOT}/experiments/h_sweep_14h"
 MEDIUM_ROOT="${SCRATCH_ROOT}/medium_models"
+HSWEEP_HELPERS="${SCRATCH_ROOT}/experiments/h_sweep_helpers.sh"
 VARIANT="sparse_mezo16"
 QUZO_BITS=16
 SPARSE_RATIO=0.25
@@ -31,6 +32,7 @@ NAN_GUARD_LIMIT=1
 NAN_GUARD_EXIT_CODE=86
 
 cd "${EXPERIMENT_ROOT}"
+source "${HSWEEP_HELPERS}"
 source "${EXPERIMENT_ROOT}/h_values.sh"
 
 SEED=16
@@ -190,6 +192,14 @@ for H in "${H_VALUES[@]}"; do
   RUN_ERR="${LOG_DIR}/train.err"
   COMMAND_DESC="bash ${MEDIUM_ROOT}/mezo.sh --result_root ${RUN_ROOT} --job_name ${JOB_NAME} --dataset_mode full --zo_two_point_precision fp16 --zo_quantization_bits ${QUZO_BITS} --sparse_ratio ${SPARSE_RATIO} --sparse_mask_strategy ${SPARSE_MASK_STRATEGY} --sparse_scope ${SPARSE_SCOPE} --sparse_log_active_fraction ${SPARSE_LOG_ACTIVE_FRACTION} --zo_probe_every 200 --zo_probe_num_seeds 16 --zo_probe_log_csv True"
 
+  if hsweep_run_completed "${RUN_SUMMARY_PATH}" "${SUMMARY_FILE}" "${H}"; then
+    echo "[skip] ${VARIANT} ${MODEL_KEY} ${TASK_KEY} h=${H} already completed"
+    continue
+  fi
+
+  hsweep_drop_h_rows "${SUMMARY_FILE}" "${H}"
+  hsweep_drop_h_rows "${MANIFEST_FILE}" "${H}"
+  hsweep_cleanup_paths "${RUN_ROOT}" "${LOG_DIR}"
   mkdir -p "${RUN_ROOT}" "${LOG_DIR}"
 
   export TASK="${TASK_NAME}"

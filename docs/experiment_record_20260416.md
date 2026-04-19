@@ -2,6 +2,24 @@
 
 This file is a lightweight status snapshot of the main experiments currently active in this repository.
 
+## 0.0 Runtime Environments
+
+The current repository setup uses different conda environments for different model paths. This mapping is now treated as part of the experiment contract and should be preserved in future smoke tests, benchmarks, and Slurm launchers.
+
+| Model family | Code path | Conda env | Notes |
+|---|---|---|---|
+| RoBERTa-large and other medium models | `medium_models/` | `ciao` | This is the environment used by the medium-model trainer path and the current RoBERTa sweeps. |
+| OPT-family large models | `large_models/` | `mezo-env` | Used for `opt-1.3b` and other non-Mistral large-model runs. |
+| Mistral-7B | `large_models/` | `mezo-mistral` | Mistral uses a separate environment and should not be assumed to share the `mezo-env` stack. |
+
+Environment note:
+
+- `mezo-mistral` is intentionally separate from `mezo-env`.
+- The resumable method-speed matrix launcher at [run_zo_method_speed_matrix.py](/scratch/jy03364/MeZO_/experiments/speed_bench_h100/run_zo_method_speed_matrix.py) follows the same mapping:
+  - `roberta-large -> ciao`
+  - `opt-1.3b -> mezo-env`
+  - `mistral-7b -> mezo-mistral`
+
 ## 0. Pilot Matrix Status
 
 The table below reflects the current status of the pilot matrix as of `2026-04-17`.
@@ -59,6 +77,45 @@ The table below records the current hyperparameter settings for the main experim
 | OPT-1.3B | MeZO | SST-5 | INT4 | 8-value grid | `10000` steps | 16 | 1 | `1e-6` | `1000` | 10 | 200 | – | QuZO `int4` pilot, `num_epochs=5` |
 | OPT-1.3B | Sparse MeZO | MNLI | INT4 | 8-value grid | `10000` steps | 16 | 1 | `1e-6` | `1000` | 10 | 200 | 0.25 | QuZO `int4` pilot, `num_dev=0`, `num_epochs=1` |
 | OPT-1.3B | Sparse MeZO | SST-5 | INT4 | 8-value grid | `10000` steps | 16 | 1 | `1e-6` | `1000` | 10 | 200 | 0.25 | QuZO `int4` pilot, `num_epochs=5` |
+
+## 0.2 Final H100 Method-Speed Matrix Update
+
+As of `2026-04-18`, the dedicated H100 multi-method speed matrix has finished. This is separate from the still-pending Slurm `h-sweep` jobs listed later in this file.
+
+Matrix location:
+
+- Script: [run_zo_method_speed_matrix.py](/scratch/jy03364/MeZO_/experiments/speed_bench_h100/run_zo_method_speed_matrix.py)
+- Output root: [/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418](/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418)
+- Summary: [/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/summary.jsonl](/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/summary.jsonl)
+- Full write-up: [docs/sparse_mezo_h100_experiments.md](/scratch/jy03364/MeZO_/docs/sparse_mezo_h100_experiments.md)
+
+Final status:
+
+- `72` total cells
+- `66 completed + 6 unsupported`
+- The only unsupported cells are `roberta-large + {lozo,hizoo} + int8 + {MNLI,SST-5,BoolQ}`
+
+RoBERTa-large `int8` status:
+
+- Yes, the `roberta-large int8` speed matrix is finished for all currently supported cells.
+- Completed:
+  - `mezo + MNLI + int8`: `55.100 samples/sec`, `0.581 sec/step`
+  - `mezo + SST-5 + int8`: `55.358 samples/sec`, `0.578 sec/step`
+  - `mezo + BoolQ + int8`: `22.628 samples/sec`, `1.414 sec/step`
+  - `sparse_mezo + MNLI + int8`: `45.342 samples/sec`, `0.706 sec/step`
+  - `sparse_mezo + SST-5 + int8`: `45.754 samples/sec`, `0.699 sec/step`
+  - `sparse_mezo + BoolQ + int8`: `21.697 samples/sec`, `1.475 sec/step`
+- Unsupported rather than unfinished:
+  - `lozo + {MNLI,SST-5,BoolQ} + int8`
+  - `hizoo + {MNLI,SST-5,BoolQ} + int8`
+
+Precision semantics warning:
+
+- `roberta-large` uses the `medium_models` path, where matrix `int8` means QuZO `--zo_quantization int8`
+- `opt-1.3b` and `mistral-7b` use the `large_models` path, where matrix `int8` means `--load_int8 --zo_quantization_bits 32`
+- So the matrix-wide `int8` label is not one uniform implementation across all model families
+
+The rest of this file should be read as a historical experiment log for the main sweep jobs. The full speed-matrix tables and the final per-model throughput numbers now live in `docs/sparse_mezo_h100_experiments.md`, Section `8`.
 
 ## 1. Running / Pending Full H-Sweeps
 
@@ -336,3 +393,80 @@ Validation:
   - verified cached-threshold mask construction;
   - verified masked Gaussian sampling only produces nonzero values on active entries;
   - verified QuZO `u1/u2` remain zero on inactive entries under a sparse mask.
+
+## 8. LOZO / HiZOO / Sparse MeZO Integration Update
+
+Reference check:
+
+- LOZO paper: https://arxiv.org/abs/2410.07698
+- LOZO official repo: https://github.com/optsuite/LOZO
+- HiZOO paper: https://arxiv.org/abs/2402.15173
+- HiZOO official repo: https://github.com/Yanjun-Zhao/HiZOO
+- Sparse MeZO paper page: https://openreview.net/forum?id=Tjw0ACu3NL
+- Sparse MeZO official repo: https://github.com/NUS-HPC-AI-Lab/SparseMeZO
+
+Code changes:
+
+- Added an explicit `--zo_method` switch in both `medium_models/run.py` and `large_models/run.py`.
+- Supported method names:
+  - `mezo`
+  - `sparse_mezo`
+  - `lozo`
+  - `lozo_m`
+  - `hizoo`
+- Added method-specific args:
+  - `--lozo_rank`
+  - `--lozo_step_interval`
+  - `--lozo_beta1`
+  - `--hizoo_hessian_smooth_type`
+- Implemented LOZO in both trainer paths with the official low-rank perturbation/update structure:
+  - matrix parameters use rank-`r` directions `u v^T`;
+  - vector parameters fall back to dense Gaussian directions;
+  - optional `lozo_m` momentum path follows the official repository structure.
+- Implemented HiZOO in both trainer paths with diagonal-Hessian scaling:
+  - perturbations use `z / sqrt(H)` as in the paper/repo;
+  - Hessian diagonals are updated from the same three function values `f(theta)`, `f(theta + h d)`, `f(theta - h d)`.
+
+Runtime-oriented implementation notes:
+
+- LOZO updates use in-place `addmm_` instead of materializing dense `u @ v^T` tensors first.
+- HiZOO intentionally skips the extra post-update logging forward found in the official training code; the update itself still uses the same Hessian estimator, but the local implementation keeps the step at 3 forward passes instead of paying for a 4th bookkeeping pass.
+- Sparse MeZO speed measurements below use `--sparse_mask_refresh_steps 0` so the mask is frozen after the initial construction and does not re-run percentile selection during the 2-step smoke run.
+- The larger resumable multi-method speed matrix on H100 uses the same model-to-environment mapping listed in Section `0.0`.
+
+Medium-model smoke test:
+
+- Environment: `conda env = ciao`
+- Command family: `medium_models/mezo.sh`
+- Dataset/model: `SST-2`, `k=16`, `roberta-large`
+- Shared knobs:
+  - `STEP=2`
+  - `EVAL_STEP=1`
+  - `BS=1`
+  - `LR=1e-6`
+  - `EPS=1e-3`
+  - `USE_H=False`
+  - `ZERO_ORDER_USE_TRAINER_OPTIM=False`
+  - `EFFICIENT_ZERO_ORDER=False`
+  - `DATALOADER_SHUFFLE=False`
+
+Run summaries:
+
+| Method | Summary | Tail perf | Notes |
+| --- | --- | --- | --- |
+| MeZO | [run_summary.json](/scratch/jy03364/MeZO_/medium_models/result/smoke_mezo_base/seed0/run_summary.json) | `wallclock/step = 0.0753`, `samples/sec = 13.2879`, `max_gpu_memory_gb = 3.6459` | 2 forward passes / step |
+| LOZO | [run_summary.json](/scratch/jy03364/MeZO_/medium_models/result/smoke_lozo/seed0/run_summary.json) | `wallclock/step = 0.1039`, `samples/sec = 9.6223`, `max_gpu_memory_gb = 1.5717` | slower than MeZO here, but much lower peak memory |
+| HiZOO | [run_summary.json](/scratch/jy03364/MeZO_/medium_models/result/smoke_hizoo/seed0/run_summary.json) | `wallclock/step = 0.1223`, `samples/sec = 8.1792`, `max_gpu_memory_gb = 4.0293` | expected slowdown from 3 forward passes / step |
+| Sparse MeZO (`ratio=0.2`) | [run_summary.json](/scratch/jy03364/MeZO_/medium_models/result/smoke_sparse/seed0/run_summary.json) | `wallclock/step = 0.1004`, `samples/sec = 9.9573`, `max_gpu_memory_gb = 4.0274` | `active_fraction = 0.200077`, frozen mask |
+
+Relative slowdown vs dense MeZO on this smoke test:
+
+- LOZO: `1.381x` slower (`+28.67 ms/step`)
+- HiZOO: `1.625x` slower (`+47.01 ms/step`)
+- Sparse MeZO: `1.334x` slower (`+25.17 ms/step`)
+
+Interpretation:
+
+- HiZOO is slowest mainly because the method fundamentally needs one extra forward pass compared with MeZO.
+- LOZO is not faster than dense MeZO on this tiny `roberta-large + bs=1 + 2-step` smoke setting because low-rank updates still execute large GEMMs, while dense MeZO here benefits from very cheap elementwise Gaussian directions.
+- Sparse MeZO is still slower than dense MeZO in this local implementation even after the earlier mask-cache optimization, because the perturb/update path is still dense over the full parameter tensors and pays boolean-mask indexing overhead; the speedup claim in the paper depends on a more aggressively memory-optimized sparse path and larger-model settings.

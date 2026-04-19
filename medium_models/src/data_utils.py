@@ -9,6 +9,7 @@ from typing import List, Optional
 from tools.generate_k_shot_data import (
     TASK_NAME_CANONICAL,
     canonicalize_task_name,
+    download_original_boolq_data,
     is_materialized_split_complete,
     is_original_dataset_available,
     materialize_task_data,
@@ -19,6 +20,7 @@ DEFAULT_ORIGINAL_DATA_ROOT = "data/original"
 DATASET_MODE_CHOICES = {"auto", "fewshot", "full"}
 
 TASK_DIR_NAME_PREFERENCES = {
+    "boolq": ["BoolQ", "boolq"],
     "cola": ["CoLA", "cola"],
     "mnli": ["MNLI", "mnli"],
     "mnli-mm": ["MNLI", "mnli"],
@@ -146,6 +148,23 @@ def _ensure_original_data(
         return False
     if canonical_task != task_dir_name and is_original_dataset_available(str(original_data_root), canonical_task):
         return False
+
+    if canonical_task == "BoolQ":
+        logger.info(
+            "[data] Missing original dataset for task=%s under %s. Auto-downloading from Hugging Face datasets...",
+            task_dir_name,
+            original_data_root,
+        )
+        download_original_boolq_data(str(original_data_root))
+        available_after_download = is_original_dataset_available(str(original_data_root), task_dir_name) or (
+            canonical_task != task_dir_name and is_original_dataset_available(str(original_data_root), canonical_task)
+        )
+        if not available_after_download:
+            raise FileNotFoundError(
+                "Original BoolQ dataset is still incomplete after auto-download. "
+                f"task={task_dir_name}, canonical_task={canonical_task}, original_root={original_data_root}"
+            )
+        return True
 
     data_dir = project_root / "data"
     download_script = data_dir / "download_dataset.sh"

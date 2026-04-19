@@ -5,6 +5,7 @@ set -uo pipefail
 SCRATCH_ROOT="/scratch/jy03364/MeZO_"
 EXPERIMENT_ROOT="${SCRATCH_ROOT}/experiments/h_sweep_8h"
 MEDIUM_ROOT="${SCRATCH_ROOT}/medium_models"
+HSWEEP_HELPERS="${SCRATCH_ROOT}/experiments/h_sweep_helpers.sh"
 NAN_GUARD="${SCRATCH_ROOT}/experiments/h_sweep_14h/nan_guard.py"
 NAN_GUARD_LIMIT="${NAN_GUARD_LIMIT:-100}"
 NAN_GUARD_EXIT_CODE=86
@@ -45,6 +46,7 @@ SUMMARY_FILE="${EXPERIMENT_ROOT}/results/${VARIANT}/${MODEL_KEY}/${TASK_KEY}/sum
 MANIFEST_FILE="${EXPERIMENT_ROOT}/results/${VARIANT}/${MODEL_KEY}/${TASK_KEY}/manifest.jsonl"
 
 cd "${EXPERIMENT_ROOT}"
+source "${HSWEEP_HELPERS}"
 source "${EXPERIMENT_ROOT}/h_values.sh"
 if [[ -n "${H_VALUES_OVERRIDE:-}" ]]; then
   read -r -a H_VALUES <<< "${H_VALUES_OVERRIDE}"
@@ -181,6 +183,14 @@ for H in "${H_VALUES[@]}"; do
   RUN_LOG="${LOG_DIR}/train.log"
   RUN_ERR="${LOG_DIR}/train.err"
 
+  if hsweep_run_completed "${RUN_SUMMARY_PATH}" "${SUMMARY_FILE}" "${H}"; then
+    echo "[skip] ${VARIANT} ${MODEL_KEY} ${TASK_KEY} h=${H} already completed"
+    continue
+  fi
+
+  hsweep_drop_h_rows "${SUMMARY_FILE}" "${H}"
+  hsweep_drop_h_rows "${MANIFEST_FILE}" "${H}"
+  hsweep_cleanup_paths "${RUN_ROOT}" "${LOG_DIR}"
   mkdir -p "${RUN_ROOT}" "${LOG_DIR}"
 
   export TASK="${TASK_NAME}"

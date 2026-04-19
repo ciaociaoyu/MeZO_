@@ -77,6 +77,11 @@ echo "GPU数量: $NUM_GPU"
 
 TASK_EXTRA=""
 case $TASK in
+    BoolQ|boolq)
+        TEMPLATE=*cls**sent_0*_Question:*+sent_1*_Answer:*mask*.*sep+*
+        MAPPING="{'0':'No','1':'Yes'}"
+        TASK_EXTRA="--max_seq_length 512 --first_sent_limit 384 --other_sent_limit 64"
+        ;;
     SST-2|sst-2)
         TEMPLATE=*cls**sent_0*_It_was*mask*.*sep+*
         MAPPING="{'0':'terrible','1':'great'}"

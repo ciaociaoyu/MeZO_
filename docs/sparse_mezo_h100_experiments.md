@@ -1,6 +1,38 @@
 # Sparse MeZO H100 实验记录
 
-更新时间：`2026-04-14`
+更新时间：`2026-04-18`
+
+## 0. 环境映射与方法矩阵测速进度
+
+当前仓库的实验环境按模型族固定分配，后续跑 smoke test、speed benchmark、Slurm sweep 都应遵循这套映射：
+
+| 模型 | 代码路径 | conda 环境 | 备注 |
+|---|---|---|---|
+| `roberta-large` | `medium_models/` | `ciao` | 当前 medium-model 路径和 RoBERTa 相关实验都使用这个环境。 |
+| `opt-1.3b` 等非 Mistral 大模型 | `large_models/` | `mezo-env` | 当前 large-model 的 OPT 系实验使用这个环境。 |
+| `mistral-7b` | `large_models/` | `mezo-mistral` | Mistral 单独使用这个环境，不与 `mezo-env` 混用。 |
+
+与环境映射对应的可恢复测速脚本：
+
+- [run_zo_method_speed_matrix.py](/scratch/jy03364/MeZO_/experiments/speed_bench_h100/run_zo_method_speed_matrix.py)
+- 输出目录：
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418`
+- 汇总文件：
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/summary.jsonl`
+
+截至 `2026-04-18` 文档更新时，这个 H100 多方法测速矩阵已经跑完，当前最终快照如下：
+
+- 总格子数：`72`
+- 已完成：`66`
+- 不支持：`6`
+  - 唯一的不支持项是 `roberta-large + {lozo,hizoo} + int8 + {MNLI,SST-5,BoolQ}`
+- 当前矩阵里没有仍在运行/待完成的格子
+- 最终覆盖：
+  - `roberta-large`: `18 completed + 6 unsupported`
+  - `opt-1.3b`: `24 completed`
+  - `mistral-7b`: `24 completed`
+- `roberta-large + BoolQ` 已经补齐正式 `medium_models` 路径并纳入矩阵，不再是“不支持”
+- 当前 `squeue` 里还能看到的 `sparse` 任务属于正式 `h-sweep`，不是这份测速矩阵
 
 ## 1. 本轮代码改动对应的方法
 
@@ -256,10 +288,10 @@
 ### 7.1 路径与范围说明
 
 - 当前正式 `roberta-large` 训练路径是 `medium_models`
-- 该路径当前用于正式实验的任务是：
+- 这节记录的是最早一轮 `2026-04-14` 的基线测速，当时只先测了：
   - `MNLI`
   - `SST-5`
-- `BoolQ / SQuAD` 不属于当前 `roberta / medium_models` 这条正式训练路径，因此本轮没有为 `roberta-large` 额外发明一条新训练路径去测它们
+- 此后已经把 `BoolQ` 补进 `medium_models` 正式路径；最终的 `MeZO / Sparse MeZO / LOZO / HiZOO` 多方法矩阵见第 `8` 节
 
 ### 7.2 测试参数确认
 
@@ -326,6 +358,115 @@
   - `MNLI`: `8.00x`
   - `SST-5`: `7.50x`
 - 所以当前仓库下，无论 `opt-1.3b` 还是 `roberta-large`，训练吞吐都仍然是 `fp16` 更占优
+
+## 8. H100 多方法最终测速矩阵
+
+结果位置：
+
+- 运行脚本：
+  - [run_zo_method_speed_matrix.py](/scratch/jy03364/MeZO_/experiments/speed_bench_h100/run_zo_method_speed_matrix.py)
+- 输出目录：
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418`
+- 汇总文件：
+  - `/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/summary.jsonl`
+
+矩阵定义：
+
+- 方法：`MeZO`, `Sparse MeZO`, `LOZO`, `HiZOO`
+- 模型：`roberta-large`, `opt-1.3b`, `mistral-7b`
+- 任务：`MNLI`, `SST-5`, `BoolQ`
+- 精度标签：`fp16`, `int8`
+
+重要语义说明：
+
+- `roberta-large` 走 `medium_models` 路径：
+  - `fp16` = `--zo_two_point_precision fp16 --zo_quantization_bits 16`
+  - `int8` = QuZO `--zo_quantization int8`
+- `opt-1.3b` 和 `mistral-7b` 走 `large_models` 路径：
+  - `fp16` = `--load_float16`，其中 `mezo/sparse_mezo` 额外带 `--zo_quantization_bits 16`
+  - 这份矩阵里的 `int8` = `--load_int8 --zo_quantization_bits 32`
+- 也就是说，大模型矩阵里的 `int8` 是“加载为 int8”，不是 QuZO 低比特扰动/更新；它和 `roberta-large` 的 QuZO `int8` 不是同一种语义，横向比较时需要单独说明
+
+最终状态：
+
+- `72` 个格子里，`66 completed + 6 unsupported`
+- `6` 个不支持全部来自 `roberta-large + {lozo,hizoo} + int8`
+- 原因不是测速中断，而是当前实现明确没有把 `LOZO / HiZOO` 接到 `medium_models` 的 QuZO `int8` 扰动路径上
+- `roberta-large` 的 `BoolQ` 正式路径已经补齐，因此当前矩阵里：
+  - `roberta-large + BoolQ + {mezo,sparse_mezo,lozo,hizoo} + fp16` 全部完成
+  - `roberta-large + BoolQ + {mezo,sparse_mezo} + int8` 也已完成
+
+速度解读摘要：
+
+- `roberta-large` 上，`Sparse MeZO` 比 `MeZO` 慢，但量级还是同一档：
+  - `MNLI fp16`: `2.96x` slower
+  - `SST-5 fp16`: `3.20x` slower
+  - `BoolQ fp16`: `2.30x` slower
+- `opt-1.3b` 和 `mistral-7b` 上，当前 large-model `Sparse MeZO` 实现显著更慢：
+  - `opt-1.3b`: 大约 `18.96x` 到 `30.20x` 慢于对应 `MeZO fp16`
+  - `mistral-7b`: 大约 `14.12x` 到 `46.13x` 慢于对应 `MeZO fp16`
+- 这和前面分析一致：当前 large-model `Sparse MeZO` 还是旧的 dense + mask 路径，没有达到论文/官方仓库那种更激进的稀疏执行收益
+
+### 8.1 `roberta-large`
+
+| task | method | fp16 samples/sec | fp16 sec/step | int8 samples/sec | int8 sec/step | note |
+|---|---|---:|---:|---:|---:|---|
+| MNLI | mezo | 508.972 | 0.063 | 55.100 | 0.581 |  |
+| MNLI | sparse_mezo | 171.801 | 0.186 | 45.342 | 0.706 |  |
+| MNLI | lozo | 282.549 | 0.113 | unsupported | unsupported | unsupported |
+| MNLI | hizoo | 177.368 | 0.180 | unsupported | unsupported | unsupported |
+| SST-5 | mezo | 588.180 | 0.054 | 55.358 | 0.578 |  |
+| SST-5 | sparse_mezo | 184.020 | 0.174 | 45.754 | 0.699 |  |
+| SST-5 | lozo | 353.764 | 0.090 | unsupported | unsupported | unsupported |
+| SST-5 | hizoo | 238.266 | 0.134 | unsupported | unsupported | unsupported |
+| BoolQ | mezo | 171.657 | 0.186 | 22.628 | 1.414 |  |
+| BoolQ | sparse_mezo | 74.567 | 0.429 | 21.697 | 1.475 |  |
+| BoolQ | lozo | 69.843 | 0.458 | unsupported | unsupported | unsupported |
+| BoolQ | hizoo | 45.123 | 0.709 | unsupported | unsupported | unsupported |
+
+`roberta-large int8` 当前状态结论：
+
+- 已跑完所有当前实现“支持”的格子
+- 已完成的是：
+  - `mezo + {MNLI,SST-5,BoolQ} + int8`
+  - `sparse_mezo + {MNLI,SST-5,BoolQ} + int8`
+- 未完成的不是卡住，而是当前实现明确不支持：
+  - `lozo + {MNLI,SST-5,BoolQ} + int8`
+  - `hizoo + {MNLI,SST-5,BoolQ} + int8`
+
+### 8.2 `opt-1.3b`
+
+| task | method | fp16 samples/sec | fp16 sec/step | int8 samples/sec | int8 sec/step | note |
+|---|---|---:|---:|---:|---:|---|
+| MNLI | mezo | 180.961 | 0.088 | 42.263 | 0.379 |  |
+| MNLI | sparse_mezo | 7.201 | 2.222 | 3.256 | 4.915 |  |
+| MNLI | lozo | 221.612 | 0.072 | 46.553 | 0.344 |  |
+| MNLI | hizoo | 142.566 | 0.112 | 29.884 | 0.535 |  |
+| SST-5 | mezo | 218.605 | 0.073 | 56.297 | 0.284 |  |
+| SST-5 | sparse_mezo | 7.239 | 2.210 | 3.310 | 4.834 |  |
+| SST-5 | lozo | 316.942 | 0.050 | 63.654 | 0.251 |  |
+| SST-5 | hizoo | 192.834 | 0.083 | 40.920 | 0.391 |  |
+| BoolQ | mezo | 113.712 | 0.141 | 24.446 | 0.655 |  |
+| BoolQ | sparse_mezo | 5.997 | 2.668 | 3.072 | 5.209 |  |
+| BoolQ | lozo | 135.139 | 0.118 | 25.916 | 0.617 |  |
+| BoolQ | hizoo | 88.523 | 0.181 | 16.893 | 0.947 |  |
+
+### 8.3 `mistral-7b`
+
+| task | method | fp16 samples/sec | fp16 sec/step | int8 samples/sec | int8 sec/step | note |
+|---|---|---:|---:|---:|---:|---|
+| MNLI | mezo | 44.190 | 0.362 | 8.394 | 1.906 |  |
+| MNLI | sparse_mezo | 1.178 | 13.577 | 0.561 | 28.529 |  |
+| MNLI | lozo | 61.473 | 0.260 | 9.233 | 1.733 |  |
+| MNLI | hizoo | 35.588 | 0.450 | 5.910 | 2.707 |  |
+| SST-5 | mezo | 56.054 | 0.285 | 12.373 | 1.293 |  |
+| SST-5 | sparse_mezo | 1.215 | 13.167 | 0.563 | 28.426 |  |
+| SST-5 | lozo | 89.184 | 0.179 | 14.344 | 1.115 |  |
+| SST-5 | hizoo | 45.613 | 0.351 | 8.809 | 1.816 |  |
+| BoolQ | mezo | 16.667 | 0.960 | 4.433 | 3.610 |  |
+| BoolQ | sparse_mezo | 1.180 | 13.555 | 0.527 | 30.351 |  |
+| BoolQ | lozo | 31.739 | 0.504 | 4.678 | 3.420 |  |
+| BoolQ | hizoo | 20.830 | 0.768 | 3.058 | 5.233 |  |
 
 ## 8. 当前使用的 14 个 h 值
 

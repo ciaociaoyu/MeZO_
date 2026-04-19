@@ -194,6 +194,9 @@ def detect_precision_label(args) -> str:
 def infer_large_run_zo_method(args) -> str:
     trainer_name = str(getattr(args, "trainer", "none") or "none").lower()
     if trainer_name == "zo":
+        zo_method = str(getattr(args, "zo_method", "") or "").strip().lower()
+        if zo_method:
+            return zo_method
         if sparse_mezo_enabled(getattr(args, "sparse_ratio", 1.0)):
             return "sparse_mezo"
         return "mezo"
@@ -204,6 +207,29 @@ def infer_large_run_zo_method(args) -> str:
     if trainer_name == "none":
         return "inference"
     return trainer_name
+
+
+def normalize_zo_method_name(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    normalized = str(value).strip().lower()
+    if normalized in {"", "none", "auto"}:
+        return None
+    aliases = {
+        "vanilla": "mezo",
+        "s-mezo": "sparse_mezo",
+        "sparse": "sparse_mezo",
+        "sparse-mezo": "sparse_mezo",
+        "sparse_mezo": "sparse_mezo",
+        "lozo-m": "lozo_m",
+        "lozom": "lozo_m",
+        "hessian": "hizoo",
+    }
+    normalized = aliases.get(normalized, normalized)
+    allowed = {"mezo", "sparse_mezo", "lozo", "lozo_m", "hizoo"}
+    if normalized not in allowed:
+        raise ValueError(f"Unsupported --zo_method={value!r}. Expected one of {sorted(allowed)}.")
+    return normalized
 
 
 def get_single_gpu_int8_device_map(model_family: str, device_index: int = 0):
@@ -331,6 +357,7 @@ class OurArguments(TrainingArguments):
 
     # MeZO
     zo_eps: float = 1e-3 # eps in MeZO
+    zo_method: Optional[str] = None # explicit ZO method switch: mezo / sparse_mezo / lozo / lozo_m / hizoo
     zo_quantization_bits: int = 32 # ZO-side method switch: 32 -> plain MeZO, 16 -> repo's FP16 MeZO convention, 8/4 -> QuZO perturb/update path
     zo_quantization: Optional[str] = None # string alias for the same ZO-side method switch: fp32/off/none -> plain MeZO, fp16 -> FP16 MeZO path, int8/int4 -> QuZO low-bit path
     sparse_ratio: float = field(
@@ -368,6 +395,10 @@ class OurArguments(TrainingArguments):
             "help": "Number of final optimizer steps used for the one-shot tail performance snapshot when --measure_perf_tail is enabled."
         },
     )
+    lozo_rank: int = 2 # rank r in LOZO
+    lozo_step_interval: int = 50 # nu in LOZO
+    lozo_beta1: float = 0.9 # beta1 for optional LOZO-M momentum path
+    hizoo_hessian_smooth_type: str = "constant0" # HiZOO diagonal Hessian smoothing schedule
 
     # Prefix tuning
     prefix_tuning: bool = False # whether to use prefix tuning
@@ -421,9 +452,23 @@ def parse_args():
         args.zo_quantization_bits = validate_quzo_bits(zo_quantization_alias)
     else:
         args.zo_quantization_bits = validate_quzo_bits(getattr(args, "zo_quantization_bits", 32))
+    args.zo_method = normalize_zo_method_name(getattr(args, "zo_method", None))
     args.sparse_ratio = validate_sparse_ratio(getattr(args, "sparse_ratio", 1.0))
     args.sparse_mask_strategy = normalize_sparse_mask_strategy(getattr(args, "sparse_mask_strategy", "percentile_per_layer"))
     args.sparse_scope = normalize_sparse_scope(getattr(args, "sparse_scope", "trainable_only"))
+    if int(getattr(args, "lozo_rank", 2)) <= 0:
+        raise ValueError("--lozo_rank must be > 0")
+    if int(getattr(args, "lozo_step_interval", 50)) <= 0:
+        raise ValueError("--lozo_step_interval must be > 0")
+    if not (0.0 <= float(getattr(args, "lozo_beta1", 0.9)) < 1.0):
+        raise ValueError("--lozo_beta1 must satisfy 0 <= beta1 < 1")
+    if getattr(args, "zo_method", None) == "sparse_mezo" and (not sparse_mezo_enabled(getattr(args, "sparse_ratio", 1.0))):
+        raise ValueError("--zo_method=sparse_mezo requires --sparse_ratio < 1.0")
+    if getattr(args, "zo_method", None) in {"lozo", "lozo_m", "hizoo"}:
+        if sparse_mezo_enabled(getattr(args, "sparse_ratio", 1.0)):
+            raise ValueError(f"--zo_method={args.zo_method} is incompatible with --sparse_ratio < 1.0")
+        if quzo_enabled(getattr(args, "zo_quantization_bits", 32)):
+            raise ValueError(f"--zo_method={args.zo_method} is incompatible with QuZO low-bit perturbations")
     if int(getattr(args, "zo_probe_num_seeds", 16)) <= 0:
         raise ValueError("--zo_probe_num_seeds must be > 0")
     if int(getattr(args, "zo_probe_every", 0)) < 0:

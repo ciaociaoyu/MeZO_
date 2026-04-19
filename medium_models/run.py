@@ -185,6 +185,9 @@ def maybe_convert_model_to_torchao_float8_training(model, enabled: bool):
 
 def infer_medium_run_zo_method(training_args) -> str:
     if bool(getattr(training_args, "zero_order_optim", False)):
+        zo_method = str(getattr(training_args, "zo_method", "") or "").strip().lower()
+        if zo_method:
+            return zo_method
         if sparse_mezo_enabled(getattr(training_args, "sparse_ratio", 1.0)):
             return "sparse_mezo"
         if bool(getattr(training_args, "zo_by_layer", False)):
@@ -206,6 +209,29 @@ def infer_medium_run_zo_method(training_args) -> str:
         return "mezo"
     trainer_name = str(getattr(training_args, "trainer", "standard") or "standard").lower()
     return trainer_name
+
+
+def normalize_zo_method_name(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    normalized = str(value).strip().lower()
+    if normalized in {"", "none", "auto"}:
+        return None
+    aliases = {
+        "vanilla": "mezo",
+        "s-mezo": "sparse_mezo",
+        "sparse": "sparse_mezo",
+        "sparse-mezo": "sparse_mezo",
+        "sparse_mezo": "sparse_mezo",
+        "lozo-m": "lozo_m",
+        "lozom": "lozo_m",
+        "hessian": "hizoo",
+    }
+    normalized = aliases.get(normalized, normalized)
+    allowed = {"mezo", "sparse_mezo", "lozo", "lozo_m", "hizoo"}
+    if normalized not in allowed:
+        raise ValueError(f"Unsupported --zo_method={value!r}. Expected one of {sorted(allowed)}.")
+    return normalized
 
 
 @dataclass
@@ -594,6 +620,12 @@ class DynamicTrainingArguments(TrainingArguments):
         default=False,
         metadata={'help': 'when on, trains the model by zero-order optimization'}
     )
+    zo_method: Optional[str] = field(
+        default=None,
+        metadata={
+            'help': 'Explicit zero-order method switch. Supported values: mezo, sparse_mezo, lozo, lozo_m, hizoo. When unset, medium_models keeps the existing auto-inference from sparse_ratio / zo_variant / efficient_zero_order.'
+        }
+    )
     zero_order_eps: float = field(
         default=1e-3,
         metadata={'help': 'eps for zero order optim'}
@@ -647,6 +679,22 @@ class DynamicTrainingArguments(TrainingArguments):
         metadata={
             "help": "Sparse MeZO mask refresh cadence. 0 freezes the initial mask for the full run, 1 refreshes every optimizer step, and N>1 refreshes every N steps."
         }
+    )
+    lozo_rank: int = field(
+        default=2,
+        metadata={"help": "LOZO low-rank factor rank r."}
+    )
+    lozo_step_interval: int = field(
+        default=50,
+        metadata={"help": "LOZO step interval nu for refreshing the right low-rank factor."}
+    )
+    lozo_beta1: float = field(
+        default=0.9,
+        metadata={"help": "LOZO-M momentum coefficient beta1."}
+    )
+    hizoo_hessian_smooth_type: str = field(
+        default="constant0",
+        metadata={"help": "HiZOO diagonal-Hessian smoothing schedule. Examples: constant0, constant1e-8, constant1e-6."}
     )
     use_torchao_float8: bool = field(
         default=False,
@@ -1046,12 +1094,26 @@ def main():
         training_args.zo_quantization_bits = validate_quzo_bits(zo_quantization_alias)
     else:
         training_args.zo_quantization_bits = validate_quzo_bits(getattr(training_args, "zo_quantization_bits", 32))
+    training_args.zo_method = normalize_zo_method_name(getattr(training_args, "zo_method", None))
     training_args.sparse_ratio = validate_sparse_ratio(getattr(training_args, "sparse_ratio", 1.0))
     training_args.sparse_mask_strategy = normalize_sparse_mask_strategy(getattr(training_args, "sparse_mask_strategy", "percentile_per_layer"))
     training_args.sparse_scope = normalize_sparse_scope(getattr(training_args, "sparse_scope", "trainable_only"))
     training_args.sparse_mask_refresh_steps = int(getattr(training_args, "sparse_mask_refresh_steps", 100))
     if training_args.sparse_mask_refresh_steps < 0:
         raise ValueError("--sparse_mask_refresh_steps must be >= 0")
+    if int(getattr(training_args, "lozo_rank", 2)) <= 0:
+        raise ValueError("--lozo_rank must be > 0")
+    if int(getattr(training_args, "lozo_step_interval", 50)) <= 0:
+        raise ValueError("--lozo_step_interval must be > 0")
+    if not (0.0 <= float(getattr(training_args, "lozo_beta1", 0.9)) < 1.0):
+        raise ValueError("--lozo_beta1 must satisfy 0 <= beta1 < 1")
+    if getattr(training_args, "zo_method", None) == "sparse_mezo" and (not sparse_mezo_enabled(getattr(training_args, "sparse_ratio", 1.0))):
+        raise ValueError("--zo_method=sparse_mezo requires --sparse_ratio < 1.0")
+    if getattr(training_args, "zo_method", None) in {"lozo", "lozo_m", "hizoo"}:
+        if sparse_mezo_enabled(getattr(training_args, "sparse_ratio", 1.0)):
+            raise ValueError(f"--zo_method={training_args.zo_method} is incompatible with --sparse_ratio < 1.0")
+        if quzo_enabled(getattr(training_args, "zo_quantization_bits", 32)):
+            raise ValueError(f"--zo_method={training_args.zo_method} is incompatible with QuZO low-bit perturbations")
     if int(getattr(training_args, "measure_perf_tail_window_steps", 10)) <= 0:
         raise ValueError("--measure_perf_tail_window_steps must be > 0")
     if int(getattr(training_args, "zo_probe_num_seeds", 16)) <= 0:

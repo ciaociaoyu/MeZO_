@@ -30,8 +30,6 @@ USE_H=${USE_H:-"True"}
 USE_C=${USE_C:-"False"}
 DATALOADER_SHUFFLE=${DATALOADER_SHUFFLE:-"False"}
 
-LOGITS=$(jq -n '{"SNLI": 3, "MNLI": 3, "trec": 6, "sst-5": 5}["'$TASK'"] // 2')
-
 echo "TASK: $TASK"
 echo "K: $K"
 echo "Seed: $SEED"

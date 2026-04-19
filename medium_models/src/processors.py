@@ -232,6 +232,42 @@ class Sst2Processor(DataProcessor):
         return examples
 
 
+class BoolQProcessor(DataProcessor):
+    """Processor for the BoolQ dataset."""
+
+    def get_example_from_tensor_dict(self, tensor_dict):
+        return InputExample(
+            tensor_dict["idx"].numpy(),
+            tensor_dict["passage"].numpy().decode("utf-8"),
+            tensor_dict["question"].numpy().decode("utf-8"),
+            str(tensor_dict["label"].numpy()),
+        )
+
+    def get_train_examples(self, data_dir):
+        return self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+
+    def get_dev_examples(self, data_dir):
+        return self._create_examples(self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+
+    def get_test_examples(self, data_dir):
+        return self._create_examples(self._read_tsv(os.path.join(data_dir, "test.tsv")), "test")
+
+    def get_labels(self):
+        return ["0", "1"]
+
+    def _create_examples(self, lines, set_type):
+        examples = []
+        for (i, line) in enumerate(lines):
+            if i == 0:
+                continue
+            guid = "%s-%s" % (set_type, line[0])
+            text_a = line[1]
+            text_b = line[2]
+            label = line[3]
+            examples.append(InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+        return examples
+
+
 class StsbProcessor(DataProcessor):
     """Processor for the STS-B data set (GLUE version)."""
 
@@ -522,6 +558,7 @@ def text_classification_metrics(task_name, preds, labels):
 # Add your task to the following mappings
 
 processors_mapping = {
+    "boolq": BoolQProcessor(),
     "cola": ColaProcessor(),
     "mnli": MnliProcessor(),
     "mnli-mm": MnliMismatchedProcessor(),
@@ -543,6 +580,7 @@ processors_mapping = {
 }
 
 num_labels_mapping = {
+    "boolq": 2,
     "cola": 2,
     "mnli": 3,
     "mrpc": 2,
@@ -563,6 +601,7 @@ num_labels_mapping = {
 }
 
 output_modes_mapping = {
+    "boolq": "classification",
     "cola": "classification",
     "mnli": "classification",
     "mnli-mm": "classification",
@@ -585,6 +624,7 @@ output_modes_mapping = {
 
 # Return a function that takes (task_name, preds, labels) as inputs
 compute_metrics_mapping = {
+    "boolq": text_classification_metrics,
     "cola": glue_compute_metrics,
     "mnli": glue_compute_metrics,
     "mnli-mm": glue_compute_metrics,
