@@ -1,0 +1,15 @@
+8h mezo_int8 roberta-large loss report
+
+result_root: /Users/jichaoyu/Documents/GitHub/MeZO/experiments/pilot/mezo/roberta-large / <task> / int8 / h_sweep_8h / results
+
+Notes:
+- This report only covers local 8h results under experiments/pilot/mezo/roberta-large/<task>/int8/h_sweep_8h/results.
+- All current zo_directional_probe.csv files are header-only, so MSE is unavailable in this workspace.
+
+SST-5: 8 points
+- best dev loss: h=3e-3 loss=1.605387
+- best test loss: h=1e-6 loss=1.609437
+
+MNLI: 8 points
+- best dev loss: h=3e-5 loss=1.427724
+- best test loss: h=3e-5 loss=1.466887

@@ -431,6 +431,29 @@
 | mistral-7b | SST-5 | lozo | 14.344 | 1.115 |
 | mistral-7b | BoolQ | lozo | 4.678 | 3.420 |
 
+按上面“每个 `model + task + precision` 的最快方法”继续折算到 `10,000 step`：
+
+| model | task | fastest method | precision | sec/step | estimated seconds for 10k steps | estimated time for 10k steps |
+|---|---|---|---|---:|---:|---|
+| roberta-large | MNLI | mezo | fp16 | 0.063 | 630.0 | 0h10m30.0s |
+| roberta-large | SST-5 | mezo | fp16 | 0.054 | 540.0 | 0h09m00.0s |
+| roberta-large | BoolQ | mezo | fp16 | 0.186 | 1860.0 | 0h31m00.0s |
+| opt-1.3b | MNLI | lozo | fp16 | 0.072 | 720.0 | 0h12m00.0s |
+| opt-1.3b | SST-5 | lozo | fp16 | 0.050 | 500.0 | 0h08m20.0s |
+| opt-1.3b | BoolQ | lozo | fp16 | 0.118 | 1180.0 | 0h19m40.0s |
+| mistral-7b | MNLI | lozo | fp16 | 0.260 | 2600.0 | 0h43m20.0s |
+| mistral-7b | SST-5 | lozo | fp16 | 0.179 | 1790.0 | 0h29m50.0s |
+| mistral-7b | BoolQ | lozo | fp16 | 0.504 | 5040.0 | 1h24m00.0s |
+| roberta-large | MNLI | mezo | int8 | 0.581 | 5810.0 | 1h36m50.0s |
+| roberta-large | SST-5 | mezo | int8 | 0.578 | 5780.0 | 1h36m20.0s |
+| roberta-large | BoolQ | mezo | int8 | 1.414 | 14140.0 | 3h55m40.0s |
+| opt-1.3b | MNLI | lozo | int8 | 0.344 | 3440.0 | 0h57m20.0s |
+| opt-1.3b | SST-5 | lozo | int8 | 0.251 | 2510.0 | 0h41m50.0s |
+| opt-1.3b | BoolQ | lozo | int8 | 0.617 | 6170.0 | 1h42m50.0s |
+| mistral-7b | MNLI | lozo | int8 | 1.733 | 17330.0 | 4h48m50.0s |
+| mistral-7b | SST-5 | lozo | int8 | 1.115 | 11150.0 | 3h05m50.0s |
+| mistral-7b | BoolQ | lozo | int8 | 3.420 | 34200.0 | 9h30m00.0s |
+
 完整 `completed` 明细表：
 
 | model | task | method | precision | samples/sec | sec/step |

@@ -1,0 +1,27 @@
+8h mezo_int8 train-loss stability report
+
+result_root: /Users/jichaoyu/Documents/GitHub/MeZO/experiments/pilot/mezo/roberta-large / <task> / int8 / h_sweep_8h / results
+
+Notes:
+- Each metrics CSV repeats every global_step 10 times. The plots deduplicate to one point per step before drawing.
+- The rolling mean uses a 25-point window, which corresponds to roughly 250 training steps.
+
+SST-5
+- h=1e-6: final=1.6094, min=1.4302, max=60.6729, tail_mean=1.6094, tail_std=0.0000
+- h=3e-6: final=1.6094, min=1.5081, max=124.8770, tail_mean=1.6094, tail_std=0.0000
+- h=1e-5: final=1.6094, min=1.4700, max=69.1475, tail_mean=1.6094, tail_std=0.0000
+- h=3e-5: final=19.8781, min=1.4686, max=34.6187, tail_mean=13.0857, tail_std=4.5942
+- h=1e-4: final=14.2832, min=1.3677, max=25.1313, tail_mean=14.1707, tail_std=4.5089
+- h=3e-4: final=20.9219, min=1.3097, max=33.9521, tail_mean=15.6335, tail_std=6.8750
+- h=1e-3: final=1.6110, min=1.5460, max=54.1463, tail_mean=1.6109, tail_std=0.0012
+- h=3e-3: final=1.5740, min=1.4612, max=63.6592, tail_mean=1.6075, tail_std=0.0532
+
+MNLI
+- h=1e-6: final=1.0986, min=1.0980, max=75.7090, tail_mean=1.0986, tail_std=0.0000
+- h=3e-6: final=1.0986, min=1.0792, max=61.6396, tail_mean=1.0986, tail_std=0.0000
+- h=1e-5: final=1.0986, min=1.0546, max=52.2471, tail_mean=6.2395, tail_std=11.3209
+- h=3e-5: final=12.9460, min=1.0120, max=27.0464, tail_mean=13.9470, tail_std=4.0749
+- h=1e-4: final=5.2750, min=0.9753, max=17.3760, tail_mean=8.4723, tail_std=3.0215
+- h=3e-4: final=6.1754, min=0.9938, max=23.0723, tail_mean=10.9193, tail_std=3.8168
+- h=1e-3: final=1.0971, min=1.0838, max=64.3613, tail_mean=1.0986, tail_std=0.0009
+- h=3e-3: final=1.6159, min=1.0461, max=32.3506, tail_mean=1.3141, tail_std=0.1767

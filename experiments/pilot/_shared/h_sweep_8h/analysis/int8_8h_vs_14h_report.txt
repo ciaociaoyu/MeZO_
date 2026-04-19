@@ -1,0 +1,23 @@
+INT8 sweep comparison report
+
+8h mezo_int8 root: /Users/jichaoyu/Documents/GitHub/MeZO/experiments/pilot/mezo
+14h quzo8 root: /Users/jichaoyu/Documents/GitHub/MeZO/experiments/smoke/mezo
+
+plot_png: /Users/jichaoyu/Documents/GitHub/MeZO/experiments/pilot/_shared/h_sweep_8h/analysis/int8_8h_vs_14h_loss_mse.png
+summary_csv: /Users/jichaoyu/Documents/GitHub/MeZO/experiments/pilot/_shared/h_sweep_8h/analysis/int8_8h_vs_14h_summary.csv
+
+8h mezo_int8 roberta-large/sst5: points=8, valid_loss=8, valid_mse=0
+14h quzo8 roberta-large/sst5: points=0, valid_loss=0, valid_mse=0
+8h mezo_int8 roberta-large/mnli: points=8, valid_loss=8, valid_mse=0
+14h quzo8 roberta-large/mnli: points=0, valid_loss=0, valid_mse=0
+8h mezo_int8 opt-1.3b/sst5: points=8, valid_loss=8, valid_mse=0
+14h quzo8 opt-1.3b/sst5: points=0, valid_loss=0, valid_mse=0
+8h mezo_int8 opt-1.3b/mnli: points=7, valid_loss=7, valid_mse=0
+14h quzo8 opt-1.3b/mnli: points=0, valid_loss=0, valid_mse=0
+
+Notes:
+- Current script prefers the reorganized pilot/smoke layout and falls back to the legacy h_sweep directories when needed.
+- The comparison is still labeled as 8h `mezo_int8` vs 14h `quzo8` to preserve the original analysis naming.
+- Loss is read from the final available eval point in `metrics*.csv`.
+- MSE is read from the last row of `zo_directional_probe.csv`.
+- If an 8h result root is missing in the current workspace, the plot will only show the 14h side.

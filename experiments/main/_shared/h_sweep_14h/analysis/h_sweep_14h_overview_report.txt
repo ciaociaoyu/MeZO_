@@ -1,0 +1,29 @@
+14h sweep analysis report
+
+quzo8 roots: /Users/jichaoyu/Documents/GitHub/MeZO/experiments/h_sweep_14h/results/quzo8/<model>/<task>, /Users/jichaoyu/Documents/GitHub/MeZO/experiments/smoke/mezo/<model>/<task>/int8/h_sweep_14h/results, /Users/jichaoyu/Documents/GitHub/MeZO/experiments/smoke/mezo/<model>/<task>/int8/h_sweep_14h/smoke/<task>/results
+quzo16 roots: /Users/jichaoyu/Documents/GitHub/MeZO/experiments/main/mezo/<model>/<task>/fp16/h_sweep_14h/results, /Users/jichaoyu/Documents/GitHub/MeZO/experiments/h_sweep_14h/results/quzo16/<model>/<task>
+
+RoBERTa-large / SST-5
+- quzo8: no local records
+- quzo16: points=14, valid_loss=10, valid_mse=12, completed=9, skipped_nan_guard=5
+  best loss at h=3e-5: eval_loss=1.073242, status=completed
+  best mse at h=3e-2: mse=81.577032, status=completed
+
+RoBERTa-large / MNLI
+- quzo8: points=1, valid_loss=1, valid_mse=0, unknown=1
+  best loss at h=1e-8: eval_loss=1.183318, status=unknown
+- quzo16: points=14, valid_loss=10, valid_mse=12, completed=9, skipped_nan_guard=5
+  best loss at h=1e-4: eval_loss=0.741211, status=completed
+  best mse at h=3e-2: mse=156.741729, status=completed
+
+OPT-1.3B / SST-5
+- quzo8: points=1, valid_loss=0, valid_mse=0, unknown=1
+- quzo16: points=14, valid_loss=9, valid_mse=10, completed=14
+  best loss at h=1e-3: eval_loss=1.176758, status=completed
+  best mse at h=1e-4: mse=137.631214, status=completed
+
+OPT-1.3B / MNLI
+- quzo8: no local records
+- quzo16: points=13, valid_loss=8, valid_mse=9, completed=12, unknown=1
+  best loss at h=1e-2: eval_loss=1.099609, status=unknown
+  best mse at h=3e-4: mse=59.366029, status=completed
