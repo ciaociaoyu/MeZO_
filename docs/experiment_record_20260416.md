@@ -20,6 +20,52 @@ Environment note:
   - `opt-1.3b -> mezo-env`
   - `mistral-7b -> mezo-mistral`
 
+## 0.0.1 Medium-Model Directional Probe Consistency Fix
+
+As of `2026-04-19`, the `medium_models` directional probe path has been patched so that finite difference (FD) and true directional derivative (TD) compare the same direction `z` for each probe seed.
+
+Root cause:
+
+- In `medium_models/src/trainer.py`, the `efficient_zero_order=True` probe path used `seed` for FD perturbations, but `zo_true_directional_derivative(...)` could resample a fresh sparse noise direction instead of reusing the exact FD direction.
+- On the `fp16` two-point path (`--zo_quantization_bits 16 --zo_two_point_precision fp16`), FD also compares against the effective quantized perturbation direction `quantize(hz) / h`, while TD previously used the raw pre-quantization `z`.
+- This created probe rows where `corr` collapsed toward `0` and `sign_acc` drifted toward `0.5`, even when the underlying perturbation direction logic itself was not the training bottleneck.
+
+Code changes:
+
+- Added small internal helpers in [medium_models/src/trainer.py](/scratch/jy03364/MeZO_/medium_models/src/trainer.py):
+  - `_zo_reset_random_seed(...)`
+  - `_zo_materialize_random_vector(...)`
+  - `_zo_effective_perturb_direction(...)`
+- Updated `_zo_maybe_run_directional_probe(...)` so FD and TD now explicitly reuse the same materialized `random_vector` in the `efficient_zero_order=True` path.
+- Updated `zo_true_directional_derivative(...)` so `random_seed` now deterministically materializes the same direction bundle used by FD, and the non-QuZO path now matches the effective quantized perturbation direction when needed.
+- Updated `efficient_perturb_parameters(...)` so the efficient path can consume an explicit `random_vector` rather than silently resampling.
+- Added regression coverage in [medium_models/tests/test_directional_probe_consistency.py](/scratch/jy03364/MeZO_/medium_models/tests/test_directional_probe_consistency.py).
+
+Validation:
+
+- Syntax / import:
+  - `python -m py_compile medium_models/src/trainer.py medium_models/tests/test_directional_probe_consistency.py`
+- Regression test:
+  - `python medium_models/tests/test_directional_probe_consistency.py`
+  - Result: `3 tests`, all passed.
+- Short probe-shape smoke:
+  - Environment: `ciao`
+  - Artifact directory: [/scratch/jy03364/MeZO_/experiments/smoke/mezo/roberta-large/sst5/fp16/probe_consistency_harness_20260419](/scratch/jy03364/MeZO_/experiments/smoke/mezo/roberta-large/sst5/fp16/probe_consistency_harness_20260419)
+  - Summary CSV: [probe_shape_summary.csv](/scratch/jy03364/MeZO_/experiments/smoke/mezo/roberta-large/sst5/fp16/probe_consistency_harness_20260419/probe_shape_summary.csv)
+  - Summary JSON: [probe_shape_summary.json](/scratch/jy03364/MeZO_/experiments/smoke/mezo/roberta-large/sst5/fp16/probe_consistency_harness_20260419/probe_shape_summary.json)
+
+Smoke result:
+
+- This quick harness smoke exercises the same repaired `medium_models/src/trainer.py` probe / perturb / TD code path with:
+  - `efficient_zero_order=True`
+  - `zo_quantization_bits=16`
+  - `zo_two_point_precision=fp16`
+  - `32` probe seeds
+- Observed `probe_mse` sequence over `h = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2]`:
+  - `[253.4290, 2.4888, 0.02057, 9.12e-13, 2.06e-4]`
+- The minimum occurs at `h = 1e-3`, so the short smoke now shows the expected U-shaped trend again.
+- Over the same sweep, `corr` stays essentially `1.0` and `sign_acc` stays `1.0`, which is consistent with FD and TD finally using the same direction rather than two different random draws.
+
 ## 0. Pilot Matrix Status
 
 The table below reflects the current status of the pilot matrix as of `2026-04-17`.

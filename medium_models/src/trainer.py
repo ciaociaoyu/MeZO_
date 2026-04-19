@@ -2092,6 +2092,33 @@ class Trainer(LinearHeadTrainer):
             dtype=dtype,
         )
 
+    def _zo_reset_random_seed(self, random_seed: int) -> None:
+        torch.manual_seed(int(random_seed))
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(int(random_seed))
+
+    def _zo_materialize_random_vector(self, random_seed: int) -> Dict[str, Any]:
+        self._sparse_prepare_step_state()
+        random_vector: Dict[str, Any] = {}
+        if self._zo_use_quzo():
+            for name, param in self.named_parameters_to_optim:
+                random_vector[name] = self._quzo_get_bundle(name, param, random_seed=int(random_seed))
+            return random_vector
+
+        self._zo_reset_random_seed(int(random_seed))
+        for name, param in self.named_parameters_to_optim:
+            random_vector[name] = self._sample_sparse_noise_like(name, param.data)
+        return random_vector
+
+    def _zo_effective_perturb_direction(self, param: nn.Parameter, direction: torch.Tensor) -> torch.Tensor:
+        if self._zo_use_quzo() or (not self._should_quantize_training_perturbation()):
+            return direction
+        eps = float(self._get_training_step_size())
+        if eps == 0.0:
+            return torch.zeros_like(direction, dtype=param.data.dtype)
+        delta = self._quantize_delta_tensor(direction * eps, target_dtype=param.data.dtype)
+        return delta / eps
+
     def _quzo_get_bundle(
         self,
         name: str,
@@ -2383,18 +2410,17 @@ class Trainer(LinearHeadTrainer):
         try:
             for seed in dir_seeds:
                 if self.args.efficient_zero_order:
+                    random_vector = self._zo_materialize_random_vector(seed)
                     with torch.no_grad():
-                        model = self.efficient_perturb_parameters(model, seed)
+                        model = self.efficient_perturb_parameters(model, seed, random_vector=random_vector)
                         loss1 = self._zo_two_point_forward(model, inputs)
-                        model = self.efficient_perturb_parameters(model, seed, scaling_factor=-2)
+                        model = self.efficient_perturb_parameters(model, seed, scaling_factor=-2, random_vector=random_vector)
                         loss2 = self._zo_two_point_forward(model, inputs)
-                        model = self.efficient_perturb_parameters(model, seed, scaling_factor=1)
-                    _, td = self.zo_true_directional_derivative(model, inputs, random_seed=seed)
+                        model = self.efficient_perturb_parameters(model, seed, scaling_factor=1, random_vector=random_vector)
+                    _, td = self.zo_true_directional_derivative(model, inputs, random_vector=random_vector)
                 else:
                     # Deterministically sample the same z direction for FD and true-directional checks.
-                    torch.manual_seed(int(seed))
-                    if torch.cuda.is_available():
-                        torch.cuda.manual_seed_all(int(seed))
+                    self._zo_reset_random_seed(int(seed))
 
                     random_vector = None
                     with torch.no_grad():
@@ -2501,7 +2527,7 @@ class Trainer(LinearHeadTrainer):
         self,
         model: nn.Module,
         inputs: Dict[str, Union[torch.Tensor, Any]],
-        random_vector: Optional[Dict[str, torch.Tensor]] = None,
+        random_vector: Optional[Dict[str, Any]] = None,
         random_seed: Optional[int] = None,
         layer_name: Optional[str] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -2511,8 +2537,8 @@ class Trainer(LinearHeadTrainer):
         directional derivative (loss1-loss2)/(2*eps) with the true directional derivative <∇L(θ), z>.
 
         Notes:
-        - If random_seed is provided, z will be regenerated on-the-fly using torch.manual_seed(random_seed)
-          (mirrors efficient_zero_order behavior).
+        - If random_seed is provided, z will be regenerated once and then reused, matching the
+          same direction construction as the perturbation path.
         - Otherwise random_vector should map parameter name -> z tensor.
         - Uses torch.autograd.grad so it does NOT overwrite/clear param.grad (important for grad accumulation).
         """
@@ -2536,6 +2562,9 @@ class Trainer(LinearHeadTrainer):
         params = [p for _, p in named_params]
         grads = torch.autograd.grad(loss, params, retain_graph=False, create_graph=False, allow_unused=True)
 
+        if random_seed is not None and random_vector is None:
+            random_vector = self._zo_materialize_random_vector(int(random_seed))
+
         # Match the z used later when writing pseudo-gradients.
         apply_c_scale = (
             getattr(self.args, "use_c_scale", False)
@@ -2547,32 +2576,26 @@ class Trainer(LinearHeadTrainer):
         self._sparse_prepare_step_state()
         proj = None
         for (name, param), g in zip(named_params, grads):
-            if g is None:
-                # keep RNG consumption in sync for efficient mode
-                if random_seed is not None:
-                    if self._zo_use_quzo():
-                        _ = self._quzo_get_bundle(name, param, random_seed=random_seed)
-                    else:
-                        _ = self._sample_sparse_noise_like(name, param.data)
-                continue
-
             if self._zo_use_quzo():
-                if random_seed is not None:
-                    bundle = self._quzo_get_bundle(name, param, random_seed=random_seed)
-                elif random_vector is None or name not in random_vector:
+                if random_vector is None or name not in random_vector:
                     bundle = self._quzo_get_bundle(name, param)
                     if random_vector is not None:
                         random_vector[name] = bundle
                 else:
                     bundle = random_vector[name]
                 z = bundle["u2"]
-            elif random_seed is not None:
-                z = self._sample_sparse_noise_like(name, param.data)
             else:
                 if random_vector is None or name not in random_vector:
                     z = self._sample_sparse_noise_like(name, param.data)
+                    if random_vector is not None:
+                        random_vector[name] = z
                 else:
                     z = random_vector[name]
+                if not apply_c_scale:
+                    z = self._zo_effective_perturb_direction(param, z)
+
+            if g is None:
+                continue
 
             if apply_c_scale:
                 cname = self.retrieve_c(name)
@@ -2592,26 +2615,38 @@ class Trainer(LinearHeadTrainer):
         self.state.zo_forward_step += 1
         return loss.detach(), proj.detach()
 
-    def efficient_perturb_parameters(self, model: nn.Module, random_seed: int, scaling_factor=1):
+    def efficient_perturb_parameters(
+        self,
+        model: nn.Module,
+        random_seed: int,
+        scaling_factor=1,
+        random_vector: Optional[Dict[str, Any]] = None,
+    ):
         self._sparse_prepare_step_state()
         if self._zo_use_quzo():
             for name, param in self.named_parameters_to_optim:
-                bundle = self._quzo_get_bundle(name, param, random_seed=random_seed)
+                if random_vector is not None and name in random_vector:
+                    bundle = random_vector[name]
+                else:
+                    bundle = self._quzo_get_bundle(name, param, random_seed=random_seed)
                 eps = float(self._get_training_step_size())
                 delta = bundle["u1"] * (float(scaling_factor) * eps)
                 param.data = param.data + delta
                 self._quzo_quantize_param_from_bundle(param, bundle)
             return model
 
-        torch.manual_seed(random_seed)
+        if random_vector is None:
+            self._zo_reset_random_seed(random_seed)
         # 需要 name 以支持按层操作
         for name, param in self.named_parameters_to_optim:
-            z = self._sample_sparse_noise_like(name, param.data)
+            if random_vector is not None and name in random_vector:
+                z = random_vector[name]
+            else:
+                z = self._sample_sparse_noise_like(name, param.data)
             # === Begin Adaptive h (Berahas et al.) ===
             eps = float(self._get_training_step_size())
-            delta = z * (float(scaling_factor) * eps)
-            if self._should_quantize_training_perturbation():
-                delta = self._quantize_delta_tensor(delta, target_dtype=param.data.dtype)
+            direction = self._zo_effective_perturb_direction(param, z)
+            delta = direction * (float(scaling_factor) * eps)
             param.data = param.data + delta
             # === End Adaptive h ===
         return model
