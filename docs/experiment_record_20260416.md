@@ -68,6 +68,14 @@ Smoke result:
 
 ## 0. Pilot Matrix Status
 
+This section is now superseded by [pilot_experiments_20260419.md](/scratch/jy03364/MeZO_/docs/pilot_experiments_20260419.md).
+Use that file as the source-of-truth for the pilot scope defined by:
+
+- `opt-1.3b`, `roberta-large`
+- `mezo`, `sparse_mezo`
+- `sst5`, `mnli`
+- `fp16 h_sweep_14h`, `int8 h_sweep_8h`
+
 The table below reflects the current status of the pilot matrix as of `2026-04-17`.
 
 | Model | Baseline | Dataset | Precision | Current status | Notes |
