@@ -1,0 +1,11 @@
+time,step,epoch,phase,metric,value,task,model,eps
+2026-04-11 03:53:00,100,10.0,train,train_runtime,200.4086,SST5,Mistral-7B-v0.1,0.001
+2026-04-11 03:53:00,100,10.0,train,train_samples_per_second,3.992,SST5,Mistral-7B-v0.1,0.001
+2026-04-11 03:53:00,100,10.0,train,train_steps_per_second,0.499,SST5,Mistral-7B-v0.1,0.001
+2026-04-11 03:53:00,100,10.0,train,train_loss,17.8148388671875,SST5,Mistral-7B-v0.1,0.001
+2026-04-11 03:53:00,100,10.0,train,epoch,10.0,SST5,Mistral-7B-v0.1,0.001
+2026-04-11 03:57:19,100,10.0,train,train_runtime,204.8389,SST5,Mistral-7B-v0.1,0.001
+2026-04-11 03:57:19,100,10.0,train,train_samples_per_second,3.906,SST5,Mistral-7B-v0.1,0.001
+2026-04-11 03:57:19,100,10.0,train,train_steps_per_second,0.488,SST5,Mistral-7B-v0.1,0.001
+2026-04-11 03:57:19,100,10.0,train,train_loss,17.8148388671875,SST5,Mistral-7B-v0.1,0.001
+2026-04-11 03:57:19,100,10.0,train,epoch,10.0,SST5,Mistral-7B-v0.1,0.001

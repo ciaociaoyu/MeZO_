@@ -1,0 +1,911 @@
+[nan-guard] command=python /scratch/jy03364/MeZO_/large_models/run.py --model_name opt-1.3b --task_name MNLI --output_dir /scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/opt-1.3b/mnli/h_1e-8/seed_42 --overwrite_output_dir --tag hsweep14h-sparse_mezo16-mnli-h1e-8-seed42 --dataset_mode full --num_k 16 --data_seed 42 --train_set_seed 42 --num_dev 0 --trainer zo --load_float16 --zo_quantization_bits 16 --sparse_ratio 0.25 --sparse_mask_strategy percentile_per_layer --sparse_scope trainable_only --sparse_log_active_fraction True --train_as_classification --learning_rate 1e-6 --zo_eps 1e-8 --num_train_epochs 1 --per_device_train_batch_size 16 --gradient_accumulation_steps 1 --lr_scheduler_type constant --evaluation_strategy steps --save_strategy no --eval_steps 5000 --logging_steps 10 --zo_probe_every 200 --zo_probe_num_seeds 16 --zo_probe_log_csv
+[nan-guard] cwd=/scratch/jy03364/MeZO_/experiments/h_sweep_14h max_consecutive_nan=1
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/deepspeed.py:23: FutureWarning: transformers.deepspeed module is deprecated and will be removed in a future version. Please import deepspeed modules directly from transformers.integrations
+  warnings.warn(
+2026-04-18 22:26:12,416 - INFO - [model] requested=opt-1.3b resolved=facebook/opt-1.3b family_hint=opt
+2026-04-18 22:26:12,416 - INFO - [data] task_name=MNLI dataset_mode=full num_k=16 data_seed=42 full_dev_ratio=0.1
+2026-04-18 22:26:22,156 - INFO - Loading model with FP16...
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+2026-04-18 22:26:22,217 - INFO - [model] disabling auto device placement for training; Trainer/Accelerate will place the model
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/modeling_utils.py:484: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  return torch.load(checkpoint_file, map_location=map_location)
+2026-04-18 22:26:31,761 - INFO - Done with 9.61s
+2026-04-18 22:26:31,860 - INFO - [quzo-config] quantized model parameters in-place at 16 bits before ZO training
+2026-04-18 22:26:31,860 - INFO - [sparse-mezo-config] enabled=True | sparse_ratio=0.25 | sparse_mask_strategy=percentile_per_layer | sparse_scope=trainable_only | sparse_log_active_fraction=True
+2026-04-18 22:26:31,861 - INFO - [sparse-mezo-config] ratio semantics: sparse_ratio targets the active fraction per trainable tensor; ratio=1.0 disables masking. Order: construct direction -> apply sparse mask -> apply QuZO snapping after masked perturb/update when low-bit QuZO is active.
+2026-04-18 22:26:31,881 - INFO - Preparing training/evaluation datasets...
+2026-04-18 22:26:31,881 - INFO - Done with 0.00s
+2026-04-18 22:26:32,318 - INFO - ***** Running training *****
+2026-04-18 22:26:32,318 - INFO -   Num examples = 392702
+2026-04-18 22:26:32,318 - INFO -   Num Epochs = 1
+2026-04-18 22:26:32,318 - INFO -   Instantaneous batch size per device = 16
+2026-04-18 22:26:32,318 - INFO -   Total train batch size (w. parallel, distributed & accumulation) = 16
+2026-04-18 22:26:32,318 - INFO -   Gradient Accumulation steps = 1
+2026-04-18 22:26:32,318 - INFO -   Total optimization steps = 24544
+2026-04-18 22:26:32,319 - INFO -   Number of trainable parameters = 1315758080
+
+  0%|          | 0/24544 [00:00<?, ?it/s]2026-04-18 22:26:36,557 - INFO - [sparse-mezo] global_step=0 active_fraction=0.250133 active_params=329115135/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 1/24544 [00:04<31:44:59,  4.66s/it]2026-04-18 22:26:40,818 - INFO - [sparse-mezo] global_step=1 active_fraction=0.250133 active_params=329115110/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 2/24544 [00:08<29:14:28,  4.29s/it]2026-04-18 22:26:44,842 - INFO - [sparse-mezo] global_step=2 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 3/24544 [00:12<28:37:06,  4.20s/it]2026-04-18 22:26:48,928 - INFO - [sparse-mezo] global_step=3 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 4/24544 [00:16<28:07:04,  4.12s/it]2026-04-18 22:26:52,922 - INFO - [sparse-mezo] global_step=4 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 5/24544 [00:20<27:50:36,  4.08s/it]2026-04-18 22:26:56,952 - INFO - [sparse-mezo] global_step=5 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 6/24544 [00:24<27:40:15,  4.06s/it]2026-04-18 22:27:00,960 - INFO - [sparse-mezo] global_step=6 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 7/24544 [00:28<27:33:51,  4.04s/it]2026-04-18 22:27:04,993 - INFO - [sparse-mezo] global_step=7 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 8/24544 [00:32<27:35:31,  4.05s/it]2026-04-18 22:27:09,034 - INFO - [sparse-mezo] global_step=8 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 9/24544 [00:36<27:35:01,  4.05s/it]2026-04-18 22:27:13,079 - INFO - [sparse-mezo] global_step=9 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 10/24544 [00:40<27:32:20,  4.04s/it]2026-04-18 22:27:17,105 - INFO - [sparse-mezo] global_step=10 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 11/24544 [00:44<27:28:33,  4.03s/it]2026-04-18 22:27:21,115 - INFO - [sparse-mezo] global_step=11 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 12/24544 [00:48<27:25:47,  4.03s/it]2026-04-18 22:27:25,129 - INFO - [sparse-mezo] global_step=12 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 13/24544 [00:52<27:24:52,  4.02s/it]2026-04-18 22:27:29,146 - INFO - [sparse-mezo] global_step=13 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 14/24544 [00:57<27:23:58,  4.02s/it]2026-04-18 22:27:33,150 - INFO - [sparse-mezo] global_step=14 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 15/24544 [01:01<27:21:55,  4.02s/it]2026-04-18 22:27:37,151 - INFO - [sparse-mezo] global_step=15 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 16/24544 [01:05<27:25:15,  4.02s/it]2026-04-18 22:27:41,194 - INFO - [sparse-mezo] global_step=16 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 17/24544 [01:09<27:23:26,  4.02s/it]2026-04-18 22:27:45,205 - INFO - [sparse-mezo] global_step=17 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 18/24544 [01:13<27:23:43,  4.02s/it]2026-04-18 22:27:49,244 - INFO - [sparse-mezo] global_step=18 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 19/24544 [01:17<27:24:16,  4.02s/it]2026-04-18 22:27:53,271 - INFO - [sparse-mezo] global_step=19 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 20/24544 [01:21<27:24:45,  4.02s/it]2026-04-18 22:27:57,296 - INFO - [sparse-mezo] global_step=20 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 21/24544 [01:25<27:26:22,  4.03s/it]2026-04-18 22:28:01,337 - INFO - [sparse-mezo] global_step=21 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 22/24544 [01:29<27:24:24,  4.02s/it]2026-04-18 22:28:05,347 - INFO - [sparse-mezo] global_step=22 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 23/24544 [01:33<27:26:06,  4.03s/it]2026-04-18 22:28:09,386 - INFO - [sparse-mezo] global_step=23 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 24/24544 [01:37<27:23:08,  4.02s/it]2026-04-18 22:28:13,391 - INFO - [sparse-mezo] global_step=24 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 25/24544 [01:41<27:23:54,  4.02s/it]2026-04-18 22:28:17,421 - INFO - [sparse-mezo] global_step=25 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 26/24544 [01:45<27:21:54,  4.02s/it]2026-04-18 22:28:21,407 - INFO - [sparse-mezo] global_step=26 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 27/24544 [01:49<27:20:49,  4.02s/it]2026-04-18 22:28:25,418 - INFO - [sparse-mezo] global_step=27 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 28/24544 [01:53<27:20:14,  4.01s/it]2026-04-18 22:28:29,448 - INFO - [sparse-mezo] global_step=28 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 29/24544 [01:57<27:20:38,  4.02s/it]2026-04-18 22:28:33,468 - INFO - [sparse-mezo] global_step=29 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 30/24544 [02:01<27:21:18,  4.02s/it]2026-04-18 22:28:37,486 - INFO - [sparse-mezo] global_step=30 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 31/24544 [02:05<27:27:49,  4.03s/it]2026-04-18 22:28:41,555 - INFO - [sparse-mezo] global_step=31 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 32/24544 [02:09<27:26:51,  4.03s/it]2026-04-18 22:28:45,583 - INFO - [sparse-mezo] global_step=32 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 33/24544 [02:13<27:24:33,  4.03s/it]2026-04-18 22:28:49,598 - INFO - [sparse-mezo] global_step=33 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 34/24544 [02:17<27:25:02,  4.03s/it]2026-04-18 22:28:53,605 - INFO - [sparse-mezo] global_step=34 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 35/24544 [02:21<27:27:33,  4.03s/it]2026-04-18 22:28:57,671 - INFO - [sparse-mezo] global_step=35 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 36/24544 [02:25<27:24:27,  4.03s/it]2026-04-18 22:29:01,685 - INFO - [sparse-mezo] global_step=36 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 37/24544 [02:29<27:23:06,  4.02s/it]2026-04-18 22:29:05,695 - INFO - [sparse-mezo] global_step=37 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 38/24544 [02:33<27:23:21,  4.02s/it]2026-04-18 22:29:09,702 - INFO - [sparse-mezo] global_step=38 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 39/24544 [02:37<27:19:19,  4.01s/it]2026-04-18 22:29:13,718 - INFO - [sparse-mezo] global_step=39 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 40/24544 [02:41<27:18:39,  4.01s/it]2026-04-18 22:29:17,707 - INFO - [sparse-mezo] global_step=40 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 41/24544 [02:45<27:17:03,  4.01s/it]2026-04-18 22:29:21,724 - INFO - [sparse-mezo] global_step=41 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 42/24544 [02:49<27:20:56,  4.02s/it]2026-04-18 22:29:25,761 - INFO - [sparse-mezo] global_step=42 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 43/24544 [02:53<27:25:28,  4.03s/it]2026-04-18 22:29:29,820 - INFO - [sparse-mezo] global_step=43 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 44/24544 [02:57<27:23:53,  4.03s/it]2026-04-18 22:29:33,836 - INFO - [sparse-mezo] global_step=44 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 45/24544 [03:01<27:31:28,  4.04s/it]2026-04-18 22:29:37,923 - INFO - [sparse-mezo] global_step=45 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 46/24544 [03:05<27:28:53,  4.04s/it]2026-04-18 22:29:41,949 - INFO - [sparse-mezo] global_step=46 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 47/24544 [03:09<27:28:52,  4.04s/it]2026-04-18 22:29:45,986 - INFO - [sparse-mezo] global_step=47 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 48/24544 [03:13<27:25:45,  4.03s/it]2026-04-18 22:29:50,002 - INFO - [sparse-mezo] global_step=48 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 49/24544 [03:17<27:23:51,  4.03s/it]2026-04-18 22:29:54,030 - INFO - [sparse-mezo] global_step=49 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 50/24544 [03:21<27:24:09,  4.03s/it]2026-04-18 22:29:58,047 - INFO - [sparse-mezo] global_step=50 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 51/24544 [03:25<27:23:53,  4.03s/it]2026-04-18 22:30:02,074 - INFO - [sparse-mezo] global_step=51 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 52/24544 [03:29<27:24:24,  4.03s/it]2026-04-18 22:30:06,105 - INFO - [sparse-mezo] global_step=52 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 53/24544 [03:34<27:28:10,  4.04s/it]2026-04-18 22:30:10,164 - INFO - [sparse-mezo] global_step=53 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 54/24544 [03:38<27:24:49,  4.03s/it]2026-04-18 22:30:14,177 - INFO - [sparse-mezo] global_step=54 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 55/24544 [03:42<27:24:33,  4.03s/it]2026-04-18 22:30:18,204 - INFO - [sparse-mezo] global_step=55 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 56/24544 [03:46<27:25:43,  4.03s/it]2026-04-18 22:30:22,242 - INFO - [sparse-mezo] global_step=56 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 57/24544 [03:50<27:23:32,  4.03s/it]2026-04-18 22:30:26,238 - INFO - [sparse-mezo] global_step=57 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 58/24544 [03:54<27:19:36,  4.02s/it]2026-04-18 22:30:30,236 - INFO - [sparse-mezo] global_step=58 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 59/24544 [03:58<27:16:38,  4.01s/it]2026-04-18 22:30:34,231 - INFO - [sparse-mezo] global_step=59 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 60/24544 [04:02<27:15:07,  4.01s/it]2026-04-18 22:30:38,250 - INFO - [sparse-mezo] global_step=60 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 61/24544 [04:06<27:20:06,  4.02s/it]2026-04-18 22:30:42,296 - INFO - [sparse-mezo] global_step=61 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 62/24544 [04:10<27:21:03,  4.02s/it]2026-04-18 22:30:46,321 - INFO - [sparse-mezo] global_step=62 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 63/24544 [04:14<27:23:35,  4.03s/it]2026-04-18 22:30:50,365 - INFO - [sparse-mezo] global_step=63 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 64/24544 [04:18<27:23:07,  4.03s/it]2026-04-18 22:30:54,394 - INFO - [sparse-mezo] global_step=64 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 65/24544 [04:22<27:23:17,  4.03s/it]2026-04-18 22:30:58,419 - INFO - [sparse-mezo] global_step=65 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 66/24544 [04:26<27:26:55,  4.04s/it]2026-04-18 22:31:02,475 - INFO - [sparse-mezo] global_step=66 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 67/24544 [04:30<27:25:16,  4.03s/it]2026-04-18 22:31:06,500 - INFO - [sparse-mezo] global_step=67 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 68/24544 [04:34<27:23:07,  4.03s/it]2026-04-18 22:31:10,519 - INFO - [sparse-mezo] global_step=68 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 69/24544 [04:38<27:23:36,  4.03s/it]2026-04-18 22:31:14,550 - INFO - [sparse-mezo] global_step=69 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 70/24544 [04:42<27:26:40,  4.04s/it]2026-04-18 22:31:18,590 - INFO - [sparse-mezo] global_step=70 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 71/24544 [04:46<27:22:05,  4.03s/it]2026-04-18 22:31:22,607 - INFO - [sparse-mezo] global_step=71 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 72/24544 [04:50<27:22:48,  4.03s/it]2026-04-18 22:31:26,619 - INFO - [sparse-mezo] global_step=72 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 73/24544 [04:54<27:27:24,  4.04s/it]2026-04-18 22:31:30,685 - INFO - [sparse-mezo] global_step=73 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 74/24544 [04:58<27:22:21,  4.03s/it]2026-04-18 22:31:34,697 - INFO - [sparse-mezo] global_step=74 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 75/24544 [05:02<27:21:31,  4.03s/it]2026-04-18 22:31:38,730 - INFO - [sparse-mezo] global_step=75 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 76/24544 [05:06<27:19:43,  4.02s/it]2026-04-18 22:31:42,732 - INFO - [sparse-mezo] global_step=76 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 77/24544 [05:10<27:24:05,  4.03s/it]2026-04-18 22:31:46,789 - INFO - [sparse-mezo] global_step=77 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 78/24544 [05:14<27:21:53,  4.03s/it]2026-04-18 22:31:50,804 - INFO - [sparse-mezo] global_step=78 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 79/24544 [05:18<27:21:34,  4.03s/it]2026-04-18 22:31:54,815 - INFO - [sparse-mezo] global_step=79 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 80/24544 [05:22<27:20:18,  4.02s/it]2026-04-18 22:31:58,828 - INFO - [sparse-mezo] global_step=80 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 81/24544 [05:26<27:22:28,  4.03s/it]2026-04-18 22:32:02,891 - INFO - [sparse-mezo] global_step=81 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 82/24544 [05:30<27:21:19,  4.03s/it]2026-04-18 22:32:06,903 - INFO - [sparse-mezo] global_step=82 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 83/24544 [05:34<27:24:50,  4.03s/it]2026-04-18 22:32:10,961 - INFO - [sparse-mezo] global_step=83 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 84/24544 [05:38<27:21:51,  4.03s/it]2026-04-18 22:32:14,972 - INFO - [sparse-mezo] global_step=84 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 85/24544 [05:42<27:19:56,  4.02s/it]2026-04-18 22:32:18,984 - INFO - [sparse-mezo] global_step=85 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 86/24544 [05:46<27:20:06,  4.02s/it]2026-04-18 22:32:22,993 - INFO - [sparse-mezo] global_step=86 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 87/24544 [05:50<27:18:20,  4.02s/it]2026-04-18 22:32:27,020 - INFO - [sparse-mezo] global_step=87 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 88/24544 [05:54<27:19:19,  4.02s/it]2026-04-18 22:32:31,028 - INFO - [sparse-mezo] global_step=88 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 89/24544 [05:58<27:17:30,  4.02s/it]2026-04-18 22:32:35,064 - INFO - [sparse-mezo] global_step=89 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 90/24544 [06:02<27:20:36,  4.03s/it]2026-04-18 22:32:39,097 - INFO - [sparse-mezo] global_step=90 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 91/24544 [06:06<27:20:30,  4.03s/it]2026-04-18 22:32:43,110 - INFO - [sparse-mezo] global_step=91 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 92/24544 [06:10<27:19:23,  4.02s/it]2026-04-18 22:32:47,142 - INFO - [sparse-mezo] global_step=92 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 93/24544 [06:15<27:20:43,  4.03s/it]2026-04-18 22:32:51,177 - INFO - [sparse-mezo] global_step=93 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 94/24544 [06:19<27:23:34,  4.03s/it]2026-04-18 22:32:55,208 - INFO - [sparse-mezo] global_step=94 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 95/24544 [06:23<27:22:19,  4.03s/it]2026-04-18 22:32:59,231 - INFO - [sparse-mezo] global_step=95 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 96/24544 [06:27<27:18:24,  4.02s/it]2026-04-18 22:33:03,245 - INFO - [sparse-mezo] global_step=96 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 97/24544 [06:31<27:17:28,  4.02s/it]2026-04-18 22:33:07,242 - INFO - [sparse-mezo] global_step=97 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 98/24544 [06:35<27:14:51,  4.01s/it]2026-04-18 22:33:11,239 - INFO - [sparse-mezo] global_step=98 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 99/24544 [06:39<27:12:24,  4.01s/it]2026-04-18 22:33:15,251 - INFO - [sparse-mezo] global_step=99 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 100/24544 [06:43<27:13:26,  4.01s/it]2026-04-18 22:33:19,253 - INFO - [sparse-mezo] global_step=100 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 101/24544 [06:47<27:10:52,  4.00s/it]2026-04-18 22:33:23,239 - INFO - [sparse-mezo] global_step=101 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 102/24544 [06:51<27:13:50,  4.01s/it]2026-04-18 22:33:27,267 - INFO - [sparse-mezo] global_step=102 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 103/24544 [06:55<27:13:28,  4.01s/it]2026-04-18 22:33:31,294 - INFO - [sparse-mezo] global_step=103 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 104/24544 [06:59<27:13:41,  4.01s/it]2026-04-18 22:33:35,288 - INFO - [sparse-mezo] global_step=104 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 105/24544 [07:03<27:12:12,  4.01s/it]2026-04-18 22:33:39,303 - INFO - [sparse-mezo] global_step=105 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 106/24544 [07:07<27:14:49,  4.01s/it]2026-04-18 22:33:43,318 - INFO - [sparse-mezo] global_step=106 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 107/24544 [07:11<27:14:56,  4.01s/it]2026-04-18 22:33:47,331 - INFO - [sparse-mezo] global_step=107 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 108/24544 [07:15<27:14:43,  4.01s/it]2026-04-18 22:33:51,359 - INFO - [sparse-mezo] global_step=108 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 109/24544 [07:19<27:14:38,  4.01s/it]2026-04-18 22:33:55,376 - INFO - [sparse-mezo] global_step=109 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 110/24544 [07:23<27:14:22,  4.01s/it]2026-04-18 22:33:59,388 - INFO - [sparse-mezo] global_step=110 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 111/24544 [07:27<27:15:54,  4.02s/it]2026-04-18 22:34:03,399 - INFO - [sparse-mezo] global_step=111 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 112/24544 [07:31<27:15:37,  4.02s/it]2026-04-18 22:34:07,428 - INFO - [sparse-mezo] global_step=112 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 113/24544 [07:35<27:16:32,  4.02s/it]2026-04-18 22:34:11,435 - INFO - [sparse-mezo] global_step=113 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 114/24544 [07:39<27:14:52,  4.02s/it]2026-04-18 22:34:15,459 - INFO - [sparse-mezo] global_step=114 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 115/24544 [07:43<27:16:08,  4.02s/it]2026-04-18 22:34:19,484 - INFO - [sparse-mezo] global_step=115 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 116/24544 [07:47<27:14:53,  4.02s/it]2026-04-18 22:34:23,493 - INFO - [sparse-mezo] global_step=116 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 117/24544 [07:51<27:15:45,  4.02s/it]2026-04-18 22:34:27,501 - INFO - [sparse-mezo] global_step=117 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 118/24544 [07:55<27:12:41,  4.01s/it]2026-04-18 22:34:31,510 - INFO - [sparse-mezo] global_step=118 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 119/24544 [07:59<27:14:22,  4.01s/it]2026-04-18 22:34:35,538 - INFO - [sparse-mezo] global_step=119 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 120/24544 [08:03<27:15:41,  4.02s/it]2026-04-18 22:34:39,563 - INFO - [sparse-mezo] global_step=120 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 121/24544 [08:07<27:15:24,  4.02s/it]2026-04-18 22:34:43,578 - INFO - [sparse-mezo] global_step=121 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  0%|          | 122/24544 [08:11<27:14:23,  4.02s/it]2026-04-18 22:34:47,592 - INFO - [sparse-mezo] global_step=122 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 123/24544 [08:15<27:14:42,  4.02s/it]2026-04-18 22:34:51,590 - INFO - [sparse-mezo] global_step=123 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 124/24544 [08:19<27:13:32,  4.01s/it]2026-04-18 22:34:55,597 - INFO - [sparse-mezo] global_step=124 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 125/24544 [08:23<27:11:31,  4.01s/it]2026-04-18 22:34:59,611 - INFO - [sparse-mezo] global_step=125 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 126/24544 [08:27<27:12:04,  4.01s/it]2026-04-18 22:35:03,628 - INFO - [sparse-mezo] global_step=126 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 127/24544 [08:31<27:12:14,  4.01s/it]2026-04-18 22:35:07,639 - INFO - [sparse-mezo] global_step=127 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 128/24544 [08:35<27:12:14,  4.01s/it]2026-04-18 22:35:11,631 - INFO - [sparse-mezo] global_step=128 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 129/24544 [08:39<27:15:30,  4.02s/it]2026-04-18 22:35:15,689 - INFO - [sparse-mezo] global_step=129 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 130/24544 [08:43<27:16:25,  4.02s/it]2026-04-18 22:35:19,701 - INFO - [sparse-mezo] global_step=130 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 131/24544 [08:47<27:15:05,  4.02s/it]2026-04-18 22:35:23,726 - INFO - [sparse-mezo] global_step=131 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 132/24544 [08:51<27:16:16,  4.02s/it]2026-04-18 22:35:27,758 - INFO - [sparse-mezo] global_step=132 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 133/24544 [08:55<27:17:05,  4.02s/it]2026-04-18 22:35:31,783 - INFO - [sparse-mezo] global_step=133 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 134/24544 [08:59<27:17:27,  4.02s/it]2026-04-18 22:35:35,814 - INFO - [sparse-mezo] global_step=134 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 135/24544 [09:03<27:15:51,  4.02s/it]2026-04-18 22:35:39,826 - INFO - [sparse-mezo] global_step=135 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 136/24544 [09:07<27:17:48,  4.03s/it]2026-04-18 22:35:43,847 - INFO - [sparse-mezo] global_step=136 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 137/24544 [09:11<27:19:50,  4.03s/it]2026-04-18 22:35:47,905 - INFO - [sparse-mezo] global_step=137 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 138/24544 [09:15<27:26:08,  4.05s/it]2026-04-18 22:35:52,741 - INFO - [sparse-mezo] global_step=138 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 139/24544 [09:20<28:55:15,  4.27s/it]2026-04-18 22:35:56,768 - INFO - [sparse-mezo] global_step=139 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 140/24544 [09:24<28:24:48,  4.19s/it]2026-04-18 22:36:00,785 - INFO - [sparse-mezo] global_step=140 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 141/24544 [09:28<28:05:12,  4.14s/it]2026-04-18 22:36:04,814 - INFO - [sparse-mezo] global_step=141 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 142/24544 [09:32<27:52:57,  4.11s/it]2026-04-18 22:36:08,858 - INFO - [sparse-mezo] global_step=142 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 143/24544 [09:36<27:39:10,  4.08s/it]2026-04-18 22:36:12,861 - INFO - [sparse-mezo] global_step=143 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 144/24544 [09:40<27:31:32,  4.06s/it]2026-04-18 22:36:16,876 - INFO - [sparse-mezo] global_step=144 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 145/24544 [09:44<27:27:01,  4.05s/it]2026-04-18 22:36:20,902 - INFO - [sparse-mezo] global_step=145 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 146/24544 [09:48<27:24:00,  4.04s/it]2026-04-18 22:36:24,910 - INFO - [sparse-mezo] global_step=146 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 147/24544 [09:52<27:17:41,  4.03s/it]2026-04-18 22:36:28,919 - INFO - [sparse-mezo] global_step=147 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 148/24544 [09:56<27:16:00,  4.02s/it]2026-04-18 22:36:32,934 - INFO - [sparse-mezo] global_step=148 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 149/24544 [10:00<27:14:57,  4.02s/it]2026-04-18 22:36:36,934 - INFO - [sparse-mezo] global_step=149 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 150/24544 [10:04<27:13:30,  4.02s/it]2026-04-18 22:36:40,959 - INFO - [sparse-mezo] global_step=150 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 151/24544 [10:08<27:12:57,  4.02s/it]2026-04-18 22:36:44,976 - INFO - [sparse-mezo] global_step=151 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 152/24544 [10:12<27:12:26,  4.02s/it]2026-04-18 22:36:48,987 - INFO - [sparse-mezo] global_step=152 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 153/24544 [10:16<27:14:13,  4.02s/it]2026-04-18 22:36:52,999 - INFO - [sparse-mezo] global_step=153 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 154/24544 [10:20<27:12:29,  4.02s/it]2026-04-18 22:36:57,026 - INFO - [sparse-mezo] global_step=154 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 155/24544 [10:24<27:13:47,  4.02s/it]2026-04-18 22:37:01,054 - INFO - [sparse-mezo] global_step=155 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 156/24544 [10:28<27:14:51,  4.02s/it]2026-04-18 22:37:05,079 - INFO - [sparse-mezo] global_step=156 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 157/24544 [10:32<27:17:21,  4.03s/it]2026-04-18 22:37:09,126 - INFO - [sparse-mezo] global_step=157 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 158/24544 [10:36<27:14:41,  4.02s/it]2026-04-18 22:37:13,111 - INFO - [sparse-mezo] global_step=158 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 159/24544 [10:41<27:16:06,  4.03s/it]2026-04-18 22:37:17,165 - INFO - [sparse-mezo] global_step=159 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 160/24544 [10:45<27:15:40,  4.02s/it]2026-04-18 22:37:21,188 - INFO - [sparse-mezo] global_step=160 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 161/24544 [10:49<27:15:56,  4.03s/it]2026-04-18 22:37:25,214 - INFO - [sparse-mezo] global_step=161 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 162/24544 [10:53<27:15:44,  4.03s/it]2026-04-18 22:37:29,223 - INFO - [sparse-mezo] global_step=162 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 163/24544 [10:57<27:11:00,  4.01s/it]2026-04-18 22:37:33,207 - INFO - [sparse-mezo] global_step=163 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 164/24544 [11:01<27:09:55,  4.01s/it]2026-04-18 22:37:37,213 - INFO - [sparse-mezo] global_step=164 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 165/24544 [11:05<27:08:01,  4.01s/it]2026-04-18 22:37:41,230 - INFO - [sparse-mezo] global_step=165 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 166/24544 [11:09<27:10:24,  4.01s/it]2026-04-18 22:37:45,256 - INFO - [sparse-mezo] global_step=166 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 167/24544 [11:13<27:10:51,  4.01s/it]2026-04-18 22:37:49,253 - INFO - [sparse-mezo] global_step=167 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 168/24544 [11:17<27:10:00,  4.01s/it]2026-04-18 22:37:53,281 - INFO - [sparse-mezo] global_step=168 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 169/24544 [11:21<27:10:01,  4.01s/it]2026-04-18 22:37:57,296 - INFO - [sparse-mezo] global_step=169 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 170/24544 [11:25<27:12:35,  4.02s/it]2026-04-18 22:38:01,328 - INFO - [sparse-mezo] global_step=170 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 171/24544 [11:29<27:15:08,  4.03s/it]2026-04-18 22:38:05,368 - INFO - [sparse-mezo] global_step=171 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 172/24544 [11:33<27:24:49,  4.05s/it]2026-04-18 22:38:09,471 - INFO - [sparse-mezo] global_step=172 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 173/24544 [11:37<27:21:47,  4.04s/it]2026-04-18 22:38:13,497 - INFO - [sparse-mezo] global_step=173 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 174/24544 [11:41<27:18:30,  4.03s/it]2026-04-18 22:38:17,498 - INFO - [sparse-mezo] global_step=174 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 175/24544 [11:45<27:16:12,  4.03s/it]2026-04-18 22:38:21,511 - INFO - [sparse-mezo] global_step=175 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 176/24544 [11:49<27:14:18,  4.02s/it]2026-04-18 22:38:25,554 - INFO - [sparse-mezo] global_step=176 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 177/24544 [11:53<27:13:15,  4.02s/it]2026-04-18 22:38:29,558 - INFO - [sparse-mezo] global_step=177 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 178/24544 [11:57<27:11:41,  4.02s/it]2026-04-18 22:38:33,570 - INFO - [sparse-mezo] global_step=178 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 179/24544 [12:01<27:11:27,  4.02s/it]2026-04-18 22:38:37,584 - INFO - [sparse-mezo] global_step=179 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 180/24544 [12:05<27:12:15,  4.02s/it]2026-04-18 22:38:41,608 - INFO - [sparse-mezo] global_step=180 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 181/24544 [12:09<27:13:01,  4.02s/it]2026-04-18 22:38:45,617 - INFO - [sparse-mezo] global_step=181 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 182/24544 [12:13<27:11:13,  4.02s/it]2026-04-18 22:38:49,644 - INFO - [sparse-mezo] global_step=182 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 183/24544 [12:17<27:09:41,  4.01s/it]2026-04-18 22:38:53,634 - INFO - [sparse-mezo] global_step=183 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 184/24544 [12:21<27:07:52,  4.01s/it]2026-04-18 22:38:57,648 - INFO - [sparse-mezo] global_step=184 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 185/24544 [12:25<27:07:59,  4.01s/it]2026-04-18 22:39:01,642 - INFO - [sparse-mezo] global_step=185 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 186/24544 [12:29<27:07:48,  4.01s/it]2026-04-18 22:39:05,651 - INFO - [sparse-mezo] global_step=186 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 187/24544 [12:33<27:08:15,  4.01s/it]2026-04-18 22:39:09,680 - INFO - [sparse-mezo] global_step=187 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 188/24544 [12:37<27:08:35,  4.01s/it]2026-04-18 22:39:13,695 - INFO - [sparse-mezo] global_step=188 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 189/24544 [12:41<27:08:18,  4.01s/it]2026-04-18 22:39:17,690 - INFO - [sparse-mezo] global_step=189 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 190/24544 [12:45<27:06:49,  4.01s/it]2026-04-18 22:39:21,707 - INFO - [sparse-mezo] global_step=190 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 191/24544 [12:49<27:09:02,  4.01s/it]2026-04-18 22:39:25,714 - INFO - [sparse-mezo] global_step=191 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 192/24544 [12:53<27:08:10,  4.01s/it]2026-04-18 22:39:29,743 - INFO - [sparse-mezo] global_step=192 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 193/24544 [12:57<27:10:24,  4.02s/it]2026-04-18 22:39:33,770 - INFO - [sparse-mezo] global_step=193 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 194/24544 [13:01<27:10:12,  4.02s/it]2026-04-18 22:39:37,788 - INFO - [sparse-mezo] global_step=194 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 195/24544 [13:05<27:09:37,  4.02s/it]2026-04-18 22:39:41,799 - INFO - [sparse-mezo] global_step=195 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 196/24544 [13:09<27:09:30,  4.02s/it]2026-04-18 22:39:45,815 - INFO - [sparse-mezo] global_step=196 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 197/24544 [13:13<27:09:40,  4.02s/it]2026-04-18 22:39:49,830 - INFO - [sparse-mezo] global_step=197 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 198/24544 [13:17<27:10:02,  4.02s/it]2026-04-18 22:39:53,864 - INFO - [sparse-mezo] global_step=198 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 199/24544 [13:21<27:13:26,  4.03s/it]2026-04-18 22:39:57,897 - INFO - [sparse-mezo] global_step=199 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 200/24544 [13:25<27:12:20,  4.02s/it]2026-04-18 22:40:01,919 - INFO - [sparse-mezo] global_step=200 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+2026-04-18 22:40:06,055 - WARNING - [zo_probe] step=200: no finite probe pairs; skipping row.
+
+  1%|          | 201/24544 [13:33<35:35:19,  5.26s/it]2026-04-18 22:40:10,054 - INFO - [sparse-mezo] global_step=201 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 202/24544 [13:37<33:06:27,  4.90s/it]2026-04-18 22:40:14,112 - INFO - [sparse-mezo] global_step=202 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 203/24544 [13:41<31:19:16,  4.63s/it]2026-04-18 22:40:18,128 - INFO - [sparse-mezo] global_step=203 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 204/24544 [13:46<30:05:45,  4.45s/it]2026-04-18 22:40:22,157 - INFO - [sparse-mezo] global_step=204 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 205/24544 [13:50<29:12:20,  4.32s/it]2026-04-18 22:40:26,172 - INFO - [sparse-mezo] global_step=205 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 206/24544 [13:54<28:37:33,  4.23s/it]2026-04-18 22:40:30,203 - INFO - [sparse-mezo] global_step=206 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 207/24544 [13:58<28:12:08,  4.17s/it]2026-04-18 22:40:34,230 - INFO - [sparse-mezo] global_step=207 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 208/24544 [14:02<27:54:12,  4.13s/it]2026-04-18 22:40:38,239 - INFO - [sparse-mezo] global_step=208 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 209/24544 [14:06<27:38:29,  4.09s/it]2026-04-18 22:40:42,256 - INFO - [sparse-mezo] global_step=209 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 210/24544 [14:10<27:31:29,  4.07s/it]2026-04-18 22:40:46,289 - INFO - [sparse-mezo] global_step=210 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 211/24544 [14:14<27:26:17,  4.06s/it]2026-04-18 22:40:50,315 - INFO - [sparse-mezo] global_step=211 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 212/24544 [14:18<27:27:17,  4.06s/it]2026-04-18 22:40:54,381 - INFO - [sparse-mezo] global_step=212 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 213/24544 [14:22<27:21:09,  4.05s/it]2026-04-18 22:40:58,395 - INFO - [sparse-mezo] global_step=213 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 214/24544 [14:26<27:16:28,  4.04s/it]2026-04-18 22:41:02,389 - INFO - [sparse-mezo] global_step=214 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 215/24544 [14:30<27:10:27,  4.02s/it]2026-04-18 22:41:06,378 - INFO - [sparse-mezo] global_step=215 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 216/24544 [14:34<27:09:11,  4.02s/it]2026-04-18 22:41:10,407 - INFO - [sparse-mezo] global_step=216 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 217/24544 [14:38<27:10:36,  4.02s/it]2026-04-18 22:41:14,437 - INFO - [sparse-mezo] global_step=217 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 218/24544 [14:42<27:14:09,  4.03s/it]2026-04-18 22:41:18,491 - INFO - [sparse-mezo] global_step=218 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 219/24544 [14:46<27:14:59,  4.03s/it]2026-04-18 22:41:22,520 - INFO - [sparse-mezo] global_step=219 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 220/24544 [14:50<27:11:53,  4.03s/it]2026-04-18 22:41:26,529 - INFO - [sparse-mezo] global_step=220 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 221/24544 [14:54<27:08:54,  4.02s/it]2026-04-18 22:41:30,535 - INFO - [sparse-mezo] global_step=221 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 222/24544 [14:58<27:08:50,  4.02s/it]2026-04-18 22:41:34,551 - INFO - [sparse-mezo] global_step=222 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 223/24544 [15:02<27:13:48,  4.03s/it]2026-04-18 22:41:38,593 - INFO - [sparse-mezo] global_step=223 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 224/24544 [15:06<27:09:12,  4.02s/it]2026-04-18 22:41:42,606 - INFO - [sparse-mezo] global_step=224 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 225/24544 [15:10<27:08:19,  4.02s/it]2026-04-18 22:41:46,619 - INFO - [sparse-mezo] global_step=225 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 226/24544 [15:14<27:08:20,  4.02s/it]2026-04-18 22:41:50,635 - INFO - [sparse-mezo] global_step=226 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 227/24544 [15:18<27:07:58,  4.02s/it]2026-04-18 22:41:54,652 - INFO - [sparse-mezo] global_step=227 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 228/24544 [15:22<27:09:23,  4.02s/it]2026-04-18 22:41:58,680 - INFO - [sparse-mezo] global_step=228 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 229/24544 [15:26<27:11:39,  4.03s/it]2026-04-18 22:42:02,718 - INFO - [sparse-mezo] global_step=229 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 230/24544 [15:30<27:13:01,  4.03s/it]2026-04-18 22:42:06,759 - INFO - [sparse-mezo] global_step=230 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 231/24544 [15:34<27:12:47,  4.03s/it]2026-04-18 22:42:10,794 - INFO - [sparse-mezo] global_step=231 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 232/24544 [15:38<27:14:04,  4.03s/it]2026-04-18 22:42:14,805 - INFO - [sparse-mezo] global_step=232 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 233/24544 [15:42<27:10:49,  4.02s/it]2026-04-18 22:42:18,830 - INFO - [sparse-mezo] global_step=233 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 234/24544 [15:46<27:10:50,  4.03s/it]2026-04-18 22:42:22,857 - INFO - [sparse-mezo] global_step=234 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 235/24544 [15:50<27:08:57,  4.02s/it]2026-04-18 22:42:26,867 - INFO - [sparse-mezo] global_step=235 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 236/24544 [15:54<27:06:38,  4.02s/it]2026-04-18 22:42:30,871 - INFO - [sparse-mezo] global_step=236 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 237/24544 [15:58<27:06:09,  4.01s/it]2026-04-18 22:42:34,881 - INFO - [sparse-mezo] global_step=237 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 238/24544 [16:02<27:06:07,  4.01s/it]2026-04-18 22:42:38,895 - INFO - [sparse-mezo] global_step=238 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 239/24544 [16:06<27:07:23,  4.02s/it]2026-04-18 22:42:42,901 - INFO - [sparse-mezo] global_step=239 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 240/24544 [16:10<27:05:50,  4.01s/it]2026-04-18 22:42:46,925 - INFO - [sparse-mezo] global_step=240 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 241/24544 [16:14<27:05:45,  4.01s/it]2026-04-18 22:42:50,939 - INFO - [sparse-mezo] global_step=241 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 242/24544 [16:18<27:06:56,  4.02s/it]2026-04-18 22:42:54,962 - INFO - [sparse-mezo] global_step=242 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 243/24544 [16:22<27:05:53,  4.01s/it]2026-04-18 22:42:58,972 - INFO - [sparse-mezo] global_step=243 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 244/24544 [16:26<27:07:43,  4.02s/it]2026-04-18 22:43:03,005 - INFO - [sparse-mezo] global_step=244 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 245/24544 [16:30<27:08:46,  4.02s/it]2026-04-18 22:43:07,012 - INFO - [sparse-mezo] global_step=245 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 246/24544 [16:34<27:06:47,  4.02s/it]2026-04-18 22:43:11,021 - INFO - [sparse-mezo] global_step=246 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 247/24544 [16:38<27:04:36,  4.01s/it]2026-04-18 22:43:15,038 - INFO - [sparse-mezo] global_step=247 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 248/24544 [16:42<27:06:56,  4.02s/it]2026-04-18 22:43:19,065 - INFO - [sparse-mezo] global_step=248 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 249/24544 [16:46<27:05:47,  4.02s/it]2026-04-18 22:43:23,080 - INFO - [sparse-mezo] global_step=249 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 250/24544 [16:50<27:06:03,  4.02s/it]2026-04-18 22:43:27,097 - INFO - [sparse-mezo] global_step=250 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 251/24544 [16:54<27:07:34,  4.02s/it]2026-04-18 22:43:31,105 - INFO - [sparse-mezo] global_step=251 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 252/24544 [16:58<27:05:48,  4.02s/it]2026-04-18 22:43:35,113 - INFO - [sparse-mezo] global_step=252 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 253/24544 [17:02<27:03:46,  4.01s/it]2026-04-18 22:43:39,128 - INFO - [sparse-mezo] global_step=253 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 254/24544 [17:06<27:04:09,  4.01s/it]2026-04-18 22:43:43,147 - INFO - [sparse-mezo] global_step=254 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 255/24544 [17:10<27:03:02,  4.01s/it]2026-04-18 22:43:47,131 - INFO - [sparse-mezo] global_step=255 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 256/24544 [17:15<27:02:52,  4.01s/it]2026-04-18 22:43:51,154 - INFO - [sparse-mezo] global_step=256 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 257/24544 [17:19<27:04:31,  4.01s/it]2026-04-18 22:43:55,177 - INFO - [sparse-mezo] global_step=257 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 258/24544 [17:23<27:06:16,  4.02s/it]2026-04-18 22:43:59,209 - INFO - [sparse-mezo] global_step=258 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 259/24544 [17:27<27:06:10,  4.02s/it]2026-04-18 22:44:03,227 - INFO - [sparse-mezo] global_step=259 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 260/24544 [17:31<27:09:39,  4.03s/it]2026-04-18 22:44:07,273 - INFO - [sparse-mezo] global_step=260 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 261/24544 [17:35<27:11:13,  4.03s/it]2026-04-18 22:44:11,312 - INFO - [sparse-mezo] global_step=261 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 262/24544 [17:39<27:13:56,  4.04s/it]2026-04-18 22:44:15,365 - INFO - [sparse-mezo] global_step=262 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 263/24544 [17:43<27:17:43,  4.05s/it]2026-04-18 22:44:19,435 - INFO - [sparse-mezo] global_step=263 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 264/24544 [17:47<27:17:00,  4.05s/it]2026-04-18 22:44:23,476 - INFO - [sparse-mezo] global_step=264 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 265/24544 [17:51<27:15:07,  4.04s/it]2026-04-18 22:44:27,505 - INFO - [sparse-mezo] global_step=265 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 266/24544 [17:55<27:13:02,  4.04s/it]2026-04-18 22:44:31,530 - INFO - [sparse-mezo] global_step=266 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 267/24544 [17:59<27:10:26,  4.03s/it]2026-04-18 22:44:35,533 - INFO - [sparse-mezo] global_step=267 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 268/24544 [18:03<27:08:29,  4.02s/it]2026-04-18 22:44:39,559 - INFO - [sparse-mezo] global_step=268 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 269/24544 [18:07<27:14:39,  4.04s/it]2026-04-18 22:44:43,635 - INFO - [sparse-mezo] global_step=269 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 270/24544 [18:11<27:12:34,  4.04s/it]2026-04-18 22:44:47,659 - INFO - [sparse-mezo] global_step=270 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 271/24544 [18:15<27:11:20,  4.03s/it]2026-04-18 22:44:51,685 - INFO - [sparse-mezo] global_step=271 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 272/24544 [18:19<27:08:37,  4.03s/it]2026-04-18 22:44:55,696 - INFO - [sparse-mezo] global_step=272 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 273/24544 [18:23<27:12:18,  4.04s/it]2026-04-18 22:44:59,752 - INFO - [sparse-mezo] global_step=273 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 274/24544 [18:27<27:09:43,  4.03s/it]2026-04-18 22:45:03,749 - INFO - [sparse-mezo] global_step=274 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 275/24544 [18:31<27:11:38,  4.03s/it]2026-04-18 22:45:07,816 - INFO - [sparse-mezo] global_step=275 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 276/24544 [18:35<27:12:17,  4.04s/it]2026-04-18 22:45:11,850 - INFO - [sparse-mezo] global_step=276 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 277/24544 [18:39<27:10:41,  4.03s/it]2026-04-18 22:45:15,877 - INFO - [sparse-mezo] global_step=277 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 278/24544 [18:43<27:08:18,  4.03s/it]2026-04-18 22:45:19,886 - INFO - [sparse-mezo] global_step=278 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 279/24544 [18:47<27:07:51,  4.03s/it]2026-04-18 22:45:23,910 - INFO - [sparse-mezo] global_step=279 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 280/24544 [18:51<27:06:26,  4.02s/it]2026-04-18 22:45:27,925 - INFO - [sparse-mezo] global_step=280 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 281/24544 [18:55<27:05:35,  4.02s/it]2026-04-18 22:45:31,943 - INFO - [sparse-mezo] global_step=281 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 282/24544 [18:59<27:06:23,  4.02s/it]2026-04-18 22:45:35,970 - INFO - [sparse-mezo] global_step=282 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 283/24544 [19:03<27:09:19,  4.03s/it]2026-04-18 22:45:40,013 - INFO - [sparse-mezo] global_step=283 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 284/24544 [19:07<27:08:33,  4.03s/it]2026-04-18 22:45:44,038 - INFO - [sparse-mezo] global_step=284 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 285/24544 [19:11<27:07:00,  4.02s/it]2026-04-18 22:45:48,053 - INFO - [sparse-mezo] global_step=285 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 286/24544 [19:15<27:06:57,  4.02s/it]2026-04-18 22:45:52,077 - INFO - [sparse-mezo] global_step=286 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 287/24544 [19:19<27:06:53,  4.02s/it]2026-04-18 22:45:56,102 - INFO - [sparse-mezo] global_step=287 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 288/24544 [19:23<27:05:45,  4.02s/it]2026-04-18 22:46:00,119 - INFO - [sparse-mezo] global_step=288 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 289/24544 [19:27<27:04:29,  4.02s/it]2026-04-18 22:46:04,113 - INFO - [sparse-mezo] global_step=289 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 290/24544 [19:31<27:03:14,  4.02s/it]2026-04-18 22:46:08,139 - INFO - [sparse-mezo] global_step=290 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 291/24544 [19:36<27:06:06,  4.02s/it]2026-04-18 22:46:12,178 - INFO - [sparse-mezo] global_step=291 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 292/24544 [19:40<27:06:26,  4.02s/it]2026-04-18 22:46:16,201 - INFO - [sparse-mezo] global_step=292 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 293/24544 [19:44<27:06:18,  4.02s/it]2026-04-18 22:46:20,209 - INFO - [sparse-mezo] global_step=293 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 294/24544 [19:48<27:03:07,  4.02s/it]2026-04-18 22:46:24,223 - INFO - [sparse-mezo] global_step=294 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 295/24544 [19:52<27:02:25,  4.01s/it]2026-04-18 22:46:28,231 - INFO - [sparse-mezo] global_step=295 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 296/24544 [19:56<27:03:38,  4.02s/it]2026-04-18 22:46:32,261 - INFO - [sparse-mezo] global_step=296 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 297/24544 [20:00<27:04:30,  4.02s/it]2026-04-18 22:46:36,286 - INFO - [sparse-mezo] global_step=297 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 298/24544 [20:04<27:05:02,  4.02s/it]2026-04-18 22:46:40,311 - INFO - [sparse-mezo] global_step=298 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 299/24544 [20:08<27:04:10,  4.02s/it]2026-04-18 22:46:44,326 - INFO - [sparse-mezo] global_step=299 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 300/24544 [20:12<27:04:45,  4.02s/it]2026-04-18 22:46:48,333 - INFO - [sparse-mezo] global_step=300 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 301/24544 [20:16<27:01:16,  4.01s/it]2026-04-18 22:46:52,343 - INFO - [sparse-mezo] global_step=301 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 302/24544 [20:20<27:02:50,  4.02s/it]2026-04-18 22:46:56,369 - INFO - [sparse-mezo] global_step=302 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 303/24544 [20:24<27:02:31,  4.02s/it]2026-04-18 22:47:00,384 - INFO - [sparse-mezo] global_step=303 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 304/24544 [20:28<27:02:27,  4.02s/it]2026-04-18 22:47:04,399 - INFO - [sparse-mezo] global_step=304 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 305/24544 [20:32<27:03:30,  4.02s/it]2026-04-18 22:47:08,410 - INFO - [sparse-mezo] global_step=305 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|          | 306/24544 [20:36<27:02:16,  4.02s/it]2026-04-18 22:47:12,434 - INFO - [sparse-mezo] global_step=306 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 307/24544 [20:40<27:03:55,  4.02s/it]2026-04-18 22:47:16,466 - INFO - [sparse-mezo] global_step=307 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 308/24544 [20:44<27:02:51,  4.02s/it]2026-04-18 22:47:20,476 - INFO - [sparse-mezo] global_step=308 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 309/24544 [20:48<27:07:43,  4.03s/it]2026-04-18 22:47:24,537 - INFO - [sparse-mezo] global_step=309 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 310/24544 [20:52<27:07:58,  4.03s/it]2026-04-18 22:47:28,568 - INFO - [sparse-mezo] global_step=310 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 311/24544 [20:56<27:11:21,  4.04s/it]2026-04-18 22:47:32,623 - INFO - [sparse-mezo] global_step=311 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 312/24544 [21:00<27:11:33,  4.04s/it]2026-04-18 22:47:36,666 - INFO - [sparse-mezo] global_step=312 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 313/24544 [21:04<27:10:09,  4.04s/it]2026-04-18 22:47:40,698 - INFO - [sparse-mezo] global_step=313 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 314/24544 [21:08<27:09:03,  4.03s/it]2026-04-18 22:47:44,707 - INFO - [sparse-mezo] global_step=314 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 315/24544 [21:12<27:05:47,  4.03s/it]2026-04-18 22:47:48,733 - INFO - [sparse-mezo] global_step=315 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 316/24544 [21:16<27:05:39,  4.03s/it]2026-04-18 22:47:52,738 - INFO - [sparse-mezo] global_step=316 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 317/24544 [21:20<27:01:26,  4.02s/it]2026-04-18 22:47:56,749 - INFO - [sparse-mezo] global_step=317 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 318/24544 [21:24<27:01:13,  4.02s/it]2026-04-18 22:48:00,764 - INFO - [sparse-mezo] global_step=318 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 319/24544 [21:28<27:00:37,  4.01s/it]2026-04-18 22:48:04,772 - INFO - [sparse-mezo] global_step=319 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 320/24544 [21:32<27:07:47,  4.03s/it]2026-04-18 22:48:08,846 - INFO - [sparse-mezo] global_step=320 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 321/24544 [21:36<27:06:40,  4.03s/it]2026-04-18 22:48:12,870 - INFO - [sparse-mezo] global_step=321 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 322/24544 [21:40<27:04:14,  4.02s/it]2026-04-18 22:48:16,877 - INFO - [sparse-mezo] global_step=322 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 323/24544 [21:44<27:02:05,  4.02s/it]2026-04-18 22:48:20,883 - INFO - [sparse-mezo] global_step=323 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 324/24544 [21:48<27:00:43,  4.02s/it]2026-04-18 22:48:24,895 - INFO - [sparse-mezo] global_step=324 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 325/24544 [21:52<27:01:57,  4.02s/it]2026-04-18 22:48:28,921 - INFO - [sparse-mezo] global_step=325 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 326/24544 [21:56<27:04:20,  4.02s/it]2026-04-18 22:48:32,956 - INFO - [sparse-mezo] global_step=326 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 327/24544 [22:00<27:04:29,  4.02s/it]2026-04-18 22:48:36,988 - INFO - [sparse-mezo] global_step=327 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 328/24544 [22:04<27:03:49,  4.02s/it]2026-04-18 22:48:41,006 - INFO - [sparse-mezo] global_step=328 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 329/24544 [22:08<27:03:21,  4.02s/it]2026-04-18 22:48:45,023 - INFO - [sparse-mezo] global_step=329 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 330/24544 [22:12<27:03:49,  4.02s/it]2026-04-18 22:48:49,052 - INFO - [sparse-mezo] global_step=330 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 331/24544 [22:16<27:04:18,  4.03s/it]2026-04-18 22:48:53,078 - INFO - [sparse-mezo] global_step=331 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 332/24544 [22:20<27:02:58,  4.02s/it]2026-04-18 22:48:57,092 - INFO - [sparse-mezo] global_step=332 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 333/24544 [22:24<27:03:00,  4.02s/it]2026-04-18 22:49:01,117 - INFO - [sparse-mezo] global_step=333 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 334/24544 [22:28<27:00:31,  4.02s/it]2026-04-18 22:49:05,122 - INFO - [sparse-mezo] global_step=334 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 335/24544 [22:32<27:00:31,  4.02s/it]2026-04-18 22:49:09,137 - INFO - [sparse-mezo] global_step=335 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 336/24544 [22:37<27:03:17,  4.02s/it]2026-04-18 22:49:13,175 - INFO - [sparse-mezo] global_step=336 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 337/24544 [22:41<27:05:01,  4.03s/it]2026-04-18 22:49:17,197 - INFO - [sparse-mezo] global_step=337 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 338/24544 [22:45<27:01:26,  4.02s/it]2026-04-18 22:49:21,210 - INFO - [sparse-mezo] global_step=338 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 339/24544 [22:49<27:00:38,  4.02s/it]2026-04-18 22:49:25,225 - INFO - [sparse-mezo] global_step=339 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 340/24544 [22:53<27:01:26,  4.02s/it]2026-04-18 22:49:29,234 - INFO - [sparse-mezo] global_step=340 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 341/24544 [22:57<26:58:54,  4.01s/it]2026-04-18 22:49:33,231 - INFO - [sparse-mezo] global_step=341 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 342/24544 [23:01<26:56:55,  4.01s/it]2026-04-18 22:49:37,245 - INFO - [sparse-mezo] global_step=342 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 343/24544 [23:05<26:56:54,  4.01s/it]2026-04-18 22:49:41,240 - INFO - [sparse-mezo] global_step=343 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 344/24544 [23:09<26:55:41,  4.01s/it]2026-04-18 22:49:45,239 - INFO - [sparse-mezo] global_step=344 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 345/24544 [23:13<26:56:07,  4.01s/it]2026-04-18 22:49:49,247 - INFO - [sparse-mezo] global_step=345 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 346/24544 [23:17<26:56:39,  4.01s/it]2026-04-18 22:49:53,276 - INFO - [sparse-mezo] global_step=346 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 347/24544 [23:21<27:00:45,  4.02s/it]2026-04-18 22:49:57,322 - INFO - [sparse-mezo] global_step=347 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 348/24544 [23:25<27:02:16,  4.02s/it]2026-04-18 22:50:01,333 - INFO - [sparse-mezo] global_step=348 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 349/24544 [23:29<27:07:18,  4.04s/it]2026-04-18 22:50:05,400 - INFO - [sparse-mezo] global_step=349 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 350/24544 [23:33<27:03:50,  4.03s/it]2026-04-18 22:50:09,422 - INFO - [sparse-mezo] global_step=350 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 351/24544 [23:37<27:03:22,  4.03s/it]2026-04-18 22:50:13,449 - INFO - [sparse-mezo] global_step=351 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 352/24544 [23:41<27:03:20,  4.03s/it]2026-04-18 22:50:17,475 - INFO - [sparse-mezo] global_step=352 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 353/24544 [23:45<27:01:33,  4.02s/it]2026-04-18 22:50:21,486 - INFO - [sparse-mezo] global_step=353 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 354/24544 [23:49<27:00:35,  4.02s/it]2026-04-18 22:50:25,500 - INFO - [sparse-mezo] global_step=354 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 355/24544 [23:53<27:01:02,  4.02s/it]2026-04-18 22:50:29,524 - INFO - [sparse-mezo] global_step=355 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 356/24544 [23:57<27:01:23,  4.02s/it]2026-04-18 22:50:33,533 - INFO - [sparse-mezo] global_step=356 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 357/24544 [24:01<27:00:32,  4.02s/it]2026-04-18 22:50:37,564 - INFO - [sparse-mezo] global_step=357 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 358/24544 [24:05<27:01:08,  4.02s/it]2026-04-18 22:50:41,588 - INFO - [sparse-mezo] global_step=358 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 359/24544 [24:09<27:00:03,  4.02s/it]2026-04-18 22:50:45,604 - INFO - [sparse-mezo] global_step=359 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 360/24544 [24:13<27:00:41,  4.02s/it]2026-04-18 22:50:49,628 - INFO - [sparse-mezo] global_step=360 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 361/24544 [24:17<27:01:35,  4.02s/it]2026-04-18 22:50:53,641 - INFO - [sparse-mezo] global_step=361 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 362/24544 [24:21<26:58:34,  4.02s/it]2026-04-18 22:50:57,638 - INFO - [sparse-mezo] global_step=362 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 363/24544 [24:25<26:56:19,  4.01s/it]2026-04-18 22:51:01,636 - INFO - [sparse-mezo] global_step=363 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 364/24544 [24:29<26:55:49,  4.01s/it]2026-04-18 22:51:05,661 - INFO - [sparse-mezo] global_step=364 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 365/24544 [24:33<26:55:45,  4.01s/it]2026-04-18 22:51:09,667 - INFO - [sparse-mezo] global_step=365 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 366/24544 [24:37<26:55:29,  4.01s/it]2026-04-18 22:51:13,674 - INFO - [sparse-mezo] global_step=366 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 367/24544 [24:41<26:54:11,  4.01s/it]2026-04-18 22:51:17,659 - INFO - [sparse-mezo] global_step=367 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  1%|▏         | 368/24544 [24:45<26:51:31,  4.00s/it]2026-04-18 22:51:21,660 - INFO - [sparse-mezo] global_step=368 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 369/24544 [24:49<26:54:15,  4.01s/it]2026-04-18 22:51:25,686 - INFO - [sparse-mezo] global_step=369 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 370/24544 [24:53<26:55:49,  4.01s/it]2026-04-18 22:51:29,706 - INFO - [sparse-mezo] global_step=370 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 371/24544 [24:57<26:56:30,  4.01s/it]2026-04-18 22:51:33,722 - INFO - [sparse-mezo] global_step=371 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 372/24544 [25:01<26:58:09,  4.02s/it]2026-04-18 22:51:37,727 - INFO - [sparse-mezo] global_step=372 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 373/24544 [25:05<26:55:25,  4.01s/it]2026-04-18 22:51:41,743 - INFO - [sparse-mezo] global_step=373 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 374/24544 [25:09<26:56:08,  4.01s/it]2026-04-18 22:51:45,745 - INFO - [sparse-mezo] global_step=374 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 375/24544 [25:13<26:54:47,  4.01s/it]2026-04-18 22:51:49,744 - INFO - [sparse-mezo] global_step=375 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 376/24544 [25:17<26:58:03,  4.02s/it]2026-04-18 22:51:53,795 - INFO - [sparse-mezo] global_step=376 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 377/24544 [25:21<26:59:22,  4.02s/it]2026-04-18 22:51:57,829 - INFO - [sparse-mezo] global_step=377 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 378/24544 [25:25<26:58:38,  4.02s/it]2026-04-18 22:52:01,839 - INFO - [sparse-mezo] global_step=378 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 379/24544 [25:29<27:04:27,  4.03s/it]2026-04-18 22:52:05,908 - INFO - [sparse-mezo] global_step=379 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 380/24544 [25:33<27:02:20,  4.03s/it]2026-04-18 22:52:09,923 - INFO - [sparse-mezo] global_step=380 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 381/24544 [25:37<27:01:55,  4.03s/it]2026-04-18 22:52:13,934 - INFO - [sparse-mezo] global_step=381 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 382/24544 [25:41<26:57:07,  4.02s/it]2026-04-18 22:52:17,920 - INFO - [sparse-mezo] global_step=382 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 383/24544 [25:45<26:56:05,  4.01s/it]2026-04-18 22:52:21,945 - INFO - [sparse-mezo] global_step=383 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 384/24544 [25:49<26:57:38,  4.02s/it]2026-04-18 22:52:25,972 - INFO - [sparse-mezo] global_step=384 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 385/24544 [25:53<26:57:35,  4.02s/it]2026-04-18 22:52:29,989 - INFO - [sparse-mezo] global_step=385 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 386/24544 [25:57<26:57:18,  4.02s/it]2026-04-18 22:52:34,005 - INFO - [sparse-mezo] global_step=386 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 387/24544 [26:01<26:57:15,  4.02s/it]2026-04-18 22:52:38,023 - INFO - [sparse-mezo] global_step=387 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 388/24544 [26:05<26:57:12,  4.02s/it]2026-04-18 22:52:42,037 - INFO - [sparse-mezo] global_step=388 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 389/24544 [26:10<27:10:25,  4.05s/it]2026-04-18 22:52:46,167 - INFO - [sparse-mezo] global_step=389 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 390/24544 [26:14<27:07:26,  4.04s/it]2026-04-18 22:52:50,192 - INFO - [sparse-mezo] global_step=390 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 391/24544 [26:18<27:05:13,  4.04s/it]2026-04-18 22:52:54,213 - INFO - [sparse-mezo] global_step=391 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 392/24544 [26:22<27:03:48,  4.03s/it]2026-04-18 22:52:58,224 - INFO - [sparse-mezo] global_step=392 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 393/24544 [26:26<27:03:50,  4.03s/it]2026-04-18 22:53:02,259 - INFO - [sparse-mezo] global_step=393 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 394/24544 [26:30<26:59:14,  4.02s/it]2026-04-18 22:53:06,274 - INFO - [sparse-mezo] global_step=394 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 395/24544 [26:34<27:00:56,  4.03s/it]2026-04-18 22:53:10,311 - INFO - [sparse-mezo] global_step=395 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 396/24544 [26:38<26:59:16,  4.02s/it]2026-04-18 22:53:14,325 - INFO - [sparse-mezo] global_step=396 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 397/24544 [26:42<27:01:35,  4.03s/it]2026-04-18 22:53:18,367 - INFO - [sparse-mezo] global_step=397 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 398/24544 [26:46<27:01:10,  4.03s/it]2026-04-18 22:53:22,393 - INFO - [sparse-mezo] global_step=398 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 399/24544 [26:50<27:01:06,  4.03s/it]2026-04-18 22:53:26,407 - INFO - [sparse-mezo] global_step=399 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 400/24544 [26:54<26:58:38,  4.02s/it]2026-04-18 22:53:30,417 - INFO - [sparse-mezo] global_step=400 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+2026-04-18 22:53:34,551 - WARNING - [zo_probe] step=400: no finite probe pairs; skipping row.
+
+  2%|▏         | 401/24544 [27:02<35:14:59,  5.26s/it]2026-04-18 22:53:38,569 - INFO - [sparse-mezo] global_step=401 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 402/24544 [27:06<32:46:27,  4.89s/it]2026-04-18 22:53:42,592 - INFO - [sparse-mezo] global_step=402 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 403/24544 [27:10<31:02:16,  4.63s/it]2026-04-18 22:53:46,616 - INFO - [sparse-mezo] global_step=403 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 404/24544 [27:14<29:46:25,  4.44s/it]2026-04-18 22:53:50,620 - INFO - [sparse-mezo] global_step=404 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 405/24544 [27:18<28:56:28,  4.32s/it]2026-04-18 22:53:54,630 - INFO - [sparse-mezo] global_step=405 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 406/24544 [27:22<28:19:24,  4.22s/it]2026-04-18 22:53:58,637 - INFO - [sparse-mezo] global_step=406 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 407/24544 [27:26<27:54:36,  4.16s/it]2026-04-18 22:54:02,672 - INFO - [sparse-mezo] global_step=407 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 408/24544 [27:30<27:37:34,  4.12s/it]2026-04-18 22:54:06,698 - INFO - [sparse-mezo] global_step=408 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 409/24544 [27:34<27:26:18,  4.09s/it]2026-04-18 22:54:10,707 - INFO - [sparse-mezo] global_step=409 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 410/24544 [27:38<27:17:11,  4.07s/it]2026-04-18 22:54:14,741 - INFO - [sparse-mezo] global_step=410 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 411/24544 [27:42<27:10:38,  4.05s/it]2026-04-18 22:54:18,740 - INFO - [sparse-mezo] global_step=411 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 412/24544 [27:46<27:04:51,  4.04s/it]2026-04-18 22:54:22,748 - INFO - [sparse-mezo] global_step=412 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 413/24544 [27:50<27:00:59,  4.03s/it]2026-04-18 22:54:26,775 - INFO - [sparse-mezo] global_step=413 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 414/24544 [27:54<26:58:35,  4.02s/it]2026-04-18 22:54:30,785 - INFO - [sparse-mezo] global_step=414 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 415/24544 [27:58<26:56:47,  4.02s/it]2026-04-18 22:54:34,796 - INFO - [sparse-mezo] global_step=415 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 416/24544 [28:02<26:54:39,  4.02s/it]2026-04-18 22:54:38,799 - INFO - [sparse-mezo] global_step=416 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 417/24544 [28:06<26:53:57,  4.01s/it]2026-04-18 22:54:42,795 - INFO - [sparse-mezo] global_step=417 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 418/24544 [28:10<26:51:52,  4.01s/it]2026-04-18 22:54:46,787 - INFO - [sparse-mezo] global_step=418 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 419/24544 [28:14<27:00:59,  4.03s/it]2026-04-18 22:54:50,892 - INFO - [sparse-mezo] global_step=419 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 420/24544 [28:18<26:58:31,  4.03s/it]2026-04-18 22:54:54,903 - INFO - [sparse-mezo] global_step=420 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 421/24544 [28:22<26:58:24,  4.03s/it]2026-04-18 22:54:58,929 - INFO - [sparse-mezo] global_step=421 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 422/24544 [28:26<26:58:33,  4.03s/it]2026-04-18 22:55:02,937 - INFO - [sparse-mezo] global_step=422 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 423/24544 [28:30<26:56:25,  4.02s/it]2026-04-18 22:55:06,945 - INFO - [sparse-mezo] global_step=423 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 424/24544 [28:34<26:53:29,  4.01s/it]2026-04-18 22:55:10,941 - INFO - [sparse-mezo] global_step=424 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 425/24544 [28:38<26:52:28,  4.01s/it]2026-04-18 22:55:14,955 - INFO - [sparse-mezo] global_step=425 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 426/24544 [28:42<26:51:17,  4.01s/it]2026-04-18 22:55:18,967 - INFO - [sparse-mezo] global_step=426 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 427/24544 [28:46<26:52:05,  4.01s/it]2026-04-18 22:55:22,985 - INFO - [sparse-mezo] global_step=427 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 428/24544 [28:50<26:54:48,  4.02s/it]2026-04-18 22:55:27,019 - INFO - [sparse-mezo] global_step=428 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 429/24544 [28:54<26:55:35,  4.02s/it]2026-04-18 22:55:31,044 - INFO - [sparse-mezo] global_step=429 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 430/24544 [28:58<26:54:25,  4.02s/it]2026-04-18 22:55:35,037 - INFO - [sparse-mezo] global_step=430 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 431/24544 [29:02<26:52:21,  4.01s/it]2026-04-18 22:55:39,056 - INFO - [sparse-mezo] global_step=431 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 432/24544 [29:06<26:58:08,  4.03s/it]2026-04-18 22:55:43,113 - INFO - [sparse-mezo] global_step=432 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 433/24544 [29:10<26:57:43,  4.03s/it]2026-04-18 22:55:47,136 - INFO - [sparse-mezo] global_step=433 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 434/24544 [29:14<26:55:36,  4.02s/it]2026-04-18 22:55:51,144 - INFO - [sparse-mezo] global_step=434 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 435/24544 [29:19<26:54:42,  4.02s/it]2026-04-18 22:55:55,158 - INFO - [sparse-mezo] global_step=435 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 436/24544 [29:23<26:53:28,  4.02s/it]2026-04-18 22:55:59,170 - INFO - [sparse-mezo] global_step=436 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+
+  2%|▏         | 437/24544 [29:27<26:54:49,  4.02s/it]2026-04-18 22:56:03,200 - INFO - [sparse-mezo] global_step=437 active_fraction=0.000000 active_params=0/1315758080 configured_ratio=0.250000 mask_strategy=percentile_per_layer scope=trainable_only
+

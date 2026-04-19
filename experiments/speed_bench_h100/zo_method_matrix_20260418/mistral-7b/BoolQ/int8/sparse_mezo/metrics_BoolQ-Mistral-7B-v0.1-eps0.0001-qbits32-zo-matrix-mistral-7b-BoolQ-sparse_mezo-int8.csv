@@ -1,0 +1,11 @@
+time,step,epoch,phase,split,metric,value,task,model,eps,seed,precision,zo_quantization_bits
+2026-04-18 20:31:52,4,0.007532956685499058,train,train,train_runtime,239.8775,BoolQ,Mistral-7B-v0.1,0.0001,42,int8,32
+2026-04-18 20:31:52,4,0.007532956685499058,train,train,train_samples_per_second,0.267,BoolQ,Mistral-7B-v0.1,0.0001,42,int8,32
+2026-04-18 20:31:52,4,0.007532956685499058,train,train,train_steps_per_second,0.017,BoolQ,Mistral-7B-v0.1,0.0001,42,int8,32
+2026-04-18 20:31:52,4,0.007532956685499058,train,train,train_loss,0.7676388025283813,BoolQ,Mistral-7B-v0.1,0.0001,42,int8,32
+2026-04-18 20:31:52,4,0.007532956685499058,train,train,tail_perf_window_steps,2.0,BoolQ,Mistral-7B-v0.1,0.0001,42,int8,32
+2026-04-18 20:31:52,4,0.007532956685499058,train,train,tail_perf_measured_steps,2.0,BoolQ,Mistral-7B-v0.1,0.0001,42,int8,32
+2026-04-18 20:31:52,4,0.007532956685499058,train,train,tail_perf_wallclock_per_step,30.351460933685303,BoolQ,Mistral-7B-v0.1,0.0001,42,int8,32
+2026-04-18 20:31:52,4,0.007532956685499058,train,train,tail_perf_samples_per_second,0.5271574911981433,BoolQ,Mistral-7B-v0.1,0.0001,42,int8,32
+2026-04-18 20:31:52,4,0.007532956685499058,train,train,tail_perf_max_gpu_memory_gb,41.373159408569336,BoolQ,Mistral-7B-v0.1,0.0001,42,int8,32
+2026-04-18 20:31:52,4,0.007532956685499058,train,train,epoch,0.01,BoolQ,Mistral-7B-v0.1,0.0001,42,int8,32

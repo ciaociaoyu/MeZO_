@@ -1,0 +1,51 @@
+[nan-guard] command=python /scratch/jy03364/MeZO_/large_models/run.py --model_name opt-1.3b --task_name MNLI --output_dir /scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli/h_3e-2/seed_42 --overwrite_output_dir --tag hsweep14h-quzo16-mnli-h3e-2-seed42 --dataset_mode full --num_k 16 --data_seed 42 --train_set_seed 42 --num_dev 0 --trainer zo --load_float16 --zo_quantization_bits 16 --train_as_classification --learning_rate 1e-6 --zo_eps 3e-2 --num_train_epochs 1 --per_device_train_batch_size 16 --gradient_accumulation_steps 1 --lr_scheduler_type constant --evaluation_strategy steps --save_strategy no --eval_steps 5000 --logging_steps 10 --zo_probe_every 200 --zo_probe_num_seeds 16 --zo_probe_log_csv
+[nan-guard] cwd=/scratch/jy03364/MeZO_/experiments/h_sweep_14h max_consecutive_nan=100
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/deepspeed.py:23: FutureWarning: transformers.deepspeed module is deprecated and will be removed in a future version. Please import deepspeed modules directly from transformers.integrations
+  warnings.warn(
+2026-04-14 23:21:40,283 - INFO - [model] requested=opt-1.3b resolved=facebook/opt-1.3b family_hint=opt
+2026-04-14 23:21:40,283 - INFO - [data] task_name=MNLI dataset_mode=full num_k=16 data_seed=42 full_dev_ratio=0.1
+2026-04-14 23:21:49,422 - INFO - Loading model with FP16...
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+2026-04-14 23:21:49,470 - INFO - [model] disabling auto device placement for training; Trainer/Accelerate will place the model
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/modeling_utils.py:484: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  return torch.load(checkpoint_file, map_location=map_location)
+2026-04-14 23:21:58,884 - INFO - Done with 9.46s
+2026-04-14 23:21:58,979 - INFO - [quzo-config] quantized model parameters in-place at 16 bits before ZO training
+2026-04-14 23:21:58,979 - INFO - [sparse-mezo-config] enabled=False | sparse_ratio=1.0 | sparse_mask_strategy=percentile_per_layer | sparse_scope=trainable_only | sparse_log_active_fraction=True
+2026-04-14 23:21:58,979 - INFO - [sparse-mezo-config] ratio semantics: sparse_ratio targets the active fraction per trainable tensor; ratio=1.0 disables masking. Order: construct direction -> apply sparse mask -> apply QuZO snapping after masked perturb/update when low-bit QuZO is active.
+2026-04-14 23:21:58,997 - INFO - Preparing training/evaluation datasets...
+2026-04-14 23:21:58,997 - INFO - Done with 0.00s
+2026-04-14 23:21:59,485 - INFO - ***** Running training *****
+2026-04-14 23:21:59,485 - INFO -   Num examples = 392702
+2026-04-14 23:21:59,485 - INFO -   Num Epochs = 1
+2026-04-14 23:21:59,485 - INFO -   Instantaneous batch size per device = 16
+2026-04-14 23:21:59,485 - INFO -   Total train batch size (w. parallel, distributed & accumulation) = 16
+2026-04-14 23:21:59,485 - INFO -   Gradient Accumulation steps = 1
+2026-04-14 23:21:59,485 - INFO -   Total optimization steps = 24544
+2026-04-14 23:21:59,486 - INFO -   Number of trainable parameters = 1315758080
+
+  0%|          | 0/24544 [00:00<?, ?it/s]
+  0%|          | 1/24544 [00:00<2:55:18,  2.33it/s]Traceback (most recent call last):
+  File "/scratch/jy03364/MeZO_/large_models/run.py", line 1285, in <module>
+    main()
+  File "/scratch/jy03364/MeZO_/large_models/run.py", line 1194, in main
+    framework.train(train_samples, dev_samples if dev_samples is not None else eval_samples)
+  File "/scratch/jy03364/MeZO_/large_models/run.py", line 1047, in train
+    train_result = trainer.train(resume_from_checkpoint=last_checkpoint)
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/trainer.py", line 1555, in train
+    return inner_training_loop(
+  File "/scratch/jy03364/MeZO_/large_models/trainer.py", line 812, in _inner_training_loop
+    self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
+  File "/scratch/jy03364/MeZO_/large_models/trainer.py", line 306, in _maybe_log_save_evaluate
+    return super()._maybe_log_save_evaluate(
+TypeError: Trainer._maybe_log_save_evaluate() takes 6 positional arguments but 9 were given
+
+  0%|          | 1/24544 [00:01<7:38:36,  1.12s/it]
+[nan-guard] child exited with code 1.

@@ -1,0 +1,322 @@
+WARNING:__main__:Process rank: -1, device: cuda:0, n_gpu: 1, distributed training: False, 16-bits training: False
+INFO:__main__:Training/evaluation parameters DynamicTrainingArguments(
+_n_gpu=1,
+accelerator_config={'split_batches': False, 'dispatch_batches': None, 'even_batches': True, 'use_seedable_sampler': True, 'non_blocking': False, 'gradient_accumulation_kwargs': None, 'use_configured_state': False},
+adafactor=False,
+adam_beta1=0.9,
+adam_beta2=0.999,
+adam_epsilon=1e-08,
+adaptive_h_ema_beta=0.1,
+adaptive_h_estimate_num_batches=4,
+adaptive_h_estimate_num_directions=3,
+adaptive_h_estimate_reduce=mean,
+adaptive_h_max=0.5,
+adaptive_h_min=1e-05,
+adaptive_h_probe_buffer_size=64,
+adjust_for_init=False,
+array_id=-1,
+auto_find_batch_size=False,
+average_tokens_across_devices=False,
+batch_eval_metrics=False,
+bf16=False,
+bf16_full_eval=False,
+binary_classification=False,
+change_grad_estimate=False,
+data_seed=16,
+dataloader_drop_last=False,
+dataloader_num_workers=0,
+dataloader_persistent_workers=False,
+dataloader_pin_memory=True,
+dataloader_prefetch_factor=None,
+dataloader_shuffle=False,
+ddp_backend=None,
+ddp_broadcast_buffers=None,
+ddp_bucket_cap_mb=None,
+ddp_find_unused_parameters=None,
+ddp_timeout=1800,
+debug=[],
+deepspeed=None,
+dh_h_growth=2.0,
+dh_max_trials=10,
+dh_test_h=0.01,
+disable_tqdm=False,
+do_eval=True,
+do_predict=False,
+do_train=True,
+efficient_zero_order=True,
+efficient_zero_order_fp16=False,
+enable_additive_h_estimation=False,
+enable_two_point_h_estimation=False,
+eval_accumulation_steps=None,
+eval_delay=0,
+eval_do_concat_batches=True,
+eval_on_start=False,
+eval_steps=10.0,
+eval_strategy=IntervalStrategy.NO,
+eval_use_gather_object=False,
+evaluate_during_training=True,
+exclude_embeddings=False,
+exclude_first_layers=-1,
+exclude_head=False,
+f0_scaling=1.0,
+fix_layers=0,
+fp16=False,
+fp16_backend=auto,
+fp16_full_eval=False,
+fp16_opt_level=O1,
+from_linearhead=False,
+fsdp=[],
+fsdp_config={'min_num_params': 0, 'xla': False, 'xla_fsdp_v2': False, 'xla_fsdp_grad_ckpt': False},
+fsdp_min_num_params=0,
+fsdp_transformer_layer_cls_to_wrap=None,
+full_determinism=False,
+gradient_accumulation_steps=1,
+gradient_checkpointing=False,
+gradient_checkpointing_kwargs=None,
+greater_is_better=None,
+group_by_length=False,
+h_estimation_active_source=fixed,
+h_trunc_alpha=1.0,
+half_precision_backend=auto,
+head_tuning=False,
+hf_inference_model=False,
+hub_always_push=False,
+hub_model_id=None,
+hub_private_repo=None,
+hub_revision=None,
+hub_strategy=HubStrategy.EVERY_SAVE,
+hub_token=<HUB_TOKEN>,
+ignore_data_skip=False,
+include_for_metrics=[],
+include_inputs_for_metrics=False,
+include_num_input_tokens_seen=False,
+include_tokens_per_second=False,
+initial_h=0.001,
+jit_mode_eval=False,
+kernel_formula=sgd,
+kernel_gamma=1.0,
+kernel_regularization=0.0,
+kernel_solver=logistic,
+label_names=None,
+label_smoothing_factor=0.0,
+layer_wise_optim=False,
+learning_rate=1e-06,
+length_column_name=length,
+liger_kernel_config=None,
+load_best_model_at_end=False,
+load_kernels=None,
+local_rank=-1,
+log_file=log-USE_H0-USE_C0,
+log_level=passive,
+log_level_replica=warning,
+log_on_each_node=True,
+logging_dir=/scratch/jy03364/MeZO_/experiments/h_sweep_8h/results/smoke_fast/mezo_int8/roberta-large/sst5/run_smoke/seed16/runs/Apr16_08-22-34_ra5-4,
+logging_first_step=False,
+logging_nan_inf_filter=True,
+logging_steps=10,
+logging_strategy=IntervalStrategy.STEPS,
+lp_early_stopping=False,
+lr_scheduler_kwargs={},
+lr_scheduler_type=SchedulerType.CONSTANT,
+max_grad_norm=1.0,
+max_steps=10,
+max_zo_forward_steps=0,
+mc_tol=0.1,
+metric_for_best_model=None,
+model_id=-1,
+mp_parameters=,
+neftune_noise_alpha=None,
+no_cuda=False,
+no_predict=True,
+no_reparam=False,
+no_train=False,
+norm_running_update=False,
+nu3_retry=3,
+num_hvp_vecs=128,
+num_prefix=10,
+num_train_epochs=3.0,
+only_biases=False,
+optim=OptimizerNames.ADAMW_TORCH,
+optim_args=None,
+optim_target_modules=None,
+optimize_acc=False,
+optimizer=sgd,
+optimizer_variant=,
+output_dir=/scratch/jy03364/MeZO_/experiments/h_sweep_8h/results/smoke_fast/mezo_int8/roberta-large/sst5/run_smoke/seed16,
+overwrite_kernels=False,
+overwrite_output_dir=True,
+parallelism_config=None,
+past_index=-1,
+per_device_eval_batch_size=4,
+per_device_train_batch_size=32,
+prediction_loss_only=False,
+prefix_init_by_real_act=False,
+prefix_tuning=False,
+prob_as_feature=False,
+push_to_hub=False,
+push_to_hub_model_id=None,
+push_to_hub_organization=None,
+push_to_hub_token=<PUSH_TO_HUB_TOKEN>,
+random_model_init=False,
+ray_scope=last,
+recompute_norms=False,
+remove_unused_columns=True,
+report_to=[],
+restore_callback_states_from_checkpoint=False,
+resume_from_checkpoint=None,
+run_name=None,
+save_at_last=False,
+save_logit=False,
+save_logit_dir=None,
+save_on_each_node=False,
+save_only_model=False,
+save_safetensors=True,
+save_steps=500,
+save_strategy=SaveStrategy.STEPS,
+save_total_limit=None,
+scale_lr_with_samples=False,
+scale_norm_by_num_params=False,
+seed=16,
+skip_memory_metrics=True,
+sparse_log_active_fraction=True,
+sparse_mask_strategy=percentile_per_layer,
+sparse_ratio=1.0,
+sparse_scope=trainable_only,
+sweep=False,
+sync_embedding_layers=False,
+tf32=None,
+tie_emb=False,
+torch_compile=False,
+torch_compile_backend=None,
+torch_compile_mode=None,
+torch_empty_cache_steps=None,
+torchdynamo=None,
+tpu_metrics_debug=False,
+tpu_num_cores=None,
+trainer=standard,
+two_point_h_beta=0.5,
+two_point_h_c2=1.0,
+two_point_h_delta_sample_size=4096,
+two_point_h_eps_num=1e-12,
+two_point_h_fixed_probe_batch=True,
+two_point_h_log_csv=True,
+two_point_h_max=0.5,
+two_point_h_min=1e-05,
+two_point_h_num_directions_g=4,
+two_point_h_num_directions_l=4,
+two_point_h_q_l=0.5,
+two_point_h_refresh_every=100,
+two_point_h_window_delta=3,
+two_point_h_window_g=5,
+two_point_h_window_l=5,
+untie_emb=False,
+update_noise_every=1000,
+use_adaptive_h=False,
+use_c_scale=False,
+use_cpu=False,
+use_ipex=False,
+use_legacy_prediction_loop=False,
+use_liger_kernel=False,
+use_mps_device=False,
+use_torchao_float8=False,
+use_zo_grad_est=False,
+warmup_ratio=0.0,
+warmup_steps=0,
+weight_decay=0.0,
+zero_order_clip_grad=False,
+zero_order_eps=0.0001,
+zero_order_optim=True,
+zero_order_sample=1,
+zero_order_sample_scheduler=None,
+zero_order_use_trainer_optim=False,
+zo_by_layer=False,
+zo_probe_every=10,
+zo_probe_log_csv=True,
+zo_probe_num_seeds=4,
+zo_quantization=int8,
+zo_quantization_bits=8,
+zo_two_point_precision=fp16,
+zo_use_true_directional_derivative=False,
+zo_variant=None,
+)
+INFO:__main__:[zo-config] zo_two_point_precision=fp16 | zero_order_eps=0.0001 | zo_use_true_directional_derivative=False
+INFO:__main__:[quzo-config] zo_quantization_bits=8 | quzo_enabled=True
+INFO:__main__:[sparse-mezo-config] enabled=False | sparse_ratio=1.0 | sparse_mask_strategy=percentile_per_layer | sparse_scope=trainable_only | sparse_log_active_fraction=True
+INFO:__main__:[sparse-mezo-config] ratio semantics: sparse_ratio targets the active fraction per trainable tensor; ratio=1.0 disables masking. Order: construct direction -> apply sparse mask -> apply QuZO snapping after masked perturb/update when low-bit QuZO is active.
+INFO:__main__:Task name: sst-5, number of labels: 5, output mode: classification
+INFO:__main__:[data] dataset_mode requested=full resolved=full
+INFO:__main__:[data] task_dir=sst-5 data_seed=16
+INFO:__main__:[data] auto_download=0 original_data_root=/scratch/jy03364/MeZO_/medium_models/data/original
+INFO:__main__:[data] auto_generate=0 target=/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:__main__:[data] resolved_data_dir=/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+WARNING:src.models:By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode train: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:[FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+INFO:src.dataset:Creating features from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode dev: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+/scratch/jy03364/MeZO_/medium_models/src/dataset.py:363: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  self.support_examples, self.query_examples = torch.load(cached_features_file)
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16/cached_dev_RobertaTokenizerFast-roberta_128_sst-5 [took 0.016 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: dev-0
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 627, 936, 19, 4133, 59, 30859, 16, 51, 33, 10, 16699, 7, 9215, 88, 1368, 1638, 783, 479, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=1, mask_pos=[21], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>the problem with movies about angels is they have a tendency to slip into hokum . It was<mask>.</s>
+INFO:__main__:[quzo-config] quantized model parameters in-place at 8 bits before ZO training
+huggingface/tokenizers: The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks...
+To disable this warning, you can either:
+	- Avoid using `tokenizers` before the fork if possible
+	- Explicitly set the environment variable TOKENIZERS_PARALLELISM=(true | false)
+INFO:src.trainer:[dataloader][debug] self class=Trainer, get_train_dataloader=<bound method Trainer.get_train_dataloader of <src.trainer.Trainer object at 0x14761ed6dca0>>
+INFO:src.trainer:[dataloader][override] Trainer.get_train_dataloader active. shuffle_raw=False type=bool -> shuffle=False; data_seed=16 seed=16 local_rank=-1
+INFO:src.trainer:[dataloader][override] selected sampler=SequentialSampler
+INFO:src.trainer:[dataloader] sampler=SequentialSampler, batch_sampler=BatchSampler
+INFO:src.trainer:[dataloader] training uses SequentialSampler (no shuffle).
+INFO:src.trainer:[dataloader] args.dataloader_shuffle=False
+INFO:src.trainer:[dataloader] args.data_seed=16 args.seed=16
+INFO:src.trainer:***** Running training *****
+INFO:src.trainer:  Num examples = 7690
+INFO:src.trainer:  Num Epochs = 1
+INFO:src.trainer:  Instantaneous batch size per device = 32
+INFO:src.trainer:  Total train batch size (w. parallel, distributed & accumulation) = 32
+INFO:src.trainer:  Gradient Accumulation steps = 1
+INFO:src.trainer:  Total optimization steps = 10
+INFO:src.trainer:[zo-config] zo_two_point_precision=fp16 | zero_order_eps=0.0001 | zo_use_true_directional_derivative=False
+INFO:src.trainer:[zo_probe] enabled: every=10, num_seeds=4, csv=/scratch/jy03364/MeZO_/experiments/h_sweep_8h/results/smoke_fast/mezo_int8/roberta-large/sst5/run_smoke/seed16/zo_directional_probe.csv
+INFO:src.trainer:[h_estimation][init] h0=1.000e-03 active_source=fixed additive=False two_point=False
+You're using a RobertaTokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+/scratch/jy03364/MeZO_/medium_models/src/trainer.py:2122: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  return autocast(dtype=torch.float16)
+INFO:src.trainer:{'loss': 1.5961456298828125, 'learning_rate': 1e-06, 'global_step': 0, 'zo_forward_step': 2, 'max_steps': 10, 'max_zo_forward_steps': 0, 'time': 1, 'eps': 0.0001}
+/home/jy03364/.conda/envs/ciao/lib/python3.12/site-packages/transformers/trainer_pt_utils.py:476: FutureWarning: DistributedTensorGatherer is deprecated and will be removed in v5 of Transformers.
+  warnings.warn(
+  0%|          | 0/214 [00:00<?, ?it/s]  5%|▍         | 10/214 [00:00<00:02, 95.64it/s]  9%|▉         | 20/214 [00:00<00:01, 97.43it/s] 14%|█▍        | 30/214 [00:00<00:01, 97.48it/s] 19%|█▊        | 40/214 [00:00<00:01, 97.47it/s] 23%|██▎       | 50/214 [00:00<00:01, 97.58it/s] 28%|██▊       | 60/214 [00:00<00:01, 97.67it/s] 33%|███▎      | 70/214 [00:00<00:01, 97.81it/s] 37%|███▋      | 80/214 [00:00<00:01, 97.36it/s] 42%|████▏     | 90/214 [00:00<00:01, 97.37it/s] 47%|████▋     | 100/214 [00:01<00:01, 97.23it/s] 51%|█████▏    | 110/214 [00:01<00:01, 96.96it/s] 56%|█████▌    | 120/214 [00:01<00:00, 97.07it/s] 61%|██████    | 130/214 [00:01<00:00, 95.59it/s] 65%|██████▌   | 140/214 [00:01<00:00, 96.21it/s] 70%|███████   | 150/214 [00:01<00:00, 95.74it/s] 75%|███████▍  | 160/214 [00:01<00:00, 96.07it/s] 79%|███████▉  | 170/214 [00:01<00:00, 96.27it/s] 84%|████████▍ | 180/214 [00:01<00:00, 97.34it/s] 89%|████████▉ | 190/214 [00:01<00:00, 96.54it/s] 93%|█████████▎| 200/214 [00:02<00:00, 96.90it/s] 98%|█████████▊| 210/214 [00:02<00:00, 97.06it/s]INFO:src.trainer:{'eval_loss': 1.6330336332321167, 'eval_acc': 0.28454332552693207}
+INFO:src.trainer:Best dev result: 0.28454332552693207
+INFO:src.trainer:{'loss': 1.75677490234375, 'learning_rate': 1e-06, 'global_step': 10, 'zo_forward_step': 22, 'max_steps': 10, 'max_zo_forward_steps': 0, 'time': 11, 'eps': 0.0001}
+INFO:src.trainer:[eval_loss_last5] mean=1.633034e+00 count=1 steps=[10]
+INFO:src.trainer:
+
+Training completed. Do not forget to share your model on huggingface.co/models =)
+
+
+INFO:__main__:*** Validate ***
+220it [00:03, 17.77it/s]                         229it [00:03, 22.84it/s]239it [00:04, 29.89it/s]249it [00:04, 37.90it/s]259it [00:04, 46.58it/s]269it [00:04, 55.31it/s]279it [00:04, 63.63it/s]289it [00:04, 71.04it/s]299it [00:04, 76.99it/s]309it [00:04, 82.01it/s]319it [00:04, 86.19it/s]329it [00:04, 89.07it/s]339it [00:05, 91.65it/s]349it [00:05, 93.27it/s]359it [00:05, 92.43it/s]369it [00:05, 93.75it/s]379it [00:05, 94.92it/s]389it [00:05, 95.32it/s]399it [00:05, 95.99it/s]409it [00:05, 96.39it/s]419it [00:05, 96.46it/s]INFO:src.trainer:{'eval_loss': 1.6330336332321167, 'eval_acc': 0.28454332552693207}
+INFO:__main__:***** Eval results sst-5 *****
+INFO:__main__:  eval_loss = 1.6330336332321167
+INFO:__main__:  eval_acc = 0.28454332552693207
+INFO:__main__:****** Output Dir *******
+INFO:__main__:/scratch/jy03364/MeZO_/experiments/h_sweep_8h/results/smoke_fast/mezo_int8/roberta-large/sst5/run_smoke/seed16
+428it [00:06, 71.16it/s]

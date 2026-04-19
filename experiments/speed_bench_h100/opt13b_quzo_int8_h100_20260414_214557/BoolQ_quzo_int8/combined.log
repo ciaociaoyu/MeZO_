@@ -1,0 +1,7 @@
+2026-04-14 21:46:12,941 - INFO - PyTorch version 2.5.1+cu121 available.
+Traceback (most recent call last):
+  File "/scratch/jy03364/MeZO_/large_models/run.py", line 36, in <module>
+    from trainer import OurTrainer
+  File "/scratch/jy03364/MeZO_/large_models/trainer.py", line 94, in <module>
+    from transformers.deepspeed import deepspeed_init, is_deepspeed_zero3_enabled
+ModuleNotFoundError: No module named 'transformers.deepspeed'

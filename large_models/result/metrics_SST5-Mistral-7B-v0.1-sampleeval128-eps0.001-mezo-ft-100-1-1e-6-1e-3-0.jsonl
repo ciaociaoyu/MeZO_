@@ -1,0 +1,10 @@
+{"time": "2026-04-11 03:53:00", "step": 100, "epoch": 10.0, "phase": "train", "metric": "train_runtime", "value": 200.4086, "task": "SST5", "model": "Mistral-7B-v0.1", "eps": 0.001}
+{"time": "2026-04-11 03:53:00", "step": 100, "epoch": 10.0, "phase": "train", "metric": "train_samples_per_second", "value": 3.992, "task": "SST5", "model": "Mistral-7B-v0.1", "eps": 0.001}
+{"time": "2026-04-11 03:53:00", "step": 100, "epoch": 10.0, "phase": "train", "metric": "train_steps_per_second", "value": 0.499, "task": "SST5", "model": "Mistral-7B-v0.1", "eps": 0.001}
+{"time": "2026-04-11 03:53:00", "step": 100, "epoch": 10.0, "phase": "train", "metric": "train_loss", "value": 17.8148388671875, "task": "SST5", "model": "Mistral-7B-v0.1", "eps": 0.001}
+{"time": "2026-04-11 03:53:00", "step": 100, "epoch": 10.0, "phase": "train", "metric": "epoch", "value": 10.0, "task": "SST5", "model": "Mistral-7B-v0.1", "eps": 0.001}
+{"time": "2026-04-11 03:57:19", "step": 100, "epoch": 10.0, "phase": "train", "metric": "train_runtime", "value": 204.8389, "task": "SST5", "model": "Mistral-7B-v0.1", "eps": 0.001}
+{"time": "2026-04-11 03:57:19", "step": 100, "epoch": 10.0, "phase": "train", "metric": "train_samples_per_second", "value": 3.906, "task": "SST5", "model": "Mistral-7B-v0.1", "eps": 0.001}
+{"time": "2026-04-11 03:57:19", "step": 100, "epoch": 10.0, "phase": "train", "metric": "train_steps_per_second", "value": 0.488, "task": "SST5", "model": "Mistral-7B-v0.1", "eps": 0.001}
+{"time": "2026-04-11 03:57:19", "step": 100, "epoch": 10.0, "phase": "train", "metric": "train_loss", "value": 17.8148388671875, "task": "SST5", "model": "Mistral-7B-v0.1", "eps": 0.001}
+{"time": "2026-04-11 03:57:19", "step": 100, "epoch": 10.0, "phase": "train", "metric": "epoch", "value": 10.0, "task": "SST5", "model": "Mistral-7B-v0.1", "eps": 0.001}

@@ -1,0 +1,11 @@
+time,step,epoch,phase,split,metric,value,task,model,eps,seed,precision,zo_quantization_bits
+2026-04-18 20:10:45,4,0.008316008316008316,train,train,train_runtime,105.8325,SST5,Mistral-7B-v0.1,0.0001,42,fp16,16
+2026-04-18 20:10:45,4,0.008316008316008316,train,train,train_samples_per_second,0.605,SST5,Mistral-7B-v0.1,0.0001,42,fp16,16
+2026-04-18 20:10:45,4,0.008316008316008316,train,train,train_steps_per_second,0.038,SST5,Mistral-7B-v0.1,0.0001,42,fp16,16
+2026-04-18 20:10:45,4,0.008316008316008316,train,train,train_loss,1.9053330421447754,SST5,Mistral-7B-v0.1,0.0001,42,fp16,16
+2026-04-18 20:10:45,4,0.008316008316008316,train,train,tail_perf_window_steps,2.0,SST5,Mistral-7B-v0.1,0.0001,42,fp16,16
+2026-04-18 20:10:45,4,0.008316008316008316,train,train,tail_perf_measured_steps,2.0,SST5,Mistral-7B-v0.1,0.0001,42,fp16,16
+2026-04-18 20:10:45,4,0.008316008316008316,train,train,tail_perf_wallclock_per_step,13.166950583457947,SST5,Mistral-7B-v0.1,0.0001,42,fp16,16
+2026-04-18 20:10:45,4,0.008316008316008316,train,train,tail_perf_samples_per_second,1.2151636704782125,SST5,Mistral-7B-v0.1,0.0001,42,fp16,16
+2026-04-18 20:10:45,4,0.008316008316008316,train,train,tail_perf_max_gpu_memory_gb,22.474472522735596,SST5,Mistral-7B-v0.1,0.0001,42,fp16,16
+2026-04-18 20:10:45,4,0.008316008316008316,train,train,epoch,0.01,SST5,Mistral-7B-v0.1,0.0001,42,fp16,16

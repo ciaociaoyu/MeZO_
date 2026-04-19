@@ -1,0 +1,3 @@
+epoch,global_step,train_loss,train_acc,eval_ran,eval_loss,eval_acc,eval_loss_avg5
+0.0,0,2.8364694118499756,0.0,YES,1.8875043392181396,0.2,
+0.0125,1,3.5794153213500977,0.0,YES,1.8816457986831665,0.2,

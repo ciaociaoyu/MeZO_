@@ -1,0 +1,6 @@
+time,step,epoch,phase,split,metric,value,task,model,eps,seed,precision,zo_quantization_bits
+2026-04-14 22:05:23,20,0.004058441558441558,train,train,train_runtime,24.6578,SQuAD,facebook-opt-1.3b-safetensors,0.0001,42,fp16,8
+2026-04-14 22:05:23,20,0.004058441558441558,train,train,train_samples_per_second,12.978,SQuAD,facebook-opt-1.3b-safetensors,0.0001,42,fp16,8
+2026-04-14 22:05:23,20,0.004058441558441558,train,train,train_steps_per_second,0.811,SQuAD,facebook-opt-1.3b-safetensors,0.0001,42,fp16,8
+2026-04-14 22:05:23,20,0.004058441558441558,train,train,train_loss,5.684521484375,SQuAD,facebook-opt-1.3b-safetensors,0.0001,42,fp16,8
+2026-04-14 22:05:23,20,0.004058441558441558,train,train,epoch,0.004058441558441558,SQuAD,facebook-opt-1.3b-safetensors,0.0001,42,fp16,8

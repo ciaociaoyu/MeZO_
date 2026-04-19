@@ -1,0 +1,46 @@
+{
+  "task": "SST5",
+  "model_name": "facebook/opt-1.3b",
+  "precision": "fp16",
+  "zo_quantization_bits": 16,
+  "config": {
+    "dataset_mode": "full",
+    "num_k": 16,
+    "seed": 42,
+    "data_seed": 42,
+    "train_set_seed": 42,
+    "learning_rate": 1e-06,
+    "zo_eps": 0.0001,
+    "max_steps": 100,
+    "per_device_train_batch_size": 16,
+    "gradient_accumulation_steps": 1
+  },
+  "train_split_size": 7690,
+  "eval_split_size": 854,
+  "train_metrics": {
+    "train_runtime": 13.8676,
+    "train_samples_per_second": 115.377,
+    "train_steps_per_second": 7.211,
+    "train_loss": 0.0,
+    "epoch": 0.21
+  },
+  "train_wall_seconds": 13.873197078704834,
+  "post_train_global_step": 100,
+  "additive_h_estimation": {
+    "h_additive": NaN,
+    "eps_est": NaN,
+    "nu3_est": NaN,
+    "num_valid_estimates": 0
+  },
+  "two_point_h_estimation": {
+    "h_two_point": NaN,
+    "h_two_point_tilde": NaN,
+    "delta_tilde": NaN,
+    "g_tilde": NaN,
+    "l_tilde": NaN,
+    "delta_hat": NaN,
+    "g_hat": NaN,
+    "l_hat": NaN,
+    "h2": NaN
+  }
+}

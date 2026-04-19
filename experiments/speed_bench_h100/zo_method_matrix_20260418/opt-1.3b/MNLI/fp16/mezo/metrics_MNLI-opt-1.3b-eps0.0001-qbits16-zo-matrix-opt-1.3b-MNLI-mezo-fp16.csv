@@ -1,0 +1,11 @@
+time,step,epoch,phase,split,metric,value,task,model,eps,seed,precision,zo_quantization_bits
+2026-04-18 19:39:25,4,0.00018107741059302852,train,train,train_runtime,0.8736,MNLI,opt-1.3b,0.0001,42,fp16,16
+2026-04-18 19:39:25,4,0.00018107741059302852,train,train,train_samples_per_second,73.256,MNLI,opt-1.3b,0.0001,42,fp16,16
+2026-04-18 19:39:25,4,0.00018107741059302852,train,train,train_steps_per_second,4.579,MNLI,opt-1.3b,0.0001,42,fp16,16
+2026-04-18 19:39:25,4,0.00018107741059302852,train,train,train_loss,1.386962890625,MNLI,opt-1.3b,0.0001,42,fp16,16
+2026-04-18 19:39:25,4,0.00018107741059302852,train,train,tail_perf_window_steps,2.0,MNLI,opt-1.3b,0.0001,42,fp16,16
+2026-04-18 19:39:25,4,0.00018107741059302852,train,train,tail_perf_measured_steps,2.0,MNLI,opt-1.3b,0.0001,42,fp16,16
+2026-04-18 19:39:25,4,0.00018107741059302852,train,train,tail_perf_wallclock_per_step,0.08841705322265625,MNLI,opt-1.3b,0.0001,42,fp16,16
+2026-04-18 19:39:25,4,0.00018107741059302852,train,train,tail_perf_samples_per_second,180.96056605401674,MNLI,opt-1.3b,0.0001,42,fp16,16
+2026-04-18 19:39:25,4,0.00018107741059302852,train,train,tail_perf_max_gpu_memory_gb,4.789639472961426,MNLI,opt-1.3b,0.0001,42,fp16,16
+2026-04-18 19:39:25,4,0.00018107741059302852,train,train,epoch,0.0,MNLI,opt-1.3b,0.0001,42,fp16,16

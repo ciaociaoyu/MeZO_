@@ -1,0 +1,52 @@
+[nan-guard] command=python /scratch/jy03364/MeZO_/large_models/run.py --model_name opt-1.3b --task_name MNLI --output_dir /scratch/jy03364/MeZO_/experiments/h_sweep_8h/results/mezo_int4_smoke_v2/opt-1.3b/mnli/h_1e-4/seed_42 --overwrite_output_dir --tag hsweep8h-mezo_int4_smoke_v2-mnli-h1e-4-seed42 --dataset_mode full --num_k 16 --data_seed 42 --train_set_seed 42 --trainer zo --load_float16 --zo_quantization int4 --train_as_classification --learning_rate 1e-6 --zo_eps 1e-4 --num_train_epochs 1 --per_device_train_batch_size 16 --gradient_accumulation_steps 1 --lr_scheduler_type constant --evaluation_strategy steps --save_strategy no --eval_steps 50 --logging_steps 10 --zo_probe_every 25 --zo_probe_num_seeds 8 --zo_probe_log_csv --max_steps 50 --num_dev 0 --num_eval 8
+[nan-guard] cwd=/scratch/jy03364/MeZO_/experiments/h_sweep_8h max_consecutive_nan=100
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/deepspeed.py:23: FutureWarning: transformers.deepspeed module is deprecated and will be removed in a future version. Please import deepspeed modules directly from transformers.integrations
+  warnings.warn(
+2026-04-16 13:06:36,591 - INFO - [model] requested=opt-1.3b resolved=facebook/opt-1.3b family_hint=opt
+2026-04-16 13:06:36,591 - INFO - [data] task_name=MNLI dataset_mode=full num_k=16 data_seed=42 full_dev_ratio=0.1
+2026-04-16 13:07:04,355 - INFO - Loading model with FP16...
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+2026-04-16 13:07:04,421 - INFO - [model] disabling auto device placement for training; Trainer/Accelerate will place the model
+/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/modeling_utils.py:484: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  return torch.load(checkpoint_file, map_location=map_location)
+2026-04-16 13:07:37,566 - INFO - Done with 33.20s
+2026-04-16 13:08:18,117 - INFO - [quzo-config] quantized model parameters in-place at 4 bits before ZO training
+2026-04-16 13:08:18,128 - INFO - [sparse-mezo-config] enabled=False | sparse_ratio=1.0 | sparse_mask_strategy=percentile_per_layer | sparse_scope=trainable_only | sparse_log_active_fraction=True
+2026-04-16 13:08:18,128 - INFO - [sparse-mezo-config] ratio semantics: sparse_ratio targets the active fraction per trainable tensor; ratio=1.0 disables masking. Order: construct direction -> apply sparse mask -> apply QuZO snapping after masked perturb/update when low-bit QuZO is active.
+2026-04-16 13:08:18,156 - INFO - Preparing training/evaluation datasets...
+2026-04-16 13:08:18,156 - INFO - Done with 0.00s
+2026-04-16 13:08:20,031 - INFO - ***** Running training *****
+2026-04-16 13:08:20,031 - INFO -   Num examples = 392702
+2026-04-16 13:08:20,031 - INFO -   Num Epochs = 1
+2026-04-16 13:08:20,031 - INFO -   Instantaneous batch size per device = 16
+2026-04-16 13:08:20,031 - INFO -   Total train batch size (w. parallel, distributed & accumulation) = 16
+2026-04-16 13:08:20,031 - INFO -   Gradient Accumulation steps = 1
+2026-04-16 13:08:20,031 - INFO -   Total optimization steps = 50
+2026-04-16 13:08:20,031 - INFO -   Number of trainable parameters = 1315758080
+
+  0%|          | 0/50 [00:00<?, ?it/s]
+  2%|▏         | 1/50 [00:09<07:32,  9.24s/it]
+  4%|▍         | 2/50 [00:14<05:41,  7.12s/it]
+  6%|▌         | 3/50 [00:20<05:00,  6.40s/it]
+  8%|▊         | 4/50 [00:26<04:46,  6.23s/it]
+ 10%|█         | 5/50 [00:32<04:39,  6.21s/it]
+ 12%|█▏        | 6/50 [00:38<04:25,  6.04s/it]
+ 14%|█▍        | 7/50 [00:43<04:05,  5.71s/it]
+ 16%|█▌        | 8/50 [00:49<04:05,  5.86s/it]
+ 18%|█▊        | 9/50 [00:53<03:34,  5.24s/it]
+ 20%|██        | 10/50 [00:57<03:10,  4.76s/it]
+ 22%|██▏       | 11/50 [01:02<03:18,  5.10s/it]
+ 24%|██▍       | 12/50 [01:07<03:09,  4.98s/it]
+ 26%|██▌       | 13/50 [01:11<02:51,  4.63s/it]
+ 28%|██▊       | 14/50 [01:15<02:36,  4.34s/it]
+ 30%|███       | 15/50 [01:18<02:25,  4.16s/it]
+ 32%|███▏      | 16/50 [01:22<02:17,  4.05s/it]
+ 34%|███▍      | 17/50 [01:26<02:11,  3.97s/it]
+ 36%|███▌      | 18/50 [01:30<02:06,  3.94s/it]

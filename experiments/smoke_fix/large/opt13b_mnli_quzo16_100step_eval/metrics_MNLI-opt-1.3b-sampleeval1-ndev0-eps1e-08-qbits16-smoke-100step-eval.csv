@@ -1,0 +1,6 @@
+time,step,epoch,phase,split,metric,value,task,model,eps,seed,precision,zo_quantization_bits
+2026-04-16 01:19:29,100,0.004074315514993481,train,train,train_runtime,16.0951,MNLI,opt-1.3b,1e-08,42,fp16,16
+2026-04-16 01:19:29,100,0.004074315514993481,train,train,train_samples_per_second,99.409,MNLI,opt-1.3b,1e-08,42,fp16,16
+2026-04-16 01:19:29,100,0.004074315514993481,train,train,train_steps_per_second,6.213,MNLI,opt-1.3b,1e-08,42,fp16,16
+2026-04-16 01:19:29,100,0.004074315514993481,train,train,train_loss,0.5942626953125,MNLI,opt-1.3b,1e-08,42,fp16,16
+2026-04-16 01:19:29,100,0.004074315514993481,train,train,epoch,0.0,MNLI,opt-1.3b,1e-08,42,fp16,16

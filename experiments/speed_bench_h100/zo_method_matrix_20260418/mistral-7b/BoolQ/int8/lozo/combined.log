@@ -1,0 +1,230 @@
+/home/jy03364/miniconda3/envs/mezo-mistral/lib/python3.10/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-mistral/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-mistral/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/jy03364/miniconda3/envs/mezo-mistral/lib/python3.10/site-packages/transformers/deepspeed.py:23: FutureWarning: transformers.deepspeed module is deprecated and will be removed in a future version. Please import deepspeed modules directly from transformers.integrations
+  warnings.warn(
+2026-04-18 20:32:51,007 - INFO - [model] requested=mistral-7b resolved=mistralai/Mistral-7B-v0.1 family_hint=mistral
+2026-04-18 20:32:51,007 - INFO - [data] task_name=BoolQ dataset_mode=full num_k=16 data_seed=42 full_dev_ratio=0.1
+2026-04-18 20:32:53,341 - INFO - Loading model with FP32...
+/home/jy03364/miniconda3/envs/mezo-mistral/lib/python3.10/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+2026-04-18 20:32:53,388 - INFO - [model] disabling auto device placement for training; Trainer/Accelerate will place the model
+
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Loading checkpoint shards:  50%|█████     | 1/2 [00:02<00:02,  2.31s/it]
+Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.59s/it]
+Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.70s/it]
+2026-04-18 20:33:31,744 - INFO - Done with 38.40s
+2026-04-18 20:33:31,844 - INFO - [sparse-mezo-config] enabled=False | sparse_ratio=1.0 | sparse_mask_strategy=percentile_per_layer | sparse_scope=trainable_only | sparse_log_active_fraction=True
+2026-04-18 20:33:31,845 - INFO - [sparse-mezo-config] ratio semantics: sparse_ratio targets the active fraction per trainable tensor; ratio=1.0 disables masking. Order: construct direction -> apply sparse mask -> apply QuZO snapping after masked perturb/update when low-bit QuZO is active.
+2026-04-18 20:33:31,853 - INFO - Preparing training/evaluation datasets...
+2026-04-18 20:33:31,853 - INFO - Done with 0.00s
+2026-04-18 20:33:34,735 - INFO - ***** Running training *****
+2026-04-18 20:33:34,735 - INFO -   Num examples = 8484
+2026-04-18 20:33:34,735 - INFO -   Num Epochs = 1
+2026-04-18 20:33:34,735 - INFO -   Instantaneous batch size per device = 16
+2026-04-18 20:33:34,735 - INFO -   Total train batch size (w. parallel, distributed & accumulation) = 16
+2026-04-18 20:33:34,735 - INFO -   Gradient Accumulation steps = 1
+2026-04-18 20:33:34,735 - INFO -   Total optimization steps = 4
+2026-04-18 20:33:34,736 - INFO -   Number of trainable parameters = 7241732096
+
+  0%|          | 0/4 [00:00<?, ?it/s]
+ 25%|██▌       | 1/4 [00:07<00:21,  7.05s/it]
+ 50%|█████     | 2/4 [00:14<00:14,  7.04s/it]2026-04-18 20:33:54,901 - INFO - [perf-tail] measurement enabled: start_step=3 window_steps=2 total_train_batch_size=16
+
+ 75%|███████▌  | 3/4 [00:20<00:06,  6.61s/it]
+100%|██████████| 4/4 [00:26<00:00,  6.69s/it]2026-04-18 20:34:01,720 - INFO - 
+
+Training completed. Do not forget to share your model on huggingface.co/models =)
+
+
+2026-04-18 20:34:01,741 - INFO - [perf-tail] measured_steps=2 wallclock_per_step=3.420318 samples_per_second=4.677928 max_gpu_memory_gb=34.6371
+
+                                             
+
+100%|██████████| 4/4 [00:27<00:00,  6.69s/it]
+100%|██████████| 4/4 [00:27<00:00,  6.81s/it]
+
+OurArguments(
+_n_gpu=1,
+adafactor=False,
+adam_beta1=0.9,
+adam_beta2=0.999,
+adam_epsilon=1e-08,
+auto_find_batch_size=False,
+bf16=False,
+bf16_full_eval=False,
+data_seed=42,
+dataloader_drop_last=False,
+dataloader_num_workers=0,
+dataloader_pin_memory=True,
+dataset_mode=full,
+ddp_backend=None,
+ddp_broadcast_buffers=None,
+ddp_bucket_cap_mb=None,
+ddp_find_unused_parameters=None,
+ddp_timeout=1800,
+debug=[],
+deepspeed=None,
+disable_tqdm=False,
+dispatch_batches=None,
+do_eval=False,
+do_predict=False,
+do_train=False,
+eos_token=<EOS_TOKEN>,
+eval_accumulation_steps=None,
+eval_delay=0,
+eval_steps=None,
+evaluation_strategy=no,
+fp16=False,
+fp16_backend=auto,
+fp16_full_eval=False,
+fp16_opt_level=O1,
+fsdp=[],
+fsdp_config={'min_num_params': 0, 'xla': False, 'xla_fsdp_grad_ckpt': False},
+fsdp_min_num_params=0,
+fsdp_transformer_layer_cls_to_wrap=None,
+full_determinism=False,
+full_dev_ratio=0.1,
+gradient_accumulation_steps=1,
+gradient_checkpointing=False,
+gradient_checkpointing_kwargs=None,
+greater_is_better=None,
+group_by_length=False,
+half_precision_backend=auto,
+head_tuning=False,
+hizoo_hessian_smooth_type=constant0,
+hub_always_push=False,
+hub_model_id=None,
+hub_private_repo=False,
+hub_strategy=every_save,
+hub_token=<HUB_TOKEN>,
+icl_sfc=False,
+ignore_data_skip=False,
+include_inputs_for_metrics=False,
+include_tokens_per_second=False,
+jit_mode_eval=False,
+label_names=None,
+label_smoothing_factor=0.0,
+learning_rate=1e-06,
+length_column_name=length,
+linear_probing=False,
+load_best_model_at_end=False,
+load_bfloat16=False,
+load_float16=False,
+load_int8=True,
+local_rank=0,
+log_level=passive,
+log_level_replica=warning,
+log_on_each_node=True,
+logging_dir=/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/mistral-7b/BoolQ/int8/lozo/runs/Apr18_20-32-50_ra7-1,
+logging_first_step=False,
+logging_nan_inf_filter=True,
+logging_steps=1.0,
+logging_strategy=steps,
+lora=False,
+lora_alpha=16,
+lora_r=8,
+lozo_beta1=0.9,
+lozo_rank=2,
+lozo_step_interval=50,
+lp_early_stopping=False,
+lr_scheduler_type=constant,
+max_grad_norm=1.0,
+max_length=2048,
+max_new_tokens=50,
+max_steps=4,
+measure_perf_tail=True,
+measure_perf_tail_window_steps=2,
+metric_for_best_model=None,
+model_name=mistral-7b,
+mp_parameters=,
+neftune_noise_alpha=None,
+no_auto_device=False,
+no_cuda=False,
+no_eval=True,
+no_reparam=True,
+non_diff=False,
+num_beams=1,
+num_dev=None,
+num_eval=None,
+num_k=16,
+num_prefix=5,
+num_train=0,
+num_train_epochs=1.0,
+num_train_sets=None,
+only_train_option=True,
+optim=adamw_torch,
+optim_args=None,
+output_dir=/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/mistral-7b/BoolQ/int8/lozo,
+overwrite_output_dir=True,
+past_index=-1,
+per_device_eval_batch_size=8,
+per_device_train_batch_size=16,
+prediction_loss_only=False,
+prefix_init_by_real_act=True,
+prefix_tuning=False,
+push_to_hub=False,
+push_to_hub_model_id=None,
+push_to_hub_organization=None,
+push_to_hub_token=<PUSH_TO_HUB_TOKEN>,
+ray_scope=last,
+remove_unused_columns=True,
+report_to=[],
+result_file=None,
+resume_from_checkpoint=None,
+run_name=/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/mistral-7b/BoolQ/int8/lozo,
+sampling=False,
+save_model=False,
+save_on_each_node=False,
+save_on_interrupt=False,
+save_safetensors=True,
+save_steps=500,
+save_strategy=no,
+save_total_limit=None,
+seed=42,
+sfc=False,
+skip_memory_metrics=True,
+sparse_log_active_fraction=True,
+sparse_mask_strategy=percentile_per_layer,
+sparse_ratio=1.0,
+sparse_scope=trainable_only,
+split_batches=False,
+tag=zo-matrix-mistral-7b-BoolQ-lozo-int8,
+task_name=BoolQ,
+temperature=1.0,
+tf32=None,
+top_k=None,
+top_p=0.95,
+torch_compile=False,
+torch_compile_backend=None,
+torch_compile_mode=None,
+torchdynamo=None,
+tpu_metrics_debug=False,
+tpu_num_cores=None,
+train_as_classification=True,
+train_set_seed=42,
+trainer=zo,
+untie_emb=False,
+use_cpu=False,
+use_ipex=False,
+use_legacy_prediction_loop=False,
+use_mps_device=False,
+use_torchao_float8=False,
+verbose=False,
+warmup_ratio=0.0,
+warmup_steps=0,
+weight_decay=0.0,
+zo_eps=0.0001,
+zo_method=lozo,
+zo_probe_every=0,
+zo_probe_log_csv=True,
+zo_probe_num_seeds=16,
+zo_quantization=None,
+zo_quantization_bits=32,
+)
+{'train_runtime': 27.0052, 'train_samples_per_second': 2.37, 'train_steps_per_second': 0.148, 'train_loss': 0.9435790181159973, 'tail_perf_window_steps': 2, 'tail_perf_measured_steps': 2, 'tail_perf_wallclock_per_step': 3.420317769050598, 'tail_perf_samples_per_second': 4.677927923767514, 'tail_perf_max_gpu_memory_gb': 34.63713264465332, 'epoch': 0.01}
+

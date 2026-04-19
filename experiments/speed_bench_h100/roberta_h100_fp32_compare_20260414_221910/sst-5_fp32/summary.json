@@ -1,0 +1,10 @@
+{
+  "task": "sst-5",
+  "mode": "fp32",
+  "exit_code": 0,
+  "step20_seconds": 3.0,
+  "approx_train_steps_per_second": 6.666666666666667,
+  "wall_seconds": 19.84,
+  "output_dir": "/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_fp32_compare_20260414_221910/sst-5_fp32/run/seed16",
+  "log": "/scratch/jy03364/MeZO_/experiments/speed_bench_h100/roberta_h100_fp32_compare_20260414_221910/sst-5_fp32/combined.log"
+}

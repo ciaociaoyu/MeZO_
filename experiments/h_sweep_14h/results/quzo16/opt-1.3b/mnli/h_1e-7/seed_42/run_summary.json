@@ -23,16 +23,21 @@
   },
   "artifacts": {
     "train_metrics": {
-      "train_runtime": 17587.4438,
-      "train_samples_per_second": 22.329,
-      "train_steps_per_second": 1.396,
+      "train_runtime": 17443.8707,
+      "train_samples_per_second": 22.512,
+      "train_steps_per_second": 1.407,
       "train_loss": 0.015820833974587094,
+      "tail_perf_window_steps": 10,
+      "tail_perf_measured_steps": 10,
+      "tail_perf_wallclock_per_step": 0.14349651336669922,
+      "tail_perf_samples_per_second": 111.50096698943955,
+      "tail_perf_max_gpu_memory_gb": 6.602973937988281,
       "epoch": 1.0
     },
     "best_metric": null,
     "best_model_checkpoint": null,
     "metrics_csv_last_row": {
-      "time": "2026-04-14 06:38:42",
+      "time": "2026-04-16 22:22:25",
       "step": "24544",
       "epoch": "1.0",
       "phase": "train",
@@ -47,6 +52,14 @@
       "zo_quantization_bits": "16"
     },
     "zo_directional_probe_last_row": null,
+    "sparse_mezo_last_stats": null,
+    "tail_perf_metrics": {
+      "tail_perf_window_steps": 10,
+      "tail_perf_measured_steps": 10,
+      "tail_perf_wallclock_per_step": 0.14349651336669922,
+      "tail_perf_samples_per_second": 111.50096698943955,
+      "tail_perf_max_gpu_memory_gb": 6.602973937988281
+    },
     "trainer_state": null
   },
   "run_metadata": {
@@ -54,6 +67,11 @@
     "zo_method": "mezo",
     "int8_snap_enabled": false,
     "zo_quantization": "fp16",
+    "sparse_mezo_enabled": false,
+    "sparse_ratio": 1.0,
+    "sparse_mask_strategy": "percentile_per_layer",
+    "sparse_scope": "trainable_only",
+    "sparse_log_active_fraction": true,
     "storage_dtype": "fp16",
     "compute_dtype": "fp16",
     "load_int8": false,
@@ -67,8 +85,8 @@
     "task_name": "MNLI",
     "seed": 42,
     "run_output_dir": "/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli/h_1e-7/seed_42",
-    "git_commit": "fbe065f03be4f4981ba9305bdb66701b1a07ee92",
-    "hostname": "ra7-1"
+    "git_commit": "febc93aca649b5eadf3b6cc22cad3f7c91081604",
+    "hostname": "ra5-4"
   },
   "config": {
     "output_dir": "/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli/h_1e-7/seed_42",
@@ -99,7 +117,7 @@
     "log_level": "passive",
     "log_level_replica": "warning",
     "log_on_each_node": true,
-    "logging_dir": "/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli/h_1e-7/seed_42/runs/Apr14_01-45-14_ra7-1",
+    "logging_dir": "/scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/quzo16/opt-1.3b/mnli/h_1e-7/seed_42/runs/Apr16_17-31-21_ra5-4",
     "logging_strategy": "steps",
     "logging_first_step": false,
     "logging_steps": 1,
@@ -214,9 +232,15 @@
     "zo_eps": 1e-07,
     "zo_quantization_bits": 16,
     "zo_quantization": null,
+    "sparse_ratio": 1.0,
+    "sparse_mask_strategy": "percentile_per_layer",
+    "sparse_scope": "trainable_only",
+    "sparse_log_active_fraction": true,
     "zo_probe_every": 200,
     "zo_probe_num_seeds": 16,
     "zo_probe_log_csv": true,
+    "measure_perf_tail": true,
+    "measure_perf_tail_window_steps": 10,
     "prefix_tuning": false,
     "num_prefix": 5,
     "no_reparam": true,

@@ -1,0 +1,661 @@
+WARNING:__main__:Process rank: -1, device: cuda:0, n_gpu: 1, distributed training: False, 16-bits training: False
+INFO:__main__:Training/evaluation parameters DynamicTrainingArguments(
+_n_gpu=1,
+accelerator_config={'split_batches': False, 'dispatch_batches': None, 'even_batches': True, 'use_seedable_sampler': True, 'non_blocking': False, 'gradient_accumulation_kwargs': None, 'use_configured_state': False},
+adafactor=False,
+adam_beta1=0.9,
+adam_beta2=0.999,
+adam_epsilon=1e-08,
+adaptive_h_ema_beta=0.1,
+adaptive_h_estimate_num_batches=4,
+adaptive_h_estimate_num_directions=3,
+adaptive_h_estimate_reduce=mean,
+adaptive_h_max=0.5,
+adaptive_h_min=1e-05,
+adaptive_h_probe_buffer_size=64,
+adjust_for_init=False,
+array_id=-1,
+auto_find_batch_size=False,
+average_tokens_across_devices=False,
+batch_eval_metrics=False,
+bf16=False,
+bf16_full_eval=False,
+binary_classification=False,
+change_grad_estimate=False,
+data_seed=16,
+dataloader_drop_last=False,
+dataloader_num_workers=0,
+dataloader_persistent_workers=False,
+dataloader_pin_memory=True,
+dataloader_prefetch_factor=None,
+dataloader_shuffle=False,
+ddp_backend=None,
+ddp_broadcast_buffers=None,
+ddp_bucket_cap_mb=None,
+ddp_find_unused_parameters=None,
+ddp_timeout=1800,
+debug=[],
+deepspeed=None,
+dh_h_growth=2.0,
+dh_max_trials=10,
+dh_test_h=0.01,
+disable_tqdm=False,
+do_eval=True,
+do_predict=True,
+do_train=True,
+efficient_zero_order=False,
+efficient_zero_order_fp16=False,
+enable_additive_h_estimation=False,
+enable_two_point_h_estimation=False,
+eval_accumulation_steps=None,
+eval_delay=0,
+eval_do_concat_batches=True,
+eval_on_start=False,
+eval_steps=5000.0,
+eval_strategy=IntervalStrategy.NO,
+eval_use_gather_object=False,
+evaluate_during_training=True,
+exclude_embeddings=False,
+exclude_first_layers=-1,
+exclude_head=False,
+f0_scaling=1.0,
+fix_layers=0,
+fp16=False,
+fp16_backend=auto,
+fp16_full_eval=False,
+fp16_opt_level=O1,
+from_linearhead=False,
+fsdp=[],
+fsdp_config={'min_num_params': 0, 'xla': False, 'xla_fsdp_v2': False, 'xla_fsdp_grad_ckpt': False},
+fsdp_min_num_params=0,
+fsdp_transformer_layer_cls_to_wrap=None,
+full_determinism=False,
+gradient_accumulation_steps=1,
+gradient_checkpointing=False,
+gradient_checkpointing_kwargs=None,
+greater_is_better=None,
+group_by_length=False,
+h_estimation_active_source=fixed,
+h_trunc_alpha=1.0,
+half_precision_backend=auto,
+head_tuning=False,
+hf_inference_model=False,
+hizoo_hessian_smooth_type=constant0,
+hub_always_push=False,
+hub_model_id=None,
+hub_private_repo=None,
+hub_revision=None,
+hub_strategy=HubStrategy.EVERY_SAVE,
+hub_token=<HUB_TOKEN>,
+ignore_data_skip=False,
+include_for_metrics=[],
+include_inputs_for_metrics=False,
+include_num_input_tokens_seen=False,
+include_tokens_per_second=False,
+initial_h=0.001,
+jit_mode_eval=False,
+kernel_formula=sgd,
+kernel_gamma=1.0,
+kernel_regularization=0.0,
+kernel_solver=logistic,
+label_names=None,
+label_smoothing_factor=0.0,
+layer_wise_optim=False,
+learning_rate=1e-06,
+length_column_name=length,
+liger_kernel_config=None,
+load_best_model_at_end=False,
+load_kernels=None,
+local_rank=-1,
+log_file=log-USE_H0-USE_C0,
+log_level=passive,
+log_level_replica=warning,
+log_on_each_node=True,
+logging_dir=/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/roberta-large/BoolQ/fp16/lozo/run/seed16/runs/Apr18_20-22-21_ra7-1,
+logging_first_step=False,
+logging_nan_inf_filter=True,
+logging_steps=10,
+logging_strategy=IntervalStrategy.STEPS,
+lozo_beta1=0.9,
+lozo_rank=2,
+lozo_step_interval=50,
+lp_early_stopping=False,
+lr_scheduler_kwargs={},
+lr_scheduler_type=SchedulerType.CONSTANT,
+max_grad_norm=1.0,
+max_steps=5,
+max_zo_forward_steps=0,
+mc_tol=0.1,
+measure_perf_tail=True,
+measure_perf_tail_window_steps=3,
+metric_for_best_model=None,
+model_id=-1,
+mp_parameters=,
+neftune_noise_alpha=None,
+no_cuda=False,
+no_predict=False,
+no_reparam=False,
+no_train=False,
+norm_running_update=False,
+nu3_retry=3,
+num_hvp_vecs=128,
+num_prefix=10,
+num_train_epochs=3.0,
+only_biases=False,
+optim=OptimizerNames.ADAMW_TORCH,
+optim_args=None,
+optim_target_modules=None,
+optimize_acc=False,
+optimizer=sgd,
+optimizer_variant=,
+output_dir=/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/roberta-large/BoolQ/fp16/lozo/run/seed16,
+overwrite_kernels=False,
+overwrite_output_dir=True,
+parallelism_config=None,
+past_index=-1,
+per_device_eval_batch_size=4,
+per_device_train_batch_size=32,
+prediction_loss_only=False,
+prefix_init_by_real_act=False,
+prefix_tuning=False,
+prob_as_feature=False,
+push_to_hub=False,
+push_to_hub_model_id=None,
+push_to_hub_organization=None,
+push_to_hub_token=<PUSH_TO_HUB_TOKEN>,
+random_model_init=False,
+ray_scope=last,
+recompute_norms=False,
+remove_unused_columns=True,
+report_to=[],
+restore_callback_states_from_checkpoint=False,
+resume_from_checkpoint=None,
+run_name=None,
+save_at_last=False,
+save_logit=False,
+save_logit_dir=None,
+save_on_each_node=False,
+save_only_model=False,
+save_safetensors=True,
+save_steps=500,
+save_strategy=SaveStrategy.STEPS,
+save_total_limit=None,
+scale_lr_with_samples=False,
+scale_norm_by_num_params=False,
+seed=16,
+skip_memory_metrics=True,
+sparse_log_active_fraction=True,
+sparse_mask_refresh_steps=100,
+sparse_mask_strategy=percentile_per_layer,
+sparse_ratio=1.0,
+sparse_scope=trainable_only,
+sweep=False,
+sync_embedding_layers=False,
+tf32=None,
+tie_emb=False,
+torch_compile=False,
+torch_compile_backend=None,
+torch_compile_mode=None,
+torch_empty_cache_steps=None,
+torchdynamo=None,
+tpu_metrics_debug=False,
+tpu_num_cores=None,
+trainer=standard,
+two_point_h_beta=0.5,
+two_point_h_c2=1.0,
+two_point_h_delta_sample_size=4096,
+two_point_h_eps_num=1e-12,
+two_point_h_fixed_probe_batch=True,
+two_point_h_log_csv=True,
+two_point_h_max=0.5,
+two_point_h_min=1e-05,
+two_point_h_num_directions_g=4,
+two_point_h_num_directions_l=4,
+two_point_h_q_l=0.5,
+two_point_h_refresh_every=100,
+two_point_h_window_delta=3,
+two_point_h_window_g=5,
+two_point_h_window_l=5,
+untie_emb=False,
+update_noise_every=1000,
+use_adaptive_h=False,
+use_c_scale=False,
+use_cpu=False,
+use_ipex=False,
+use_legacy_prediction_loop=False,
+use_liger_kernel=False,
+use_mps_device=False,
+use_torchao_float8=False,
+use_zo_grad_est=False,
+warmup_ratio=0.0,
+warmup_steps=0,
+weight_decay=0.0,
+zero_order_clip_grad=False,
+zero_order_eps=0.0001,
+zero_order_optim=True,
+zero_order_sample=1,
+zero_order_sample_scheduler=None,
+zero_order_use_trainer_optim=False,
+zo_by_layer=False,
+zo_method=lozo,
+zo_probe_every=0,
+zo_probe_log_csv=True,
+zo_probe_num_seeds=16,
+zo_quantization=None,
+zo_quantization_bits=32,
+zo_two_point_precision=fp16,
+zo_use_true_directional_derivative=False,
+zo_variant=None,
+)
+INFO:__main__:[zo-config] zo_two_point_precision=fp16 | zero_order_eps=0.0001 | zo_use_true_directional_derivative=False
+INFO:__main__:[quzo-config] zo_quantization_bits=32 | quzo_enabled=False
+INFO:__main__:[sparse-mezo-config] enabled=False | sparse_ratio=1.0 | sparse_mask_strategy=percentile_per_layer | sparse_scope=trainable_only | sparse_log_active_fraction=True | sparse_mask_refresh_steps=100
+INFO:__main__:[sparse-mezo-config] ratio semantics: sparse_ratio targets the active fraction per trainable tensor; ratio=1.0 disables masking. Order: refresh thresholds+mask on the configured cadence -> sample sparse-aware direction -> apply QuZO snapping after the sparse perturb/update path when low-bit QuZO is active.
+INFO:__main__:Task name: boolq, number of labels: 2, output mode: classification
+INFO:__main__:[data] dataset_mode requested=full resolved=full
+INFO:__main__:[data] task_dir=BoolQ data_seed=16
+INFO:__main__:[data] auto_download=0 original_data_root=/scratch/jy03364/MeZO_/medium_models/data/original
+INFO:__main__:[data] auto_generate=0 target=/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/BoolQ/full-16
+INFO:__main__:[data] resolved_data_dir=/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/BoolQ/full-16
+WARNING:src.models:By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+INFO:src.dataset:Label 0 to word ĠNo (440)
+INFO:src.dataset:Label 1 to word ĠYes (3216)
+INFO:src.dataset:Total num_sample for mode train: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/BoolQ/full-16
+INFO:src.dataset:[FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+INFO:src.dataset:Creating features from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/BoolQ/full-16
+INFO:src.dataset:Label 0 to word ĠNo (440)
+INFO:src.dataset:Label 1 to word ĠYes (3216)
+INFO:src.dataset:Total num_sample for mode dev: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/BoolQ/full-16
+/scratch/jy03364/MeZO_/medium_models/src/dataset.py:363: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  self.support_examples, self.query_examples = torch.load(cached_features_file)
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/BoolQ/full-16/cached_dev_RobertaTokenizerFast-roberta_512_boolq [took 0.045 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: dev-3697
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 1121, 392, 193, 6, 5, 651, 21, 7867, 13, 10, 507, 3821, 191, 17402, 9, 820, 7585, 6, 61, 4760, 10, 3793, 18660, 4, 10426, 423, 6, 14309, 36, 7083, 4060, 14968, 43, 8842, 11, 5, 18588, 3757, 9, 22296, 1499, 9754, 11, 3417, 6, 663, 19, 69, 3128, 12630, 10, 3421, 1040, 7, 465, 69, 1150, 4858, 9059, 36, 19843, 344, 4, 580, 43, 54, 16, 956, 30, 39, 284, 4, 44217, 31, 5, 188, 2271, 45363, 5761, 58, 1146, 7, 22296, 1499, 9754, 223, 10, 92, 26020, 8, 32, 2037, 11, 10, 2227, 3050, 3329, 34800, 36, 495, 8295, 12715, 43, 8, 4645, 31103, 5193, 36, 39767, 21194, 459, 660, 5557, 43, 1060, 2702, 750, 19, 8133, 8432, 4393, 36, 16750, 1916, 21636, 43, 16, 1487, 25, 157, 25, 5, 30490, 9, 925, 4, 19127, 718, 906, 36, 18322, 5075, 322, 1596, 14490, 36191, 77, 5, 5237, 9, 27383, 38814, 13772, 2911, 990, 33312, 4245, 8, 27383, 4858, 9059, 25, 51, 6197, 8, 32887, 1626, 15, 358, 3768, 108, 1372, 41677, 30, 18246, 106, 11, 10, 2559, 41653, 88, 49, 308, 2559, 527, 17788, 6, 981, 7, 951, 442, 5, 7017, 9802, 4, 15680, 35, 32, 51, 202, 442, 5, 311, 683, 2115, 10, 86, 31652, 35, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=0, mask_pos=[210], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>In May 2017, the series was renewed for a final seventh season consisting of 22 episodes, which marked a soft reboot. Years later, Lucy (Alison Fernandez) arrives in the fictional neighborhood of Hyperion Heights in Seattle, Washington with her Once Upon a Time book to find her father Henry Mills (Andrew J. West) who is needed by his family. Characters from the New Enchanted Forest were brought to Hyperion Heights under a new curse and are caught in a rising conflict involving Cinderella (Dania Ramirez) and Lady Tremaine (Gabrielle Anwar) whose dangerous history with Mother Gothel (Emma Booth) is revealed as well as the agendas of Dr. Facilier (Daniel Francis). Two worlds collide when the arrival of Wish Realm Rumplestiltskin and Wish Henry Mills as they plot and culminates on every characters' happy endings by separating them in a separate realms into their own separate storybooks, leading to someone making the ultimate sacrifice. Question: are they still making the show once upon a time Answer:<mask>.</s>
+Token indices sequence length is longer than the specified maximum sequence length for this model (886 > 512). Running this sequence through the model will result in indexing errors
+INFO:src.dataset:Label 0 to word ĠNo (440)
+INFO:src.dataset:Label 1 to word ĠYes (3216)
+INFO:src.dataset:Total num_sample for mode test: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/BoolQ/full-16
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/BoolQ/full-16/cached_test_RobertaTokenizerFast-roberta_512_boolq [took 0.047 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: test-0
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 3684, 36782, 1411, 149, 23, 513, 103, 9, 209, 2402, 35, 24, 782, 7, 28, 3831, 6, 4786, 6, 16380, 6, 39903, 6, 41146, 6, 8, 7685, 4, 404, 9, 209, 2402, 2703, 1915, 8, 41, 2112, 4, 20, 746, 1280, 9, 1007, 8135, 88, 5, 609, 1118, 7, 5, 1007, 703, 30, 6574, 5, 5203, 24731, 2423, 16, 684, 25, 5, 1007, 2394, 36, 368, 45518, 18261, 1835, 15, 1007, 5221, 17809, 322, 17907, 11603, 11, 10, 3010, 266, 30, 496, 23649, 10202, 477, 7, 6473, 775, 13, 7636, 24731, 2622, 11, 5, 382, 35, 65, 1933, 9, 11422, 12, 20118, 1007, 16, 1552, 7, 1045, 112, 4, 246, 1007, 2833, 31, 5, 5203, 24731, 4, 20, 1007, 2394, 13, 4696, 438, 1728, 24731, 2622, 11, 2910, 16, 55, 9879, 6, 19, 65, 1933, 9, 11422, 12, 20118, 1007, 1552, 7, 1045, 290, 31, 5, 24731, 4, 2169, 2394, 2785, 32, 45, 2773, 2622, 6, 4634, 3617, 215, 690, 33, 57, 5129, 14, 32, 31515, 4, 286, 4327, 6, 10, 2559, 2658, 690, 14, 931, 9, 24731, 31, 4696, 438, 1728, 6, 61, 3441, 10, 10602, 2147, 7, 1733, 1152, 6608, 6, 2886, 31, 290, 7, 361, 2833, 9, 1007, 13, 349, 1933, 42435, 6, 25, 1118, 7, 7636, 6, 61, 129, 2886, 59, 112, 4, 3079, 2833, 9, 2423, 1007, 13, 349, 1933, 9, 1007, 42435, 4, 83, 3503, 589, 9, 886, 10817, 892, 6, 71, 18999, 411, 2559, 3218, 6, 4633, 14, 5591, 24731, 31, 7636, 2939, 203, 540, 14304, 87, 5591, 9358, 4, 15680, 35, 473, 24731, 185, 55, 1007, 146, 14, 9108, 31652, 35, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=0, mask_pos=[270], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>All biomass goes through at least some of these steps: it needs to be grown, collected, dried, fermented, distilled, and burned. All of these steps require resources and an infrastructure. The total amount of energy input into the process compared to the energy released by burning the resulting ethanol fuel is known as the energy balance (or ``energy returned on energy invested''). Figures compiled in a 2007 report by National Geographic Magazine point to modest results for corn ethanol produced in the US: one unit of fossil-fuel energy is required to create 1.3 energy units from the resulting ethanol. The energy balance for sugarcane ethanol produced in Brazil is more favorable, with one unit of fossil-fuel energy required to create 8 from the ethanol. Energy balance estimates are not easily produced, thus numerous such reports have been generated that are contradictory. For instance, a separate survey reports that production of ethanol from sugarcane, which requires a tropical climate to grow productively, returns from 8 to 9 units of energy for each unit expended, as compared to corn, which only returns about 1.34 units of fuel energy for each unit of energy expended. A 2006 University of California Berkeley study, after analyzing six separate studies, concluded that producing ethanol from corn uses much less petroleum than producing gasoline. Question: does ethanol take more energy make that produces Answer:<mask>.</s>
+huggingface/tokenizers: The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks...
+To disable this warning, you can either:
+	- Avoid using `tokenizers` before the fork if possible
+	- Explicitly set the environment variable TOKENIZERS_PARALLELISM=(true | false)
+INFO:src.trainer:[dataloader][debug] self class=Trainer, get_train_dataloader=<bound method Trainer.get_train_dataloader of <src.trainer.Trainer object at 0x152d9992b5c0>>
+INFO:src.trainer:[dataloader][override] Trainer.get_train_dataloader active. shuffle_raw=False type=bool -> shuffle=False; data_seed=16 seed=16 local_rank=-1
+INFO:src.trainer:[dataloader][override] selected sampler=SequentialSampler
+INFO:src.trainer:[dataloader] sampler=SequentialSampler, batch_sampler=BatchSampler
+INFO:src.trainer:[dataloader] training uses SequentialSampler (no shuffle).
+INFO:src.trainer:[dataloader] args.dataloader_shuffle=False
+INFO:src.trainer:[dataloader] args.data_seed=16 args.seed=16
+INFO:src.trainer:***** Running training *****
+INFO:src.trainer:  Num examples = 8485
+INFO:src.trainer:  Num Epochs = 1
+INFO:src.trainer:  Instantaneous batch size per device = 32
+INFO:src.trainer:  Total train batch size (w. parallel, distributed & accumulation) = 32
+INFO:src.trainer:  Gradient Accumulation steps = 1
+INFO:src.trainer:  Total optimization steps = 5
+INFO:src.trainer:[zo-config] zo_two_point_precision=fp16 | zero_order_eps=0.0001 | zo_use_true_directional_derivative=False
+INFO:src.trainer:[h_estimation][init] h0=1.000e-03 active_source=fixed additive=False two_point=False
+You're using a RobertaTokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+/scratch/jy03364/MeZO_/medium_models/src/trainer.py:2281: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  return autocast(dtype=torch.float16)
+INFO:src.trainer:[zo-direct] method=lozo {'loss': 0.6845588684082031, 'learning_rate': 1e-06, 'global_step': 0, 'zo_forward_step': 2, 'max_steps': 5, 'max_zo_forward_steps': 0, 'time': 0, 'eps': 0.0001}
+INFO:src.trainer:[perf-tail] measurement enabled: start_step=3 window_steps=3 total_train_batch_size=32
+INFO:src.trainer:
+
+Training completed. Do not forget to share your model on huggingface.co/models =)
+
+
+INFO:src.trainer:[perf-tail] measured_steps=4 wallclock_per_step=0.458170 samples_per_second=69.843072 max_gpu_memory_gb=25.4118
+INFO:__main__:evaluate_during_training=True but no in-memory best checkpoint was recorded; keeping the current model weights.
+INFO:__main__:*** Validate ***
+/home/jy03364/.conda/envs/ciao/lib/python3.12/site-packages/transformers/trainer_pt_utils.py:476: FutureWarning: DistributedTensorGatherer is deprecated and will be removed in v5 of Transformers.
+  warnings.warn(
+
+  0%|          | 0/236 [00:00<?, ?it/s]
+  2%|▏         | 5/236 [00:00<00:05, 43.69it/s]
+  4%|▍         | 10/236 [00:00<00:05, 40.27it/s]
+  6%|▋         | 15/236 [00:00<00:05, 40.00it/s]
+  8%|▊         | 20/236 [00:00<00:05, 37.63it/s]
+ 10%|█         | 24/236 [00:00<00:06, 35.28it/s]
+ 12%|█▏        | 28/236 [00:00<00:05, 36.18it/s]
+ 14%|█▎        | 32/236 [00:00<00:05, 36.36it/s]
+ 16%|█▌        | 37/236 [00:00<00:05, 37.57it/s]
+ 17%|█▋        | 41/236 [00:01<00:05, 37.35it/s]
+ 19%|█▉        | 45/236 [00:01<00:05, 38.04it/s]
+ 21%|██        | 50/236 [00:01<00:04, 41.27it/s]
+ 23%|██▎       | 55/236 [00:01<00:04, 37.62it/s]
+ 25%|██▌       | 59/236 [00:01<00:05, 34.54it/s]
+ 27%|██▋       | 63/236 [00:01<00:05, 33.47it/s]
+ 28%|██▊       | 67/236 [00:01<00:05, 33.36it/s]
+ 30%|███       | 71/236 [00:01<00:04, 34.01it/s]
+ 32%|███▏      | 75/236 [00:02<00:04, 34.42it/s]
+ 33%|███▎      | 79/236 [00:02<00:04, 34.33it/s]
+ 35%|███▌      | 83/236 [00:02<00:04, 35.03it/s]
+ 37%|███▋      | 87/236 [00:02<00:04, 34.77it/s]
+ 39%|███▊      | 91/236 [00:02<00:04, 35.32it/s]
+ 40%|████      | 95/236 [00:02<00:04, 33.57it/s]
+ 42%|████▏     | 99/236 [00:02<00:03, 34.77it/s]
+ 44%|████▎     | 103/236 [00:02<00:03, 35.19it/s]
+ 45%|████▌     | 107/236 [00:02<00:03, 36.20it/s]
+ 47%|████▋     | 111/236 [00:03<00:03, 35.02it/s]
+ 49%|████▊     | 115/236 [00:03<00:03, 33.70it/s]
+ 50%|█████     | 119/236 [00:03<00:03, 34.61it/s]
+ 52%|█████▏    | 123/236 [00:03<00:03, 34.34it/s]
+ 54%|█████▍    | 127/236 [00:03<00:03, 35.76it/s]
+ 56%|█████▌    | 131/236 [00:03<00:02, 36.30it/s]
+ 57%|█████▋    | 135/236 [00:03<00:02, 36.53it/s]
+ 59%|█████▉    | 139/236 [00:03<00:02, 33.48it/s]
+ 61%|██████    | 143/236 [00:04<00:02, 34.03it/s]
+ 62%|██████▏   | 147/236 [00:04<00:02, 34.43it/s]
+ 64%|██████▍   | 151/236 [00:04<00:02, 33.84it/s]
+ 66%|██████▌   | 155/236 [00:04<00:02, 34.57it/s]
+ 67%|██████▋   | 159/236 [00:04<00:02, 34.53it/s]
+ 69%|██████▉   | 163/236 [00:04<00:02, 34.78it/s]
+ 71%|███████   | 167/236 [00:04<00:02, 33.56it/s]
+ 73%|███████▎  | 172/236 [00:04<00:01, 36.53it/s]
+ 75%|███████▍  | 176/236 [00:04<00:01, 36.24it/s]
+ 76%|███████▋  | 180/236 [00:05<00:01, 32.82it/s]
+ 78%|███████▊  | 184/236 [00:05<00:01, 30.75it/s]
+ 80%|███████▉  | 188/236 [00:05<00:01, 31.92it/s]
+ 81%|████████▏ | 192/236 [00:05<00:01, 23.20it/s]
+ 83%|████████▎ | 195/236 [00:05<00:01, 20.63it/s]
+ 84%|████████▍ | 198/236 [00:06<00:01, 19.52it/s]
+ 85%|████████▌ | 201/236 [00:06<00:01, 18.42it/s]
+ 86%|████████▌ | 203/236 [00:06<00:01, 17.47it/s]
+ 87%|████████▋ | 205/236 [00:06<00:01, 17.12it/s]
+ 88%|████████▊ | 207/236 [00:06<00:01, 16.44it/s]
+ 89%|████████▊ | 209/236 [00:06<00:01, 16.39it/s]
+ 89%|████████▉ | 211/236 [00:06<00:01, 15.57it/s]
+ 90%|█████████ | 213/236 [00:06<00:01, 15.90it/s]
+ 92%|█████████▏| 217/236 [00:07<00:00, 20.34it/s]
+ 93%|█████████▎| 220/236 [00:07<00:00, 18.09it/s]
+ 94%|█████████▍| 222/236 [00:07<00:00, 16.49it/s]
+ 95%|█████████▍| 224/236 [00:07<00:00, 16.79it/s]
+ 96%|█████████▌| 226/236 [00:07<00:00, 17.14it/s]
+ 97%|█████████▋| 228/236 [00:07<00:00, 16.90it/s]
+ 97%|█████████▋| 230/236 [00:07<00:00, 16.86it/s]
+ 98%|█████████▊| 232/236 [00:08<00:00, 16.80it/s]
+ 99%|█████████▉| 234/236 [00:08<00:00, 15.62it/s]
+100%|██████████| 236/236 [00:08<00:00, 16.33it/s]INFO:src.trainer:{'eval_loss': 0.666810154914856, 'eval_acc': 0.6231422505307855}
+INFO:__main__:***** Eval results boolq *****
+INFO:__main__:  eval_loss = 0.666810154914856
+INFO:__main__:  eval_acc = 0.6231422505307855
+
+238it [00:08, 14.66it/s]                         
+241it [00:08, 16.56it/s]
+243it [00:08, 16.22it/s]
+247it [00:08, 21.36it/s]
+250it [00:09, 17.61it/s]
+252it [00:09, 17.25it/s]
+254it [00:09, 16.68it/s]
+256it [00:09, 16.61it/s]
+259it [00:09, 18.13it/s]
+261it [00:09, 17.85it/s]
+263it [00:09, 16.12it/s]
+265it [00:10, 15.72it/s]
+267it [00:10, 16.04it/s]
+269it [00:10, 16.52it/s]
+271it [00:10, 16.68it/s]
+274it [00:10, 19.27it/s]
+277it [00:10, 21.96it/s]
+280it [00:10, 19.29it/s]
+283it [00:10, 17.85it/s]
+285it [00:11, 15.34it/s]
+287it [00:11, 15.78it/s]
+289it [00:11, 15.69it/s]
+291it [00:11, 14.97it/s]
+293it [00:11, 14.03it/s]
+295it [00:11, 13.35it/s]
+297it [00:12, 13.42it/s]
+299it [00:12, 14.60it/s]
+302it [00:12, 18.08it/s]
+307it [00:12, 25.03it/s]
+312it [00:12, 30.65it/s]
+316it [00:12, 31.66it/s]
+320it [00:12, 33.29it/s]
+324it [00:12, 34.53it/s]
+328it [00:12, 32.35it/s]
+332it [00:13, 31.65it/s]
+336it [00:13, 33.20it/s]
+341it [00:13, 35.75it/s]
+345it [00:13, 35.47it/s]
+349it [00:13, 35.27it/s]
+353it [00:13, 34.16it/s]
+357it [00:13, 32.73it/s]
+361it [00:13, 32.86it/s]
+365it [00:14, 33.76it/s]
+369it [00:14, 35.22it/s]
+373it [00:14, 35.21it/s]
+377it [00:14, 35.10it/s]
+381it [00:14, 35.82it/s]
+385it [00:14, 35.70it/s]
+390it [00:14, 38.70it/s]
+395it [00:14, 40.58it/s]
+400it [00:14, 38.01it/s]
+405it [00:15, 38.16it/s]
+409it [00:15, 38.07it/s]
+413it [00:15, 36.77it/s]
+418it [00:15, 38.54it/s]
+422it [00:15, 38.78it/s]
+426it [00:15, 37.88it/s]
+431it [00:15, 38.95it/s]
+436it [00:15, 39.65it/s]
+441it [00:16, 39.60it/s]
+445it [00:16, 38.51it/s]
+450it [00:16, 39.11it/s]
+454it [00:16, 38.95it/s]
+458it [00:16, 38.58it/s]
+462it [00:16, 37.60it/s]
+466it [00:16, 34.57it/s]
+470it [00:16, 33.92it/s]
+474it [00:16, 32.86it/s]
+478it [00:17, 34.12it/s]
+482it [00:17, 33.01it/s]
+486it [00:17, 34.47it/s]
+490it [00:17, 34.82it/s]
+494it [00:17, 35.53it/s]
+498it [00:17, 35.90it/s]
+502it [00:17, 33.50it/s]
+506it [00:17, 31.98it/s]
+510it [00:18, 31.54it/s]
+514it [00:18, 30.90it/s]
+518it [00:18, 31.34it/s]
+522it [00:18, 32.48it/s]
+526it [00:18, 34.16it/s]
+531it [00:18, 35.93it/s]
+535it [00:18, 35.24it/s]
+539it [00:18, 34.29it/s]
+543it [00:19, 34.88it/s]
+547it [00:19, 35.57it/s]
+551it [00:19, 33.71it/s]
+555it [00:19, 33.89it/s]
+559it [00:19, 33.46it/s]
+563it [00:19, 29.85it/s]
+567it [00:19, 31.38it/s]
+571it [00:19, 33.46it/s]
+575it [00:19, 33.52it/s]
+579it [00:20, 33.62it/s]
+583it [00:20, 35.10it/s]
+587it [00:20, 34.21it/s]
+591it [00:20, 33.88it/s]
+595it [00:20, 31.19it/s]
+600it [00:20, 34.00it/s]
+604it [00:20, 31.05it/s]
+608it [00:20, 32.69it/s]
+612it [00:21, 34.51it/s]
+616it [00:21, 34.44it/s]
+620it [00:21, 34.60it/s]
+624it [00:21, 33.94it/s]
+628it [00:21, 32.72it/s]
+632it [00:21, 33.25it/s]
+636it [00:21, 34.08it/s]
+640it [00:21, 35.29it/s]
+644it [00:22, 34.15it/s]
+649it [00:22, 36.88it/s]
+653it [00:22, 33.91it/s]
+657it [00:22, 33.50it/s]
+661it [00:22, 34.03it/s]
+665it [00:22, 33.37it/s]
+669it [00:22, 34.76it/s]
+674it [00:22, 37.76it/s]
+679it [00:22, 40.27it/s]
+685it [00:23, 43.46it/s]
+690it [00:23, 44.94it/s]
+696it [00:23, 44.98it/s]
+702it [00:23, 47.40it/s]
+707it [00:23, 45.86it/s]
+712it [00:23, 45.33it/s]
+717it [00:23, 44.55it/s]
+722it [00:23, 42.35it/s]
+727it [00:24, 40.74it/s]
+732it [00:24, 39.84it/s]
+737it [00:24, 38.81it/s]
+741it [00:24, 37.15it/s]
+745it [00:24, 37.40it/s]
+749it [00:24, 37.33it/s]
+753it [00:24, 36.26it/s]
+757it [00:24, 36.37it/s]
+761it [00:25, 35.73it/s]
+765it [00:25, 35.34it/s]
+770it [00:25, 37.27it/s]
+774it [00:25, 36.75it/s]
+778it [00:25, 32.99it/s]
+783it [00:25, 35.16it/s]
+788it [00:25, 36.60it/s]
+792it [00:25, 36.09it/s]
+796it [00:25, 37.01it/s]
+800it [00:26, 37.60it/s]
+804it [00:26, 37.37it/s]
+808it [00:26, 36.97it/s]
+812it [00:26, 35.15it/s]
+816it [00:26, 35.78it/s]
+820it [00:26, 36.34it/s]
+824it [00:26, 35.39it/s]
+828it [00:26, 32.95it/s]
+832it [00:27, 32.58it/s]
+837it [00:27, 33.95it/s]
+841it [00:27, 33.43it/s]
+845it [00:27, 33.80it/s]
+849it [00:27, 34.24it/s]
+853it [00:27, 34.59it/s]
+857it [00:27, 35.47it/s]
+862it [00:27, 37.39it/s]
+867it [00:27, 38.31it/s]
+871it [00:28, 38.46it/s]
+875it [00:28, 36.67it/s]
+879it [00:28, 36.30it/s]
+883it [00:28, 36.03it/s]
+887it [00:28, 35.84it/s]
+891it [00:28, 36.78it/s]
+896it [00:28, 38.74it/s]
+900it [00:28, 38.25it/s]
+904it [00:28, 38.62it/s]
+908it [00:29, 37.94it/s]
+912it [00:29, 38.20it/s]
+916it [00:29, 36.42it/s]
+921it [00:29, 37.20it/s]
+925it [00:29, 36.95it/s]
+929it [00:29, 35.29it/s]
+933it [00:29, 36.16it/s]
+937it [00:29, 36.90it/s]
+941it [00:29, 37.04it/s]
+945it [00:30, 37.25it/s]
+949it [00:30, 35.14it/s]
+953it [00:30, 35.39it/s]
+957it [00:30, 32.64it/s]
+961it [00:30, 33.50it/s]
+965it [00:30, 32.24it/s]
+969it [00:30, 33.98it/s]
+973it [00:30, 33.69it/s]
+977it [00:31, 35.29it/s]
+981it [00:31, 35.40it/s]
+985it [00:31, 36.01it/s]
+989it [00:31, 36.15it/s]
+993it [00:31, 34.20it/s]
+997it [00:31, 35.66it/s]
+1001it [00:31, 35.48it/s]
+1005it [00:31, 35.55it/s]
+1010it [00:31, 37.18it/s]
+1014it [00:32, 37.06it/s]
+1018it [00:32, 36.64it/s]
+1022it [00:32, 36.07it/s]
+1026it [00:32, 34.31it/s]
+1030it [00:32, 34.21it/s]
+1034it [00:32, 33.19it/s]
+1038it [00:32, 34.52it/s]
+1042it [00:32, 34.01it/s]
+1046it [00:32, 34.47it/s]
+1050it [00:33, 35.13it/s]INFO:src.trainer:{'eval_loss': 0.6658137440681458, 'eval_acc': 0.6217125382262997}
+INFO:__main__:***** Test results boolq *****
+INFO:__main__:  eval_loss = 0.6658137440681458
+INFO:__main__:  eval_acc = 0.6217125382262997
+INFO:__main__:****** Output Dir *******
+INFO:__main__:/scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/roberta-large/BoolQ/fp16/lozo/run/seed16
+
+1054it [00:33, 31.72it/s]
+
+TASK: BoolQ
+K: 16
+Seed: 16
+Data seed: 16
+Dataset mode: full
+Full dev ratio: 0.1
+BS: 32
+LR: 1e-6
+EPS: 1e-4
+Step: 5; Eval step: 5000
+Optimizer: sgd
+Use trainer optimizer for ZO: False
+Efficient zero order: False
+Using adaptive h: False
+Dataloader shuffle: False
+Grid search tag: seed16-bs32-lr1e-6-eps1e-4-wd0-step5-evalstep5000
+Tag: k16-roberta-large-mezo-zo-matrix-lozo-fp16-boolq
+Result root: /scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/roberta-large/BoolQ/fp16/lozo
+Job name: run
+Output dir: /scratch/jy03364/MeZO_/experiments/speed_bench_h100/zo_method_matrix_20260418/roberta-large/BoolQ/fp16/lozo/run/seed16
+Dataset mode: full
+Data root: data/k-shot-1k-test
+Full dev ratio: 0.1
+GPU数量: 1
+RobertaConfig {
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "dtype": "float32",
+  "eos_token_id": 2,
+  "finetuning_task": "boolq",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "transformers_version": "4.56.0",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+
+

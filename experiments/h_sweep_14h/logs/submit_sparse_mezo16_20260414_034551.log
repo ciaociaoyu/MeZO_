@@ -1,0 +1,10 @@
+Submitting Sparse MeZO 16-bit MNLI 14-value search
+Submitted batch job 44284707
+Submitting Sparse MeZO 16-bit SST-5 14-value search with dependency afterany:44284707
+Submitted batch job 44284708
+Base dependency job id: 44197021
+MNLI job id: 44284707
+SST-5 job id: 44284708
+Launcher log: /scratch/jy03364/MeZO_/experiments/h_sweep_14h/logs/submit_sparse_mezo16_20260414_034551.log
+Launcher manifest: /scratch/jy03364/MeZO_/experiments/h_sweep_14h/results/sparse_mezo16/launcher_manifest.jsonl
+Monitor: squeue -j 44284707,44284708
