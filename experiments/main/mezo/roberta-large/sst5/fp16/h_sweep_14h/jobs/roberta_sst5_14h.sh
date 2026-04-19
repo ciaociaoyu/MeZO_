@@ -20,8 +20,13 @@ set -u
 SCRATCH_ROOT="/scratch/jy03364/MeZO_"
 EXPERIMENT_ROOT="/scratch/jy03364/MeZO_/experiments/main/mezo/roberta-large/sst5/fp16/h_sweep_14h"
 MEDIUM_ROOT="${SCRATCH_ROOT}/medium_models"
+HSWEEP_HELPERS="${SCRATCH_ROOT}/experiments/h_sweep_helpers.sh"
 
 cd "${EXPERIMENT_ROOT}"
+[[ -f "${HSWEEP_HELPERS}" ]] || { echo "[path-check] Missing shared helper: ${HSWEEP_HELPERS}" >&2; exit 2; }
+source "${HSWEEP_HELPERS}"
+hsweep_require_file "/scratch/jy03364/MeZO_/experiments/main/_shared/h_sweep_14h/h_values.sh" "main 14h h_values"
+hsweep_require_file "${MEDIUM_ROOT}/mezo.sh" "medium_models launcher"
 source "/scratch/jy03364/MeZO_/experiments/main/_shared/h_sweep_14h/h_values.sh"
 
 SEED=16

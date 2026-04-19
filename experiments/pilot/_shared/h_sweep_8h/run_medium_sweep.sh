@@ -48,7 +48,11 @@ MANIFEST_FILE="${EXPERIMENT_ROOT}/results/${VARIANT}/${MODEL_KEY}/${TASK_KEY}/ma
 
 mkdir -p "${EXPERIMENT_ROOT}"
 cd "${EXPERIMENT_ROOT}"
+[[ -f "${HSWEEP_HELPERS}" ]] || { echo "[path-check] Missing shared helper: ${HSWEEP_HELPERS}" >&2; exit 2; }
 source "${HSWEEP_HELPERS}"
+hsweep_require_file "${SHARED_ROOT}/h_values.sh" "pilot 8h h_values"
+hsweep_require_file "${NAN_GUARD}" "shared nan_guard"
+hsweep_require_file "${MEDIUM_ROOT}/mezo.sh" "medium_models launcher"
 source "${SHARED_ROOT}/h_values.sh"
 if [[ -n "${H_VALUES_OVERRIDE:-}" ]]; then
   read -r -a H_VALUES <<< "${H_VALUES_OVERRIDE}"

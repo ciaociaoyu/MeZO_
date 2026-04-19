@@ -26,12 +26,16 @@ SPARSE_RATIO=0.25
 SPARSE_MASK_STRATEGY="percentile_per_layer"
 SPARSE_SCOPE="trainable_only"
 SPARSE_LOG_ACTIVE_FRACTION="True"
-NAN_GUARD="${EXPERIMENT_ROOT}/nan_guard.py"
+NAN_GUARD="${SCRATCH_ROOT}/experiments/main/_shared/h_sweep_14h/nan_guard.py"
 NAN_GUARD_LIMIT=1
 NAN_GUARD_EXIT_CODE=86
 
 cd "${EXPERIMENT_ROOT}"
+[[ -f "${HSWEEP_HELPERS}" ]] || { echo "[path-check] Missing shared helper: ${HSWEEP_HELPERS}" >&2; exit 2; }
 source "${HSWEEP_HELPERS}"
+hsweep_require_file "${NAN_GUARD}" "shared nan_guard"
+hsweep_require_file "/scratch/jy03364/MeZO_/experiments/main/_shared/h_sweep_14h/h_values.sh" "main 14h h_values"
+hsweep_require_file "${LARGE_ROOT}/run.py" "large_models runner"
 source "/scratch/jy03364/MeZO_/experiments/main/_shared/h_sweep_14h/h_values.sh"
 
 SEED=42

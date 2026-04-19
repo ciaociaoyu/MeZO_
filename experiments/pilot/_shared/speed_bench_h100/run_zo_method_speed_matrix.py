@@ -14,9 +14,14 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_OUTPUT_ROOT = (
-    REPO_ROOT / "experiments" / "speed_bench_h100" / "zo_method_matrix_20260418"
+    REPO_ROOT
+    / "experiments"
+    / "pilot"
+    / "_shared"
+    / "speed_bench_h100"
+    / "zo_method_matrix_20260418"
 )
 SUMMARY_NAME = "summary.jsonl"
 
@@ -80,6 +85,21 @@ def parse_args() -> argparse.Namespace:
         help="Rerun cases even if a completed row already exists in summary.jsonl.",
     )
     return parser.parse_args()
+
+
+def require_path(path: Path, kind: str) -> None:
+    if kind == "file" and not path.is_file():
+        raise FileNotFoundError(f"missing required file: {path}")
+    if kind == "dir" and not path.is_dir():
+        raise FileNotFoundError(f"missing required directory: {path}")
+
+
+def validate_repo_layout() -> None:
+    require_path(REPO_ROOT, "dir")
+    require_path(REPO_ROOT / "medium_models", "dir")
+    require_path(REPO_ROOT / "medium_models" / "mezo.sh", "file")
+    require_path(REPO_ROOT / "large_models", "dir")
+    require_path(REPO_ROOT / "large_models" / "run.py", "file")
 
 
 def load_existing_rows(summary_path: Path) -> Dict[str, Dict]:
@@ -438,6 +458,7 @@ def run_case(case: Case, output_root: Path) -> Dict:
 
 
 def main() -> int:
+    validate_repo_layout()
     args = parse_args()
     output_root = args.output_root.resolve()
     summary_path = output_root / SUMMARY_NAME

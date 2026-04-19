@@ -1,5 +1,23 @@
 #!/bin/bash
 
+hsweep_require_file() {
+  local target="$1"
+  local label="${2:-required file}"
+  if [[ -z "${target}" || ! -f "${target}" ]]; then
+    echo "[path-check] Missing ${label}: ${target}" >&2
+    exit 2
+  fi
+}
+
+hsweep_require_dir() {
+  local target="$1"
+  local label="${2:-required directory}"
+  if [[ -z "${target}" || ! -d "${target}" ]]; then
+    echo "[path-check] Missing ${label}: ${target}" >&2
+    exit 2
+  fi
+}
+
 hsweep_run_completed() {
   local run_summary_path="$1"
   local summary_file="$2"

@@ -19,13 +19,19 @@ set -u
 SCRATCH_ROOT="/scratch/jy03364/MeZO_"
 EXPERIMENT_ROOT="/scratch/jy03364/MeZO_/experiments/main/mezo/opt-1.3b/mnli/int8/h_sweep_14h"
 LARGE_ROOT="${SCRATCH_ROOT}/large_models"
+HSWEEP_HELPERS="${SCRATCH_ROOT}/experiments/h_sweep_helpers.sh"
 VARIANT="quzo8"
 QUZO_BITS=8
-NAN_GUARD="${EXPERIMENT_ROOT}/nan_guard.py"
+NAN_GUARD="${SCRATCH_ROOT}/experiments/main/_shared/h_sweep_14h/nan_guard.py"
 NAN_GUARD_LIMIT=1
 NAN_GUARD_EXIT_CODE=86
 
 cd "${EXPERIMENT_ROOT}"
+[[ -f "${HSWEEP_HELPERS}" ]] || { echo "[path-check] Missing shared helper: ${HSWEEP_HELPERS}" >&2; exit 2; }
+source "${HSWEEP_HELPERS}"
+hsweep_require_file "${NAN_GUARD}" "shared nan_guard"
+hsweep_require_file "/scratch/jy03364/MeZO_/experiments/main/_shared/h_sweep_14h/h_values.sh" "main 14h h_values"
+hsweep_require_file "${LARGE_ROOT}/run.py" "large_models runner"
 source "/scratch/jy03364/MeZO_/experiments/main/_shared/h_sweep_14h/h_values.sh"
 
 SEED=42
