@@ -1,0 +1,261 @@
+#!/bin/bash
+#SBATCH --job-name=hsweep14h_sparsemezo16_roberta_mnli
+#SBATCH --partition=gpu_p
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=120G
+#SBATCH --gres=gpu:H100:1
+#SBATCH --time=72:00:00
+#SBATCH --chdir=/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/roberta-large/mnli/fp16/h_sweep_14h
+#SBATCH --output=/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/roberta-large/mnli/fp16/h_sweep_14h/logs/slurm_%x_%j.out
+
+set -euo pipefail
+
+ml jq
+set +u
+source /home/jy03364/miniconda3/etc/profile.d/conda.sh
+conda activate ciao
+set -u
+
+SCRATCH_ROOT="/scratch/jy03364/MeZO_"
+EXPERIMENT_ROOT="/scratch/jy03364/MeZO_/experiments/main/sparse_mezo/roberta-large/mnli/fp16/h_sweep_14h"
+MEDIUM_ROOT="${SCRATCH_ROOT}/medium_models"
+HSWEEP_HELPERS="${SCRATCH_ROOT}/experiments/h_sweep_helpers.sh"
+VARIANT="sparse_mezo16"
+QUZO_BITS=16
+SPARSE_RATIO=0.25
+SPARSE_MASK_STRATEGY="percentile_per_layer"
+SPARSE_SCOPE="trainable_only"
+SPARSE_LOG_ACTIVE_FRACTION="True"
+NAN_GUARD="${EXPERIMENT_ROOT}/nan_guard.py"
+NAN_GUARD_LIMIT=1
+NAN_GUARD_EXIT_CODE=86
+
+cd "${EXPERIMENT_ROOT}"
+source "${HSWEEP_HELPERS}"
+source "/scratch/jy03364/MeZO_/experiments/main/_shared/h_sweep_14h/h_values.sh"
+
+SEED=16
+TASK_NAME="MNLI"
+TASK_KEY="mnli"
+MODEL_KEY="roberta-large"
+RESULT_ROOT_BASE="${EXPERIMENT_ROOT}/results/${VARIANT}/${MODEL_KEY}/${TASK_KEY}"
+SUMMARY_FILE="${RESULT_ROOT_BASE}/summary.jsonl"
+MANIFEST_FILE="${RESULT_ROOT_BASE}/manifest.jsonl"
+
+mkdir -p "${EXPERIMENT_ROOT}/logs" "${RESULT_ROOT_BASE}"
+
+append_run_summary() {
+  local run_summary_path="$1"
+  local h_value="$2"
+  if [[ ! -f "${run_summary_path}" ]]; then
+    echo "Missing run summary: ${run_summary_path}"
+    return 1
+  fi
+  python - "${run_summary_path}" "${SUMMARY_FILE}" "${TASK_NAME}" "${MODEL_KEY}" "fp16" "${h_value}" "${SEED}" "full" "${QUZO_BITS}" "${VARIANT}" <<'PY'
+import json
+import os
+import sys
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+
+run_summary_path, summary_file, task, model, precision, h_value, seed, dataset_mode, qbits, variant = sys.argv[1:]
+with open(run_summary_path, "r", encoding="utf-8") as f:
+    record = json.load(f)
+
+record.update({
+    "task": task,
+    "model": model,
+    "precision": precision,
+    "h": h_value,
+    "seed": int(seed),
+    "dataset_mode": dataset_mode,
+    "zo_quantization_bits": int(qbits),
+    "variant": variant,
+    "status": "completed",
+})
+
+summary_dir = os.path.dirname(summary_file)
+if summary_dir:
+    os.makedirs(summary_dir, exist_ok=True)
+
+lock_path = summary_file + ".lock"
+with open(lock_path, "w", encoding="utf-8") as lock_file:
+    if fcntl is not None:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+    with open(summary_file, "a", encoding="utf-8") as out_file:
+        out_file.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+PY
+}
+
+append_failure_summary() {
+  local h_value="$1"
+  local status="$2"
+  local exit_code="$3"
+  local run_root="$4"
+  local run_log="$5"
+  local run_err="$6"
+  python - "${SUMMARY_FILE}" "${TASK_NAME}" "${MODEL_KEY}" "fp16" "${h_value}" "${SEED}" "full" "${QUZO_BITS}" "${VARIANT}" "${status}" "${exit_code}" "${run_root}" "${run_log}" "${run_err}" <<'PY'
+import json
+import os
+import sys
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+
+summary_file, task, model, precision, h_value, seed, dataset_mode, qbits, variant, status, exit_code, run_root, run_log, run_err = sys.argv[1:]
+record = {
+    "task": task,
+    "model": model,
+    "precision": precision,
+    "h": h_value,
+    "seed": int(seed),
+    "dataset_mode": dataset_mode,
+    "zo_quantization_bits": int(qbits),
+    "variant": variant,
+    "status": status,
+    "exit_code": int(exit_code),
+    "paths": {
+        "run_root": run_root,
+        "stdout_log": run_log,
+        "stderr_log": run_err,
+    },
+}
+
+summary_dir = os.path.dirname(summary_file)
+if summary_dir:
+    os.makedirs(summary_dir, exist_ok=True)
+
+lock_path = summary_file + ".lock"
+with open(lock_path, "w", encoding="utf-8") as lock_file:
+    if fcntl is not None:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+    with open(summary_file, "a", encoding="utf-8") as out_file:
+        out_file.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+PY
+}
+
+append_manifest_row() {
+  local h_value="$1"
+  local status="$2"
+  local exit_code="$3"
+  local run_root="$4"
+  local run_log="$5"
+  local run_err="$6"
+  local command_desc="$7"
+  python - "${MANIFEST_FILE}" "${TASK_NAME}" "${h_value}" "${command_desc}" "${run_root}" "${status}" "${exit_code}" "${run_log}" "${run_err}" <<'PY'
+import json
+import os
+import sys
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+
+manifest_file, task, h_value, command_desc, output_dir, status, exit_code, stdout_log, stderr_log = sys.argv[1:]
+record = {
+    "task": task,
+    "h": h_value,
+    "command": command_desc,
+    "output_dir": output_dir,
+    "status": status,
+    "exit_code": int(exit_code),
+    "stdout_log": stdout_log,
+    "stderr_log": stderr_log,
+}
+
+manifest_dir = os.path.dirname(manifest_file)
+if manifest_dir:
+    os.makedirs(manifest_dir, exist_ok=True)
+
+lock_path = manifest_file + ".lock"
+with open(lock_path, "w", encoding="utf-8") as lock_file:
+    if fcntl is not None:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+    with open(manifest_file, "a", encoding="utf-8") as out_file:
+        out_file.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+PY
+}
+
+for H in "${H_VALUES[@]}"; do
+  RUN_ROOT="${RESULT_ROOT_BASE}/h_${H}"
+  JOB_NAME="run_${VARIANT}"
+  RUN_SUMMARY_PATH="${RUN_ROOT}/${JOB_NAME}/seed${SEED}/run_summary.json"
+  LOG_DIR="${EXPERIMENT_ROOT}/logs/${VARIANT}/${MODEL_KEY}/${TASK_KEY}/h_${H}/seed_${SEED}"
+  RUN_LOG="${LOG_DIR}/train.log"
+  RUN_ERR="${LOG_DIR}/train.err"
+  COMMAND_DESC="bash ${MEDIUM_ROOT}/mezo.sh --result_root ${RUN_ROOT} --job_name ${JOB_NAME} --dataset_mode full --zo_two_point_precision fp16 --zo_quantization_bits ${QUZO_BITS} --sparse_ratio ${SPARSE_RATIO} --sparse_mask_strategy ${SPARSE_MASK_STRATEGY} --sparse_scope ${SPARSE_SCOPE} --sparse_log_active_fraction ${SPARSE_LOG_ACTIVE_FRACTION} --zo_probe_every 200 --zo_probe_num_seeds 16 --zo_probe_log_csv True"
+
+  if hsweep_run_completed "${RUN_SUMMARY_PATH}" "${SUMMARY_FILE}" "${H}"; then
+    echo "[skip] ${VARIANT} ${MODEL_KEY} ${TASK_KEY} h=${H} already completed"
+    continue
+  fi
+
+  hsweep_drop_h_rows "${SUMMARY_FILE}" "${H}"
+  hsweep_drop_h_rows "${MANIFEST_FILE}" "${H}"
+  hsweep_cleanup_paths "${RUN_ROOT}" "${LOG_DIR}"
+  mkdir -p "${RUN_ROOT}" "${LOG_DIR}"
+
+  export TASK="${TASK_NAME}"
+  export K=16
+  export SEED="${SEED}"
+  export DATA_SEED="${SEED}"
+  export DATASET_MODE=full
+  export BS=32
+  export LR=1e-6
+  export WD=0
+  export STEP=50000
+  export EVAL_STEP=5000
+  export MODEL=roberta-large
+  export USE_H=False
+  export USE_C=False
+  export DATALOADER_SHUFFLE=False
+  export EPS="${H}"
+  export EXTRA_TAG="hsweep14h-${VARIANT}-${TASK_KEY}-h${H}"
+
+  python "${NAN_GUARD}" \
+    --cwd "${MEDIUM_ROOT}" \
+    --stdout-log "${RUN_LOG}" \
+    --stderr-log "${RUN_ERR}" \
+    --max-consecutive-nan "${NAN_GUARD_LIMIT}" \
+    -- \
+    bash "${MEDIUM_ROOT}/mezo.sh" \
+      --result_root "${RUN_ROOT}" \
+      --job_name "${JOB_NAME}" \
+      --dataset_mode full \
+      --zo_two_point_precision fp16 \
+      --zo_quantization_bits "${QUZO_BITS}" \
+      --sparse_ratio "${SPARSE_RATIO}" \
+      --sparse_mask_strategy "${SPARSE_MASK_STRATEGY}" \
+      --sparse_scope "${SPARSE_SCOPE}" \
+      --sparse_log_active_fraction "${SPARSE_LOG_ACTIVE_FRACTION}" \
+      --zo_probe_every 200 \
+      --zo_probe_num_seeds 16 \
+      --zo_probe_log_csv True
+  run_status=$?
+
+  if [[ ${run_status} -eq 0 ]]; then
+    if [[ -f "${RUN_SUMMARY_PATH}" ]]; then
+      append_run_summary "${RUN_SUMMARY_PATH}" "${H}"
+      status_label="completed"
+    else
+      append_failure_summary "${H}" "missing_run_summary" 1 "${RUN_ROOT}" "${RUN_LOG}" "${RUN_ERR}"
+      status_label="missing_run_summary"
+      run_status=1
+    fi
+  elif [[ ${run_status} -eq ${NAN_GUARD_EXIT_CODE} ]]; then
+    append_failure_summary "${H}" "skipped_nan_guard" "${run_status}" "${RUN_ROOT}" "${RUN_LOG}" "${RUN_ERR}"
+    status_label="skipped_nan_guard"
+  else
+    append_failure_summary "${H}" "failed" "${run_status}" "${RUN_ROOT}" "${RUN_LOG}" "${RUN_ERR}"
+    status_label="failed"
+  fi
+
+  append_manifest_row "${H}" "${status_label}" "${run_status}" "${RUN_ROOT}" "${RUN_LOG}" "${RUN_ERR}" "${COMMAND_DESC}"
+done
