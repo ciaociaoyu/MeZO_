@@ -33,7 +33,7 @@ from sparse_mezo import (
     validate_sparse_ratio,
 )
 from utils import *
-from trainer import OurTrainer
+from trainer import OurTrainer, RANDOM_PREDICTION_GUARD_EXIT_CODE
 import random
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -383,6 +383,17 @@ class OurArguments(TrainingArguments):
     zo_probe_every: int = 0 # run G-vs-D directional probe every N optimizer steps; 0 disables it
     zo_probe_num_seeds: int = 16 # number of probe directions per diagnostic step
     zo_probe_log_csv: bool = True # write directional probe rows to output_dir/zo_directional_probe.csv
+    zo_probe_health_guard_enabled: bool = False # abort after repeated probe steps produce no finite directional-derivative pairs
+    zo_probe_health_guard_step: int = 2000 # first global_step at which the probe-health guard may abort
+    zo_probe_health_guard_max_bad_probes: int = 3 # maximum consecutive bad probe steps before abort
+    random_prediction_guard_enabled: bool = False # abort if eval stays near random prediction after enough training
+    random_prediction_guard_step: int = 1000 # first global_step at which the random-prediction guard may abort
+    random_prediction_guard_acc_tolerance: float = 0.05 # max accuracy margin above chance for random-guess detection
+    random_prediction_guard_loss_tolerance: float = 0.03 # max loss margin around log(num_labels) for random-guess detection
+    random_prediction_guard_bad_loss_excess: float = 0.5 # immediate skip once eval loss exceeds chance_loss + excess
+    random_prediction_guard_recent_evals: int = 2 # number of recent eval points used for trend-aware random plateau detection
+    random_prediction_guard_min_loss_drop: float = 0.05 # minimum loss improvement required to count as progress
+    random_prediction_guard_min_acc_gain: float = 0.02 # minimum accuracy gain required to count as progress
     measure_perf_tail: bool = field(
         default=True,
         metadata={
@@ -473,6 +484,16 @@ def parse_args():
         raise ValueError("--zo_probe_num_seeds must be > 0")
     if int(getattr(args, "zo_probe_every", 0)) < 0:
         raise ValueError("--zo_probe_every must be >= 0")
+    if int(getattr(args, "zo_probe_health_guard_step", 2000)) <= 0:
+        raise ValueError("--zo_probe_health_guard_step must be > 0")
+    if int(getattr(args, "zo_probe_health_guard_max_bad_probes", 3)) <= 0:
+        raise ValueError("--zo_probe_health_guard_max_bad_probes must be > 0")
+    if int(getattr(args, "random_prediction_guard_recent_evals", 2)) <= 0:
+        raise ValueError("--random_prediction_guard_recent_evals must be > 0")
+    if float(getattr(args, "random_prediction_guard_min_loss_drop", 0.05)) < 0.0:
+        raise ValueError("--random_prediction_guard_min_loss_drop must be >= 0")
+    if float(getattr(args, "random_prediction_guard_min_acc_gain", 0.02)) < 0.0:
+        raise ValueError("--random_prediction_guard_min_acc_gain must be >= 0")
     if int(getattr(args, "measure_perf_tail_window_steps", 10)) <= 0:
         raise ValueError("--measure_perf_tail_window_steps must be > 0")
     print(args)
@@ -1004,6 +1025,7 @@ class Framework:
                 self.framework = framework
                 self.train_samples_full = train_samples
                 self.eval_samples = eval_samples
+                self.trainer_ref = None
                 self.writer = _HistoryWriter(
                     out_dir,
                     run_tag,
@@ -1025,6 +1047,8 @@ class Framework:
                 # 逐项把 logs 内的标量（如 loss、learning_rate）写入
                 for k, v in logs.items():
                     if isinstance(v, (int, float)) and k not in ("total_flos",):
+                        if self.trainer_ref is not None and k in ("loss", "train_loss"):
+                            self.trainer_ref._random_prediction_guard_note_train_loss(v)
                         self.writer.append_jsonl({
                             "time": ts, "step": step, "epoch": epoch_val,
                             "phase": "train", "split": "train", "metric": k, "value": float(v)
@@ -1056,6 +1080,26 @@ class Framework:
                     })
                     self.writer.append_csv_row(ts, step, epoch_val, "eval", mk, float(mv))
 
+                trainer_ref = self.trainer_ref
+                if trainer_ref is not None and trainer_ref._random_prediction_guard_enabled():
+                    current_train_loss = trainer_ref._random_prediction_guard_note_logged_train_loss()
+                    eval_loss = None if not isinstance(metrics, dict) else metrics.get("eval_loss")
+                    eval_acc = trainer_ref._extract_eval_acc(eval_metrics)
+                    eval_loss_avg5 = trainer_ref._record_eval_for_guards(
+                        global_step=step,
+                        eval_loss=eval_loss,
+                        eval_acc=eval_acc,
+                    )
+                    guard_payload = trainer_ref._random_prediction_guard_payload(
+                        train_loss=current_train_loss,
+                        eval_loss=eval_loss,
+                        eval_acc=eval_acc,
+                        eval_loss_avg5=eval_loss_avg5,
+                    )
+                    if guard_payload is not None:
+                        trainer_ref._random_prediction_guard_emit(guard_payload)
+                        raise SystemExit(RANDOM_PREDICTION_GUARD_EXIT_CODE)
+
                 # 3) 训练集抽样做探针评估（train_probe），减少耗时
                 n = min(self.train_probe_size, len(self.train_samples_full) if self.train_samples_full is not None else 0)
                 if n > 0:
@@ -1085,7 +1129,9 @@ class Framework:
             tokenizer=self.tokenizer,
             data_collator=DataCollatorWithPaddingAndNesting(self.tokenizer, pad_to_multiple_of=8) if self.args.train_as_classification else collator(self.tokenizer, pad_to_multiple_of=8),
         )
+        trainer.task = self.task
         metrics_recorder = MetricsRecorder(self, train_samples, eval_samples, logs_dir, run_tag)
+        metrics_recorder.trainer_ref = trainer
         trainer.add_callback(metrics_recorder)
         if self.args.save_on_interrupt:
             trainer.add_callback(SIGUSR1Callback())

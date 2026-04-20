@@ -185,5 +185,101 @@ class DirectionalProbeConsistencyTest(unittest.TestCase):
         self.assertTrue(torch.allclose(td_from_vector.float(), manual_proj.float(), atol=1e-6, rtol=1e-6))
 
 
+class RandomPredictionGuardTest(unittest.TestCase):
+    def _build_trainer(self, *, global_step: int = 2000, num_labels: int = 5):
+        trainer = Trainer.__new__(Trainer)
+        trainer.args = SimpleNamespace(
+            random_prediction_guard_enabled=True,
+            random_prediction_guard_step=2000,
+            random_prediction_guard_acc_tolerance=0.05,
+            random_prediction_guard_loss_tolerance=0.03,
+            random_prediction_guard_bad_loss_excess=0.5,
+            random_prediction_guard_recent_evals=2,
+            random_prediction_guard_min_loss_drop=0.05,
+            random_prediction_guard_min_acc_gain=0.02,
+            zo_probe_health_guard_enabled=True,
+            zo_probe_health_guard_step=2000,
+            zo_probe_health_guard_max_bad_probes=3,
+            output_dir="/tmp/mezo_probe_guard_test",
+        )
+        trainer.state = SimpleNamespace(global_step=global_step)
+        trainer.model = SimpleNamespace(config=SimpleNamespace(num_labels=num_labels))
+        trainer._random_prediction_guard_initial_train_loss = 1.59
+        trainer._eval_history = []
+        trainer._zo_probe_bad_streak = 0
+        return trainer
+
+    def test_random_prediction_guard_triggers_on_random_plateau(self):
+        trainer = self._build_trainer()
+        trainer._eval_history = [
+            {"global_step": 1000, "eval_loss": 1.63, "eval_acc": 0.20},
+            {"global_step": 2000, "eval_loss": 1.62, "eval_acc": 0.21},
+        ]
+        payload = trainer._random_prediction_guard_payload(
+            train_loss=1.61,
+            eval_loss=1.62,
+            eval_acc=0.21,
+            eval_loss_avg5=1.62,
+        )
+        self.assertIsNotNone(payload)
+        self.assertEqual(payload["reason"], "random_plateau")
+
+    def test_random_prediction_guard_triggers_on_severe_eval_loss(self):
+        trainer = self._build_trainer()
+        payload = trainer._random_prediction_guard_payload(
+            train_loss=12.0,
+            eval_loss=20.0,
+            eval_acc=0.27,
+            eval_loss_avg5=None,
+        )
+        self.assertIsNotNone(payload)
+        self.assertEqual(payload["reason"], "severe_eval_loss")
+
+    def test_random_prediction_guard_does_not_trigger_on_healthy_eval(self):
+        trainer = self._build_trainer()
+        trainer._eval_history = [
+            {"global_step": 1000, "eval_loss": 1.30, "eval_acc": 0.38},
+            {"global_step": 2000, "eval_loss": 1.10, "eval_acc": 0.48},
+        ]
+        payload = trainer._random_prediction_guard_payload(
+            train_loss=1.2,
+            eval_loss=1.1,
+            eval_acc=0.48,
+            eval_loss_avg5=1.12,
+        )
+        self.assertIsNone(payload)
+
+    def test_random_prediction_guard_allows_clear_downward_trend(self):
+        trainer = self._build_trainer()
+        trainer._eval_history = [
+            {"global_step": 1000, "eval_loss": 1.95, "eval_acc": 0.18},
+            {"global_step": 2000, "eval_loss": 1.82, "eval_acc": 0.22},
+        ]
+        payload = trainer._random_prediction_guard_payload(
+            train_loss=1.7,
+            eval_loss=1.82,
+            eval_acc=0.22,
+            eval_loss_avg5=1.82,
+        )
+        self.assertIsNone(payload)
+
+    def test_probe_health_guard_triggers_after_consecutive_bad_probes(self):
+        trainer = self._build_trainer()
+        with self.assertRaises(SystemExit) as ctx:
+            for _ in range(3):
+                trainer._zo_probe_health_guard_note_bad_probe(
+                    global_step=2000,
+                    reason="no_finite_probe_pairs",
+                )
+        self.assertEqual(ctx.exception.code, 88)
+        self.assertEqual(trainer._zo_probe_bad_streak, 3)
+
+    def test_probe_health_guard_resets_after_good_probe(self):
+        trainer = self._build_trainer()
+        trainer._zo_probe_health_guard_note_bad_probe(global_step=2000, reason="no_finite_probe_pairs")
+        trainer._zo_probe_health_guard_note_good_probe()
+        self.assertEqual(trainer._zo_probe_bad_streak, 0)
+
+
 if __name__ == "__main__":
     unittest.main()

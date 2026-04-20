@@ -111,6 +111,8 @@ _use_apex = False
 
 DEFAULT_CALLBACKS = [DefaultFlowCallback]
 DEFAULT_PROGRESS_CALLBACK = ProgressCallback
+RANDOM_PREDICTION_GUARD_EXIT_CODE = 87
+PROBE_HEALTH_GUARD_EXIT_CODE = 88
 
 if is_in_notebook():
     from transformers.utils.notebook import NotebookProgressCallback
@@ -252,6 +254,234 @@ class Trainer(LinearHeadTrainer):
                 writer.writerow(["epoch", "global_step", "train_loss", "train_acc", "eval_ran", "eval_loss", "eval_acc", "eval_loss_avg5"])
         # Track eval loss history for tail-average reporting
         self._eval_loss_history = []
+        self._eval_history = []
+        self._random_prediction_guard_initial_train_loss = None
+        self._zo_probe_bad_streak = 0
+
+    @staticmethod
+    def _safe_float(value: Optional[Any]) -> Optional[float]:
+        try:
+            value = float(value)
+        except Exception:
+            return None
+        return value if math.isfinite(value) else None
+
+    def _record_eval_for_guards(self, *, global_step: int, eval_loss: Optional[float], eval_acc: Optional[float]) -> Optional[float]:
+        loss_value = self._safe_float(eval_loss)
+        acc_value = self._safe_float(eval_acc)
+
+        if not hasattr(self, "_eval_history") or self._eval_history is None:
+            self._eval_history = []
+        self._eval_history.append({
+            "global_step": int(global_step),
+            "eval_loss": loss_value,
+            "eval_acc": acc_value,
+        })
+
+        if loss_value is None:
+            return None
+
+        if not hasattr(self, "_eval_loss_history") or self._eval_loss_history is None:
+            self._eval_loss_history = []
+        self._eval_loss_history.append((int(global_step), float(loss_value)))
+        last5 = [v for _, v in self._eval_loss_history[-5:]]
+        if len(last5) == 0:
+            return None
+        return float(sum(last5) / float(len(last5)))
+
+    def _random_prediction_guard_enabled(self) -> bool:
+        return bool(getattr(self.args, "random_prediction_guard_enabled", False))
+
+    def _random_prediction_guard_note_train_loss(self, train_loss: Optional[float]) -> None:
+        if not self._random_prediction_guard_enabled():
+            return
+        if getattr(self, "_random_prediction_guard_initial_train_loss", None) is not None:
+            return
+        try:
+            train_loss = float(train_loss)
+        except Exception:
+            return
+        if not math.isfinite(train_loss):
+            return
+        self._random_prediction_guard_initial_train_loss = float(train_loss)
+
+    def _random_prediction_guard_payload(
+        self,
+        *,
+        train_loss: Optional[float],
+        eval_loss: Optional[float],
+        eval_acc: Optional[float],
+        eval_loss_avg5: Optional[float],
+    ) -> Optional[Dict[str, Any]]:
+        if not self._random_prediction_guard_enabled():
+            return None
+
+        global_step = int(getattr(self.state, "global_step", 0))
+        if global_step < max(1, int(getattr(self.args, "random_prediction_guard_step", 1000))):
+            return None
+
+        num_labels = int(getattr(getattr(self.model, "config", None), "num_labels", 0) or 0)
+        if num_labels <= 1:
+            return None
+
+        chance_acc = 1.0 / float(num_labels)
+        chance_loss = float(math.log(float(num_labels)))
+        acc_tol = float(getattr(self.args, "random_prediction_guard_acc_tolerance", 0.05))
+        loss_tol = float(getattr(self.args, "random_prediction_guard_loss_tolerance", 0.03))
+        bad_loss_excess = float(getattr(self.args, "random_prediction_guard_bad_loss_excess", 0.5))
+        recent_evals = max(1, int(getattr(self.args, "random_prediction_guard_recent_evals", 2)))
+        min_loss_drop = float(getattr(self.args, "random_prediction_guard_min_loss_drop", 0.05))
+        min_acc_gain = float(getattr(self.args, "random_prediction_guard_min_acc_gain", 0.02))
+
+        eval_loss_value = self._safe_float(eval_loss)
+        eval_loss_ref = eval_loss_value
+        try:
+            if eval_loss_avg5 is not None and math.isfinite(float(eval_loss_avg5)):
+                eval_loss_ref = float(eval_loss_avg5)
+        except Exception:
+            pass
+
+        eval_acc_value = self._safe_float(eval_acc)
+        train_loss_value = self._safe_float(train_loss)
+
+        severe_eval_loss = bool(
+            eval_loss_value is not None
+            and math.isfinite(eval_loss_value)
+            and eval_loss_value >= (chance_loss + bad_loss_excess)
+        )
+
+        recent_history = list(getattr(self, "_eval_history", []) or [])
+        finite_recent = [
+            row for row in recent_history
+            if self._safe_float(row.get("eval_loss")) is not None
+            and self._safe_float(row.get("eval_acc")) is not None
+        ]
+        recent_window = finite_recent[-recent_evals:]
+        recent_losses = [float(self._safe_float(row.get("eval_loss"))) for row in recent_window]
+        recent_accs = [float(self._safe_float(row.get("eval_acc"))) for row in recent_window]
+        recent_all_randomish = bool(
+            len(recent_window) >= recent_evals
+            and all(loss >= (chance_loss - loss_tol) for loss in recent_losses)
+            and all(acc <= (chance_acc + acc_tol) for acc in recent_accs)
+        )
+        best_loss_drop = None
+        best_acc_gain = None
+        trend_stalled = False
+        if len(recent_window) >= recent_evals:
+            best_loss_drop = float(recent_losses[0] - min(recent_losses))
+            best_acc_gain = float(max(recent_accs) - recent_accs[0])
+            trend_stalled = bool(
+                best_loss_drop < float(min_loss_drop)
+                and best_acc_gain < float(min_acc_gain)
+            )
+        random_plateau = bool(recent_all_randomish and trend_stalled)
+
+        initial_train_loss = getattr(self, "_random_prediction_guard_initial_train_loss", None)
+        train_loss_blowup = False
+        if (
+            train_loss_value is not None
+            and math.isfinite(train_loss_value)
+            and initial_train_loss is not None
+            and math.isfinite(float(initial_train_loss))
+            and float(initial_train_loss) > 0.0
+        ):
+            train_loss_blowup = bool(train_loss_value >= (float(initial_train_loss) * 4.0))
+
+        trigger = bool(severe_eval_loss or random_plateau)
+        if not trigger:
+            return None
+
+        reason = "random_plateau"
+        if severe_eval_loss and random_plateau:
+            reason = "diverged_and_random_plateau"
+        elif severe_eval_loss:
+            reason = "severe_eval_loss"
+
+        return {
+            "trigger": True,
+            "reason": reason,
+            "global_step": global_step,
+            "num_labels": num_labels,
+            "chance_acc": chance_acc,
+            "chance_loss": chance_loss,
+            "acc_tolerance": acc_tol,
+            "loss_tolerance": loss_tol,
+            "bad_loss_excess": bad_loss_excess,
+            "recent_evals": recent_evals,
+            "min_loss_drop": min_loss_drop,
+            "min_acc_gain": min_acc_gain,
+            "eval_acc": eval_acc_value,
+            "eval_loss": eval_loss_value,
+            "eval_loss_ref": eval_loss_ref,
+            "eval_loss_avg5": (None if eval_loss_avg5 is None else float(eval_loss_avg5)),
+            "recent_eval_losses": recent_losses,
+            "recent_eval_accs": recent_accs,
+            "best_recent_loss_drop": best_loss_drop,
+            "best_recent_acc_gain": best_acc_gain,
+            "train_loss": train_loss_value,
+            "initial_train_loss": (None if initial_train_loss is None else float(initial_train_loss)),
+            "train_loss_blowup": bool(train_loss_blowup),
+        }
+
+    def _random_prediction_guard_emit(self, payload: Dict[str, Any]) -> None:
+        base_dir = getattr(self.args, "output_dir", "./outputs") or "./outputs"
+        os.makedirs(base_dir, exist_ok=True)
+        out_path = os.path.join(base_dir, "random_prediction_guard.json")
+        record = dict(payload)
+        record["exit_code"] = int(RANDOM_PREDICTION_GUARD_EXIT_CODE)
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(record, f, ensure_ascii=False, indent=2)
+        logger.warning(
+            "[random-guard] triggered at step=%d reason=%s eval_loss=%s eval_loss_ref=%s eval_acc=%s train_loss=%s chance_loss=%.6f chance_acc=%.6f",
+            int(record["global_step"]),
+            str(record["reason"]),
+            str(record.get("eval_loss")),
+            str(record.get("eval_loss_ref")),
+            str(record.get("eval_acc")),
+            str(record.get("train_loss")),
+            float(record["chance_loss"]),
+            float(record["chance_acc"]),
+        )
+
+    def _zo_probe_health_guard_enabled(self) -> bool:
+        return bool(getattr(self.args, "zo_probe_health_guard_enabled", False))
+
+    def _zo_probe_health_guard_emit(self, payload: Dict[str, Any]) -> None:
+        base_dir = getattr(self.args, "output_dir", "./outputs") or "./outputs"
+        os.makedirs(base_dir, exist_ok=True)
+        out_path = os.path.join(base_dir, "probe_health_guard.json")
+        record = dict(payload)
+        record["exit_code"] = int(PROBE_HEALTH_GUARD_EXIT_CODE)
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(record, f, ensure_ascii=False, indent=2)
+        logger.warning(
+            "[probe-health-guard] triggered at step=%d reason=%s bad_streak=%d",
+            int(record["global_step"]),
+            str(record["reason"]),
+            int(record["bad_probe_streak"]),
+        )
+
+    def _zo_probe_health_guard_note_bad_probe(self, *, global_step: int, reason: str, detail: Optional[str] = None) -> None:
+        if not self._zo_probe_health_guard_enabled():
+            return
+        self._zo_probe_bad_streak = int(getattr(self, "_zo_probe_bad_streak", 0)) + 1
+        max_bad = max(1, int(getattr(self.args, "zo_probe_health_guard_max_bad_probes", 3)))
+        start_step = max(1, int(getattr(self.args, "zo_probe_health_guard_step", 2000)))
+        if int(global_step) < start_step or int(self._zo_probe_bad_streak) < max_bad:
+            return
+        payload = {
+            "trigger": True,
+            "reason": str(reason),
+            "detail": detail,
+            "global_step": int(global_step),
+            "bad_probe_streak": int(self._zo_probe_bad_streak),
+            "max_bad_probes": int(max_bad),
+        }
+        self._zo_probe_health_guard_emit(payload)
+        raise SystemExit(PROBE_HEALTH_GUARD_EXIT_CODE)
+
+    def _zo_probe_health_guard_note_good_probe(self) -> None:
+        self._zo_probe_bad_streak = 0
 
     def _setup_h_estimation_csv(self):
         self._h_estimation_csv_path = None
@@ -2499,6 +2729,10 @@ class Trainer(LinearHeadTrainer):
             td_arr = td_raw[valid]
             if fd_arr.size == 0:
                 logger.warning(f"[zo_probe] step={global_step}: no finite probe pairs; skipping row.")
+                self._zo_probe_health_guard_note_bad_probe(
+                    global_step=global_step,
+                    reason="no_finite_probe_pairs",
+                )
                 return
 
             official_stats = self._zo_probe_metric_summary(fd_arr, td_arr)
@@ -2537,6 +2771,7 @@ class Trainer(LinearHeadTrainer):
                 "corr_u2_debug": debug_stats["corr"],
                 "probe_num_seeds": int(num_seeds),
             }
+            self._zo_probe_health_guard_note_good_probe()
             self._zo_probe_append_csv_row(row)
             logger.info(
                 "[zo_probe] step=%d eps=%.3e precision=%s n=%d mae=%.6e mse=%.6e rmse=%.6e sign_acc=%.4f corr=%s",
@@ -2552,6 +2787,11 @@ class Trainer(LinearHeadTrainer):
             )
         except Exception as e:
             logger.warning(f"[zo_probe] step={global_step} failed: {type(e).__name__}: {e}")
+            self._zo_probe_health_guard_note_bad_probe(
+                global_step=global_step,
+                reason="probe_exception",
+                detail=f"{type(e).__name__}: {e}",
+            )
         finally:
             self.state.zo_forward_step = zo_forward_step_backup
             torch.random.set_rng_state(torch_state)
@@ -4030,26 +4270,29 @@ class Trainer(LinearHeadTrainer):
                     metrics = output.metrics
                     objective = self.dev_objective(metrics)
                     # === CSV：本步触发了评估，把评估度量与训练度量一并写入 ===
+                    current_train_loss = _csv_pending.get("train_loss") if _csv_pending else float("nan")
+                    eval_loss = float("nan")
+                    eval_loss_avg5 = None
+                    eval_acc = None
                     try:
                         eval_loss = float(metrics.get("eval_loss", float("nan"))) if isinstance(metrics, dict) else float("nan")
-                        eval_loss_avg5 = None
+                        self._random_prediction_guard_note_train_loss(current_train_loss)
                         try:
-                            if math.isfinite(eval_loss):
-                                if not hasattr(self, "_eval_loss_history") or self._eval_loss_history is None:
-                                    self._eval_loss_history = []
-                                self._eval_loss_history.append((int(self.state.global_step), float(eval_loss)))
-                                if len(self._eval_loss_history) >= 5:
-                                    last5 = [v for _, v in self._eval_loss_history[-5:]]
-                                    eval_loss_avg5 = float(sum(last5) / float(len(last5)))
+                            eval_acc = self._extract_eval_acc(metrics)
+                            eval_loss_avg5 = self._record_eval_for_guards(
+                                global_step=int(self.state.global_step),
+                                eval_loss=eval_loss,
+                                eval_acc=eval_acc,
+                            )
                         except Exception:
                             eval_loss_avg5 = None
-                        eval_acc = self._extract_eval_acc(metrics)
+                            eval_acc = self._extract_eval_acc(metrics)
                         with open(self._metrics_csv_path, "a", newline="") as f:
                             writer = csv.writer(f)
                             row = [
                                 _csv_pending.get("epoch") if _csv_pending else float(self.epoch),
                                 _csv_pending.get("global_step") if _csv_pending else int(self.state.global_step),
-                                _csv_pending.get("train_loss") if _csv_pending else float("nan"),
+                                current_train_loss,
                                 _csv_pending.get("train_acc") if _csv_pending else None,
                                 (eval_reason if eval_reason is not None else "YES"),
                                 eval_loss,
@@ -4059,6 +4302,15 @@ class Trainer(LinearHeadTrainer):
                             writer.writerow(row)
                     except Exception as e:
                         logger.warning(f"[CSV] failed to write eval row: {e}")
+                    guard_payload = self._random_prediction_guard_payload(
+                        train_loss=current_train_loss,
+                        eval_loss=eval_loss,
+                        eval_acc=eval_acc,
+                        eval_loss_avg5=eval_loss_avg5,
+                    )
+                    if guard_payload is not None:
+                        self._random_prediction_guard_emit(guard_payload)
+                        raise SystemExit(RANDOM_PREDICTION_GUARD_EXIT_CODE)
                     if objective > self.objective:
                         logger.info("Best dev result: {}".format(objective))
                         self.objective = objective
@@ -4069,12 +4321,14 @@ class Trainer(LinearHeadTrainer):
                 else:
                     # === CSV：本步未触发评估，立即写入一行并标注未评估 ===
                     try:
+                        current_train_loss = _csv_pending.get("train_loss") if _csv_pending else float("nan")
+                        self._random_prediction_guard_note_train_loss(current_train_loss)
                         with open(self._metrics_csv_path, "a", newline="") as f:
                             writer = csv.writer(f)
                             row = [
                                 _csv_pending.get("epoch") if _csv_pending else float(self.epoch),
                                 _csv_pending.get("global_step") if _csv_pending else int(self.state.global_step),
-                                _csv_pending.get("train_loss") if _csv_pending else float("nan"),
+                                current_train_loss,
                                 _csv_pending.get("train_acc") if _csv_pending else None,
                                 "NO",
                                 None,
@@ -4111,13 +4365,11 @@ class Trainer(LinearHeadTrainer):
 
                     eval_loss_avg5 = None
                     try:
-                        if math.isfinite(eval_loss):
-                            if not hasattr(self, "_eval_loss_history") or self._eval_loss_history is None:
-                                self._eval_loss_history = []
-                            self._eval_loss_history.append((int(self.state.global_step), float(eval_loss)))
-                            if len(self._eval_loss_history) >= 5:
-                                last5 = [v for _, v in self._eval_loss_history[-5:]]
-                                eval_loss_avg5 = float(sum(last5) / float(len(last5)))
+                        eval_loss_avg5 = self._record_eval_for_guards(
+                            global_step=int(self.state.global_step),
+                            eval_loss=eval_loss,
+                            eval_acc=eval_acc,
+                        )
                     except Exception:
                         eval_loss_avg5 = None
 

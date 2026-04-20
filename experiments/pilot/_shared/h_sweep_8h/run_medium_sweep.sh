@@ -10,6 +10,8 @@ SHARED_ROOT="${SCRATCH_ROOT}/experiments/pilot/_shared/h_sweep_8h"
 NAN_GUARD="${SCRATCH_ROOT}/experiments/main/_shared/h_sweep_14h/nan_guard.py"
 NAN_GUARD_LIMIT="${NAN_GUARD_LIMIT:-100}"
 NAN_GUARD_EXIT_CODE=86
+RANDOM_GUARD_EXIT_CODE=87
+PROBE_GUARD_EXIT_CODE=88
 ZO_QUANTIZATION_ALIAS="${ZO_QUANTIZATION_ALIAS:-int8}"
 PRECISION_LABEL="${PRECISION_LABEL:-${ZO_QUANTIZATION_ALIAS}}"
 case "${ZO_QUANTIZATION_ALIAS}" in
@@ -36,6 +38,17 @@ EVAL_STEPS="${EVAL_STEPS:-1000}"
 LOGGING_STEPS="${LOGGING_STEPS:-10}"
 ZO_PROBE_EVERY="${ZO_PROBE_EVERY:-200}"
 ZO_PROBE_NUM_SEEDS="${ZO_PROBE_NUM_SEEDS:-16}"
+RANDOM_PREDICTION_GUARD_ENABLED="${RANDOM_PREDICTION_GUARD_ENABLED:-True}"
+RANDOM_PREDICTION_GUARD_STEP="${RANDOM_PREDICTION_GUARD_STEP:-2000}"
+RANDOM_PREDICTION_GUARD_ACC_TOLERANCE="${RANDOM_PREDICTION_GUARD_ACC_TOLERANCE:-0.05}"
+RANDOM_PREDICTION_GUARD_LOSS_TOLERANCE="${RANDOM_PREDICTION_GUARD_LOSS_TOLERANCE:-0.03}"
+RANDOM_PREDICTION_GUARD_BAD_LOSS_EXCESS="${RANDOM_PREDICTION_GUARD_BAD_LOSS_EXCESS:-0.5}"
+RANDOM_PREDICTION_GUARD_RECENT_EVALS="${RANDOM_PREDICTION_GUARD_RECENT_EVALS:-2}"
+RANDOM_PREDICTION_GUARD_MIN_LOSS_DROP="${RANDOM_PREDICTION_GUARD_MIN_LOSS_DROP:-0.05}"
+RANDOM_PREDICTION_GUARD_MIN_ACC_GAIN="${RANDOM_PREDICTION_GUARD_MIN_ACC_GAIN:-0.02}"
+ZO_PROBE_HEALTH_GUARD_ENABLED="${ZO_PROBE_HEALTH_GUARD_ENABLED:-True}"
+ZO_PROBE_HEALTH_GUARD_STEP="${ZO_PROBE_HEALTH_GUARD_STEP:-${RANDOM_PREDICTION_GUARD_STEP}}"
+ZO_PROBE_HEALTH_GUARD_MAX_BAD_PROBES="${ZO_PROBE_HEALTH_GUARD_MAX_BAD_PROBES:-3}"
 BS="${BS:-32}"
 LR="${LR:-1e-6}"
 WD="${WD:-0}"
@@ -226,6 +239,17 @@ for H in "${H_VALUES[@]}"; do
     --zo_probe_every "${ZO_PROBE_EVERY}"
     --zo_probe_num_seeds "${ZO_PROBE_NUM_SEEDS}"
     --zo_probe_log_csv True
+    --random_prediction_guard_enabled "${RANDOM_PREDICTION_GUARD_ENABLED}"
+    --random_prediction_guard_step "${RANDOM_PREDICTION_GUARD_STEP}"
+    --random_prediction_guard_acc_tolerance "${RANDOM_PREDICTION_GUARD_ACC_TOLERANCE}"
+    --random_prediction_guard_loss_tolerance "${RANDOM_PREDICTION_GUARD_LOSS_TOLERANCE}"
+    --random_prediction_guard_bad_loss_excess "${RANDOM_PREDICTION_GUARD_BAD_LOSS_EXCESS}"
+    --random_prediction_guard_recent_evals "${RANDOM_PREDICTION_GUARD_RECENT_EVALS}"
+    --random_prediction_guard_min_loss_drop "${RANDOM_PREDICTION_GUARD_MIN_LOSS_DROP}"
+    --random_prediction_guard_min_acc_gain "${RANDOM_PREDICTION_GUARD_MIN_ACC_GAIN}"
+    --zo_probe_health_guard_enabled "${ZO_PROBE_HEALTH_GUARD_ENABLED}"
+    --zo_probe_health_guard_step "${ZO_PROBE_HEALTH_GUARD_STEP}"
+    --zo_probe_health_guard_max_bad_probes "${ZO_PROBE_HEALTH_GUARD_MAX_BAD_PROBES}"
   )
   if [[ -n "${SPARSE_RATIO:-}" ]]; then
     CMD+=(
@@ -258,6 +282,12 @@ for H in "${H_VALUES[@]}"; do
   elif [[ ${run_status} -eq ${NAN_GUARD_EXIT_CODE} ]]; then
     append_failure_summary "${H}" "skipped_nan_guard" "${run_status}" "${RUN_ROOT}" "${RUN_LOG}" "${RUN_ERR}"
     status_label="skipped_nan_guard"
+  elif [[ ${run_status} -eq ${RANDOM_GUARD_EXIT_CODE} ]]; then
+    append_failure_summary "${H}" "skipped_random_prediction_guard" "${run_status}" "${RUN_ROOT}" "${RUN_LOG}" "${RUN_ERR}"
+    status_label="skipped_random_prediction_guard"
+  elif [[ ${run_status} -eq ${PROBE_GUARD_EXIT_CODE} ]]; then
+    append_failure_summary "${H}" "skipped_probe_health_guard" "${run_status}" "${RUN_ROOT}" "${RUN_LOG}" "${RUN_ERR}"
+    status_label="skipped_probe_health_guard"
   else
     append_failure_summary "${H}" "failed" "${run_status}" "${RUN_ROOT}" "${RUN_LOG}" "${RUN_ERR}"
     status_label="failed"

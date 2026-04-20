@@ -72,27 +72,35 @@ import os
 import sys
 from tempfile import NamedTemporaryFile
 
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+
 jsonl_path, h_value = sys.argv[1:]
 parent = os.path.dirname(jsonl_path) or "."
+lock_path = jsonl_path + ".lock"
 
-with open(jsonl_path, "r", encoding="utf-8") as src, NamedTemporaryFile(
-    "w", delete=False, dir=parent, encoding="utf-8"
-) as dst:
-    tmp_path = dst.name
-    for raw_line in src:
-        line = raw_line.strip()
-        if not line:
-            continue
-        try:
-            record = json.loads(line)
-        except Exception:
-            dst.write(raw_line)
-            continue
-        if str(record.get("h")) == h_value:
-            continue
-        dst.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
-
-os.replace(tmp_path, jsonl_path)
+with open(lock_path, "w", encoding="utf-8") as lock_file:
+    if fcntl is not None:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+    with open(jsonl_path, "r", encoding="utf-8") as src, NamedTemporaryFile(
+        "w", delete=False, dir=parent, encoding="utf-8"
+    ) as dst:
+        tmp_path = dst.name
+        for raw_line in src:
+            line = raw_line.strip()
+            if not line:
+                continue
+            try:
+                record = json.loads(line)
+            except Exception:
+                dst.write(raw_line)
+                continue
+            if str(record.get("h")) == h_value:
+                continue
+            dst.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+    os.replace(tmp_path, jsonl_path)
 PY
 }
 

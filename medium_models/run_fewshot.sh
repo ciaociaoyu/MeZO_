@@ -91,20 +91,20 @@ case $TASK in
         MAPPING="{0:'terrible',1:'bad',2:'okay',3:'good',4:'great'}"
         TASK_EXTRA="--first_sent_limit 110 --other_sent_limit 20 --double_demo"
         ;;
-    QQP)
+    QQP|qqp)
         TEMPLATE=*cls**sent_0**mask*,*+sentl_1**sep+*
         MAPPING="{'0':'No','1':'Yes'}"
         ;;
-    QNLI)
+    QNLI|qnli)
         TEMPLATE=*cls**sent-_0*?*mask*,*+sentl_1**sep+*
         MAPPING="{'not_entailment':'No','entailment':'Yes'}"
         ;;
-    MNLI)
+    MNLI|mnli)
         TEMPLATE=*cls**sent-_0*?*mask*,*+sentl_1**sep+*
         MAPPING="{'contradiction':'No','entailment':'Yes','neutral':'Maybe'}"
         TASK_EXTRA="--max_seq_len 256 --first_sent_limit 240"
         ;;
-    SNLI)
+    SNLI|snli)
         TEMPLATE=*cls**sent-_0*?*mask*,*+sentl_1**sep+*
         MAPPING="{'contradiction':'No','entailment':'Yes','neutral':'Maybe'}"
         TASK_EXTRA="--max_seq_len 256 --num_sample 4"
@@ -129,7 +129,7 @@ case $TASK in
         MAPPING="{0:'terrible',1:'great'}"
         TASK_EXTRA="--first_sent_limit 110"
         ;;
-    CoLA)
+    CoLA|cola)
         TEMPLATE=*cls**sent_0*_This_is*mask*.*sep+*
         MAPPING="{'0':'incorrect','1':'correct'}"
         ;;
@@ -138,11 +138,11 @@ case $TASK in
         MAPPING="{0:'subjective',1:'objective'}"
         TASK_EXTRA="--first_sent_limit 110 --other_sent_limit 50"
         ;;
-    MRPC)
+    MRPC|mrpc)
         TEMPLATE=*cls**sent_0**mask*,*+sentl_1**sep+*
         MAPPING="{'0':'No','1':'Yes'}"
         ;;
-    RTE)
+    RTE|rte)
         TEMPLATE=*cls**sent-_0*?*mask*,*+sentl_1**sep+*
         MAPPING="{'not_entailment':'No','entailment':'Yes'}"
         TASK_EXTRA="--max_seq_len 256 --first_sent_limit 240"

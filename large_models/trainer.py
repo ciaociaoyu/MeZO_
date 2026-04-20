@@ -22,6 +22,7 @@ import enum
 import functools
 import glob
 import inspect
+import json
 import math
 import os
 import random
@@ -224,6 +225,8 @@ _is_native_cpu_amp_available = is_torch_greater_or_equal_than_1_10
 
 DEFAULT_CALLBACKS = [DefaultFlowCallback]
 DEFAULT_PROGRESS_CALLBACK = ProgressCallback
+RANDOM_PREDICTION_GUARD_EXIT_CODE = 87
+PROBE_HEALTH_GUARD_EXIT_CODE = 88
 
 if is_in_notebook():
     from .utils.notebook import NotebookProgressCallback
@@ -321,6 +324,249 @@ class OurTrainer(Trainer):
             learning_rate,
         )
 
+    @staticmethod
+    def _safe_float(value: Optional[Any]) -> Optional[float]:
+        try:
+            value = float(value)
+        except Exception:
+            return None
+        return value if math.isfinite(value) else None
+
+    def _record_eval_for_guards(self, *, global_step: int, eval_loss: Optional[float], eval_acc: Optional[float]) -> Optional[float]:
+        loss_value = self._safe_float(eval_loss)
+        acc_value = self._safe_float(eval_acc)
+
+        if not hasattr(self, "_eval_history") or self._eval_history is None:
+            self._eval_history = []
+        self._eval_history.append({
+            "global_step": int(global_step),
+            "eval_loss": loss_value,
+            "eval_acc": acc_value,
+        })
+
+        if loss_value is None:
+            return None
+
+        if not hasattr(self, "_eval_loss_history") or self._eval_loss_history is None:
+            self._eval_loss_history = []
+        self._eval_loss_history.append((int(global_step), float(loss_value)))
+        last5 = [v for _, v in self._eval_loss_history[-5:]]
+        if len(last5) == 0:
+            return None
+        return float(sum(last5) / float(len(last5)))
+
+    def _extract_eval_acc(self, metrics: Dict[str, float]) -> Optional[float]:
+        if not isinstance(metrics, dict):
+            return None
+        for k in ["eval_accuracy", "eval_acc", "accuracy", "acc"]:
+            if k in metrics and isinstance(metrics[k], (int, float)):
+                return float(metrics[k])
+        for k, v in metrics.items():
+            if isinstance(k, str) and ("accuracy" in k.lower() or "acc" in k.lower()) and isinstance(v, (int, float)):
+                return float(v)
+        return None
+
+    def _random_prediction_guard_enabled(self) -> bool:
+        return bool(getattr(self.args, "random_prediction_guard_enabled", False))
+
+    def _random_prediction_guard_note_train_loss(self, train_loss: Optional[float]) -> Optional[float]:
+        train_loss_value = self._safe_float(train_loss)
+        if not self._random_prediction_guard_enabled():
+            return train_loss_value
+        if train_loss_value is None:
+            return None
+        if getattr(self, "_random_prediction_guard_initial_train_loss", None) is None:
+            self._random_prediction_guard_initial_train_loss = float(train_loss_value)
+        return float(train_loss_value)
+
+    def _random_prediction_guard_note_logged_train_loss(self) -> Optional[float]:
+        log_history = list(getattr(getattr(self, "state", None), "log_history", []) or [])
+        for row in reversed(log_history):
+            if not isinstance(row, dict):
+                continue
+            for key in ("loss", "train_loss"):
+                value = self._safe_float(row.get(key))
+                if value is not None:
+                    return self._random_prediction_guard_note_train_loss(value)
+        return None
+
+    def _random_prediction_guard_num_labels(self) -> int:
+        model_num_labels = int(getattr(getattr(self.model, "config", None), "num_labels", 0) or 0)
+        if model_num_labels > 1:
+            return model_num_labels
+
+        task_name = str(getattr(self.args, "task_name", "") or "").strip().lower()
+        task_label_map = {
+            "boolq": 2,
+            "cb": 3,
+            "copa": 2,
+            "mnli": 3,
+            "multirc": 2,
+            "rte": 2,
+            "snli": 3,
+            "sst2": 2,
+            "sst-2": 2,
+            "sst5": 5,
+            "sst-5": 5,
+            "wic": 2,
+            "wsc": 2,
+        }
+        if task_name in task_label_map:
+            return int(task_label_map[task_name])
+
+        task = getattr(self, "task", None)
+        samples_by_split = getattr(task, "samples", None)
+        if isinstance(samples_by_split, dict):
+            for split_name in ("valid", "train", "valid_mismatched", "test"):
+                samples = samples_by_split.get(split_name)
+                if not samples:
+                    continue
+                candidates = getattr(samples[0], "candidates", None)
+                if isinstance(candidates, (list, tuple)) and len(candidates) > 1:
+                    return int(len(candidates))
+
+        return 0
+
+    def _random_prediction_guard_payload(
+        self,
+        *,
+        train_loss: Optional[float],
+        eval_loss: Optional[float],
+        eval_acc: Optional[float],
+        eval_loss_avg5: Optional[float],
+    ) -> Optional[Dict[str, Any]]:
+        if not self._random_prediction_guard_enabled():
+            return None
+
+        global_step = int(getattr(self.state, "global_step", 0))
+        if global_step < max(1, int(getattr(self.args, "random_prediction_guard_step", 1000))):
+            return None
+
+        num_labels = self._random_prediction_guard_num_labels()
+        if num_labels <= 1:
+            return None
+
+        chance_acc = 1.0 / float(num_labels)
+        chance_loss = float(math.log(float(num_labels)))
+        acc_tol = float(getattr(self.args, "random_prediction_guard_acc_tolerance", 0.05))
+        loss_tol = float(getattr(self.args, "random_prediction_guard_loss_tolerance", 0.03))
+        bad_loss_excess = float(getattr(self.args, "random_prediction_guard_bad_loss_excess", 0.5))
+        recent_evals = max(1, int(getattr(self.args, "random_prediction_guard_recent_evals", 2)))
+        min_loss_drop = float(getattr(self.args, "random_prediction_guard_min_loss_drop", 0.05))
+        min_acc_gain = float(getattr(self.args, "random_prediction_guard_min_acc_gain", 0.02))
+
+        eval_loss_value = self._safe_float(eval_loss)
+        eval_loss_ref = eval_loss_value
+        try:
+            if eval_loss_avg5 is not None and math.isfinite(float(eval_loss_avg5)):
+                eval_loss_ref = float(eval_loss_avg5)
+        except Exception:
+            pass
+
+        eval_acc_value = self._safe_float(eval_acc)
+        train_loss_value = self._safe_float(train_loss)
+
+        severe_eval_loss = bool(
+            eval_loss_value is not None
+            and math.isfinite(eval_loss_value)
+            and eval_loss_value >= (chance_loss + bad_loss_excess)
+        )
+
+        recent_history = list(getattr(self, "_eval_history", []) or [])
+        finite_recent = [
+            row for row in recent_history
+            if self._safe_float(row.get("eval_loss")) is not None
+            and self._safe_float(row.get("eval_acc")) is not None
+        ]
+        recent_window = finite_recent[-recent_evals:]
+        recent_losses = [float(self._safe_float(row.get("eval_loss"))) for row in recent_window]
+        recent_accs = [float(self._safe_float(row.get("eval_acc"))) for row in recent_window]
+        recent_all_randomish = bool(
+            len(recent_window) >= recent_evals
+            and all(loss >= (chance_loss - loss_tol) for loss in recent_losses)
+            and all(acc <= (chance_acc + acc_tol) for acc in recent_accs)
+        )
+        best_loss_drop = None
+        best_acc_gain = None
+        trend_stalled = False
+        if len(recent_window) >= recent_evals:
+            best_loss_drop = float(recent_losses[0] - min(recent_losses))
+            best_acc_gain = float(max(recent_accs) - recent_accs[0])
+            trend_stalled = bool(
+                best_loss_drop < float(min_loss_drop)
+                and best_acc_gain < float(min_acc_gain)
+            )
+        random_plateau = bool(recent_all_randomish and trend_stalled)
+
+        initial_train_loss = getattr(self, "_random_prediction_guard_initial_train_loss", None)
+        train_loss_blowup = False
+        if (
+            train_loss_value is not None
+            and math.isfinite(train_loss_value)
+            and initial_train_loss is not None
+            and math.isfinite(float(initial_train_loss))
+            and float(initial_train_loss) > 0.0
+        ):
+            train_loss_blowup = bool(train_loss_value >= (float(initial_train_loss) * 4.0))
+
+        trigger = bool(severe_eval_loss or random_plateau)
+        if not trigger:
+            return None
+
+        reason = "random_plateau"
+        if severe_eval_loss and random_plateau:
+            reason = "diverged_and_random_plateau"
+        elif severe_eval_loss:
+            reason = "severe_eval_loss"
+
+        return {
+            "trigger": True,
+            "reason": reason,
+            "global_step": global_step,
+            "task_name": str(getattr(self.args, "task_name", "")),
+            "num_labels": num_labels,
+            "chance_acc": chance_acc,
+            "chance_loss": chance_loss,
+            "acc_tolerance": acc_tol,
+            "loss_tolerance": loss_tol,
+            "bad_loss_excess": bad_loss_excess,
+            "recent_evals": recent_evals,
+            "min_loss_drop": min_loss_drop,
+            "min_acc_gain": min_acc_gain,
+            "eval_acc": eval_acc_value,
+            "eval_loss": eval_loss_value,
+            "eval_loss_ref": eval_loss_ref,
+            "eval_loss_avg5": (None if eval_loss_avg5 is None else float(eval_loss_avg5)),
+            "recent_eval_losses": recent_losses,
+            "recent_eval_accs": recent_accs,
+            "best_recent_loss_drop": best_loss_drop,
+            "best_recent_acc_gain": best_acc_gain,
+            "train_loss": train_loss_value,
+            "initial_train_loss": (None if initial_train_loss is None else float(initial_train_loss)),
+            "train_loss_blowup": bool(train_loss_blowup),
+        }
+
+    def _random_prediction_guard_emit(self, payload: Dict[str, Any]) -> None:
+        base_dir = getattr(self.args, "output_dir", "./outputs") or "./outputs"
+        os.makedirs(base_dir, exist_ok=True)
+        out_path = os.path.join(base_dir, "random_prediction_guard.json")
+        record = dict(payload)
+        record["exit_code"] = int(RANDOM_PREDICTION_GUARD_EXIT_CODE)
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(record, f, ensure_ascii=False, indent=2)
+        logger.warning(
+            "[random-guard] triggered at step=%d task=%s reason=%s eval_loss=%s eval_loss_ref=%s eval_acc=%s train_loss=%s chance_loss=%.6f chance_acc=%.6f",
+            int(record["global_step"]),
+            str(record.get("task_name")),
+            str(record["reason"]),
+            str(record.get("eval_loss")),
+            str(record.get("eval_loss_ref")),
+            str(record.get("eval_acc")),
+            str(record.get("train_loss")),
+            float(record["chance_loss"]),
+            float(record["chance_acc"]),
+        )
+
     def create_accelerator_and_postprocess(self):
         grad_acc_kwargs = {"num_steps": self.args.gradient_accumulation_steps}
         if version.parse(accelerate_version) > version.parse("0.20.3"):
@@ -386,6 +632,10 @@ class OurTrainer(Trainer):
         train_dataloader = self.get_train_dataloader()
         self.latest_zo_probe_row = None
         self._setup_zo_probe_csv()
+        self._eval_history = []
+        self._eval_loss_history = []
+        self._random_prediction_guard_initial_train_loss = None
+        self._zo_probe_bad_streak = 0
 
         # MeZO added: Linear probing
         if self.args.linear_probing:
@@ -1229,6 +1479,46 @@ class OurTrainer(Trainer):
         except Exception as e:
             logger.warning(f"[zo_probe] failed to append CSV row: {type(e).__name__}: {e}")
 
+    def _zo_probe_health_guard_enabled(self) -> bool:
+        return bool(getattr(self.args, "zo_probe_health_guard_enabled", False))
+
+    def _zo_probe_health_guard_emit(self, payload: Dict[str, Any]) -> None:
+        base_dir = getattr(self.args, "output_dir", "./outputs") or "./outputs"
+        os.makedirs(base_dir, exist_ok=True)
+        out_path = os.path.join(base_dir, "probe_health_guard.json")
+        record = dict(payload)
+        record["exit_code"] = int(PROBE_HEALTH_GUARD_EXIT_CODE)
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(record, f, ensure_ascii=False, indent=2)
+        logger.warning(
+            "[probe-health-guard] triggered at step=%d reason=%s bad_streak=%d",
+            int(record["global_step"]),
+            str(record["reason"]),
+            int(record["bad_probe_streak"]),
+        )
+
+    def _zo_probe_health_guard_note_bad_probe(self, *, global_step: int, reason: str, detail: Optional[str] = None) -> None:
+        if not self._zo_probe_health_guard_enabled():
+            return
+        self._zo_probe_bad_streak = int(getattr(self, "_zo_probe_bad_streak", 0)) + 1
+        max_bad = max(1, int(getattr(self.args, "zo_probe_health_guard_max_bad_probes", 3)))
+        start_step = max(1, int(getattr(self.args, "zo_probe_health_guard_step", 2000)))
+        if int(global_step) < start_step or int(self._zo_probe_bad_streak) < max_bad:
+            return
+        payload = {
+            "trigger": True,
+            "reason": str(reason),
+            "detail": detail,
+            "global_step": int(global_step),
+            "bad_probe_streak": int(self._zo_probe_bad_streak),
+            "max_bad_probes": int(max_bad),
+        }
+        self._zo_probe_health_guard_emit(payload)
+        raise SystemExit(PROBE_HEALTH_GUARD_EXIT_CODE)
+
+    def _zo_probe_health_guard_note_good_probe(self) -> None:
+        self._zo_probe_bad_streak = 0
+
     def _quzo_probe_direction(self, bundle: Dict[str, torch.Tensor], probe_direction: str) -> torch.Tensor:
         key = str(probe_direction or "u1").lower()
         if key == "u2" and "u2" in bundle:
@@ -1369,6 +1659,10 @@ class OurTrainer(Trainer):
             td_arr = td_raw[valid]
             if fd_arr.size == 0:
                 logger.warning(f"[zo_probe] step={global_step}: no finite probe pairs; skipping row.")
+                self._zo_probe_health_guard_note_bad_probe(
+                    global_step=global_step,
+                    reason="no_finite_probe_pairs",
+                )
                 return
 
             official_stats = self._zo_probe_metric_summary(fd_arr, td_arr)
@@ -1409,6 +1703,7 @@ class OurTrainer(Trainer):
                 "probe_num_seeds": int(num_seeds),
             }
             self.latest_zo_probe_row = row
+            self._zo_probe_health_guard_note_good_probe()
             self._zo_probe_append_csv_row(row)
             logger.info(
                 "[zo_probe] step=%d eps=%.3e precision=%s n=%d mae=%.6e mse=%.6e rmse=%.6e sign_acc=%.4f corr=%s",
@@ -1424,6 +1719,11 @@ class OurTrainer(Trainer):
             )
         except Exception as e:
             logger.warning(f"[zo_probe] step={global_step} failed: {type(e).__name__}: {e}")
+            self._zo_probe_health_guard_note_bad_probe(
+                global_step=global_step,
+                reason="probe_exception",
+                detail=f"{type(e).__name__}: {e}",
+            )
         finally:
             torch.random.set_rng_state(torch_state)
             try:

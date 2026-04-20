@@ -712,6 +712,52 @@ class DynamicTrainingArguments(TrainingArguments):
         default=True,
         metadata={"help": "If true, append directional-derivative probe metrics to output_dir/zo_directional_probe.csv."}
     )
+    random_prediction_guard_enabled: bool = field(
+        default=False,
+        metadata={
+            "help": "If true, abort medium-model training early when the first post-threshold eval still looks random or clearly diverged."
+        }
+    )
+    random_prediction_guard_step: int = field(
+        default=1000,
+        metadata={"help": "First global_step at which the random-prediction early-skip guard is allowed to trigger."}
+    )
+    random_prediction_guard_acc_tolerance: float = field(
+        default=0.05,
+        metadata={"help": "Accuracy tolerance above chance used by the random-prediction early-skip guard."}
+    )
+    random_prediction_guard_loss_tolerance: float = field(
+        default=0.03,
+        metadata={"help": "Allowed eval-loss slack around the uniform random baseline before the random-prediction early-skip guard fires."}
+    )
+    random_prediction_guard_bad_loss_excess: float = field(
+        default=0.5,
+        metadata={"help": "If eval loss exceeds log(num_labels) by at least this margin at the guard step, treat it as clearly diverged and abort early."}
+    )
+    random_prediction_guard_recent_evals: int = field(
+        default=2,
+        metadata={"help": "Number of recent evals that must remain random-like before the random-prediction guard can abort."}
+    )
+    random_prediction_guard_min_loss_drop: float = field(
+        default=0.05,
+        metadata={"help": "Minimum best-loss improvement over the recent eval window required to treat a random-looking run as still making progress."}
+    )
+    random_prediction_guard_min_acc_gain: float = field(
+        default=0.02,
+        metadata={"help": "Minimum best-accuracy improvement over the recent eval window required to treat a random-looking run as still making progress."}
+    )
+    zo_probe_health_guard_enabled: bool = field(
+        default=False,
+        metadata={"help": "If true, abort after repeated probe steps produce no finite directional-derivative pairs."}
+    )
+    zo_probe_health_guard_step: int = field(
+        default=2000,
+        metadata={"help": "First global_step at which the probe-health guard is allowed to abort training."}
+    )
+    zo_probe_health_guard_max_bad_probes: int = field(
+        default=3,
+        metadata={"help": "Maximum consecutive bad probe steps allowed before the probe-health guard aborts."}
+    )
     measure_perf_tail: bool = field(
         default=True,
         metadata={"help": "If true, measure wallclock/step, samples/sec, and max GPU memory once over the final tail window of optimizer steps."}
@@ -1118,6 +1164,16 @@ def main():
         raise ValueError("--measure_perf_tail_window_steps must be > 0")
     if int(getattr(training_args, "zo_probe_num_seeds", 16)) <= 0:
         raise ValueError("--zo_probe_num_seeds must be > 0")
+    if int(getattr(training_args, "random_prediction_guard_recent_evals", 2)) <= 0:
+        raise ValueError("--random_prediction_guard_recent_evals must be > 0")
+    if float(getattr(training_args, "random_prediction_guard_min_loss_drop", 0.05)) < 0.0:
+        raise ValueError("--random_prediction_guard_min_loss_drop must be >= 0")
+    if float(getattr(training_args, "random_prediction_guard_min_acc_gain", 0.02)) < 0.0:
+        raise ValueError("--random_prediction_guard_min_acc_gain must be >= 0")
+    if int(getattr(training_args, "zo_probe_health_guard_step", 2000)) <= 0:
+        raise ValueError("--zo_probe_health_guard_step must be > 0")
+    if int(getattr(training_args, "zo_probe_health_guard_max_bad_probes", 3)) <= 0:
+        raise ValueError("--zo_probe_health_guard_max_bad_probes must be > 0")
     training_args.h_estimation_active_source = str(
         getattr(training_args, "h_estimation_active_source", "auto")
     ).lower()

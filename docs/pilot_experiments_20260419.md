@@ -48,36 +48,100 @@ Status interpretation:
 
 ## Current Summary
 
-As of `2026-04-19` after QuZO probe validation and resubmission:
+As of `2026-04-19` after the guard rollout and shard-based relaunch work:
 
 - `5 / 16` combinations are already usable and were intentionally skipped.
-- `11 / 16` remaining combinations have been submitted.
-- `0 / 16` combinations are currently blocked.
+- `5 / 16` combinations are now resubmitted as INT8 shard jobs.
+- `2 / 16` INT8 combinations have passed short smoke validation but are held for
+  wave 2 because the cluster rejected a larger fan-out with
+  `QOSMaxSubmitJobPerUserLimit`.
+- `4 / 16` FP16 combinations are still stopped and have not yet been relaunched
+  under the new shard strategy.
 
-QuZO probe validation reference:
+What changed on `2026-04-19`:
 
-- [quzo_probe_smoke_20260419.md](/scratch/jy03364/MeZO_/docs/quzo_probe_smoke_20260419.md)
+- all in-flight pilot jobs touching the new guard/probe functionality were
+  cancelled before revalidation
+- every remaining INT8 pilot path was smoke-validated before any relaunch
+- the 8h launcher was changed from a single serial chain to a shard scheduler:
+  `4` shard jobs per experiment, `2` concurrent lanes, lane-local `afterok`
+  dependencies
+- the launcher now supports partial waves via
+  `EXPERIMENT_START_INDEX` / `EXPERIMENT_LIMIT` and per-lane dependency seeds
+  via `BASE_DEPENDENCY_JOB_IDS_BY_LANE`
+- summary / manifest row deletion is now lock-protected so concurrent shard jobs
+  do not race when rewriting shared `summary.jsonl` / `manifest.jsonl`
+- the medium few-shot launcher bug for lowercase `mnli` was fixed
 
-Submission strategy:
-
-- INT8 chain:
-  - `44584419 -> 44584425`
-- FP16 chain:
-  - `44585137 -> 44585140`
-  - prior chain `44584426 -> 44584429` was cancelled after guard audit:
-    `44584426` had no `nan_guard` wrapper in the submitted batch script;
-    `44584427 -> 44584429` pointed at a nonexistent local `nan_guard.py`
-
-Path audit hardening on `2026-04-19`:
+Guard / path hardening on `2026-04-19`:
 
 - added `experiments/audit_script_paths.py` and verified all `experiments/**/*.sh`
   resolve against the repo layout
 - added fail-fast path checks to the shared 8h runners and the resubmitted 14h
   job scripts so missing helpers or guard scripts now stop immediately with an
   explicit `[path-check]` error instead of silently empty-running
-- fixed `experiments/pilot/_shared/speed_bench_h100/run_zo_method_speed_matrix.py`,
-  which had computed `REPO_ROOT` incorrectly and would otherwise generate bad
-  launcher paths under `experiments/pilot/...`
+- the old 8h random-prediction guard was relaxed from a single rigid
+  “still-random at step 1000” test into a trend-aware check:
+  only skip when recent evals remain random-like and show no meaningful
+  improvement
+- on `2026-04-20`, the same trend-aware random-prediction guard was wired into
+  `large_models` so the OPT-family pilot path now supports the same
+  classification safety check as `medium_models`; current explicit task
+  coverage is `SST-5`, `MNLI`, and `BoolQ`
+- added a separate probe-health guard so repeated probe failures can skip an `h`
+  without pretending training itself is numerically healthy
+
+QuZO probe validation reference:
+
+- [quzo_probe_smoke_20260419.md](/scratch/jy03364/MeZO_/docs/quzo_probe_smoke_20260419.md)
+
+INT8 wave-1 submission strategy:
+
+- script:
+  - `experiments/pilot/_shared/h_sweep_8h/submit_int8_pilot_searches.sh`
+- shard layout:
+  - shard 1: `1e-6 3e-6`
+  - shard 2: `1e-5 3e-5`
+  - shard 3: `1e-4 3e-4`
+  - shard 4: `1e-3 3e-3`
+- lane layout:
+  - lane 0:
+    `roberta_sst5_mezo_int8 -> opt13b_mnli_mezo_int8 -> roberta_mnli_sparse_mezo_int8`
+  - lane 1:
+    `roberta_mnli_mezo_int8 -> roberta_sst5_sparse_mezo_int8`
+- held for wave 2 because of submit quota:
+  - `opt13b_sst5_sparse_mezo_int8`
+  - `opt13b_mnli_sparse_mezo_int8`
+
+Wave-2 command template after the current lane tails clear:
+
+- `BASE_DEPENDENCY_JOB_IDS_BY_LANE='44586252:44586253:44586254:44586255,44586243:44586244:44586245:44586246' EXPERIMENT_START_INDEX=5 EXPERIMENT_LIMIT=2 bash experiments/pilot/_shared/h_sweep_8h/submit_int8_pilot_searches.sh`
+
+## INT8 Smoke Validation
+
+These short runs were used only to validate the new guard / probe path before
+relaunch. They are not canonical full-pilot results.
+
+Additional guard regression checks completed on `2026-04-20`:
+
+- `conda run -n mezo-env python -m unittest large_models.tests.test_random_prediction_guard`
+  passed after wiring the large-model trend guard into the existing evaluation
+  callback
+- `conda run -n mezo-env python -m unittest large_models.tests.test_quzo_probe_direction`
+  still passes, so the QuZO direction probe unit check on the large path
+  survived the guard changes
+- `conda run -n ciao python -m unittest medium_models.tests.test_directional_probe_consistency`
+  still passes in the documented medium-model environment
+
+| Combination | Smoke evidence | Notes |
+|---|---|---|
+| MeZO / RoBERTa-large / SST-5 / INT8 | `experiments/smoke/mezo/roberta-large/sst5/int8/guard_validation_20260419/.../summary.jsonl` | full-mode smoke completed; no random/probe guard trigger |
+| MeZO / RoBERTa-large / MNLI / INT8 | `experiments/smoke/mezo/roberta-large/mnli/int8/guard_validation_fs_20260419/.../summary.jsonl` | few-shot smoke used after fixing lowercase `mnli` template bug |
+| MeZO / OPT-1.3B / MNLI / INT8 | `experiments/smoke/mezo/opt-1.3b/mnli/int8/guard_validation_20260419/.../summary.jsonl` | full-mode smoke completed |
+| Sparse MeZO / RoBERTa-large / SST-5 / INT8 | `experiments/smoke/sparse_mezo/roberta-large/sst5/int8/guard_validation_20260419/.../summary.jsonl` | full-mode smoke completed |
+| Sparse MeZO / RoBERTa-large / MNLI / INT8 | `experiments/smoke/sparse_mezo/roberta-large/mnli/int8/guard_validation_fs_20260419/.../summary.jsonl` | few-shot smoke completed |
+| Sparse MeZO / OPT-1.3B / SST-5 / INT8 | `experiments/smoke/sparse_mezo/opt-1.3b/sst5/int8/guard_validation_20260419/.../summary.jsonl` | full-mode smoke completed; slower than the other INT8 paths |
+| Sparse MeZO / OPT-1.3B / MNLI / INT8 | `experiments/smoke/sparse_mezo/opt-1.3b/mnli/int8/guard_validation_20260419/.../summary.jsonl` | ultra-short path smoke only; path/summary creation validated, runtime estimate still weak |
 
 ## Matrix Status
 
@@ -86,60 +150,65 @@ Path audit hardening on `2026-04-19`:
 | MeZO | RoBERTa-large | SST-5 | FP16 | already usable, skipped | `summary.jsonl: 9 completed + 5 skipped_nan_guard` | `experiments/main/mezo/roberta-large/sst5/fp16/h_sweep_14h/results` |
 | MeZO | RoBERTa-large | MNLI | FP16 | already usable, skipped | `summary.jsonl: 9 completed + 5 skipped_nan_guard` | `experiments/main/mezo/roberta-large/mnli/fp16/h_sweep_14h/results` |
 | MeZO | OPT-1.3B | SST-5 | FP16 | already usable, skipped | `summary.jsonl: 14 completed` | `experiments/main/mezo/opt-1.3b/sst5/fp16/h_sweep_14h/results` |
-| MeZO | OPT-1.3B | MNLI | FP16 | submitted | historical state: `summary.jsonl: 12 completed`; bad run `44584426` was cancelled because the submitted batch script bypassed `nan_guard`; resubmitted as `44585137` | `experiments/main/mezo/opt-1.3b/mnli/fp16/h_sweep_14h/results` |
-| Sparse MeZO | RoBERTa-large | SST-5 | FP16 | submitted | historical state: `3 completed + 3 skipped_nan_guard`; cancelled pending job `44584427` had a broken local guard path; resubmitted as `44585138` | `experiments/main/sparse_mezo/roberta-large/sst5/fp16/h_sweep_14h/results` |
-| Sparse MeZO | RoBERTa-large | MNLI | FP16 | submitted | historical state: `2 completed + 3 skipped_nan_guard`; cancelled pending job `44584428` had a broken local guard path; resubmitted as `44585139` | `experiments/main/sparse_mezo/roberta-large/mnli/fp16/h_sweep_14h/results` |
+| MeZO | OPT-1.3B | MNLI | FP16 | blocked | historical state: `summary.jsonl: 12 completed`; old relaunches were stopped during the guard/probe audit and this 14h path has not yet been re-sharded | `experiments/main/mezo/opt-1.3b/mnli/fp16/h_sweep_14h/results` |
+| Sparse MeZO | RoBERTa-large | SST-5 | FP16 | blocked | historical state: `3 completed + 3 skipped_nan_guard`; stopped during the guard/probe audit; not yet relaunched under the new shard strategy | `experiments/main/sparse_mezo/roberta-large/sst5/fp16/h_sweep_14h/results` |
+| Sparse MeZO | RoBERTa-large | MNLI | FP16 | blocked | historical state: `2 completed + 3 skipped_nan_guard`; stopped during the guard/probe audit; not yet relaunched under the new shard strategy | `experiments/main/sparse_mezo/roberta-large/mnli/fp16/h_sweep_14h/results` |
 | Sparse MeZO | OPT-1.3B | SST-5 | FP16 | already usable, skipped | `summary.jsonl: 14 completed` | `experiments/main/sparse_mezo/opt-1.3b/sst5/fp16/h_sweep_14h/results` |
-| Sparse MeZO | OPT-1.3B | MNLI | FP16 | submitted | historical state: empty `summary.jsonl` residue; cancelled pending job `44584429` had a broken local guard path; resubmitted as `44585140` | `experiments/main/sparse_mezo/opt-1.3b/mnli/fp16/h_sweep_14h/results` |
-| MeZO | RoBERTa-large | SST-5 | INT8 | submitted | old bad probe outputs were deleted; QuZO smoke validated on A100; submitted as job `44584419` | `experiments/pilot/mezo/roberta-large/sst5/int8/h_sweep_8h/` |
-| MeZO | RoBERTa-large | MNLI | INT8 | submitted | old bad probe outputs were deleted; submitted as job `44584420` | `experiments/pilot/mezo/roberta-large/mnli/int8/h_sweep_8h/` |
+| Sparse MeZO | OPT-1.3B | MNLI | FP16 | blocked | historical state: empty `summary.jsonl` residue; stopped during the guard/probe audit; not yet relaunched under the new shard strategy | `experiments/main/sparse_mezo/opt-1.3b/mnli/fp16/h_sweep_14h/results` |
+| MeZO | RoBERTa-large | SST-5 | INT8 | submitted | wave 1 shard jobs `44586231-44586234`; smoke-estimated `~5.66h` per 2-h shard | `experiments/pilot/mezo/roberta-large/sst5/int8/h_sweep_8h/` |
+| MeZO | RoBERTa-large | MNLI | INT8 | submitted | wave 1 shard jobs `44586235-44586238`; few-shot smoke-estimated `~5.42h` per 2-h shard | `experiments/pilot/mezo/roberta-large/mnli/int8/h_sweep_8h/` |
 | MeZO | OPT-1.3B | SST-5 | INT8 | already usable, skipped | `summary.jsonl: 8 completed` | `experiments/pilot/mezo/opt-1.3b/sst5/int8/h_sweep_8h/results` |
-| MeZO | OPT-1.3B | MNLI | INT8 | submitted | stale partial output had been deleted earlier; submitted as job `44584421` | `experiments/pilot/mezo/opt-1.3b/mnli/int8/h_sweep_8h/` |
-| Sparse MeZO | RoBERTa-large | SST-5 | INT8 | submitted | stale partial output had been deleted earlier; submitted as job `44584422` | `experiments/pilot/sparse_mezo/roberta-large/sst5/int8/h_sweep_8h/` |
-| Sparse MeZO | RoBERTa-large | MNLI | INT8 | submitted | stale partial output had been deleted earlier; submitted as job `44584423` | `experiments/pilot/sparse_mezo/roberta-large/mnli/int8/h_sweep_8h/` |
-| Sparse MeZO | OPT-1.3B | SST-5 | INT8 | submitted | previously missing; submitted as job `44584424` | `experiments/pilot/sparse_mezo/opt-1.3b/sst5/int8/h_sweep_8h/` |
-| Sparse MeZO | OPT-1.3B | MNLI | INT8 | submitted | previously missing; submitted as job `44584425` | `experiments/pilot/sparse_mezo/opt-1.3b/mnli/int8/h_sweep_8h/` |
+| MeZO | OPT-1.3B | MNLI | INT8 | submitted | wave 1 shard jobs `44586239-44586242`, dependent on `44586231-44586234`; smoke-estimated `~6.08h` per 2-h shard | `experiments/pilot/mezo/opt-1.3b/mnli/int8/h_sweep_8h/` |
+| Sparse MeZO | RoBERTa-large | SST-5 | INT8 | submitted | wave 1 shard jobs `44586243-44586246`, dependent on `44586235-44586238`; smoke-estimated `~7.76h` per 2-h shard | `experiments/pilot/sparse_mezo/roberta-large/sst5/int8/h_sweep_8h/` |
+| Sparse MeZO | RoBERTa-large | MNLI | INT8 | submitted | shard jobs `44586252-44586255`, dependent on `44586239-44586242`; few-shot smoke-estimated `~6.23h` per 2-h shard | `experiments/pilot/sparse_mezo/roberta-large/mnli/int8/h_sweep_8h/` |
+| Sparse MeZO | OPT-1.3B | SST-5 | INT8 | blocked | smoke validated, but held for wave 2 after the launcher hit `QOSMaxSubmitJobPerUserLimit`; rough smoke estimate `~25.73h` per 2-h shard should be treated cautiously | `experiments/pilot/sparse_mezo/opt-1.3b/sst5/int8/h_sweep_8h/` |
+| Sparse MeZO | OPT-1.3B | MNLI | INT8 | blocked | path smoke validated, but held for wave 2 after the launcher hit `QOSMaxSubmitJobPerUserLimit`; runtime estimate is still weak because the smoke was ultra-short | `experiments/pilot/sparse_mezo/opt-1.3b/mnli/int8/h_sweep_8h/` |
 
-## Submitted Chains
+## Submitted Wave 1
 
-INT8 chain:
+Lane 0:
 
-| Order | Label | Job ID | Depends on | Script |
-|---|---|---:|---:|---|
-| 1 | `int8_roberta_sst5_mezo` | `44584419` | `-` | `experiments/pilot/mezo/roberta-large/sst5/int8/h_sweep_8h/jobs/roberta_sst5_mezo_int8_8h.sh` |
-| 2 | `int8_roberta_mnli_mezo` | `44584420` | `44584419` | `experiments/pilot/mezo/roberta-large/mnli/int8/h_sweep_8h/jobs/roberta_mnli_mezo_int8_8h.sh` |
-| 3 | `int8_opt_mnli_mezo` | `44584421` | `44584420` | `experiments/pilot/mezo/opt-1.3b/mnli/int8/h_sweep_8h/jobs/opt13b_mnli_mezo_int8_8h.sh` |
-| 4 | `int8_roberta_sst5_sparse_mezo` | `44584422` | `44584421` | `experiments/pilot/sparse_mezo/roberta-large/sst5/int8/h_sweep_8h/jobs/roberta_sst5_sparse_mezo_int8_8h.sh` |
-| 5 | `int8_roberta_mnli_sparse_mezo` | `44584423` | `44584422` | `experiments/pilot/sparse_mezo/roberta-large/mnli/int8/h_sweep_8h/jobs/roberta_mnli_sparse_mezo_int8_8h.sh` |
-| 6 | `int8_opt_sst5_sparse_mezo` | `44584424` | `44584423` | `experiments/pilot/sparse_mezo/opt-1.3b/sst5/int8/h_sweep_8h/jobs/opt13b_sst5_sparse_mezo_int8_8h.sh` |
-| 7 | `int8_opt_mnli_sparse_mezo` | `44584425` | `44584424` | `experiments/pilot/sparse_mezo/opt-1.3b/mnli/int8/h_sweep_8h/jobs/opt13b_mnli_sparse_mezo_int8_8h.sh` |
+| Label | Job IDs | Depends on | Script |
+|---|---|---|---|
+| `roberta_sst5_mezo_int8` | `44586231, 44586232, 44586233, 44586234` | `-` | `experiments/pilot/mezo/roberta-large/sst5/int8/h_sweep_8h/jobs/roberta_sst5_mezo_int8_8h.sh` |
+| `opt13b_mnli_mezo_int8` | `44586239, 44586240, 44586241, 44586242` | `afterok:44586231:44586232:44586233:44586234` | `experiments/pilot/mezo/opt-1.3b/mnli/int8/h_sweep_8h/jobs/opt13b_mnli_mezo_int8_8h.sh` |
+| `roberta_mnli_sparse_mezo_int8` | `44586252, 44586253, 44586254, 44586255` | `afterok:44586239:44586240:44586241:44586242` | `experiments/pilot/sparse_mezo/roberta-large/mnli/int8/h_sweep_8h/jobs/roberta_mnli_sparse_mezo_int8_8h.sh` |
 
-FP16 chain:
+Lane 1:
 
-| Order | Label | Job ID | Depends on | Script |
-|---|---|---:|---:|---|
-| 1 | `fp16_opt_mnli_mezo` | `44585137` | `-` | `experiments/main/mezo/opt-1.3b/mnli/fp16/h_sweep_14h/jobs/opt13b_mnli_quzo16_14h.sh` |
-| 2 | `fp16_roberta_sst5_sparse_mezo` | `44585138` | `44585137` | `experiments/main/sparse_mezo/roberta-large/sst5/fp16/h_sweep_14h/jobs/roberta_sst5_sparse_mezo16_14h.sh` |
-| 3 | `fp16_roberta_mnli_sparse_mezo` | `44585139` | `44585138` | `experiments/main/sparse_mezo/roberta-large/mnli/fp16/h_sweep_14h/jobs/roberta_mnli_sparse_mezo16_14h.sh` |
-| 4 | `fp16_opt_mnli_sparse_mezo` | `44585140` | `44585139` | `experiments/main/sparse_mezo/opt-1.3b/mnli/fp16/h_sweep_14h/jobs/opt13b_mnli_sparse_mezo16_14h.sh` |
+| Label | Job IDs | Depends on | Script |
+|---|---|---|---|
+| `roberta_mnli_mezo_int8` | `44586235, 44586236, 44586237, 44586238` | `-` | `experiments/pilot/mezo/roberta-large/mnli/int8/h_sweep_8h/jobs/roberta_mnli_mezo_int8_8h.sh` |
+| `roberta_sst5_sparse_mezo_int8` | `44586243, 44586244, 44586245, 44586246` | `afterok:44586235:44586236:44586237:44586238` | `experiments/pilot/sparse_mezo/roberta-large/sst5/int8/h_sweep_8h/jobs/roberta_sst5_sparse_mezo_int8_8h.sh` |
+
+Old 8h relaunch attempt:
+
+- `44586202-44586209` were immediately cancelled after a launcher bug was found:
+  logging text from `submit_experiment_group` had polluted the dependency string
+  passed to `sbatch`
 
 ## Risk Notes
 
-- `MeZO / INT8 / QuZO`:
-  - A100 smoke estimates roughly `40-56h` for a full 8-point sweep
-  - the production scripts request `H100`, so these should remain within the current `72h` budget
-- `Sparse MeZO / RoBERTa / FP16`:
-  - this remains the highest timeout-risk family
-  - historical runs only completed a small subset of `h` values before hitting `skipped_nan_guard` or timeout
-- `Sparse MeZO / RoBERTa / INT8`:
-  - not smoke-validated here
-  - still submitted because the 8-point sweep is smaller than the problematic 14-point FP16 sweep, but it should be watched closely
+- `QOSMaxSubmitJobPerUserLimit` is now the main scheduling bottleneck for the
+  shard plan.
+- The 8h launcher bug that corrupted dependency strings is fixed, but only after
+  cancelling the first partial attempt.
+- `Sparse MeZO / OPT-1.3B / SST-5 / INT8` looks materially slower than the other
+  INT8 paths in smoke; it is intentionally held for wave 2 rather than being
+  mixed into the first submission wave.
+- The RoBERTa MNLI INT8 smokes used few-shot mode to verify the path after the
+  lowercase `mnli` bug fix. They are good enough for launcher validation, but
+  their runtime estimates are weaker than the full-mode SST-5 numbers.
+- The four remaining FP16 pilot combinations are still paused; they need a
+  separate 14h sharding/resume pass.
 
 ## Immediate Monitor Commands
 
 - Queue status:
   - `squeue -u jy03364 -o '%.18i %.9P %.40j %.8T %.10M %.9l %.20R'`
-- RoBERTa INT8 first job:
-  - `tail -f experiments/pilot/mezo/roberta-large/sst5/int8/h_sweep_8h/logs/slurm_hsweep8h_mezo_int8_roberta_sst5_44584419.out`
-- OPT FP16 resume job:
-  - `tail -f experiments/main/mezo/opt-1.3b/mnli/fp16/h_sweep_14h/logs/slurm_hsweep14h_quzo16_opt13b_mnli_44585137.out`
+- Lane-0 head shard:
+  - `tail -f experiments/pilot/mezo/roberta-large/sst5/int8/h_sweep_8h/logs/slurm_roberta_sst5_mezo_int8_s1_44586231.out`
+- Lane-1 head shard:
+  - `tail -f experiments/pilot/mezo/roberta-large/mnli/int8/h_sweep_8h/logs/slurm_roberta_mnli_mezo_int8_s1_44586235.out`
+- Launcher logs:
+  - `tail -f experiments/pilot/_shared/h_sweep_8h/logs/submit_int8_pilot_20260419_234943.log`
