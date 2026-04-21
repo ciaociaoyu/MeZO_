@@ -1,0 +1,382 @@
+[nan-guard] command=bash /scratch/jy03364/MeZO_/medium_models/mezo.sh --result_root /scratch/jy03364/MeZO_/experiments/pilot/mezo/roberta-large/sst5/int8/pilot_doc_full_l4/runs/20260421_022929/results/mezo_int8_pilotdoc_full_10k_bs64_lr1e-6_wd0_nanonly/roberta-large/sst5/h_1e-6 --job_name run_mezo_int8_pilotdoc_full_10k_bs64_lr1e-6_wd0_nanonly --dataset_mode full --zo_two_point_precision fp16 --zo_quantization int8 --zo_probe_every 200 --zo_probe_num_seeds 16 --zo_probe_log_csv True --random_prediction_guard_enabled False --random_prediction_guard_step 2000 --random_prediction_guard_acc_tolerance 0.05 --random_prediction_guard_loss_tolerance 0.03 --random_prediction_guard_bad_loss_excess 0.5 --random_prediction_guard_recent_evals 2 --random_prediction_guard_min_loss_drop 0.05 --random_prediction_guard_min_acc_gain 0.02 --zo_probe_health_guard_enabled False --zo_probe_health_guard_step 2000 --zo_probe_health_guard_max_bad_probes 3
+[nan-guard] cwd=/scratch/jy03364/MeZO_/medium_models max_consecutive_nan=1
+WARNING:__main__:Process rank: -1, device: cuda:0, n_gpu: 1, distributed training: False, 16-bits training: False
+INFO:__main__:Training/evaluation parameters DynamicTrainingArguments(
+_n_gpu=1,
+accelerator_config={'split_batches': False, 'dispatch_batches': None, 'even_batches': True, 'use_seedable_sampler': True, 'non_blocking': False, 'gradient_accumulation_kwargs': None, 'use_configured_state': False},
+adafactor=False,
+adam_beta1=0.9,
+adam_beta2=0.999,
+adam_epsilon=1e-08,
+adaptive_h_ema_beta=0.1,
+adaptive_h_estimate_num_batches=4,
+adaptive_h_estimate_num_directions=3,
+adaptive_h_estimate_reduce=mean,
+adaptive_h_max=0.5,
+adaptive_h_min=1e-05,
+adaptive_h_probe_buffer_size=64,
+adjust_for_init=False,
+array_id=-1,
+auto_find_batch_size=False,
+average_tokens_across_devices=False,
+batch_eval_metrics=False,
+bf16=False,
+bf16_full_eval=False,
+binary_classification=False,
+change_grad_estimate=False,
+data_seed=16,
+dataloader_drop_last=False,
+dataloader_num_workers=0,
+dataloader_persistent_workers=False,
+dataloader_pin_memory=True,
+dataloader_prefetch_factor=None,
+dataloader_shuffle=True,
+ddp_backend=None,
+ddp_broadcast_buffers=None,
+ddp_bucket_cap_mb=None,
+ddp_find_unused_parameters=None,
+ddp_timeout=1800,
+debug=[],
+deepspeed=None,
+dh_h_growth=2.0,
+dh_max_trials=10,
+dh_test_h=0.01,
+disable_tqdm=False,
+do_eval=True,
+do_predict=True,
+do_train=True,
+efficient_zero_order=True,
+efficient_zero_order_fp16=False,
+enable_additive_h_estimation=False,
+enable_two_point_h_estimation=False,
+eval_accumulation_steps=None,
+eval_delay=0,
+eval_do_concat_batches=True,
+eval_on_start=False,
+eval_steps=1000.0,
+eval_strategy=IntervalStrategy.NO,
+eval_use_gather_object=False,
+evaluate_during_training=True,
+exclude_embeddings=False,
+exclude_first_layers=-1,
+exclude_head=False,
+f0_scaling=1.0,
+fix_layers=0,
+fp16=False,
+fp16_backend=auto,
+fp16_full_eval=False,
+fp16_opt_level=O1,
+from_linearhead=False,
+fsdp=[],
+fsdp_config={'min_num_params': 0, 'xla': False, 'xla_fsdp_v2': False, 'xla_fsdp_grad_ckpt': False},
+fsdp_min_num_params=0,
+fsdp_transformer_layer_cls_to_wrap=None,
+full_determinism=False,
+gradient_accumulation_steps=1,
+gradient_checkpointing=False,
+gradient_checkpointing_kwargs=None,
+greater_is_better=None,
+group_by_length=False,
+h_estimation_active_source=fixed,
+h_trunc_alpha=1.0,
+half_precision_backend=auto,
+head_tuning=False,
+hf_inference_model=False,
+hizoo_hessian_smooth_type=constant0,
+hub_always_push=False,
+hub_model_id=None,
+hub_private_repo=None,
+hub_revision=None,
+hub_strategy=HubStrategy.EVERY_SAVE,
+hub_token=<HUB_TOKEN>,
+ignore_data_skip=False,
+include_for_metrics=[],
+include_inputs_for_metrics=False,
+include_num_input_tokens_seen=False,
+include_tokens_per_second=False,
+initial_h=0.001,
+jit_mode_eval=False,
+kernel_formula=sgd,
+kernel_gamma=1.0,
+kernel_regularization=0.0,
+kernel_solver=logistic,
+label_names=None,
+label_smoothing_factor=0.0,
+layer_wise_optim=False,
+learning_rate=1e-06,
+length_column_name=length,
+liger_kernel_config=None,
+load_best_model_at_end=False,
+load_kernels=None,
+local_rank=-1,
+log_file=log-USE_H0-USE_C0,
+log_level=passive,
+log_level_replica=warning,
+log_on_each_node=True,
+logging_dir=/scratch/jy03364/MeZO_/experiments/pilot/mezo/roberta-large/sst5/int8/pilot_doc_full_l4/runs/20260421_022929/results/mezo_int8_pilotdoc_full_10k_bs64_lr1e-6_wd0_nanonly/roberta-large/sst5/h_1e-6/run_mezo_int8_pilotdoc_full_10k_bs64_lr1e-6_wd0_nanonly/seed16/runs/Apr21_02-30-15_ra8-7,
+logging_first_step=False,
+logging_nan_inf_filter=True,
+logging_steps=10,
+logging_strategy=IntervalStrategy.STEPS,
+lozo_beta1=0.9,
+lozo_rank=2,
+lozo_step_interval=50,
+lp_early_stopping=False,
+lr_scheduler_kwargs={},
+lr_scheduler_type=SchedulerType.CONSTANT,
+max_grad_norm=1.0,
+max_steps=10000,
+max_zo_forward_steps=0,
+mc_tol=0.1,
+measure_perf_tail=True,
+measure_perf_tail_window_steps=10,
+metric_for_best_model=None,
+model_id=-1,
+mp_parameters=,
+neftune_noise_alpha=None,
+no_cuda=False,
+no_predict=False,
+no_reparam=False,
+no_train=False,
+norm_running_update=False,
+nu3_retry=3,
+num_hvp_vecs=128,
+num_prefix=10,
+num_train_epochs=3.0,
+only_biases=False,
+optim=OptimizerNames.ADAMW_TORCH,
+optim_args=None,
+optim_target_modules=None,
+optimize_acc=False,
+optimizer=sgd,
+optimizer_variant=,
+output_dir=/scratch/jy03364/MeZO_/experiments/pilot/mezo/roberta-large/sst5/int8/pilot_doc_full_l4/runs/20260421_022929/results/mezo_int8_pilotdoc_full_10k_bs64_lr1e-6_wd0_nanonly/roberta-large/sst5/h_1e-6/run_mezo_int8_pilotdoc_full_10k_bs64_lr1e-6_wd0_nanonly/seed16,
+overwrite_kernels=False,
+overwrite_output_dir=True,
+parallelism_config=None,
+past_index=-1,
+per_device_eval_batch_size=4,
+per_device_train_batch_size=64,
+prediction_loss_only=False,
+prefix_init_by_real_act=False,
+prefix_tuning=False,
+prob_as_feature=False,
+push_to_hub=False,
+push_to_hub_model_id=None,
+push_to_hub_organization=None,
+push_to_hub_token=<PUSH_TO_HUB_TOKEN>,
+random_model_init=False,
+random_prediction_guard_acc_tolerance=0.05,
+random_prediction_guard_bad_loss_excess=0.5,
+random_prediction_guard_enabled=False,
+random_prediction_guard_loss_tolerance=0.03,
+random_prediction_guard_min_acc_gain=0.02,
+random_prediction_guard_min_loss_drop=0.05,
+random_prediction_guard_recent_evals=2,
+random_prediction_guard_step=2000,
+ray_scope=last,
+recompute_norms=False,
+remove_unused_columns=True,
+report_to=[],
+restore_callback_states_from_checkpoint=False,
+resume_from_checkpoint=None,
+run_name=None,
+save_at_last=False,
+save_logit=False,
+save_logit_dir=None,
+save_on_each_node=False,
+save_only_model=False,
+save_safetensors=True,
+save_steps=500,
+save_strategy=SaveStrategy.STEPS,
+save_total_limit=None,
+scale_lr_with_samples=False,
+scale_norm_by_num_params=False,
+seed=16,
+skip_memory_metrics=True,
+sparse_log_active_fraction=True,
+sparse_mask_refresh_steps=100,
+sparse_mask_strategy=percentile_per_layer,
+sparse_ratio=1.0,
+sparse_scope=trainable_only,
+sweep=False,
+sync_embedding_layers=False,
+tf32=None,
+tie_emb=False,
+torch_compile=False,
+torch_compile_backend=None,
+torch_compile_mode=None,
+torch_empty_cache_steps=None,
+torchdynamo=None,
+tpu_metrics_debug=False,
+tpu_num_cores=None,
+trainer=standard,
+two_point_h_beta=0.5,
+two_point_h_c2=1.0,
+two_point_h_delta_sample_size=4096,
+two_point_h_eps_num=1e-12,
+two_point_h_fixed_probe_batch=True,
+two_point_h_log_csv=True,
+two_point_h_max=0.5,
+two_point_h_min=1e-05,
+two_point_h_num_directions_g=4,
+two_point_h_num_directions_l=4,
+two_point_h_q_l=0.5,
+two_point_h_refresh_every=100,
+two_point_h_window_delta=3,
+two_point_h_window_g=5,
+two_point_h_window_l=5,
+untie_emb=False,
+update_noise_every=1000,
+use_adaptive_h=False,
+use_c_scale=False,
+use_cpu=False,
+use_ipex=False,
+use_legacy_prediction_loop=False,
+use_liger_kernel=False,
+use_mps_device=False,
+use_torchao_float8=False,
+use_zo_grad_est=False,
+warmup_ratio=0.0,
+warmup_steps=0,
+weight_decay=0.0,
+zero_order_clip_grad=False,
+zero_order_eps=1e-06,
+zero_order_optim=True,
+zero_order_sample=1,
+zero_order_sample_scheduler=None,
+zero_order_use_trainer_optim=False,
+zo_by_layer=False,
+zo_method=None,
+zo_probe_every=200,
+zo_probe_health_guard_enabled=False,
+zo_probe_health_guard_max_bad_probes=3,
+zo_probe_health_guard_step=2000,
+zo_probe_log_csv=True,
+zo_probe_num_seeds=16,
+zo_quantization=int8,
+zo_quantization_bits=8,
+zo_two_point_precision=fp16,
+zo_use_true_directional_derivative=False,
+zo_variant=None,
+)
+INFO:__main__:[zo-config] zo_two_point_precision=fp16 | zero_order_eps=1e-06 | zo_use_true_directional_derivative=False
+INFO:__main__:[quzo-config] zo_quantization_bits=8 | quzo_enabled=True | quzo_lowbit_probe_impl=base_plus_qdelta_no_resnap
+INFO:__main__:[sparse-mezo-config] enabled=False | sparse_ratio=1.0 | sparse_mask_strategy=percentile_per_layer | sparse_scope=trainable_only | sparse_log_active_fraction=True | sparse_mask_refresh_steps=100
+INFO:__main__:[sparse-mezo-config] ratio semantics: sparse_ratio targets the active fraction per trainable tensor; ratio=1.0 disables masking. Order: refresh thresholds+mask on the configured cadence -> sample sparse-aware direction -> apply QuZO snapping after the sparse perturb/update path when low-bit QuZO is active.
+INFO:__main__:Task name: sst-5, number of labels: 5, output mode: classification
+INFO:__main__:[data] dataset_mode requested=full resolved=full
+INFO:__main__:[data] task_dir=sst-5 data_seed=16
+INFO:__main__:[data] auto_download=0 original_data_root=/scratch/jy03364/MeZO_/medium_models/data/original
+INFO:__main__:[data] auto_generate=0 target=/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:__main__:[data] resolved_data_dir=/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+WARNING:src.models:By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode train: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:[FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+INFO:src.dataset:Creating features from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode dev: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+/scratch/jy03364/MeZO_/medium_models/src/dataset.py:363: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  self.support_examples, self.query_examples = torch.load(cached_features_file)
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16/cached_dev_RobertaTokenizerFast-roberta_128_sst-5 [took 0.013 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: dev-0
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 627, 936, 19, 4133, 59, 30859, 16, 51, 33, 10, 16699, 7, 9215, 88, 1368, 1638, 783, 479, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=1, mask_pos=[21], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>the problem with movies about angels is they have a tendency to slip into hokum . It was<mask>.</s>
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode test: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16/cached_test_RobertaTokenizerFast-roberta_128_sst-5 [took 0.015 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: test-0
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 2362, 2079, 2156, 117, 1423, 257, 2258, 2156, 45, 203, 9, 932, 479, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=1, mask_pos=[16], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>no movement , no yuks , not much of anything . It was<mask>.</s>
+INFO:__main__:[quzo-config] quantized model parameters in-place at 8 bits before ZO training
+huggingface/tokenizers: The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks...
+To disable this warning, you can either:
+	- Avoid using `tokenizers` before the fork if possible
+	- Explicitly set the environment variable TOKENIZERS_PARALLELISM=(true | false)
+INFO:src.trainer:[dataloader][debug] self class=Trainer, get_train_dataloader=<bound method Trainer.get_train_dataloader of <src.trainer.Trainer object at 0x145e98973890>>
+INFO:src.trainer:[dataloader][override] Trainer.get_train_dataloader active. shuffle_raw=True type=bool -> shuffle=True; data_seed=16 seed=16 local_rank=-1
+INFO:src.trainer:[dataloader][override] selected sampler=RandomSampler
+INFO:src.trainer:[dataloader] sampler=RandomSampler, batch_sampler=BatchSampler
+INFO:src.trainer:[dataloader] training uses RandomSampler (shuffle).
+INFO:src.trainer:[dataloader] args.dataloader_shuffle=True
+INFO:src.trainer:[dataloader] args.data_seed=16 args.seed=16
+INFO:src.trainer:***** Running training *****
+INFO:src.trainer:  Num examples = 7690
+INFO:src.trainer:  Num Epochs = 83
+INFO:src.trainer:  Instantaneous batch size per device = 64
+INFO:src.trainer:  Total train batch size (w. parallel, distributed & accumulation) = 64
+INFO:src.trainer:  Gradient Accumulation steps = 1
+INFO:src.trainer:  Total optimization steps = 10000
+INFO:src.trainer:[zo-config] zo_two_point_precision=fp16 | zero_order_eps=1e-06 | zo_use_true_directional_derivative=False
+INFO:src.trainer:[zo_probe] enabled: every=200, num_seeds=16, csv=/scratch/jy03364/MeZO_/experiments/pilot/mezo/roberta-large/sst5/int8/pilot_doc_full_l4/runs/20260421_022929/results/mezo_int8_pilotdoc_full_10k_bs64_lr1e-6_wd0_nanonly/roberta-large/sst5/h_1e-6/run_mezo_int8_pilotdoc_full_10k_bs64_lr1e-6_wd0_nanonly/seed16/zo_directional_probe.csv
+INFO:src.trainer:[h_estimation][init] h0=1.000e-03 active_source=fixed additive=False two_point=False
+You're using a RobertaTokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+/scratch/jy03364/MeZO_/medium_models/src/trainer.py:2641: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  return autocast(dtype=torch.float16)
+INFO:src.trainer:{'loss': 1.6731185913085938, 'learning_rate': 1e-06, 'global_step': 0, 'zo_forward_step': 2, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 2, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5688018798828125, 'learning_rate': 1e-06, 'global_step': 10, 'zo_forward_step': 22, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 22, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.6105194091796875, 'learning_rate': 1e-06, 'global_step': 20, 'zo_forward_step': 42, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 43, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.6485671997070312, 'learning_rate': 1e-06, 'global_step': 30, 'zo_forward_step': 62, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 63, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5092010498046875, 'learning_rate': 1e-06, 'global_step': 40, 'zo_forward_step': 82, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 83, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.4105758666992188, 'learning_rate': 1e-06, 'global_step': 50, 'zo_forward_step': 102, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 103, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5201492309570312, 'learning_rate': 1e-06, 'global_step': 60, 'zo_forward_step': 122, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 123, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5408706665039062, 'learning_rate': 1e-06, 'global_step': 70, 'zo_forward_step': 142, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 144, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.69757080078125, 'learning_rate': 1e-06, 'global_step': 80, 'zo_forward_step': 162, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 164, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.6349639892578125, 'learning_rate': 1e-06, 'global_step': 90, 'zo_forward_step': 182, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 184, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5482177734375, 'learning_rate': 1e-06, 'global_step': 100, 'zo_forward_step': 202, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 204, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.4844284057617188, 'learning_rate': 1e-06, 'global_step': 110, 'zo_forward_step': 222, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 225, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.7998535633087158, 'learning_rate': 1e-06, 'global_step': 120, 'zo_forward_step': 242, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 245, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.639068603515625, 'learning_rate': 1e-06, 'global_step': 130, 'zo_forward_step': 262, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 265, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.4584732055664062, 'learning_rate': 1e-06, 'global_step': 140, 'zo_forward_step': 282, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 285, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5558242797851562, 'learning_rate': 1e-06, 'global_step': 150, 'zo_forward_step': 302, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 305, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5603179931640625, 'learning_rate': 1e-06, 'global_step': 160, 'zo_forward_step': 322, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 325, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5580368041992188, 'learning_rate': 1e-06, 'global_step': 170, 'zo_forward_step': 342, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 346, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5415802001953125, 'learning_rate': 1e-06, 'global_step': 180, 'zo_forward_step': 362, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 366, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.65667724609375, 'learning_rate': 1e-06, 'global_step': 190, 'zo_forward_step': 382, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 386, 'eps': 1e-06}
+INFO:src.trainer:[zo_probe] step=200 eps=1.000e-06 precision=fp16 n=16 mae=3.877981e+01 mse=2.653489e+03 rmse=5.151203e+01 sign_acc=0.5000 corr=-0.412384
+INFO:src.trainer:{'loss': 1.5817947387695312, 'learning_rate': 1e-06, 'global_step': 200, 'zo_forward_step': 402, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 438, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.6563491821289062, 'learning_rate': 1e-06, 'global_step': 210, 'zo_forward_step': 422, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 458, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5032424926757812, 'learning_rate': 1e-06, 'global_step': 220, 'zo_forward_step': 442, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 478, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.6115798950195312, 'learning_rate': 1e-06, 'global_step': 230, 'zo_forward_step': 462, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 498, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5355682373046875, 'learning_rate': 1e-06, 'global_step': 240, 'zo_forward_step': 482, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 519, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5641937255859375, 'learning_rate': 1e-06, 'global_step': 250, 'zo_forward_step': 502, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 539, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5347747802734375, 'learning_rate': 1e-06, 'global_step': 260, 'zo_forward_step': 522, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 559, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5799102783203125, 'learning_rate': 1e-06, 'global_step': 270, 'zo_forward_step': 542, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 579, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.6166305541992188, 'learning_rate': 1e-06, 'global_step': 280, 'zo_forward_step': 562, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 599, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.6261672973632812, 'learning_rate': 1e-06, 'global_step': 290, 'zo_forward_step': 582, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 620, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.53167724609375, 'learning_rate': 1e-06, 'global_step': 300, 'zo_forward_step': 602, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 640, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5659713745117188, 'learning_rate': 1e-06, 'global_step': 310, 'zo_forward_step': 622, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 660, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5743789672851562, 'learning_rate': 1e-06, 'global_step': 320, 'zo_forward_step': 642, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 680, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.6290130615234375, 'learning_rate': 1e-06, 'global_step': 330, 'zo_forward_step': 662, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 701, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.62213134765625, 'learning_rate': 1e-06, 'global_step': 340, 'zo_forward_step': 682, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 721, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.588409423828125, 'learning_rate': 1e-06, 'global_step': 350, 'zo_forward_step': 702, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 741, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.530517578125, 'learning_rate': 1e-06, 'global_step': 360, 'zo_forward_step': 722, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 761, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.5096435546875, 'learning_rate': 1e-06, 'global_step': 370, 'zo_forward_step': 742, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 781, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.6648178100585938, 'learning_rate': 1e-06, 'global_step': 380, 'zo_forward_step': 762, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 801, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.696380615234375, 'learning_rate': 1e-06, 'global_step': 390, 'zo_forward_step': 782, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 822, 'eps': 1e-06}
+INFO:src.trainer:[zo_probe] step=400 eps=1.000e-06 precision=fp16 n=16 mae=3.805427e+01 mse=1.822089e+03 rmse=4.268593e+01 sign_acc=0.5625 corr=0.349671
+INFO:src.trainer:{'loss': 1.6805419921875, 'learning_rate': 1e-06, 'global_step': 400, 'zo_forward_step': 802, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 870, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.6518783569335938, 'learning_rate': 1e-06, 'global_step': 410, 'zo_forward_step': 822, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 891, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.6299209594726562, 'learning_rate': 1e-06, 'global_step': 420, 'zo_forward_step': 842, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 911, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.6051559448242188, 'learning_rate': 1e-06, 'global_step': 430, 'zo_forward_step': 862, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 931, 'eps': 1e-06}
+INFO:src.trainer:{'loss': 1.6433792114257812, 'learning_rate': 1e-06, 'global_step': 440, 'zo_forward_step': 882, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 951, 'eps': 1e-06}
