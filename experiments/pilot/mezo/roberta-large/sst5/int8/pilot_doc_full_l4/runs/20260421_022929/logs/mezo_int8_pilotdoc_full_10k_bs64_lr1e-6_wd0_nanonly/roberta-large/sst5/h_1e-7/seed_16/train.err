@@ -380,3 +380,23 @@ INFO:src.trainer:{'loss': 39.21874237060547, 'learning_rate': 1e-06, 'global_ste
 INFO:src.trainer:{'loss': 34.608154296875, 'learning_rate': 1e-06, 'global_step': 420, 'zo_forward_step': 842, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 908, 'eps': 1e-07}
 INFO:src.trainer:{'loss': 41.448486328125, 'learning_rate': 1e-06, 'global_step': 430, 'zo_forward_step': 862, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 928, 'eps': 1e-07}
 INFO:src.trainer:{'loss': 33.72215270996094, 'learning_rate': 1e-06, 'global_step': 440, 'zo_forward_step': 882, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 948, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 35.221439361572266, 'learning_rate': 1e-06, 'global_step': 450, 'zo_forward_step': 902, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 968, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 27.9329833984375, 'learning_rate': 1e-06, 'global_step': 460, 'zo_forward_step': 922, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 988, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 50.072265625, 'learning_rate': 1e-06, 'global_step': 470, 'zo_forward_step': 942, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 1009, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 30.106643676757812, 'learning_rate': 1e-06, 'global_step': 480, 'zo_forward_step': 962, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 1029, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 26.984989166259766, 'learning_rate': 1e-06, 'global_step': 490, 'zo_forward_step': 982, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 1049, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 22.55152130126953, 'learning_rate': 1e-06, 'global_step': 500, 'zo_forward_step': 1002, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 1069, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 35.828369140625, 'learning_rate': 1e-06, 'global_step': 510, 'zo_forward_step': 1022, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 1089, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 37.227783203125, 'learning_rate': 1e-06, 'global_step': 520, 'zo_forward_step': 1042, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 1109, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 42.6220703125, 'learning_rate': 1e-06, 'global_step': 530, 'zo_forward_step': 1062, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 1129, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 47.155029296875, 'learning_rate': 1e-06, 'global_step': 540, 'zo_forward_step': 1082, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 1149, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 20.719511032104492, 'learning_rate': 1e-06, 'global_step': 550, 'zo_forward_step': 1102, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 1169, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 17.57822036743164, 'learning_rate': 1e-06, 'global_step': 560, 'zo_forward_step': 1122, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 1189, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 17.353364944458008, 'learning_rate': 1e-06, 'global_step': 570, 'zo_forward_step': 1142, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 1210, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 25.474609375, 'learning_rate': 1e-06, 'global_step': 580, 'zo_forward_step': 1162, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 1230, 'eps': 1e-07}
+INFO:src.trainer:{'loss': 52.9521484375, 'learning_rate': 1e-06, 'global_step': 590, 'zo_forward_step': 1182, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 1250, 'eps': 1e-07}
+INFO:src.trainer:[zo_probe] step=600 eps=1.000e-07 precision=fp16 n=16 mae=2.371393e+04 mse=7.463537e+08 rmse=2.731947e+04 sign_acc=0.3125 corr=0.259874
+INFO:src.trainer:{'loss': 48.619140625, 'learning_rate': 1e-06, 'global_step': 600, 'zo_forward_step': 1202, 'max_steps': 10000, 'max_zo_forward_steps': 0, 'time': 1302, 'eps': 1e-07}
+WARNING:src.trainer:NaN encountered in loss during ZO forward step.
+[nan-guard] reached 1 consecutive NaN tokens on stderr; terminating child process 1590689.
+[nan-guard] terminated child after 1 consecutive NaN tokens.

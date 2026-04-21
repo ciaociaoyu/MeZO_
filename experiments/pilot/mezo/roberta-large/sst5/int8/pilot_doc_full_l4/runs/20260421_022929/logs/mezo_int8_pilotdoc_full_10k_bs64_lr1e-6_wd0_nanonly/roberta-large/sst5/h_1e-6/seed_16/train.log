@@ -66,3 +66,4 @@ RobertaConfig {
   "vocab_size": 50265
 }
 
+[nan-guard] terminated child after 1 consecutive NaN tokens.

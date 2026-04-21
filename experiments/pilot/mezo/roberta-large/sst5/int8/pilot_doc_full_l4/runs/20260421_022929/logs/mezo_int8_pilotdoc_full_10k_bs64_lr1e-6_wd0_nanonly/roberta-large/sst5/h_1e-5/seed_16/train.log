@@ -66,3 +66,4 @@ RobertaConfig {
   "vocab_size": 50265
 }
 
+[nan-guard] child exited with code 0.

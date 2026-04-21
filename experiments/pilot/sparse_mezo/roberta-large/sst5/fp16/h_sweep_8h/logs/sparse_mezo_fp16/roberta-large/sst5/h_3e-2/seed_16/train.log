@@ -1,0 +1,69 @@
+[nan-guard] command=bash /scratch/jy03364/MeZO_/medium_models/mezo.sh --result_root /scratch/jy03364/MeZO_/experiments/pilot/sparse_mezo/roberta-large/sst5/fp16/h_sweep_8h/results/sparse_mezo_fp16/roberta-large/sst5/h_3e-2 --job_name run_sparse_mezo_fp16 --dataset_mode full --zo_two_point_precision fp16 --zo_quantization fp16 --zo_probe_every 200 --zo_probe_num_seeds 16 --zo_probe_log_csv True --random_prediction_guard_enabled False --random_prediction_guard_step 2000 --random_prediction_guard_acc_tolerance 0.05 --random_prediction_guard_loss_tolerance 0.03 --random_prediction_guard_bad_loss_excess 0.5 --random_prediction_guard_recent_evals 2 --random_prediction_guard_min_loss_drop 0.05 --random_prediction_guard_min_acc_gain 0.02 --zo_probe_health_guard_enabled False --zo_probe_health_guard_step 2000 --zo_probe_health_guard_max_bad_probes 3 --sparse_ratio 0.25 --sparse_mask_strategy percentile_per_layer --sparse_scope trainable_only --sparse_log_active_fraction True
+[nan-guard] cwd=/scratch/jy03364/MeZO_/medium_models max_consecutive_nan=100
+TASK: sst-5
+K: 16
+Seed: 16
+Data seed: 16
+Dataset mode: full
+Full dev ratio: 0.1
+BS: 64
+LR: 1e-6
+EPS: 3e-2
+Step: 25000; Eval step: 1000
+Optimizer: sgd
+Use trainer optimizer for ZO: False
+Efficient zero order: True
+Using adaptive h: False
+Dataloader shuffle: True
+Grid search tag: seed16-bs64-lr1e-6-eps3e-2-wd0-step25000-evalstep1000
+Tag: k16-roberta-large-mezo-hsweep8h-sparse_mezo_fp16-sst5-h3e-2
+Result root: /scratch/jy03364/MeZO_/experiments/pilot/sparse_mezo/roberta-large/sst5/fp16/h_sweep_8h/results/sparse_mezo_fp16/roberta-large/sst5/h_3e-2
+Job name: run_sparse_mezo_fp16
+Output dir: /scratch/jy03364/MeZO_/experiments/pilot/sparse_mezo/roberta-large/sst5/fp16/h_sweep_8h/results/sparse_mezo_fp16/roberta-large/sst5/h_3e-2/run_sparse_mezo_fp16/seed16
+Dataset mode: full
+Data root: data/k-shot-1k-test
+Full dev ratio: 0.1
+GPU数量: 1
+RobertaConfig {
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "dtype": "float32",
+  "eos_token_id": 2,
+  "finetuning_task": "sst-5",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "id2label": {
+    "0": "LABEL_0",
+    "1": "LABEL_1",
+    "2": "LABEL_2",
+    "3": "LABEL_3",
+    "4": "LABEL_4"
+  },
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "label2id": {
+    "LABEL_0": 0,
+    "LABEL_1": 1,
+    "LABEL_2": 2,
+    "LABEL_3": 3,
+    "LABEL_4": 4
+  },
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "transformers_version": "4.56.0",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+
+[nan-guard] child exited with code 0.
