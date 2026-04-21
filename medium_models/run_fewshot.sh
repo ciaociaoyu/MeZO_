@@ -189,4 +189,6 @@ else
         $ALL_ARGS_TOGETHER
 fi
 
+run_exit_code=$?
 rm -rf "$OUTPUT_DIR"/checkpoint-*
+exit $run_exit_code

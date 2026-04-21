@@ -1,0 +1,2 @@
+global_step,eps,zo_two_point_precision,fd_mean,td_mean,td_u2_mean_debug,mae,mse,rmse,sign_acc,corr,mae_u2_debug,mse_u2_debug,rmse_u2_debug,sign_acc_u2_debug,corr_u2_debug,probe_num_seeds
+200,1e-08,fp16,46074.390197753906,-435.954665184021,,131758.44862747192,30730058417.46418,175299.90991858547,0.625,-0.340389922297155,,,,,,16

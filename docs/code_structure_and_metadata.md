@@ -26,7 +26,7 @@
 | `large_models/` | 大模型主线。自回归模型、HF `Trainer`、ICL / regular FT / MeZO / QuZO / Sparse MeZO / LoRA / Prefix / head tuning 都在这里接入。 |
 | `medium_models/` | 中模型主线。分类 / prompt / few-shot / kernel / linearhead / MeZO / QuZO / Sparse MeZO 的主实验路径。 |
 | `experiments/` | 统一放实验脚本、smoke test、h-sweep 结果、日志、提交器。当前 MNLI / SST-5 的 14-value 搜索也在这里。 |
-| `docs/` | 项目文档。`code_structure_and_metadata.md` 是当前 canonical 结构文档，`sparse_mezo_h100_experiments.md` 是最近一轮 H100 实验记录。 |
+| `docs/` | 项目文档。`code_structure_and_metadata.md` 是当前 canonical 结构文档，`roberta_int8_implementation.md` 记录了 `medium_models` 里 RoBERTa QuZO int8/int4 的当前实现语义。 |
 | `run_metadata.py` | 共享 metadata helper，负责生成 `run_metadata.json` 并统一低精度/方法字段。 |
 | `README.md` | 仓库总体说明。 |
 

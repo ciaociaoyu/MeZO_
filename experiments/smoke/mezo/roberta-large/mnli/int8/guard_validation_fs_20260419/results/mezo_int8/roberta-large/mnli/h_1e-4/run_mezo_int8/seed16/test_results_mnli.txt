@@ -1,0 +1,2 @@
+eval_loss = 1.3397026062011719
+eval_mnli/acc = 0.368

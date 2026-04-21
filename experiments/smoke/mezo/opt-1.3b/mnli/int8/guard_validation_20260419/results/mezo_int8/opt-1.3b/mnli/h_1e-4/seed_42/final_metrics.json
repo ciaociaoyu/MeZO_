@@ -1,0 +1,5 @@
+{
+    "accuracy": 0.328125,
+    "valid_mismatched_accuracy": 0.328125,
+    "dev_accuracy": 0.34375
+}

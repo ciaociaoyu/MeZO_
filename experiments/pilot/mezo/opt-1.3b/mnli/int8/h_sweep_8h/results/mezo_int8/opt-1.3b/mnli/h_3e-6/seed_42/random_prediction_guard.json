@@ -1,0 +1,33 @@
+{
+  "trigger": true,
+  "reason": "random_plateau",
+  "global_step": 2500,
+  "task_name": "MNLI",
+  "num_labels": 2,
+  "chance_acc": 0.5,
+  "chance_loss": 0.6931471805599453,
+  "acc_tolerance": 0.05,
+  "loss_tolerance": 0.03,
+  "bad_loss_excess": 0.5,
+  "recent_evals": 2,
+  "min_loss_drop": 0.05,
+  "min_acc_gain": 0.02,
+  "eval_acc": 0.3544574630667346,
+  "eval_loss": 1.0986328125,
+  "eval_loss_ref": 1.6099609375,
+  "eval_loss_avg5": 1.6099609375,
+  "recent_eval_losses": [
+    1.0986328125,
+    1.0986328125
+  ],
+  "recent_eval_accs": [
+    0.3544574630667346,
+    0.3544574630667346
+  ],
+  "best_recent_loss_drop": 0.0,
+  "best_recent_acc_gain": 0.0,
+  "train_loss": 1.0986,
+  "initial_train_loss": 1.3899,
+  "train_loss_blowup": false,
+  "exit_code": 87
+}

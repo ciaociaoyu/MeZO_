@@ -143,6 +143,9 @@ def make_quzo_direction_pair(
         "u1": u1,
         "u2": u2,
         "seed": torch.tensor(int(step_seed), device=tensor.device, dtype=torch.int64),
+        "gaussian_seed": torch.tensor(int(gaussian_seed), device=tensor.device, dtype=torch.int64),
+        "perturb_seed": torch.tensor(int(perturb_seed), device=tensor.device, dtype=torch.int64),
+        "update_seed": torch.tensor(int(update_seed), device=tensor.device, dtype=torch.int64),
         "state_seed": torch.tensor(int(state_seed), device=tensor.device, dtype=torch.int64),
     }
 

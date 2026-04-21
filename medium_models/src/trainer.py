@@ -94,7 +94,7 @@ from torch.optim import SGD
 import torch.nn.functional as F
 
 from src.linearhead_trainer import LinearHeadTrainer
-from src.quzo import make_quzo_direction_pair, quantize_tensor
+from src.quzo import _normal_like_with_seed, make_quzo_direction_pair, quantize_tensor
 from src.sparse_mezo import (
     apply_sparse_mask,
     build_sparse_masks_from_thresholds,
@@ -2376,6 +2376,109 @@ class Trainer(LinearHeadTrainer):
             random_vector[name] = bundle
         return bundle
 
+    def _quzo_use_clean_lowbit_fd(self) -> bool:
+        return self._zo_use_quzo() and self._zo_quant_bits() in {8, 4}
+
+    @staticmethod
+    def _quzo_bundle_seed(bundle: Optional[Dict[str, torch.Tensor]], key: str) -> Optional[int]:
+        if bundle is None:
+            return None
+        seed_val = bundle.get(key, None)
+        if isinstance(seed_val, torch.Tensor):
+            return int(seed_val.item())
+        if seed_val is None:
+            return None
+        return int(seed_val)
+
+    def _quzo_sample_raw_direction(
+        self,
+        name: str,
+        param: nn.Parameter,
+        bundle: Dict[str, torch.Tensor],
+    ) -> torch.Tensor:
+        gaussian_seed = self._quzo_bundle_seed(bundle, "gaussian_seed")
+        if gaussian_seed is None:
+            raise KeyError(f"QuZO bundle for {name} is missing gaussian_seed")
+        return _normal_like_with_seed(
+            param.data,
+            gaussian_seed,
+            dtype=torch.float32,
+            mask=self._sparse_get_mask(name),
+        )
+
+    def _quzo_build_clean_fd_target_delta(
+        self,
+        name: str,
+        param: nn.Parameter,
+        *,
+        target_scale: float,
+        eps: float,
+        bundle: Dict[str, torch.Tensor],
+    ) -> torch.Tensor:
+        # For low-bit QuZO in medium_models, the probe state is defined as
+        # snapped_base + Q(scale * eps * u_raw), not by resnapping the whole
+        # parameter tensor after adding a perturbation.
+        scale = float(target_scale) * float(eps)
+        if scale == 0.0:
+            return torch.zeros_like(param.data)
+        direction = self._quzo_sample_raw_direction(name, param, bundle)
+        delta = direction.detach().float() * scale
+        if not self._zo_use_quzo():
+            return delta.to(dtype=param.data.dtype)
+        if self._zo_quant_bits() not in {8, 4}:
+            return delta.to(dtype=param.data.dtype)
+        seed = self._quzo_bundle_seed(bundle, "perturb_seed")
+        return quantize_tensor(
+            delta,
+            self._zo_quant_bits(),
+            seed=seed,
+            target_dtype=param.data.dtype,
+        )
+
+    def _quzo_clean_fd_context_key(
+        self,
+        *,
+        random_vector: Optional[Dict[str, Any]] = None,
+        random_seed: Optional[int] = None,
+    ) -> Optional[Tuple[str, int]]:
+        if random_vector is not None:
+            return ("random_vector", int(id(random_vector)))
+        if random_seed is not None:
+            return ("random_seed", int(random_seed))
+        return None
+
+    def _quzo_clean_fd_scale_state(self) -> Dict[Tuple[str, int], float]:
+        if not hasattr(self, "_quzo_clean_fd_scale_state_map"):
+            self._quzo_clean_fd_scale_state_map = {}
+        return self._quzo_clean_fd_scale_state_map
+
+    def _quzo_clean_fd_transition(
+        self,
+        *,
+        context_key: Optional[Tuple[str, int]],
+        scaling_factor: float,
+    ) -> Tuple[float, float]:
+        if context_key is None:
+            return 0.0, float(scaling_factor)
+        state = self._quzo_clean_fd_scale_state()
+        prev_scale = float(state.get(context_key, 0.0))
+        next_scale = prev_scale + float(scaling_factor)
+        return prev_scale, next_scale
+
+    def _quzo_clean_fd_commit_transition(
+        self,
+        *,
+        context_key: Optional[Tuple[str, int]],
+        next_scale: float,
+    ) -> None:
+        if context_key is None:
+            return
+        state = self._quzo_clean_fd_scale_state()
+        if abs(float(next_scale)) < 1e-12:
+            state.pop(context_key, None)
+        else:
+            state[context_key] = float(next_scale)
+
     def _quzo_quantize_param_from_bundle(self, param: nn.Parameter, bundle: Dict[str, torch.Tensor]) -> None:
         if not self._zo_use_quzo():
             return
@@ -2935,15 +3038,44 @@ class Trainer(LinearHeadTrainer):
     ):
         self._sparse_prepare_step_state()
         if self._zo_use_quzo():
+            use_clean_lowbit_fd = self._quzo_use_clean_lowbit_fd()
+            context_key = self._quzo_clean_fd_context_key(
+                random_vector=random_vector,
+                random_seed=random_seed,
+            ) if use_clean_lowbit_fd else None
+            prev_scale, next_scale = self._quzo_clean_fd_transition(
+                context_key=context_key,
+                scaling_factor=float(scaling_factor),
+            )
             for name, param in self.named_parameters_to_optim:
                 if random_vector is not None and name in random_vector:
                     bundle = random_vector[name]
                 else:
                     bundle = self._quzo_get_bundle(name, param, random_seed=random_seed)
                 eps = float(self._get_training_step_size())
-                delta = bundle["u1"] * (float(scaling_factor) * eps)
+                if use_clean_lowbit_fd:
+                    prev_delta = self._quzo_build_clean_fd_target_delta(
+                        name,
+                        param,
+                        target_scale=prev_scale,
+                        eps=eps,
+                        bundle=bundle,
+                    )
+                    next_delta = self._quzo_build_clean_fd_target_delta(
+                        name,
+                        param,
+                        target_scale=next_scale,
+                        eps=eps,
+                        bundle=bundle,
+                    )
+                    delta = next_delta - prev_delta
+                else:
+                    delta = bundle["u1"].detach().to(dtype=param.data.dtype) * (float(scaling_factor) * eps)
                 param.data = param.data + delta
-                self._quzo_quantize_param_from_bundle(param, bundle)
+                if not use_clean_lowbit_fd:
+                    self._quzo_quantize_param_from_bundle(param, bundle)
+            if use_clean_lowbit_fd:
+                self._quzo_clean_fd_commit_transition(context_key=context_key, next_scale=next_scale)
             return model
 
         if random_vector is None:
@@ -2967,6 +3099,12 @@ class Trainer(LinearHeadTrainer):
             random_vector = {}
 
         self._sparse_prepare_step_state()
+        use_clean_lowbit_fd = self._quzo_use_clean_lowbit_fd()
+        context_key = self._quzo_clean_fd_context_key(random_vector=random_vector) if use_clean_lowbit_fd else None
+        prev_scale, next_scale = self._quzo_clean_fd_transition(
+            context_key=context_key,
+            scaling_factor=float(scaling_factor),
+        )
         for name, param in self.named_parameters_to_optim:
             bundle = None
             if self._zo_use_quzo():
@@ -2993,14 +3131,36 @@ class Trainer(LinearHeadTrainer):
 
             # === Begin Adaptive h (Berahas et al.) ===
             eps = float(self._get_training_step_size())
-            delta = z * (float(scaling_factor) * eps)
+            if self._zo_use_quzo():
+                if use_clean_lowbit_fd:
+                    prev_delta = self._quzo_build_clean_fd_target_delta(
+                        name,
+                        param,
+                        target_scale=prev_scale,
+                        eps=eps,
+                        bundle=bundle,
+                    )
+                    next_delta = self._quzo_build_clean_fd_target_delta(
+                        name,
+                        param,
+                        target_scale=next_scale,
+                        eps=eps,
+                        bundle=bundle,
+                    )
+                    delta = next_delta - prev_delta
+                else:
+                    delta = z.detach().to(dtype=param.data.dtype) * (float(scaling_factor) * eps)
+            else:
+                delta = z * (float(scaling_factor) * eps)
             if (not self._zo_use_quzo()) and self._should_quantize_training_perturbation():
                 delta = self._quantize_delta_tensor(delta, target_dtype=param.data.dtype)
             param.data = param.data + delta
-            if self._zo_use_quzo():
+            if self._zo_use_quzo() and (not use_clean_lowbit_fd):
                 self._quzo_quantize_param_from_bundle(param, bundle)
             # === End Adaptive h ===
 
+        if use_clean_lowbit_fd:
+            self._quzo_clean_fd_commit_transition(context_key=context_key, next_scale=next_scale)
         return model, random_vector
 
     def perturb_parameters(self, model: nn.Module, random_vector=None, scaling_factor=1):
@@ -3008,6 +3168,12 @@ class Trainer(LinearHeadTrainer):
             random_vector = {}
 
         self._sparse_prepare_step_state()
+        use_clean_lowbit_fd = self._quzo_use_clean_lowbit_fd()
+        context_key = self._quzo_clean_fd_context_key(random_vector=random_vector) if use_clean_lowbit_fd else None
+        prev_scale, next_scale = self._quzo_clean_fd_transition(
+            context_key=context_key,
+            scaling_factor=float(scaling_factor),
+        )
         for name, param in self.named_parameters_to_optim:
             bundle = None
             if self._zo_use_quzo():
@@ -3021,14 +3187,36 @@ class Trainer(LinearHeadTrainer):
                     random_vector[name] = z
             # === Begin Adaptive h (Berahas et al.) ===
             eps = float(self._get_training_step_size())
-            delta = z * (float(scaling_factor) * eps)
+            if self._zo_use_quzo():
+                if use_clean_lowbit_fd:
+                    prev_delta = self._quzo_build_clean_fd_target_delta(
+                        name,
+                        param,
+                        target_scale=prev_scale,
+                        eps=eps,
+                        bundle=bundle,
+                    )
+                    next_delta = self._quzo_build_clean_fd_target_delta(
+                        name,
+                        param,
+                        target_scale=next_scale,
+                        eps=eps,
+                        bundle=bundle,
+                    )
+                    delta = next_delta - prev_delta
+                else:
+                    delta = z.detach().to(dtype=param.data.dtype) * (float(scaling_factor) * eps)
+            else:
+                delta = z * (float(scaling_factor) * eps)
             if (not self._zo_use_quzo()) and self._should_quantize_training_perturbation():
                 delta = self._quantize_delta_tensor(delta, target_dtype=param.data.dtype)
             param.data = param.data + delta
-            if self._zo_use_quzo():
+            if self._zo_use_quzo() and (not use_clean_lowbit_fd):
                 self._quzo_quantize_param_from_bundle(param, bundle)
             # === End Adaptive h ===
 
+        if use_clean_lowbit_fd:
+            self._quzo_clean_fd_commit_transition(context_key=context_key, next_scale=next_scale)
         return model, random_vector
 
     def perturb_single_layer(self, model, layer_name, random_vector=None, scaling_factor=1):
@@ -3036,6 +3224,12 @@ class Trainer(LinearHeadTrainer):
             random_vector = {}
 
         self._sparse_prepare_step_state()
+        use_clean_lowbit_fd = self._quzo_use_clean_lowbit_fd()
+        context_key = self._quzo_clean_fd_context_key(random_vector=random_vector) if use_clean_lowbit_fd else None
+        prev_scale, next_scale = self._quzo_clean_fd_transition(
+            context_key=context_key,
+            scaling_factor=float(scaling_factor),
+        )
         for name, param in self.named_parameters_to_optim:
             cname = self.retrieve_c(name)
             if cname == layer_name:
@@ -3049,16 +3243,38 @@ class Trainer(LinearHeadTrainer):
                     else:
                         z = self._sample_sparse_noise_like(name, param.data)
                         random_vector[name] = z
-                # === Begin Adaptive h (Berahas et al.) ===
-                eps = float(self._get_training_step_size())
+            # === Begin Adaptive h (Berahas et al.) ===
+            eps = float(self._get_training_step_size())
+            if self._zo_use_quzo():
+                if use_clean_lowbit_fd:
+                    prev_delta = self._quzo_build_clean_fd_target_delta(
+                        name,
+                        param,
+                        target_scale=prev_scale,
+                        eps=eps,
+                        bundle=bundle,
+                    )
+                    next_delta = self._quzo_build_clean_fd_target_delta(
+                        name,
+                        param,
+                        target_scale=next_scale,
+                        eps=eps,
+                        bundle=bundle,
+                    )
+                    delta = next_delta - prev_delta
+                else:
+                    delta = z.detach().to(dtype=param.data.dtype) * (float(scaling_factor) * eps)
+            else:
                 delta = z * (float(scaling_factor) * eps)
-                if (not self._zo_use_quzo()) and self._should_quantize_training_perturbation():
-                    delta = self._quantize_delta_tensor(delta, target_dtype=param.data.dtype)
-                param.data = param.data + delta
-                if self._zo_use_quzo():
-                    self._quzo_quantize_param_from_bundle(param, bundle)
+            if (not self._zo_use_quzo()) and self._should_quantize_training_perturbation():
+                delta = self._quantize_delta_tensor(delta, target_dtype=param.data.dtype)
+            param.data = param.data + delta
+            if self._zo_use_quzo() and (not use_clean_lowbit_fd):
+                self._quzo_quantize_param_from_bundle(param, bundle)
                 # === End Adaptive h ===
 
+        if use_clean_lowbit_fd:
+            self._quzo_clean_fd_commit_transition(context_key=context_key, next_scale=next_scale)
         return model, random_vector
 
     def _zo_method(self) -> str:
@@ -3851,16 +4067,34 @@ class Trainer(LinearHeadTrainer):
                                 random_seed = np.random.randint(1000000000)
 
                             if getattr(self.args, "zo_use_true_directional_derivative", False):
-                                # Fixed-h ablation: use the true directional derivative <grad, z> for the same z direction.
+                                # Fixed-h ablation: use the true directional derivative <grad, z> for the
+                                # exact same direction that will later receive the update.
+                                # QuZO training updates along u2, so the ablation must also project onto u2.
+                                probe_direction = "u2" if self._zo_use_quzo() else "u1"
                                 # We do NOT perturb parameters in this mode (but we keep the same z sampling).
                                 if self.args.efficient_zero_order:
-                                    loss1, projected_grad = self.zo_true_directional_derivative(model, inputs, random_seed=random_seed)
+                                    loss1, projected_grad = self.zo_true_directional_derivative(
+                                        model,
+                                        inputs,
+                                        random_seed=random_seed,
+                                        probe_direction=probe_direction,
+                                    )
                                 elif self.args.zo_variant is not None:
                                     model, random_vector = self.norm_perturb_parameters(model, scaling_factor=0.0)
-                                    loss1, projected_grad = self.zo_true_directional_derivative(model, inputs, random_vector=random_vector)
+                                    loss1, projected_grad = self.zo_true_directional_derivative(
+                                        model,
+                                        inputs,
+                                        random_vector=random_vector,
+                                        probe_direction=probe_direction,
+                                    )
                                 else:
                                     model, random_vector = self.perturb_parameters(model, scaling_factor=0.0)
-                                    loss1, projected_grad = self.zo_true_directional_derivative(model, inputs, random_vector=random_vector)
+                                    loss1, projected_grad = self.zo_true_directional_derivative(
+                                        model,
+                                        inputs,
+                                        random_vector=random_vector,
+                                        probe_direction=probe_direction,
+                                    )
                                 loss2 = loss1
                             else:
                                 with torch.no_grad():

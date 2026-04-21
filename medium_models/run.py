@@ -1312,9 +1312,14 @@ def main():
         bool(getattr(training_args, "zo_use_true_directional_derivative", False)),
     )
     logger.info(
-        "[quzo-config] zo_quantization_bits=%s | quzo_enabled=%s",
+        "[quzo-config] zo_quantization_bits=%s | quzo_enabled=%s | quzo_lowbit_probe_impl=%s",
         int(getattr(training_args, "zo_quantization_bits", 32)),
         bool(quzo_enabled(getattr(training_args, "zo_quantization_bits", 32))),
+        (
+            "base_plus_qdelta_no_resnap"
+            if int(getattr(training_args, "zo_quantization_bits", 32)) in {8, 4}
+            else "n/a"
+        ),
     )
     if bool(getattr(training_args, "zero_order_optim", False)):
         logger.info(
@@ -1606,6 +1611,14 @@ def main():
         model_name=model_args.model_name_or_path,
         task_name=data_args.task_name,
         repo_root=str(REPO_ROOT),
+        extra_metadata={
+            "quzo_lowbit_probe_impl": (
+                "base_plus_qdelta_no_resnap"
+                if int(getattr(training_args, "zo_quantization_bits", 32)) in {8, 4}
+                else "n/a"
+            ),
+            "zo_use_true_directional_derivative": bool(getattr(training_args, "zo_use_true_directional_derivative", False)),
+        },
     )
     run_metadata_path = None
     if int(getattr(training_args, "local_rank", -1)) <= 0:

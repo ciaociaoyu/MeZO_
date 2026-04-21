@@ -1,0 +1,2 @@
+eval_loss = 1.521484375
+eval_acc = 0.4

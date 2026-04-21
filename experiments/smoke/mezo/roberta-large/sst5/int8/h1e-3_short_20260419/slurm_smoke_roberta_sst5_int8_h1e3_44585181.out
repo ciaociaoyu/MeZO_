@@ -1,0 +1,19 @@
+TASK: sst-5
+K: 16
+Seed: 16
+Data seed: 16
+Dataset mode: full
+Full dev ratio: 0.1
+BS: 32
+LR: 1e-6
+EPS: 1e-3
+Step: 2000; Eval step: 1000
+Optimizer: sgd
+Use trainer optimizer for ZO: False
+Efficient zero order: True
+Using adaptive h: False
+Dataloader shuffle: False
+Grid search tag: seed16-bs32-lr1e-6-eps1e-3-wd0-step2000-evalstep1000
+Tag: k16-roberta-large-mezo-hsweep8h-mezo_int8-sst5-h1e-3
+bash: run_fewshot.sh: No such file or directory
+/scratch/jy03364/MeZO_/experiments/pilot/_shared/h_sweep_8h/run_medium_sweep.sh: line 284: RANDOM_GUARD_EXIT_CODE: unbound variable

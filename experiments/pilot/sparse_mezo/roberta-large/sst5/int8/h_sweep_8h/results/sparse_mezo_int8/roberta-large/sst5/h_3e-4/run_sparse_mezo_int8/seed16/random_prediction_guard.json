@@ -1,0 +1,32 @@
+{
+  "trigger": true,
+  "reason": "diverged_and_random_plateau",
+  "global_step": 2000,
+  "num_labels": 5,
+  "chance_acc": 0.2,
+  "chance_loss": 1.6094379124341003,
+  "acc_tolerance": 0.05,
+  "loss_tolerance": 0.03,
+  "bad_loss_excess": 0.5,
+  "recent_evals": 2,
+  "min_loss_drop": 0.05,
+  "min_acc_gain": 0.02,
+  "eval_acc": 0.13348946135831383,
+  "eval_loss": 2.2717573642730713,
+  "eval_loss_ref": 2.165251851081848,
+  "eval_loss_avg5": 2.165251851081848,
+  "recent_eval_losses": [
+    2.058746337890625,
+    2.2717573642730713
+  ],
+  "recent_eval_accs": [
+    0.13817330210772832,
+    0.13348946135831383
+  ],
+  "best_recent_loss_drop": 0.0,
+  "best_recent_acc_gain": 0.0,
+  "train_loss": 2.1616363525390625,
+  "initial_train_loss": 1.59234619140625,
+  "train_loss_blowup": false,
+  "exit_code": 87
+}

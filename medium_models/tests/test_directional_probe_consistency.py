@@ -29,7 +29,12 @@ class TinyRegressionModel(nn.Module):
 
 
 class DirectionalProbeConsistencyTest(unittest.TestCase):
-    def _build_trainer(self, *, efficient_zero_order: bool, zo_quantization_bits: int = 16):
+    def _build_trainer(
+        self,
+        *,
+        efficient_zero_order: bool,
+        zo_quantization_bits: int = 16,
+    ):
         torch.manual_seed(0)
         trainer = Trainer.__new__(Trainer)
         trainer.args = SimpleNamespace(
@@ -160,6 +165,51 @@ class DirectionalProbeConsistencyTest(unittest.TestCase):
         self.assertTrue(saw_distinct_direction)
         self.assertTrue(torch.allclose(td_u1.float(), manual_u1.float(), atol=1e-6, rtol=1e-6))
         self.assertTrue(torch.allclose(td_u2.float(), manual_u2.float(), atol=1e-6, rtol=1e-6))
+
+    def test_quzo_int8_probe_path_tracks_target_probe_states_by_default(self):
+        trainer, model = self._build_trainer(
+            efficient_zero_order=True,
+            zo_quantization_bits=8,
+        )
+        seed = 67890
+        eps = trainer._get_training_step_size()
+        random_vector = trainer._zo_materialize_random_vector(seed)
+        originals = {name: param.detach().clone() for name, param in trainer.named_parameters_to_optim}
+
+        trainer.efficient_perturb_parameters(model, seed, random_vector=random_vector)
+        plus_expected = {}
+        for name, param in trainer.named_parameters_to_optim:
+            bundle = random_vector[name]
+            target_delta = trainer._quzo_build_clean_fd_target_delta(
+                name,
+                param,
+                target_scale=1.0,
+                eps=eps,
+                bundle=bundle,
+            )
+            expected = originals[name] + target_delta
+            plus_expected[name] = expected
+            self.assertTrue(torch.allclose(param.detach(), expected, atol=1e-7, rtol=1e-6), msg=f"{name}: plus")
+
+        trainer.efficient_perturb_parameters(model, seed, scaling_factor=-2, random_vector=random_vector)
+        minus_expected = {}
+        for name, param in trainer.named_parameters_to_optim:
+            bundle = random_vector[name]
+            target_delta = trainer._quzo_build_clean_fd_target_delta(
+                name,
+                param,
+                target_scale=-1.0,
+                eps=eps,
+                bundle=bundle,
+            )
+            expected = originals[name] + target_delta
+            minus_expected[name] = expected
+            self.assertTrue(torch.allclose(param.detach(), expected, atol=1e-7, rtol=1e-6), msg=f"{name}: minus")
+            self.assertFalse(torch.allclose(plus_expected[name], minus_expected[name]))
+
+        trainer.efficient_perturb_parameters(model, seed, scaling_factor=1, random_vector=random_vector)
+        for name, param in trainer.named_parameters_to_optim:
+            self.assertTrue(torch.allclose(param.detach(), originals[name], atol=1e-7, rtol=1e-6), msg=f"{name}: restore")
 
     def test_efficient_perturbation_reuses_materialized_direction(self):
         trainer, model = self._build_trainer(efficient_zero_order=True)
