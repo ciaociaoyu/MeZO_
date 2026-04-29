@@ -1,0 +1,10 @@
+Sparse MeZO / RoBERTa-large / SST-5 / INT8 / 8h
+
+points=8
+best eval_loss_final: h=3e-5 value=1.782976
+best probe_mse_final: h=1e-4 value=85523.226731
+
+Notes:
+- eval_loss_final is the last available eval_loss in metrics_logs/*.csv
+- eval_loss_avg5_final is the last available eval_loss_avg5 in metrics_logs/*.csv
+- probe_mse_final is the mse from the last row of zo_directional_probe.csv

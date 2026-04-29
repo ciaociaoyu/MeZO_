@@ -1,0 +1,20 @@
+Sparse MeZO FP16 RoBERTa-only summary
+=====================================
+
+RoBERTa-large / MNLI
+  h=1e-8  status=skipped_nan_guard  eval_loss= mse=10174263948.639305 corr=0.4210010223414973 sign_acc=0.5
+  h=3e-8  status=skipped_nan_guard  eval_loss= mse=2179667158.165064 corr=-0.013835610364799885 sign_acc=0.5625
+  h=1e-7  status=skipped_nan_guard  eval_loss=25.3125 mse=794705664.3026519 corr=-0.12751685504929575 sign_acc=0.5
+  h=3e-7  status=missing_from_summary eval_loss=1.2958984375 mse=32303.37956320531 corr=-0.4232310676192384 sign_acc=0.1875
+  h=1e-6  status=completed          eval_loss=1.1005859375 mse=7623.449048264153 corr=-0.13706828802315074 sign_acc=0.5
+  h=3e-6  status=completed          eval_loss=0.892578125 mse=2188.6056545481224 corr=0.2187200205172587 sign_acc=0.5625
+
+RoBERTa-large / SST-5
+  h=1e-8  status=skipped_nan_guard  eval_loss= mse=9458277410.87141 corr=0.22899227017138085 sign_acc=0.5
+  h=3e-8  status=skipped_nan_guard  eval_loss= mse=2878087101.021477 corr=0.3860476696175142 sign_acc=0.5625
+  h=1e-7  status=skipped_nan_guard  eval_loss=8.4140625 mse=701810210.481328 corr=0.7809020943255403 sign_acc=1.0
+  h=3e-7  status=missing_from_summary eval_loss= mse=137331.08762701257 corr=-0.39559238264313656 sign_acc=0.3125
+  h=1e-6  status=completed          eval_loss=1.580078125 mse=10913.21781936273 corr=-0.08592923108918428 sign_acc=0.3125
+  h=3e-6  status=completed          eval_loss=1.291015625 mse=8784.028194969165 corr=-0.10757135862724873 sign_acc=0.5625
+  h=1e-5  status=completed          eval_loss=1.080078125 mse=1440.2339712255534 corr=0.45360826079218153 sign_acc=0.625
+

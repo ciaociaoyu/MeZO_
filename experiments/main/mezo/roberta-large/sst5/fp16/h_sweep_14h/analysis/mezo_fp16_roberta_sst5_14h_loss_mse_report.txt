@@ -1,0 +1,19 @@
+MeZO / RoBERTa-large / SST-5 / FP16 / h_sweep_14h
+=================================================
+
+Plotting rule: plot completed points only; skipped_nan_guard points remain in the CSV/report but are excluded from the curve.
+
+h=1e-8  status=skipped_nan_guard  eval_loss=None mse=None corr=None sign_acc=None
+h=3e-8  status=skipped_nan_guard  eval_loss=None mse=None corr=None sign_acc=None
+h=1e-7  status=skipped_nan_guard  eval_loss=None mse=None corr=None sign_acc=None
+h=3e-7  status=skipped_nan_guard  eval_loss=None mse=None corr=None sign_acc=None
+h=1e-6  status=skipped_nan_guard  eval_loss=None mse=None corr=None sign_acc=None
+h=3e-6  status=completed          eval_loss=1.2685546875 mse=4440.656536789282 corr=0.22046098984715803 sign_acc=0.625
+h=1e-5  status=completed          eval_loss=1.0869140625 mse=3057.310025573711 corr=-0.49230846454870003 sign_acc=0.25
+h=3e-5  status=completed          eval_loss=1.0615234375 mse=1597.7031567144804 corr=0.09464139389186206 sign_acc=0.4375
+h=1e-4  status=completed          eval_loss=1.0625 mse=2765.7266443320855 corr=0.2645750846348467 sign_acc=0.5625
+h=3e-4  status=completed          eval_loss=1.0732421875 mse=1347.5972055976204 corr=0.11786435191420215 sign_acc=0.5625
+h=1e-3  status=completed          eval_loss=1.1015625 mse=2428.1518371355733 corr=0.06521713488495745 sign_acc=0.4375
+h=3e-3  status=completed          eval_loss=1.08984375 mse=1759.1615982025369 corr=-0.42373947924078287 sign_acc=0.3125
+h=1e-2  status=completed          eval_loss=1.6494140625 mse=253.78974560944215 corr=-0.005445619998109659 sign_acc=0.5
+h=3e-2  status=completed          eval_loss=1.62890625 mse=81.57703185249586 corr=0.3844466418984848 sign_acc=0.75

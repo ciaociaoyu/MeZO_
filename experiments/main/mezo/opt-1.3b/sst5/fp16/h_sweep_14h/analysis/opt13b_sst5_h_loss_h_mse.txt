@@ -1,0 +1,2 @@
+best_loss_h=1e-3 eval_loss=1.176758
+best_mse_h=1e-4 probe_mse=137.631214

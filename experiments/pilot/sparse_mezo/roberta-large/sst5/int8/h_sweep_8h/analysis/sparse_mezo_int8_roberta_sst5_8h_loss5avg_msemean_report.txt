@@ -1,0 +1,10 @@
+Sparse MeZO / RoBERTa-large / SST-5 / INT8 / 8h
+
+points=8
+best eval_loss_last5_mean: h=3e-5 value=1.726472
+best probe_mse_mean: h=1e-4 value=30446.858167
+
+Notes:
+- eval_loss_last5_mean = mean of the last 5 non-NaN eval_loss values in metrics_logs/*.csv
+- probe_mse_mean = mean of all non-NaN mse values in zo_directional_probe.csv
+- probe_mae_mean / sign_acc / corr are also averaged across all probe rows for reference
