@@ -1,0 +1,23 @@
+{
+  "base_loss": 0.71727055311203,
+  "batch_size_for_snr": 64,
+  "bits": 8,
+  "code_step": 8,
+  "created_at_unix": 1777425047.591507,
+  "dim": 2048,
+  "loss_noise_floor": 0.0001,
+  "model_info": {
+    "allow_download": false,
+    "failure": "transformers import failed: ModuleNotFoundError: No module named 'transformers'",
+    "loaded": false,
+    "requested_model": "roberta-large",
+    "source": "synthetic_torch_vector",
+    "used_dim": 2048
+  },
+  "n_examples": 1536,
+  "notes": "Perturbations are integer code-step moves on the int8 parameter grid. Sparse ratio controls how many coordinates receive a nonzero move. projection_mse is mean((finite_difference_projection - true_gradient_projection)^2), where finite_difference_projection=(f(w+h*z)-f(w-h*z))/(2*h) and true_gradient_projection=<grad,z>.",
+  "repeats": 32,
+  "theta_code_max": 115,
+  "theta_code_min": -127,
+  "theta_int8_scale": 0.019134938247560514
+}
