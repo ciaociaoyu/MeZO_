@@ -1,0 +1,5 @@
+Sparse MeZO / RoBERTa-large / SST-5 / INT8 / 8h
+
+best probe_corr_mean: h=1e-4 value=0.225137
+Notes:
+- probe_corr_mean = mean of all non-NaN corr values in zo_directional_probe.csv

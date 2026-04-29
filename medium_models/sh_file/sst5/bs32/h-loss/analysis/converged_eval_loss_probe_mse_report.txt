@@ -1,0 +1,14 @@
+Filtered points used in main plots (excluding 1e-9 and 3e-9):
+eps=1.0e-08, converged_eval_loss=1.59351875782, probe_mse=1740.84805917
+eps=3.0e-08, converged_eval_loss=1.08372633457, probe_mse=99.8887300468
+eps=1.0e-07, converged_eval_loss=1.1081022501, probe_mse=6.79235664743
+eps=3.0e-07, converged_eval_loss=1.10729677677, probe_mse=0.441921313134
+eps=1.0e-06, converged_eval_loss=1.07219510078, probe_mse=0.0822799430224
+eps=3.0e-06, converged_eval_loss=1.05101249218, probe_mse=0.178614031845
+eps=1.0e-05, converged_eval_loss=1.0623673439, probe_mse=86.1778648325
+eps=3.0e-05, converged_eval_loss=1.0457357645, probe_mse=9.80475667211
+eps=1.0e-04, converged_eval_loss=1.04904837608, probe_mse=8.72880170329
+eps=3.0e-04, converged_eval_loss=1.04503617287, probe_mse=77.3809835401
+eps=1.0e-03, converged_eval_loss=1.04383256435, probe_mse=54.1323361271
+eps=3.0e-03, converged_eval_loss=1.07225730419, probe_mse=75.9531647323
+eps=1.0e-02, converged_eval_loss=1.67400696278, probe_mse=281.220087651
