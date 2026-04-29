@@ -28,7 +28,7 @@ from src.linearhead_trainer import LinearHeadTrainer
 from src.dataset import FewShotDataset, OurInputFeatures
 from src.data_utils import resolve_and_prepare_data
 from src.models import MODEL_TYPES, resize_token_type_embeddings, convert_opt_model
-from src.quzo import quzo_enabled, quantize_model_in_place, validate_quzo_bits
+from src.quzo import quantize_model_in_place, validate_quzo_bits
 from src.sparse_mezo import (
     normalize_sparse_mask_strategy,
     normalize_sparse_scope,
@@ -49,6 +49,8 @@ from run_metadata import collect_run_metadata, update_model_run_metadata, write_
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+TRAINING_ARGS_NAME = "training_args.bin"
 
 MEDIUM_TASK_NAME_ALIASES = {
     "sst2": "sst-2",
@@ -104,6 +106,27 @@ def _read_last_csv_row(path: str):
     except Exception as exc:
         logger.warning("Failed to read CSV artifact %s: %s", path, exc)
         return None
+
+
+def _save_model_with_shared_tensor_fallback(trainer, output_dir: str):
+    try:
+        trainer.save_model(output_dir)
+        return
+    except RuntimeError as exc:
+        message = str(exc)
+        if "shared tensors" not in message and "mismatching the transformers base configuration" not in message:
+            raise
+
+    logger.warning(
+        "Default model save failed due to tied/shared tensors; retrying with safe_serialization=False."
+    )
+    os.makedirs(output_dir, exist_ok=True)
+    model_to_save = trainer.model
+    if hasattr(model_to_save, "save_pretrained"):
+        model_to_save.save_pretrained(output_dir, safe_serialization=False)
+    else:
+        torch.save(model_to_save.state_dict(), os.path.join(output_dir, "pytorch_model.bin"))
+    torch.save(trainer.args, os.path.join(output_dir, TRAINING_ARGS_NAME))
 
 
 def maybe_convert_model_to_torchao_float8_training(model, enabled: bool):
@@ -1158,7 +1181,7 @@ def main():
     if getattr(training_args, "zo_method", None) in {"lozo", "lozo_m", "hizoo"}:
         if sparse_mezo_enabled(getattr(training_args, "sparse_ratio", 1.0)):
             raise ValueError(f"--zo_method={training_args.zo_method} is incompatible with --sparse_ratio < 1.0")
-        if quzo_enabled(getattr(training_args, "zo_quantization_bits", 32)):
+        if int(getattr(training_args, "zo_quantization_bits", 32)) in {8, 4}:
             raise ValueError(f"--zo_method={training_args.zo_method} is incompatible with QuZO low-bit perturbations")
     if int(getattr(training_args, "measure_perf_tail_window_steps", 10)) <= 0:
         raise ValueError("--measure_perf_tail_window_steps must be > 0")
@@ -1174,6 +1197,13 @@ def main():
         raise ValueError("--zo_probe_health_guard_step must be > 0")
     if int(getattr(training_args, "zo_probe_health_guard_max_bad_probes", 3)) <= 0:
         raise ValueError("--zo_probe_health_guard_max_bad_probes must be > 0")
+    training_args.model_storage_fp16 = bool(
+        getattr(training_args, "efficient_zero_order_fp16", False)
+        or (
+            bool(getattr(training_args, "zero_order_optim", False))
+            and int(getattr(training_args, "zo_quantization_bits", 32)) == 16
+        )
+    )
     training_args.h_estimation_active_source = str(
         getattr(training_args, "h_estimation_active_source", "auto")
     ).lower()
@@ -1312,11 +1342,11 @@ def main():
         bool(getattr(training_args, "zo_use_true_directional_derivative", False)),
     )
     logger.info(
-        "[quzo-config] zo_quantization_bits=%s | quzo_enabled=%s | quzo_lowbit_probe_impl=%s",
+        "[quzo-config] zo_quantization_bits=%s | quzo_lowbit_enabled=%s | quzo_lowbit_probe_impl=%s",
         int(getattr(training_args, "zo_quantization_bits", 32)),
-        bool(quzo_enabled(getattr(training_args, "zo_quantization_bits", 32))),
+        int(getattr(training_args, "zo_quantization_bits", 32)) in {8, 4},
         (
-            "base_plus_qdelta_no_resnap"
+            "q_w_plus_hz_resnap"
             if int(getattr(training_args, "zo_quantization_bits", 32)) in {8, 4}
             else "n/a"
         ),
@@ -1510,16 +1540,24 @@ def main():
             model_args.model_name_or_path,
             config=config,
             device_map='auto',
-            torch_dtype=torch.float16 if training_args.efficient_zero_order_fp16 else torch.float32,
+            torch_dtype=torch.float16 if training_args.model_storage_fp16 else torch.float32,
             max_memory=max_memory,
         )
     else:
+        model_load_kwargs = {}
+        if bool(getattr(training_args, "model_storage_fp16", False)):
+            model_load_kwargs["torch_dtype"] = torch.float16
         model = model_fn.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
             config=config,
             cache_dir=model_args.cache_dir,
+            **model_load_kwargs,
         )
+
+    if bool(getattr(training_args, "model_storage_fp16", False)):
+        model.half()
+        logger.info("[precision-config] model parameters and buffers converted to FP16 storage")
 
     if training_args.tie_emb:
         logger.warn("Tie embeddings. Only work for RoBERTa (in our code by default they are not tied)")
@@ -1542,7 +1580,7 @@ def main():
 
     if training_args.prefix_tuning:
         from src.prefix import PrefixTuning
-        PrefixTuning(model, num_prefix=training_args.num_prefix, reparam=not training_args.no_reparam, float16=training_args.efficient_zero_order_fp16, init_by_real_act=training_args.prefix_init_by_real_act)
+        PrefixTuning(model, num_prefix=training_args.num_prefix, reparam=not training_args.no_reparam, float16=training_args.model_storage_fp16, init_by_real_act=training_args.prefix_init_by_real_act)
 
     # Get our special datasets.
     train_dataset = (
@@ -1591,7 +1629,10 @@ def main():
 
     maybe_convert_model_to_torchao_float8_training(model, getattr(training_args, "use_torchao_float8", False))
 
-    if bool(getattr(training_args, "zero_order_optim", False)) and quzo_enabled(getattr(training_args, "zo_quantization_bits", 32)):
+    if (
+        bool(getattr(training_args, "zero_order_optim", False))
+        and int(getattr(training_args, "zo_quantization_bits", 32)) in {8, 4}
+    ):
         quantize_model_in_place(
             model,
             int(training_args.zo_quantization_bits),
@@ -1601,6 +1642,11 @@ def main():
         logger.info(
             "[quzo-config] quantized model parameters in-place at %d bits before ZO training",
             int(training_args.zo_quantization_bits),
+        )
+    elif bool(getattr(training_args, "zero_order_optim", False)) and int(getattr(training_args, "zo_quantization_bits", 32)) == 16:
+        logger.info(
+            "[quzo-config] zo_quantization_bits=16 uses FP16 model storage plus FP16 ZO perturb/probe convention; "
+            "low-bit QuZO snap remains disabled for FP16"
         )
 
     run_metadata = collect_run_metadata(
@@ -1613,7 +1659,7 @@ def main():
         repo_root=str(REPO_ROOT),
         extra_metadata={
             "quzo_lowbit_probe_impl": (
-                "base_plus_qdelta_no_resnap"
+                "q_w_plus_hz_resnap"
                 if int(getattr(training_args, "zo_quantization_bits", 32)) in {8, 4}
                 else "n/a"
             ),
@@ -1712,7 +1758,7 @@ def main():
 
         if training_args.trainer == "standard" or training_args.trainer == "linearhead":
             if training_args.save_at_last:
-                trainer.save_model(training_args.output_dir)
+                _save_model_with_shared_tensor_fallback(trainer, training_args.output_dir)
 
             if trainer.is_world_process_zero():
                 tokenizer.save_pretrained(training_args.output_dir)

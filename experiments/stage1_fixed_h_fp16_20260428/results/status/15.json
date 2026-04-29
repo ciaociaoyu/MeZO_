@@ -1,0 +1,21 @@
+{
+  "batch_size": 16,
+  "env_name": "mezo-mistral",
+  "exit_code": 0,
+  "h": "1e-5",
+  "index": 15,
+  "max_steps": 5000,
+  "method": "sparse_mezo",
+  "model_family": "large",
+  "model_key": "opt-1.3b",
+  "model_name": "facebook/opt-1.3b",
+  "output_dir": "/scratch/jy03364/MeZO_/experiments/stage1_fixed_h_fp16_20260428/results/opt-1.3b/sst2/sparse_mezo/h_1e-5/seed_16",
+  "slurm_array_task_id": "15",
+  "slurm_job_id": "44808801",
+  "state": "running",
+  "stderr_log": "/scratch/jy03364/MeZO_/experiments/stage1_fixed_h_fp16_20260428/logs/15_opt-1.3b_sst2_sparse_mezo_h1e-5/train.err",
+  "stdout_log": "/scratch/jy03364/MeZO_/experiments/stage1_fixed_h_fp16_20260428/logs/15_opt-1.3b_sst2_sparse_mezo_h1e-5/train.log",
+  "task_key": "sst2",
+  "task_name": "SST2",
+  "updated_at": "2026-04-28T20:59:32"
+}

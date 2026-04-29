@@ -277,6 +277,14 @@ for H in "${H_VALUES[@]}"; do
   fi
   COMMAND_DESC="$(printf '%q ' "${CMD[@]}")"
 
+  # Some task-local runners source this script with `set -e` enabled. Capture
+  # the guard exit code explicitly so NaN / probe guard skips mark only the
+  # current `h` as failed instead of aborting the whole sweep job.
+  hsweep_had_errexit=0
+  case "$-" in
+    *e*) hsweep_had_errexit=1 ;;
+  esac
+  set +e
   python "${NAN_GUARD}" \
     --cwd "${MEDIUM_ROOT}" \
     --stdout-log "${RUN_LOG}" \
@@ -285,6 +293,9 @@ for H in "${H_VALUES[@]}"; do
     -- \
     "${CMD[@]}"
   run_status=$?
+  if [[ ${hsweep_had_errexit} -eq 1 ]]; then
+    set -e
+  fi
 
   if [[ ${run_status} -eq 0 ]]; then
     if [[ -f "${RUN_SUMMARY_PATH}" ]]; then

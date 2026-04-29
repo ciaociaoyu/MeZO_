@@ -164,7 +164,7 @@ Required metadata / log expectations:
   - `zo_probe_health_guard_enabled=False`
 - for current RoBERTa QuZO `int8/int4` pilot runs, the metadata / config should
   also show:
-  - `quzo_lowbit_probe_impl=base_plus_qdelta_no_resnap`
+  - `quzo_lowbit_probe_impl=q_w_plus_hz_resnap`
 - for the reset `medium_models / roberta-large / int8` wave, launch config
   should also show:
   - `per_device_train_batch_size=64`
@@ -189,7 +189,7 @@ Suggested quick checks:
 - summary artifact:
   - `rg -n '"dataloader_shuffle": true|"data_seed": 16|"seed": 16|"max_steps": 10000|"per_device_train_batch_size": 64' <run_summary.json or summary.jsonl>`
 - run metadata / stderr:
-  - `rg -n 'quzo_lowbit_probe_impl|base_plus_qdelta_no_resnap' <run_metadata.json or train.err>`
+  - `rg -n 'quzo_lowbit_probe_impl|q_w_plus_hz_resnap' <run_metadata.json or train.err>`
 
 Current RoBERTa pilot note on `2026-04-20`:
 

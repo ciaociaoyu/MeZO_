@@ -1,0 +1,26 @@
+index	model_family	model_key	model_name	task_key	task_name	method	h	env_name	batch_size
+0	medium	roberta-large	roberta-large	sst2	SST-2	mezo	1e-3	ciao	64
+1	medium	roberta-large	roberta-large	sst2	SST-2	mezo	1e-5	ciao	64
+2	medium	roberta-large	roberta-large	sst2	SST-2	sparse_mezo	1e-3	ciao	64
+3	medium	roberta-large	roberta-large	sst2	SST-2	sparse_mezo	1e-5	ciao	64
+4	medium	roberta-large	roberta-large	sst2	SST-2	mezo_lora	1e-3	ciao	64
+5	medium	roberta-large	roberta-large	sst2	SST-2	mezo_lora	1e-5	ciao	64
+6	medium	roberta-large	roberta-large	sst5	SST-5	mezo	1e-3	ciao	64
+7	medium	roberta-large	roberta-large	sst5	SST-5	mezo	1e-5	ciao	64
+8	medium	roberta-large	roberta-large	sst5	SST-5	sparse_mezo	1e-3	ciao	64
+9	medium	roberta-large	roberta-large	sst5	SST-5	sparse_mezo	1e-5	ciao	64
+10	medium	roberta-large	roberta-large	sst5	SST-5	mezo_lora	1e-3	ciao	64
+11	medium	roberta-large	roberta-large	sst5	SST-5	mezo_lora	1e-5	ciao	64
+12	large	opt-1.3b	facebook/opt-1.3b	sst2	SST2	mezo	1e-3	mezo-mistral	16
+13	large	opt-1.3b	facebook/opt-1.3b	sst2	SST2	mezo	1e-5	mezo-mistral	16
+14	large	opt-1.3b	facebook/opt-1.3b	sst2	SST2	sparse_mezo	1e-3	mezo-mistral	16
+15	large	opt-1.3b	facebook/opt-1.3b	sst2	SST2	sparse_mezo	1e-5	mezo-mistral	16
+16	large	opt-1.3b	facebook/opt-1.3b	sst2	SST2	mezo_lora	1e-3	mezo-mistral	16
+17	large	opt-1.3b	facebook/opt-1.3b	sst2	SST2	mezo_lora	1e-5	mezo-mistral	16
+18	large	opt-1.3b	facebook/opt-1.3b	sst5	SST5	mezo	1e-3	mezo-mistral	16
+19	large	opt-1.3b	facebook/opt-1.3b	sst5	SST5	mezo	1e-5	mezo-mistral	16
+20	large	opt-1.3b	facebook/opt-1.3b	sst5	SST5	sparse_mezo	1e-3	mezo-mistral	16
+21	large	opt-1.3b	facebook/opt-1.3b	sst5	SST5	sparse_mezo	1e-5	mezo-mistral	16
+22	large	opt-1.3b	facebook/opt-1.3b	sst5	SST5	mezo_lora	1e-3	mezo-mistral	16
+23	large	opt-1.3b	facebook/opt-1.3b	sst5	SST5	mezo_lora	1e-5	mezo-mistral	16
+

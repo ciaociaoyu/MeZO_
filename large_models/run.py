@@ -25,7 +25,7 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset
 from torch.distributed.fsdp.fully_sharded_data_parallel import FullyShardedDataParallel as FSDP
 from metrics import calculate_metric
-from quzo import quzo_enabled, quantize_model_in_place, validate_quzo_bits
+from quzo import quantize_model_in_place, validate_quzo_bits
 from sparse_mezo import (
     normalize_sparse_mask_strategy,
     normalize_sparse_scope,
@@ -478,7 +478,7 @@ def parse_args():
     if getattr(args, "zo_method", None) in {"lozo", "lozo_m", "hizoo"}:
         if sparse_mezo_enabled(getattr(args, "sparse_ratio", 1.0)):
             raise ValueError(f"--zo_method={args.zo_method} is incompatible with --sparse_ratio < 1.0")
-        if quzo_enabled(getattr(args, "zo_quantization_bits", 32)):
+        if int(getattr(args, "zo_quantization_bits", 32)) in {8, 4}:
             raise ValueError(f"--zo_method={args.zo_method} is incompatible with QuZO low-bit perturbations")
     if int(getattr(args, "zo_probe_num_seeds", 16)) <= 0:
         raise ValueError("--zo_probe_num_seeds must be > 0")
@@ -717,7 +717,7 @@ class Framework:
 
         maybe_convert_model_to_torchao_float8_training(model, getattr(self.args, "use_torchao_float8", False))
 
-        if self.args.trainer == "zo" and quzo_enabled(getattr(self.args, "zo_quantization_bits", 32)):
+        if self.args.trainer == "zo" and int(getattr(self.args, "zo_quantization_bits", 32)) in {8, 4}:
             quantize_model_in_place(
                 model,
                 int(self.args.zo_quantization_bits),
@@ -727,6 +727,11 @@ class Framework:
             logger.info(
                 "[quzo-config] quantized model parameters in-place at %d bits before ZO training",
                 int(self.args.zo_quantization_bits),
+            )
+        elif self.args.trainer == "zo" and int(getattr(self.args, "zo_quantization_bits", 32)) == 16:
+            logger.info(
+                "[quzo-config] zo_quantization_bits=16 uses FP16 ZO perturb/probe convention; "
+                "skipping pre-training model snap because --load_float16/model dtype already controls storage"
             )
         if self.args.trainer == "zo":
             logger.info(

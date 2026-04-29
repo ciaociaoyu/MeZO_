@@ -306,23 +306,21 @@ class OurTrainer(Trainer):
         # Keep local call sites stable and dispatch based on the installed
         # parent method instead of hard-coding one specific version shape.
         parent = super()._maybe_log_save_evaluate
-        parent_params = list(inspect.signature(parent).parameters)
-
-        if parent_params == ["tr_loss", "model", "trial", "epoch", "ignore_keys_for_eval"]:
-            return parent(tr_loss, model, trial, epoch, ignore_keys_for_eval)
-
         if start_time is None:
             start_time = getattr(self, "_mezo_train_start_time", time.time())
-        return parent(
-            tr_loss,
-            grad_norm,
-            model,
-            trial,
-            epoch,
-            ignore_keys_for_eval,
-            start_time,
-            learning_rate,
-        )
+        values = {
+            "tr_loss": tr_loss,
+            "grad_norm": grad_norm,
+            "model": model,
+            "trial": trial,
+            "epoch": epoch,
+            "ignore_keys_for_eval": ignore_keys_for_eval,
+            "start_time": start_time,
+            "learning_rate": learning_rate,
+        }
+        parent_params = inspect.signature(parent).parameters
+        kwargs = {name: values[name] for name in parent_params if name in values}
+        return parent(**kwargs)
 
     @staticmethod
     def _safe_float(value: Optional[Any]) -> Optional[float]:
@@ -628,6 +626,9 @@ class OurTrainer(Trainer):
         for those updates.
         """
         self._train_batch_size = batch_size
+        # Newer Transformers evaluation_loop expects this attribute to be set
+        # by Trainer._inner_training_loop. This local loop predates that change.
+        self.gather_function = getattr(self.accelerator, "gather_for_metrics", self.accelerator.gather)
         # Data loader and number of training steps
         train_dataloader = self.get_train_dataloader()
         self.latest_zo_probe_row = None

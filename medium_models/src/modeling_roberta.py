@@ -21,6 +21,7 @@ from typing import List, Optional, Tuple, Union
 import torch
 import torch.utils.checkpoint
 from torch import nn
+import torch.nn.functional as F
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 from transformers.activations import ACT2FN, gelu
@@ -48,6 +49,22 @@ from transformers.utils import (
 import loralib as lora
 
 logger = logging.get_logger(__name__)
+
+
+class StableLoRALinear(lora.Linear):
+    def forward(self, x: torch.Tensor):
+        def T(w):
+            return w.transpose(0, 1) if self.fan_in_fan_out else w
+
+        if self.r > 0 and not self.merged:
+            result = F.linear(x, T(self.weight), bias=self.bias)
+            lora_x = self.lora_dropout(x).float()
+            lora_a = self.lora_A.float()
+            lora_b = self.lora_B.float()
+            delta = (lora_x @ lora_a.transpose(0, 1) @ lora_b.transpose(0, 1)) * self.scaling
+            delta = torch.nan_to_num(delta).to(dtype=result.dtype)
+            return result + delta
+        return F.linear(x, T(self.weight), bias=self.bias)
 
 _CHECKPOINT_FOR_DOC = "roberta-base"
 _CONFIG_FOR_DOC = "RobertaConfig"
@@ -193,14 +210,26 @@ class RobertaSelfAttention(nn.Module):
         self.all_head_size = self.num_attention_heads * self.attention_head_size
 
         if getattr(config, "apply_lora", False):
-            self.query = lora.Linear(config.hidden_size, self.all_head_size, config.lora_r, lora_alpha=config.lora_alpha)
+            self.query = StableLoRALinear(
+                config.hidden_size,
+                self.all_head_size,
+                config.lora_r,
+                lora_alpha=config.lora_alpha,
+                merge_weights=False,
+            )
         else:
             self.query = nn.Linear(config.hidden_size, self.all_head_size)
         
         self.key = nn.Linear(config.hidden_size, self.all_head_size)
 
         if getattr(config, "apply_lora", False):
-            self.value = lora.Linear(config.hidden_size, self.all_head_size, config.lora_r, lora_alpha=config.lora_alpha)
+            self.value = StableLoRALinear(
+                config.hidden_size,
+                self.all_head_size,
+                config.lora_r,
+                lora_alpha=config.lora_alpha,
+                merge_weights=False,
+            )
         else:
             self.value = nn.Linear(config.hidden_size, self.all_head_size)
 

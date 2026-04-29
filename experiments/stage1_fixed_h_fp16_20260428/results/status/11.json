@@ -1,0 +1,21 @@
+{
+  "batch_size": 64,
+  "env_name": "ciao",
+  "exit_code": 86,
+  "h": "1e-5",
+  "index": 11,
+  "max_steps": 5000,
+  "method": "mezo_lora",
+  "model_family": "medium",
+  "model_key": "roberta-large",
+  "model_name": "roberta-large",
+  "output_dir": "/scratch/jy03364/MeZO_/experiments/stage1_fixed_h_fp16_20260428/results/roberta-large/sst5/mezo_lora/h_1e-5/run/seed16",
+  "slurm_array_task_id": "11",
+  "slurm_job_id": "44808832",
+  "state": "failed",
+  "stderr_log": "/scratch/jy03364/MeZO_/experiments/stage1_fixed_h_fp16_20260428/logs/11_roberta-large_sst5_mezo_lora_h1e-5/train.err",
+  "stdout_log": "/scratch/jy03364/MeZO_/experiments/stage1_fixed_h_fp16_20260428/logs/11_roberta-large_sst5_mezo_lora_h1e-5/train.log",
+  "task_key": "sst5",
+  "task_name": "SST-5",
+  "updated_at": "2026-04-28T21:11:54"
+}

@@ -19,6 +19,7 @@ from typing import List, Optional, Tuple, Union
 import torch
 import torch.utils.checkpoint
 from torch import nn
+import torch.nn.functional as F
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 from transformers.activations import ACT2FN
@@ -42,6 +43,22 @@ import loralib as lora
 
 
 logger = logging.get_logger(__name__)
+
+
+class StableLoRALinear(lora.Linear):
+    def forward(self, x: torch.Tensor):
+        def T(w):
+            return w.transpose(0, 1) if self.fan_in_fan_out else w
+
+        if self.r > 0 and not self.merged:
+            result = F.linear(x, T(self.weight), bias=self.bias)
+            lora_x = self.lora_dropout(x).float()
+            lora_a = self.lora_A.float()
+            lora_b = self.lora_B.float()
+            delta = (lora_x @ lora_a.transpose(0, 1) @ lora_b.transpose(0, 1)) * self.scaling
+            delta = torch.nan_to_num(delta).to(dtype=result.dtype)
+            return result + delta
+        return F.linear(x, T(self.weight), bias=self.bias)
 
 _CHECKPOINT_FOR_DOC = "facebook/opt-350m"
 _CONFIG_FOR_DOC = "OPTConfig"
@@ -269,14 +286,28 @@ class OPTAttention(nn.Module):
         self.is_decoder = is_decoder
 
         if apply_lora:
-            self.q_proj = lora.Linear(embed_dim, embed_dim, lora_r, lora_alpha=lora_alpha, bias=bias)
+            self.q_proj = StableLoRALinear(
+                embed_dim,
+                embed_dim,
+                lora_r,
+                lora_alpha=lora_alpha,
+                bias=bias,
+                merge_weights=False,
+            )
         else:
             self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
         
         self.k_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
         if apply_lora:
-            self.v_proj = lora.Linear(embed_dim, embed_dim, lora_r, lora_alpha=lora_alpha, bias=bias)
+            self.v_proj = StableLoRALinear(
+                embed_dim,
+                embed_dim,
+                lora_r,
+                lora_alpha=lora_alpha,
+                bias=bias,
+                merge_weights=False,
+            )
         else:
             self.v_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 

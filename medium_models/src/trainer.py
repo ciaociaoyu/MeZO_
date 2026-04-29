@@ -502,6 +502,10 @@ class Trainer(LinearHeadTrainer):
             "g_hat",
             "l_hat",
             "h2",
+            "d_dim",
+            "d_source",
+            "trainable_params",
+            "sparse_active_params",
             "two_point_precision",
             "additive_noise_precision",
         ]
@@ -512,6 +516,16 @@ class Trainer(LinearHeadTrainer):
         base_dir = getattr(self.args, "output_dir", "./outputs") or "./outputs"
         os.makedirs(base_dir, exist_ok=True)
         self._h_estimation_csv_path = os.path.join(base_dir, "h_estimation.csv")
+        if os.path.exists(self._h_estimation_csv_path):
+            try:
+                with open(self._h_estimation_csv_path, "r", newline="") as f:
+                    header = f.readline().strip().split(",")
+                if header != self._h_estimation_csv_fields:
+                    legacy_path = f"{self._h_estimation_csv_path}.legacy.{int(time.time())}"
+                    os.replace(self._h_estimation_csv_path, legacy_path)
+                    logger.info("[h_estimation] moved legacy CSV with old header to %s", legacy_path)
+            except Exception as exc:
+                logger.warning("[h_estimation] failed to inspect existing CSV header: %s: %s", type(exc).__name__, exc)
         if not os.path.exists(self._h_estimation_csv_path):
             with open(self._h_estimation_csv_path, "w", newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=self._h_estimation_csv_fields)
@@ -787,7 +801,11 @@ class Trainer(LinearHeadTrainer):
         return float(getattr(self.args, "zero_order_eps", 1e-3))
 
     def _should_quantize_training_perturbation(self) -> bool:
-        return self._zo_use_quzo() or self._get_active_h_source() == "two_point"
+        return (
+            self._zo_use_quzo()
+            or self._get_active_h_source() == "two_point"
+            or str(getattr(self.args, "zo_two_point_precision", "fp32")).lower() == "fp16"
+        )
 
     def _quantize_delta_tensor(self, delta: torch.Tensor, target_dtype: Optional[torch.dtype] = None) -> torch.Tensor:
         if self._zo_use_quzo():
@@ -830,6 +848,25 @@ class Trainer(LinearHeadTrainer):
                 named_params.append((name, param))
         self.named_parameters_to_optim = named_params
         return named_params
+
+    def _two_point_effective_dimension(self, named_params: Optional[List[Tuple[str, nn.Parameter]]] = None) -> Tuple[int, str, int, Optional[int]]:
+        if named_params is None:
+            named_params = list(getattr(self, "named_parameters_to_optim", []) or [])
+        trainable_params = int(sum(param.data.numel() for _, param in named_params))
+        if trainable_params <= 0:
+            return 1, "empty_fallback", 0, None
+        if self._sparse_enabled():
+            try:
+                self._sparse_prepare_step_state()
+                stats = dict(getattr(self, "latest_sparse_mezo_stats", {}) or {})
+                active_params = int(stats.get("active_params", 0) or 0)
+                if active_params > 0:
+                    return active_params, "sparse_active_trainable", trainable_params, active_params
+            except Exception as exc:
+                logger.warning("[h_estimation] failed to read sparse active dimension: %s: %s", type(exc).__name__, exc)
+            active_params = max(1, int(round(trainable_params * float(getattr(self.args, "sparse_ratio", 1.0)))))
+            return active_params, "sparse_ratio_fallback", trainable_params, active_params
+        return trainable_params, "trainable", trainable_params, None
 
     def _init_h_estimation_state(self):
         h0 = self._get_init_h()
@@ -903,8 +940,13 @@ class Trainer(LinearHeadTrainer):
     def _sample_direction_and_delta(self, named_params: List[Tuple[str, nn.Parameter]], h: float) -> Tuple[List[torch.Tensor], float]:
         delta_list = []
         norm_sq = 0.0
-        for _, param in named_params:
-            z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
+        if self._sparse_enabled():
+            self._sparse_prepare_step_state()
+        for name, param in named_params:
+            if self._sparse_enabled():
+                z = self._sample_sparse_noise_like(name, param.data, dtype=param.data.dtype)
+            else:
+                z = torch.normal(mean=0, std=1, size=param.data.size(), device=param.data.device, dtype=param.data.dtype)
             norm_sq += float(torch.sum(z.detach().float() * z.detach().float()).item())
             delta_list.append(self._quantize_delta_tensor(z * float(h), target_dtype=param.data.dtype))
         return delta_list, float(norm_sq)
@@ -918,18 +960,52 @@ class Trainer(LinearHeadTrainer):
         named_params = self._build_named_parameters_to_optim(model)
         if len(named_params) == 0:
             return None
-        total_numel = int(sum(param.data.numel() for _, param in named_params))
+        if self._sparse_enabled():
+            self._sparse_prepare_step_state()
+        param_counts = []
+        sparse_masks = getattr(self, "_sparse_step_masks", {}) if self._sparse_enabled() else {}
+        for name, param in named_params:
+            if self._sparse_enabled():
+                mask = None if sparse_masks is None else sparse_masks.get(name)
+                if mask is not None:
+                    count = int(mask.detach().sum().item())
+                else:
+                    count = int(param.data.numel())
+            else:
+                count = int(param.data.numel())
+            param_counts.append(max(0, count))
+        total_numel = int(sum(param_counts))
         if total_numel <= 0:
             return None
         sample_size = max(1, min(int(getattr(self.args, "two_point_h_delta_sample_size", 4096)), total_numel))
-        cums = np.cumsum([int(param.data.numel()) for _, param in named_params])
+        cums = np.cumsum(param_counts)
         picks = np.random.randint(0, total_numel, size=sample_size)
         vals = []
         for flat_idx in picks:
             param_idx = int(np.searchsorted(cums, int(flat_idx), side="right"))
-            prev = 0 if param_idx == 0 else int(cums[param_idx - 1])
-            local_idx = int(flat_idx) - prev
-            tensor = named_params[param_idx][1].data.detach().view(-1)[local_idx].float().cpu()
+            name, param = named_params[param_idx]
+            flat_param = param.data.detach().view(-1)
+            if self._sparse_enabled():
+                mask = None if sparse_masks is None else sparse_masks.get(name)
+                if mask is not None:
+                    flat_mask = mask.detach().view(-1)
+                    local_idx = int(torch.randint(flat_param.numel(), (1,), device=flat_param.device).item())
+                    for _ in range(128):
+                        if bool(flat_mask[local_idx].item()):
+                            break
+                        local_idx = int(torch.randint(flat_param.numel(), (1,), device=flat_param.device).item())
+                    else:
+                        active = torch.nonzero(flat_mask, as_tuple=False).view(-1)
+                        if active.numel() == 0:
+                            continue
+                        active_pos = int(torch.randint(active.numel(), (1,), device=active.device).item())
+                        local_idx = int(active[active_pos].item())
+                else:
+                    local_idx = int(torch.randint(flat_param.numel(), (1,), device=flat_param.device).item())
+            else:
+                prev = 0 if param_idx == 0 else int(cums[param_idx - 1])
+                local_idx = int(flat_idx) - prev
+            tensor = flat_param[local_idx].float().cpu()
             vals.append(float(tensor.item()))
         if len(vals) == 0:
             return None
@@ -1072,7 +1148,7 @@ class Trainer(LinearHeadTrainer):
             and delta_hat > 0.0 and g_hat > 0.0 and l_hat > 0.0
         ):
             named_params = self._build_named_parameters_to_optim(model)
-            d_dim = max(1, int(sum(param.data.numel() for _, param in named_params)))
+            d_dim, d_source, trainable_params, sparse_active_params = self._two_point_effective_dimension(named_params)
             h_tilde = (
                 (float(delta_hat) ** 2 * float(g_hat) ** 2)
                 / (16.0 * (float(l_hat) ** 2) * float(d_dim) * float(d_dim + 2))
@@ -1087,9 +1163,12 @@ class Trainer(LinearHeadTrainer):
             logger.info(
                 f"[two-point simple estimation][update] step={self.state.global_step} "
                 f"h_tilde={float(h_tilde):.3e} -> h={float(self.two_point_h):.3e} "
-                f"(Delta≈{float(delta_hat):.2e}, G≈{float(g_hat):.2e}, L≈{float(l_hat):.2e}, h2={float(h2) if h2 is not None else float('nan'):.2e})"
+                f"(Delta≈{float(delta_hat):.2e}, G≈{float(g_hat):.2e}, L≈{float(l_hat):.2e}, "
+                f"d={int(d_dim)}[{d_source}], h2={float(h2) if h2 is not None else float('nan'):.2e})"
             )
         else:
+            named_params = self._build_named_parameters_to_optim(model)
+            d_dim, d_source, trainable_params, sparse_active_params = self._two_point_effective_dimension(named_params)
             logger.warning(
                 f"[two-point simple estimation][skip] step={self.state.global_step} "
                 f"invalid state -> keep h={self._get_current_two_point_h():.3e}"
@@ -1104,6 +1183,10 @@ class Trainer(LinearHeadTrainer):
             "g_hat": float(g_hat) if g_hat is not None and math.isfinite(float(g_hat)) else float("nan"),
             "l_hat": float(l_hat) if l_hat is not None and math.isfinite(float(l_hat)) else float("nan"),
             "h2": float(h2) if h2 is not None and math.isfinite(float(h2)) else float("nan"),
+            "d_dim": int(d_dim),
+            "d_source": str(d_source),
+            "trainable_params": int(trainable_params),
+            "sparse_active_params": int(sparse_active_params) if sparse_active_params is not None else "",
         }
         self._two_point_last_stats = stats
         return stats
@@ -1130,6 +1213,10 @@ class Trainer(LinearHeadTrainer):
             "g_hat": two_point.get("g_hat"),
             "l_hat": two_point.get("l_hat"),
             "h2": two_point.get("h2"),
+            "d_dim": two_point.get("d_dim"),
+            "d_source": two_point.get("d_source"),
+            "trainable_params": two_point.get("trainable_params"),
+            "sparse_active_params": two_point.get("sparse_active_params"),
             "two_point_precision": str(getattr(self.args, "zo_two_point_precision", "fp32")).lower(),
             "additive_noise_precision": str(getattr(self.args, "zo_two_point_precision", "fp32")).lower(),
         }
@@ -2406,30 +2493,61 @@ class Trainer(LinearHeadTrainer):
             mask=self._sparse_get_mask(name),
         )
 
-    def _quzo_build_clean_fd_target_delta(
+    def _quzo_clean_fd_base_state(self) -> Dict[Tuple[str, int], Dict[str, torch.Tensor]]:
+        if not hasattr(self, "_quzo_clean_fd_base_state_map"):
+            self._quzo_clean_fd_base_state_map = {}
+        return self._quzo_clean_fd_base_state_map
+
+    def _quzo_clean_fd_get_base_param(
+        self,
+        *,
+        context_key: Optional[Tuple[str, int]],
+        name: str,
+        param: nn.Parameter,
+    ) -> torch.Tensor:
+        if context_key is None:
+            return param.data.detach().clone()
+        state = self._quzo_clean_fd_base_state()
+        base_map = state.get(context_key)
+        if base_map is None:
+            base_map = {}
+            state[context_key] = base_map
+        base_param = base_map.get(name, None)
+        if base_param is None:
+            base_param = param.data.detach().clone()
+            base_map[name] = base_param
+        return base_param
+
+    def _quzo_build_clean_fd_target_state(
         self,
         name: str,
         param: nn.Parameter,
         *,
+        context_key: Optional[Tuple[str, int]],
         target_scale: float,
         eps: float,
         bundle: Dict[str, torch.Tensor],
     ) -> torch.Tensor:
         # For low-bit QuZO in medium_models, the probe state is defined as
-        # snapped_base + Q(scale * eps * u_raw), not by resnapping the whole
-        # parameter tensor after adding a perturbation.
+        # Q(w_base + scale * eps * u_raw), i.e. re-quantize the whole parameter
+        # tensor after adding the raw perturbation.
+        base_param = self._quzo_clean_fd_get_base_param(
+            context_key=context_key,
+            name=name,
+            param=param,
+        )
         scale = float(target_scale) * float(eps)
         if scale == 0.0:
-            return torch.zeros_like(param.data)
+            return base_param.detach().clone()
         direction = self._quzo_sample_raw_direction(name, param, bundle)
-        delta = direction.detach().float() * scale
+        target = base_param.detach().float() + direction.detach().float() * scale
         if not self._zo_use_quzo():
-            return delta.to(dtype=param.data.dtype)
+            return target.to(dtype=param.data.dtype)
         if self._zo_quant_bits() not in {8, 4}:
-            return delta.to(dtype=param.data.dtype)
-        seed = self._quzo_bundle_seed(bundle, "perturb_seed")
+            return target.to(dtype=param.data.dtype)
+        seed = self._quzo_bundle_seed(bundle, "state_seed")
         return quantize_tensor(
-            delta,
+            target,
             self._zo_quant_bits(),
             seed=seed,
             target_dtype=param.data.dtype,
@@ -2474,8 +2592,10 @@ class Trainer(LinearHeadTrainer):
         if context_key is None:
             return
         state = self._quzo_clean_fd_scale_state()
+        base_state = self._quzo_clean_fd_base_state()
         if abs(float(next_scale)) < 1e-12:
             state.pop(context_key, None)
+            base_state.pop(context_key, None)
         else:
             state[context_key] = float(next_scale)
 
@@ -3054,21 +3174,23 @@ class Trainer(LinearHeadTrainer):
                     bundle = self._quzo_get_bundle(name, param, random_seed=random_seed)
                 eps = float(self._get_training_step_size())
                 if use_clean_lowbit_fd:
-                    prev_delta = self._quzo_build_clean_fd_target_delta(
+                    prev_target = self._quzo_build_clean_fd_target_state(
                         name,
                         param,
+                        context_key=context_key,
                         target_scale=prev_scale,
                         eps=eps,
                         bundle=bundle,
                     )
-                    next_delta = self._quzo_build_clean_fd_target_delta(
+                    next_target = self._quzo_build_clean_fd_target_state(
                         name,
                         param,
+                        context_key=context_key,
                         target_scale=next_scale,
                         eps=eps,
                         bundle=bundle,
                     )
-                    delta = next_delta - prev_delta
+                    delta = next_target - prev_target
                 else:
                     delta = bundle["u1"].detach().to(dtype=param.data.dtype) * (float(scaling_factor) * eps)
                 param.data = param.data + delta
@@ -3133,21 +3255,23 @@ class Trainer(LinearHeadTrainer):
             eps = float(self._get_training_step_size())
             if self._zo_use_quzo():
                 if use_clean_lowbit_fd:
-                    prev_delta = self._quzo_build_clean_fd_target_delta(
+                    prev_target = self._quzo_build_clean_fd_target_state(
                         name,
                         param,
+                        context_key=context_key,
                         target_scale=prev_scale,
                         eps=eps,
                         bundle=bundle,
                     )
-                    next_delta = self._quzo_build_clean_fd_target_delta(
+                    next_target = self._quzo_build_clean_fd_target_state(
                         name,
                         param,
+                        context_key=context_key,
                         target_scale=next_scale,
                         eps=eps,
                         bundle=bundle,
                     )
-                    delta = next_delta - prev_delta
+                    delta = next_target - prev_target
                 else:
                     delta = z.detach().to(dtype=param.data.dtype) * (float(scaling_factor) * eps)
             else:
@@ -3189,21 +3313,23 @@ class Trainer(LinearHeadTrainer):
             eps = float(self._get_training_step_size())
             if self._zo_use_quzo():
                 if use_clean_lowbit_fd:
-                    prev_delta = self._quzo_build_clean_fd_target_delta(
+                    prev_target = self._quzo_build_clean_fd_target_state(
                         name,
                         param,
+                        context_key=context_key,
                         target_scale=prev_scale,
                         eps=eps,
                         bundle=bundle,
                     )
-                    next_delta = self._quzo_build_clean_fd_target_delta(
+                    next_target = self._quzo_build_clean_fd_target_state(
                         name,
                         param,
+                        context_key=context_key,
                         target_scale=next_scale,
                         eps=eps,
                         bundle=bundle,
                     )
-                    delta = next_delta - prev_delta
+                    delta = next_target - prev_target
                 else:
                     delta = z.detach().to(dtype=param.data.dtype) * (float(scaling_factor) * eps)
             else:
@@ -3247,21 +3373,23 @@ class Trainer(LinearHeadTrainer):
             eps = float(self._get_training_step_size())
             if self._zo_use_quzo():
                 if use_clean_lowbit_fd:
-                    prev_delta = self._quzo_build_clean_fd_target_delta(
+                    prev_target = self._quzo_build_clean_fd_target_state(
                         name,
                         param,
+                        context_key=context_key,
                         target_scale=prev_scale,
                         eps=eps,
                         bundle=bundle,
                     )
-                    next_delta = self._quzo_build_clean_fd_target_delta(
+                    next_target = self._quzo_build_clean_fd_target_state(
                         name,
                         param,
+                        context_key=context_key,
                         target_scale=next_scale,
                         eps=eps,
                         bundle=bundle,
                     )
-                    delta = next_delta - prev_delta
+                    delta = next_target - prev_target
                 else:
                     delta = z.detach().to(dtype=param.data.dtype) * (float(scaling_factor) * eps)
             else:
