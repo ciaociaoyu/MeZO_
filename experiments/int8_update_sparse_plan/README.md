@@ -149,6 +149,21 @@ runs/int8_residual_consistency_20260512_190000/summary.csv
 runs/int8_residual_consistency_20260512_190000/summary.md
 ```
 
+Compact packaged results were added under:
+
+```text
+experiments/int8_update_sparse_plan/results/residual_consistency_20260512_190000_key_results.tar.gz
+experiments/int8_update_sparse_plan/results/residual_consistency_20260512_190000_key_results.tar.gz.sha256
+```
+
+The archive contains the debug CSV/JSON files, run-level summaries, compact global `update_stats.jsonl` files, final-step per-layer diagnostics extracted from the large per-layer logs, and final-step scale-drift diagnostics. It intentionally excludes the full raw `per_layer_update_stats.jsonl` files.
+
+Archive SHA256:
+
+```text
+f6c20bed3546cc762a4f95d0f1c5889cb703045fed392ab80a449cf87202962a
+```
+
 Final-step highlights:
 
 | run | acc | active_frac | cos | norm_ratio | residual_p99 | residual_max | violation_frac |
