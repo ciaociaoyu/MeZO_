@@ -53,6 +53,7 @@ class ResidualGridUpdater:
         self.freeze_scale = bool(freeze_scale)
         self.scales: Dict[str, torch.Tensor] = {}
         self.residuals: Dict[str, torch.Tensor] = {}
+        self.initial_snap_stats: Dict[str, Dict[str, float]] = {}
 
         with torch.no_grad():
             for name, param in named_parameters:
@@ -61,7 +62,7 @@ class ResidualGridUpdater:
                 scale = self._compute_scale(param)
                 self.scales[name] = scale.detach().clone()
                 self.residuals[name] = torch.zeros_like(param.data, dtype=self.residual_dtype, device=param.data.device)
-                self.snap_param_to_grid(name, param)
+                self.initial_snap_stats[name] = self.snap_param_to_grid(name, param)
 
     def _compute_scale(self, param: nn.Parameter) -> torch.Tensor:
         data = param.data.detach().float()
@@ -82,10 +83,29 @@ class ResidualGridUpdater:
         self.scales[name] = scale.detach().clone()
         return scale
 
-    def snap_param_to_grid(self, name: str, param: nn.Parameter) -> None:
+    def _grid_error_stats(self, tensor: torch.Tensor, scale: torch.Tensor) -> Tuple[float, float, float]:
+        q = self.quantize_to_code(tensor, scale)
+        snapped = self.dequantize_from_code(q, scale)
+        err = torch.nan_to_num(tensor.detach().float() - snapped.float(), nan=0.0, posinf=0.0, neginf=0.0)
+        err_sq = float(torch.sum(err * err).item())
+        err_max = float(torch.max(torch.abs(err)).item()) if err.numel() > 0 else 0.0
+        return err_sq, math.sqrt(max(err_sq, 0.0)), err_max
+
+    def snap_param_to_grid(self, name: str, param: nn.Parameter) -> Dict[str, float]:
         scale = self._scale_for(name, param)
+        before_sq, before_norm, before_max = self._grid_error_stats(param.data, scale)
         q = self.quantize_to_code(param.data, scale)
-        param.data.copy_(self.dequantize_from_code(q, scale).to(dtype=param.data.dtype))
+        snapped = self.dequantize_from_code(q, scale).to(dtype=param.data.dtype)
+        param.data.copy_(snapped)
+        after_sq, after_norm, after_max = self._grid_error_stats(param.data, scale)
+        return {
+            "grid_error_sq_before_snap": before_sq,
+            "grid_error_norm_before_snap": before_norm,
+            "grid_error_max_before_snap": before_max,
+            "grid_error_sq_after_snap": after_sq,
+            "grid_error_norm_after_snap": after_norm,
+            "grid_error_max_after_snap": after_max,
+        }
 
     def quantize_to_code(self, tensor: torch.Tensor, scale: torch.Tensor) -> torch.Tensor:
         scale = scale.to(device=tensor.device, dtype=torch.float32)
@@ -111,6 +131,60 @@ class ResidualGridUpdater:
         if self.max_code_step > 0:
             k = torch.clamp(k, -float(self.max_code_step), float(self.max_code_step))
         return torch.nan_to_num(k, nan=0.0, posinf=float(self.max_code_step or self.qmax), neginf=-float(self.max_code_step or self.qmax))
+
+    def _scale_stats(self, scale: torch.Tensor) -> Dict[str, float]:
+        scale_f = torch.nan_to_num(scale.detach().float().reshape(-1), nan=0.0, posinf=0.0, neginf=0.0)
+        if scale_f.numel() == 0:
+            return {"scale_min": 0.0, "scale_median": 0.0, "scale_max": 0.0}
+        return {
+            "scale_min": float(torch.min(scale_f).item()),
+            "scale_median": float(torch.median(scale_f).item()),
+            "scale_max": float(torch.max(scale_f).item()),
+        }
+
+    def _residual_over_scale_stats(
+        self,
+        residual: torch.Tensor,
+        scale: torch.Tensor,
+        q_new: Optional[torch.Tensor] = None,
+    ) -> Dict[str, float]:
+        if residual.numel() == 0:
+            return {
+                "residual_over_scale_p50": 0.0,
+                "residual_over_scale_p90": 0.0,
+                "residual_over_scale_p99": 0.0,
+                "residual_over_scale_max": 0.0,
+                "unsaturated_residual_bound_violation_count": 0.0,
+                "unsaturated_count": 0.0,
+                "unsaturated_residual_bound_violation_frac": 0.0,
+            }
+        ratio = torch.abs(residual.detach().float() / scale.to(device=residual.device, dtype=torch.float32))
+        ratio = torch.nan_to_num(ratio, nan=0.0, posinf=float("inf"), neginf=0.0).reshape(-1)
+        finite_ratio = torch.where(torch.isfinite(ratio), ratio, torch.full_like(ratio, float(self.qmax)))
+        quantile_input = finite_ratio
+        max_quantile_elems = 1_000_000
+        if quantile_input.numel() > max_quantile_elems:
+            stride = int(math.ceil(float(quantile_input.numel()) / float(max_quantile_elems)))
+            quantile_input = quantile_input[::stride][:max_quantile_elems]
+        quantiles = torch.quantile(quantile_input, torch.tensor([0.5, 0.9, 0.99], device=quantile_input.device, dtype=torch.float32))
+        bound = 0.5 if self.commit_mode == "round" and self.max_code_step == 0 else 1.0
+        if q_new is None:
+            unsat_mask = torch.ones_like(finite_ratio, dtype=torch.bool)
+        else:
+            unsat_mask = ((q_new.reshape(-1) != self.qmin) & (q_new.reshape(-1) != self.qmax))
+        unsat_count = int(torch.count_nonzero(unsat_mask).item())
+        violation_count = 0
+        if unsat_count > 0:
+            violation_count = int(torch.count_nonzero((finite_ratio > (bound + 1e-4)) & unsat_mask).item())
+        return {
+            "residual_over_scale_p50": float(quantiles[0].item()),
+            "residual_over_scale_p90": float(quantiles[1].item()),
+            "residual_over_scale_p99": float(quantiles[2].item()),
+            "residual_over_scale_max": float(torch.max(finite_ratio).item()),
+            "unsaturated_residual_bound_violation_count": float(violation_count),
+            "unsaturated_count": float(unsat_count),
+            "unsaturated_residual_bound_violation_frac": (float(violation_count) / float(unsat_count)) if unsat_count > 0 else 0.0,
+        }
 
     def apply_update(
         self,
@@ -138,7 +212,7 @@ class ResidualGridUpdater:
             param_f = torch.nan_to_num(param.data.detach().float(), nan=0.0, posinf=0.0, neginf=0.0)
             if not bool(torch.isfinite(param.data).all().item()):
                 param.data.copy_(param_f.to(dtype=param.data.dtype))
-                self.snap_param_to_grid(name, param)
+            snap_stats = self.snap_param_to_grid(name, param)
 
             update_direction = pg * direction.detach().float()
             if weight_decay != 0.0 and weight_decay_direction is not None:
@@ -161,6 +235,7 @@ class ResidualGridUpdater:
             intended_f = delta.float()
             actual_f = actual_delta.float()
             residual_f = residual.detach().float()
+            grid_error_sq, grid_error_norm, grid_error_max = self._grid_error_stats(param.data, scale)
             intended_sq = float(torch.sum(intended_f * intended_f).item())
             actual_sq = float(torch.sum(actual_f * actual_f).item())
             residual_sq = float(torch.sum(residual_f * residual_f).item())
@@ -168,9 +243,10 @@ class ResidualGridUpdater:
             changed = int(torch.count_nonzero(q_delta != 0).item())
             saturated = int(torch.count_nonzero((q_new == self.qmin) | (q_new == self.qmax)).item())
             numel = int(param.data.numel())
-            max_abs_residual_over_scale = float(torch.max(torch.abs(residual_f / scale)).item()) if numel > 0 else 0.0
+            scale_stats = self._scale_stats(scale)
+            ros_stats = self._residual_over_scale_stats(residual_f, scale, q_new=q_new)
 
-            return {
+            stats = {
                 "skipped": 0.0,
                 "numel": float(numel),
                 "intended_sq": intended_sq,
@@ -181,5 +257,12 @@ class ResidualGridUpdater:
                 "saturation_count": float(saturated),
                 "active_frac": (float(changed) / float(numel)) if numel > 0 else 0.0,
                 "saturation_frac": (float(saturated) / float(numel)) if numel > 0 else 0.0,
-                "max_abs_residual_over_scale": max_abs_residual_over_scale,
+                "grid_error_sq": grid_error_sq,
+                "grid_error_norm": grid_error_norm,
+                "grid_error_max": grid_error_max,
             }
+            stats.update(snap_stats)
+            stats.update(scale_stats)
+            stats.update(ros_stats)
+            stats["max_abs_residual_over_scale"] = stats["residual_over_scale_max"]
+            return stats

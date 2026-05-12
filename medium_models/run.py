@@ -737,6 +737,14 @@ class DynamicTrainingArguments(TrainingArguments):
         default="",
         metadata={"help": "Optional path for JSONL quantized update diagnostics. Relative paths are resolved under output_dir."}
     )
+    zo_update_norm_clip: float = field(
+        default=0.0,
+        metadata={"help": "Optional global intended-update norm clip for direct ZO updates. <=0 disables clipping."}
+    )
+    zo_scalar_clip: float = field(
+        default=0.0,
+        metadata={"help": "Optional clip for alpha=learning_rate*projected_grad in direct ZO updates. <=0 disables clipping."}
+    )
     zo_direction_sparse_rate: float = field(
         default=1.0,
         metadata={"help": "Random ZO direction active probability/fraction. 1.0 disables direction sparsity."}
@@ -756,6 +764,18 @@ class DynamicTrainingArguments(TrainingArguments):
     zo_h: Optional[float] = field(
         default=None,
         metadata={"help": "Alias for --zero_order_eps used by sparse h sweeps."}
+    )
+    probe_diagnostics_only: bool = field(
+        default=False,
+        metadata={"help": "Signal-only probe mode hint. Use with LR=0/short max_steps; keeps existing training path but records probe diagnostics."}
+    )
+    num_probe_directions: Optional[int] = field(
+        default=None,
+        metadata={"help": "Alias for --zo_probe_num_seeds used by probe-only sweeps."}
+    )
+    save_probe_stats_jsonl: str = field(
+        default="",
+        metadata={"help": "Optional JSONL path for directional probe diagnostics. Relative paths are resolved under output_dir."}
     )
     sparse_ratio: float = field(
         default=1.0,
@@ -1263,6 +1283,12 @@ def main():
     training_args.log_update_stats_every = int(getattr(training_args, "log_update_stats_every", 0))
     if training_args.log_update_stats_every < 0:
         raise ValueError("--log_update_stats_every must be >= 0")
+    training_args.zo_update_norm_clip = float(getattr(training_args, "zo_update_norm_clip", 0.0) or 0.0)
+    if training_args.zo_update_norm_clip < 0.0:
+        raise ValueError("--zo_update_norm_clip must be >= 0")
+    training_args.zo_scalar_clip = float(getattr(training_args, "zo_scalar_clip", 0.0) or 0.0)
+    if training_args.zo_scalar_clip < 0.0:
+        raise ValueError("--zo_scalar_clip must be >= 0")
     training_args.zo_direction_sparse_rate = validate_sparse_ratio(getattr(training_args, "zo_direction_sparse_rate", 1.0))
     training_args.zo_direction_sparse_mode = str(getattr(training_args, "zo_direction_sparse_mode", "none")).strip().lower()
     if training_args.zo_direction_sparse_mode not in {"none", "exact_random", "bernoulli"}:
@@ -1299,6 +1325,15 @@ def main():
         raise ValueError("--measure_perf_tail_window_steps must be > 0")
     if int(getattr(training_args, "zo_probe_num_seeds", 16)) <= 0:
         raise ValueError("--zo_probe_num_seeds must be > 0")
+    if getattr(training_args, "num_probe_directions", None) is not None:
+        training_args.zo_probe_num_seeds = int(getattr(training_args, "num_probe_directions"))
+        if training_args.zo_probe_num_seeds <= 0:
+            raise ValueError("--num_probe_directions must be > 0")
+    if bool(getattr(training_args, "probe_diagnostics_only", False)):
+        if int(getattr(training_args, "zo_probe_every", 0)) <= 0:
+            training_args.zo_probe_every = 1
+        training_args.learning_rate = 0.0
+        logger.info("[probe-config] probe_diagnostics_only=true: forcing learning_rate=0 and enabling zo_probe_every=%s", training_args.zo_probe_every)
     if int(getattr(training_args, "random_prediction_guard_recent_evals", 2)) <= 0:
         raise ValueError("--random_prediction_guard_recent_evals must be > 0")
     if float(getattr(training_args, "random_prediction_guard_min_loss_drop", 0.05)) < 0.0:
@@ -1464,12 +1499,14 @@ def main():
         ),
     )
     logger.info(
-        "[quzo-update-config] backend=%s | residual_dtype=%s | commit_mode=%s | max_code_step=%s | int8_freeze_scale=%s | log_update_stats_every=%s | update_stats_jsonl=%s",
+        "[quzo-update-config] backend=%s | residual_dtype=%s | commit_mode=%s | max_code_step=%s | int8_freeze_scale=%s | update_norm_clip=%s | scalar_clip=%s | log_update_stats_every=%s | update_stats_jsonl=%s",
         str(getattr(training_args, "zo_update_backend", "direct_int8")),
         str(getattr(training_args, "residual_dtype", "fp32")),
         str(getattr(training_args, "residual_commit_mode", "round")),
         int(getattr(training_args, "residual_max_code_step", 0)),
         bool(getattr(training_args, "int8_freeze_scale", True)),
+        float(getattr(training_args, "zo_update_norm_clip", 0.0) or 0.0),
+        float(getattr(training_args, "zo_scalar_clip", 0.0) or 0.0),
         int(getattr(training_args, "log_update_stats_every", 0)),
         str(getattr(training_args, "save_update_stats_jsonl", "") or ""),
     )
@@ -2016,6 +2053,9 @@ def main():
         zo_probe_csv_path = os.path.join(training_args.output_dir, "zo_directional_probe.csv")
         h_estimation_csv_path = os.path.join(training_args.output_dir, "h_estimation.csv")
         eval_loss_last5_path = os.path.join(training_args.output_dir, "eval_loss_last5.json")
+        probe_stats_path = str(getattr(training_args, "save_probe_stats_jsonl", "") or "").strip()
+        if probe_stats_path and not os.path.isabs(probe_stats_path):
+            probe_stats_path = os.path.join(training_args.output_dir, probe_stats_path)
         update_stats_path = str(getattr(training_args, "save_update_stats_jsonl", "") or "").strip()
         if update_stats_path and not os.path.isabs(update_stats_path):
             update_stats_path = os.path.join(training_args.output_dir, update_stats_path)
@@ -2031,6 +2071,7 @@ def main():
             "artifacts": {
                 "metrics_csv_last_row": _read_last_csv_row(metrics_csv_path),
                 "zo_directional_probe_last_row": _read_last_csv_row(zo_probe_csv_path),
+                "probe_stats_last_row": _read_last_jsonl_row(probe_stats_path),
                 "update_stats_last_row": _read_last_jsonl_row(update_stats_path),
                 "direction_sparse_last_stats": getattr(trainer, "latest_zo_direction_sparse_stats", None),
                 "sparse_mezo_last_stats": getattr(trainer, "latest_sparse_mezo_stats", None),
@@ -2041,6 +2082,7 @@ def main():
             "paths": {
                 "metrics_csv": metrics_csv_path if os.path.exists(metrics_csv_path) else None,
                 "zo_directional_probe_csv": zo_probe_csv_path if os.path.exists(zo_probe_csv_path) else None,
+                "probe_stats_jsonl": probe_stats_path if probe_stats_path and os.path.exists(probe_stats_path) else None,
                 "update_stats_jsonl": update_stats_path if update_stats_path and os.path.exists(update_stats_path) else None,
                 "h_estimation_csv": h_estimation_csv_path if os.path.exists(h_estimation_csv_path) else None,
                 "eval_loss_last5_json": eval_loss_last5_path if os.path.exists(eval_loss_last5_path) else None,

@@ -75,6 +75,33 @@ class ResidualGridUpdaterTest(unittest.TestCase):
         after_q = torch.round(param.detach() / scale)
         self.assertLessEqual(float(torch.max(torch.abs(after_q - before_q)).item()), 1.0)
 
+    def test_noop_update_keeps_codes_inactive_and_on_grid(self):
+        param = nn.Parameter(torch.tensor([0.0, 0.2, -0.4, 0.6], dtype=torch.float32))
+        updater = ResidualGridUpdater([("w", param)], bits=8, residual_dtype="fp32")
+        scale = updater.scales["w"]
+        before = param.detach().clone()
+        stats = updater.apply_update("w", param, torch.randn_like(param), projected_grad=0.0, learning_rate=1.0)
+        self.assertEqual(stats["actual_sq"], 0.0)
+        self.assertEqual(stats["active_frac"], 0.0)
+        self.assertTrue(torch.allclose(param.detach(), before))
+        self.assertTrue(torch.allclose(param.detach(), torch.round(param.detach() / scale) * scale))
+
+    def test_fixed_scale_subgrid_deltas_accumulate_then_jump(self):
+        param = nn.Parameter(torch.zeros(4, dtype=torch.float32))
+        updater = ResidualGridUpdater([("w", param)], bits=8, residual_dtype="fp32", commit_mode="round")
+        updater.scales["w"] = torch.tensor(0.1, dtype=torch.float32)
+        updater.snap_param_to_grid("w", param)
+
+        stats1 = updater.apply_update("w", param, torch.ones_like(param), projected_grad=1.0, learning_rate=0.04)
+        self.assertEqual(stats1["active_count"], 0.0)
+        self.assertTrue(torch.allclose(param.detach(), torch.zeros_like(param)))
+        self.assertTrue(torch.allclose(updater.residuals["w"], torch.full_like(param, -0.04)))
+
+        stats2 = updater.apply_update("w", param, torch.ones_like(param), projected_grad=1.0, learning_rate=0.04)
+        self.assertGreater(stats2["active_count"], 0.0)
+        self.assertTrue(torch.allclose(param.detach(), torch.full_like(param, -0.1)))
+        self.assertLessEqual(float(torch.max(torch.abs(updater.residuals["w"] / updater.scales["w"])).item()), 0.5001)
+
 
 class DirectionSparseMaskTest(unittest.TestCase):
     def _trainer(self, *, mode="exact_random", rate=0.3, per_layer_exact=True, rescale="none"):

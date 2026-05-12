@@ -925,6 +925,7 @@ class Trainer(LinearHeadTrainer):
         lr: float,
         eps: float,
         train_loss: Optional[float],
+        clip_info: Optional[Dict[str, Any]] = None,
     ) -> None:
         pg = float(projected_grad.detach().float().item()) if isinstance(projected_grad, torch.Tensor) else float(projected_grad)
         self._zo_current_update_stats = {
@@ -937,11 +938,25 @@ class Trainer(LinearHeadTrainer):
             "numel": 0.0,
             "skipped_count": 0.0,
             "max_abs_residual_over_scale": 0.0,
+            "grid_error_sq": 0.0,
+            "grid_error_max": 0.0,
+            "grid_error_sq_before_snap": 0.0,
+            "grid_error_max_before_snap": 0.0,
+            "grid_error_sq_after_snap": 0.0,
+            "grid_error_max_after_snap": 0.0,
+            "scale_values": [],
+            "residual_over_scale_p50_weighted": 0.0,
+            "residual_over_scale_p90_weighted": 0.0,
+            "residual_over_scale_p99_weighted": 0.0,
+            "residual_over_scale_max": 0.0,
+            "unsaturated_residual_bound_violation_count": 0.0,
+            "unsaturated_count": 0.0,
             "layers": [],
             "projected_grad": pg,
             "lr": float(lr),
             "eps": float(eps),
             "train_loss": None if train_loss is None else float(train_loss),
+            "clip_info": dict(clip_info or {}),
         }
 
     def _zo_record_update_param_stats(self, layer_name: str, stats: Optional[Dict[str, Any]]) -> None:
@@ -953,6 +968,33 @@ class Trainer(LinearHeadTrainer):
         acc["skipped_count"] += float(stats.get("skipped", 0.0) or 0.0)
         for key in ["intended_sq", "actual_sq", "residual_sq", "dot", "active_count", "saturation_count"]:
             acc[key] += float(stats.get(key, 0.0) or 0.0)
+        for key in ["grid_error_sq", "grid_error_sq_before_snap", "grid_error_sq_after_snap"]:
+            acc[key] += float(stats.get(key, 0.0) or 0.0)
+        for key in ["grid_error_max", "grid_error_max_before_snap", "grid_error_max_after_snap", "residual_over_scale_max"]:
+            try:
+                acc[key] = max(float(acc.get(key, 0.0) or 0.0), float(stats.get(key, 0.0) or 0.0))
+            except Exception:
+                pass
+        for key in ["scale_min", "scale_median", "scale_max"]:
+            val = stats.get(key)
+            if val is not None:
+                try:
+                    fv = float(val)
+                    if math.isfinite(fv):
+                        acc["scale_values"].append(fv)
+                except Exception:
+                    pass
+        for key, acc_key in [
+            ("residual_over_scale_p50", "residual_over_scale_p50_weighted"),
+            ("residual_over_scale_p90", "residual_over_scale_p90_weighted"),
+            ("residual_over_scale_p99", "residual_over_scale_p99_weighted"),
+        ]:
+            try:
+                acc[acc_key] += float(stats.get(key, 0.0) or 0.0) * numel
+            except Exception:
+                pass
+        acc["unsaturated_residual_bound_violation_count"] += float(stats.get("unsaturated_residual_bound_violation_count", 0.0) or 0.0)
+        acc["unsaturated_count"] += float(stats.get("unsaturated_count", 0.0) or 0.0)
         try:
             acc["max_abs_residual_over_scale"] = max(
                 float(acc.get("max_abs_residual_over_scale", 0.0) or 0.0),
@@ -970,6 +1012,8 @@ class Trainer(LinearHeadTrainer):
                 "residual_norm": math.sqrt(max(float(stats.get("residual_sq", 0.0) or 0.0), 0.0)),
                 "actual_update_norm": actual_norm,
                 "saturation_frac": float(stats.get("saturation_frac", 0.0) or 0.0),
+                "residual_over_scale_p99": stats.get("residual_over_scale_p99"),
+                "grid_error_norm": stats.get("grid_error_norm"),
                 "cos_intended_actual": (
                     float(stats.get("dot", 0.0) or 0.0) / denom
                     if denom > 0.0 else None
@@ -986,6 +1030,19 @@ class Trainer(LinearHeadTrainer):
         residual_norm = math.sqrt(max(float(acc.get("residual_sq", 0.0) or 0.0), 0.0))
         numel = float(acc.get("numel", 0.0) or 0.0)
         denom = intended_norm * actual_norm
+        scale_values = [float(x) for x in acc.get("scale_values", []) if math.isfinite(float(x))]
+        if scale_values:
+            scale_arr = np.asarray(scale_values, dtype=np.float64)
+            scale_min = float(np.min(scale_arr))
+            scale_median = float(np.median(scale_arr))
+            scale_max = float(np.max(scale_arr))
+        else:
+            scale_min = scale_median = scale_max = None
+        residual_p50 = (float(acc.get("residual_over_scale_p50_weighted", 0.0) or 0.0) / numel) if numel > 0 else None
+        residual_p90 = (float(acc.get("residual_over_scale_p90_weighted", 0.0) or 0.0) / numel) if numel > 0 else None
+        residual_p99 = (float(acc.get("residual_over_scale_p99_weighted", 0.0) or 0.0) / numel) if numel > 0 else None
+        unsat_count = float(acc.get("unsaturated_count", 0.0) or 0.0)
+        clip_info = dict(acc.get("clip_info", {}) or {})
         row = {
             "global_step": int(getattr(self.state, "global_step", 0)),
             "train_loss": acc.get("train_loss"),
@@ -1004,6 +1061,39 @@ class Trainer(LinearHeadTrainer):
             "saturation_frac": (float(acc.get("saturation_count", 0.0) or 0.0) / numel) if numel > 0 else None,
             "cos_intended_actual": (float(acc.get("dot", 0.0) or 0.0) / denom) if denom > 0.0 else None,
             "actual_over_intended_norm_ratio": (actual_norm / intended_norm) if intended_norm > 0.0 else None,
+            "global_intended_update_norm": intended_norm,
+            "global_actual_update_norm": actual_norm,
+            "global_residual_norm": residual_norm,
+            "global_active_frac": (float(acc.get("active_count", 0.0) or 0.0) / numel) if numel > 0 else None,
+            "global_saturation_frac": (float(acc.get("saturation_count", 0.0) or 0.0) / numel) if numel > 0 else None,
+            "global_cos_intended_actual": (float(acc.get("dot", 0.0) or 0.0) / denom) if denom > 0.0 else None,
+            "global_actual_over_intended_norm_ratio": (actual_norm / intended_norm) if intended_norm > 0.0 else None,
+            "scale_min": scale_min,
+            "scale_median": scale_median,
+            "scale_max": scale_max,
+            "residual_over_scale_p50": residual_p50,
+            "residual_over_scale_p90": residual_p90,
+            "residual_over_scale_p99": residual_p99,
+            "residual_over_scale_max": float(acc.get("residual_over_scale_max", 0.0) or 0.0),
+            "unsaturated_residual_bound_violation_frac": (
+                float(acc.get("unsaturated_residual_bound_violation_count", 0.0) or 0.0) / unsat_count
+                if unsat_count > 0 else None
+            ),
+            "grid_error_norm": math.sqrt(max(float(acc.get("grid_error_sq", 0.0) or 0.0), 0.0)),
+            "grid_error_max": float(acc.get("grid_error_max", 0.0) or 0.0),
+            "grid_error_norm_before_snap": math.sqrt(max(float(acc.get("grid_error_sq_before_snap", 0.0) or 0.0), 0.0)),
+            "grid_error_max_before_snap": float(acc.get("grid_error_max_before_snap", 0.0) or 0.0),
+            "grid_error_norm_after_snap": math.sqrt(max(float(acc.get("grid_error_sq_after_snap", 0.0) or 0.0), 0.0)),
+            "grid_error_max_after_snap": float(acc.get("grid_error_max_after_snap", 0.0) or 0.0),
+            "zo_update_norm_clip": clip_info.get("zo_update_norm_clip"),
+            "update_norm_pre_clip": clip_info.get("update_norm_pre_clip"),
+            "update_norm_post_clip": clip_info.get("update_norm_post_clip"),
+            "update_norm_clip_factor": clip_info.get("update_norm_clip_factor"),
+            "update_norm_clipped": clip_info.get("update_norm_clipped"),
+            "zo_scalar_clip": clip_info.get("zo_scalar_clip"),
+            "alpha_pre_clip": clip_info.get("alpha_pre_clip"),
+            "alpha_post_clip": clip_info.get("alpha_post_clip"),
+            "scalar_clipped": clip_info.get("scalar_clipped"),
             "numel": int(numel),
             "skipped_count": int(float(acc.get("skipped_count", 0.0) or 0.0)),
             "max_abs_residual_over_scale": float(acc.get("max_abs_residual_over_scale", 0.0) or 0.0),
@@ -3121,6 +3211,9 @@ class Trainer(LinearHeadTrainer):
         changed = int(torch.count_nonzero(actual_f != 0).item())
         numel = int(actual_f.numel())
         saturated = 0
+        scale_min = scale_median = scale_max = None
+        grid_error_sq = 0.0
+        grid_error_max = 0.0
         if bits in {8, 4}:
             try:
                 target_f = target.detach().float()
@@ -3129,9 +3222,14 @@ class Trainer(LinearHeadTrainer):
                     scale = max_abs / qmax
                     q = torch.round(target_f / scale).clamp(qmin, qmax)
                     saturated = int(torch.count_nonzero((q == qmin) | (q == qmax)).item())
+                    snapped = q * scale
+                    grid_error = torch.nan_to_num(target_f - snapped, nan=0.0, posinf=0.0, neginf=0.0)
+                    grid_error_sq = float(torch.sum(grid_error * grid_error).item())
+                    grid_error_max = float(torch.max(torch.abs(grid_error)).item()) if grid_error.numel() > 0 else 0.0
+                    scale_min = scale_median = scale_max = float(scale)
             except Exception:
                 saturated = 0
-        return {
+        stats = {
             "skipped": 0.0,
             "numel": float(numel),
             "intended_sq": intended_sq,
@@ -3142,7 +3240,17 @@ class Trainer(LinearHeadTrainer):
             "saturation_count": float(saturated),
             "active_frac": (float(changed) / float(numel)) if numel > 0 else 0.0,
             "saturation_frac": (float(saturated) / float(numel)) if numel > 0 else 0.0,
+            "grid_error_sq": grid_error_sq,
+            "grid_error_norm": math.sqrt(max(grid_error_sq, 0.0)),
+            "grid_error_max": grid_error_max,
         }
+        if scale_min is not None:
+            stats.update({
+                "scale_min": scale_min,
+                "scale_median": scale_median,
+                "scale_max": scale_max,
+            })
+        return stats
 
     def _quzo_apply_update_to_param(
         self,
@@ -3367,6 +3475,9 @@ class Trainer(LinearHeadTrainer):
         self._zo_probe_csv_fields = [
             "global_step",
             "eps",
+            "p",
+            "h_raw",
+            "h_active",
             "zo_two_point_precision",
             "fd_mean",
             "td_mean",
@@ -3412,6 +3523,15 @@ class Trainer(LinearHeadTrainer):
             "update_norm_ratio_mean",
             "update_cos_mean",
             "update_changed_ratio_mean",
+            "direction_sparse_rate",
+            "sparse_mode",
+            "sparse_rescale",
+            "probe_active_frac",
+            "probe_alignment",
+            "probe_norm_ratio",
+            "loss_plus_mean",
+            "loss_minus_mean",
+            "num_probe_directions",
             "probe_num_seeds",
         ]
 
@@ -3426,6 +3546,20 @@ class Trainer(LinearHeadTrainer):
             with open(self._zo_probe_csv_path, "w", newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=self._zo_probe_csv_fields)
                 writer.writeheader()
+
+    def _setup_probe_stats_jsonl(self) -> None:
+        self._probe_stats_jsonl_path = None
+        raw = str(getattr(self.args, "save_probe_stats_jsonl", "") or "").strip()
+        if not raw:
+            return
+        path = raw
+        if not os.path.isabs(path):
+            path = os.path.join(getattr(self.args, "output_dir", "./outputs") or "./outputs", path)
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        self._probe_stats_jsonl_path = path
+        if not os.path.exists(path):
+            with open(path, "w", encoding="utf-8"):
+                pass
 
     def _zo_probe_should_run(self) -> bool:
         every = int(getattr(self.args, "zo_probe_every", 0))
@@ -3591,15 +3725,91 @@ class Trainer(LinearHeadTrainer):
             "update_changed_ratio": float(changed / float(total)) if total > 0 else None,
         }
 
-    def _zo_probe_append_csv_row(self, row: Dict[str, Any]):
-        if getattr(self, "_zo_probe_csv_path", None) is None:
-            return
+    def _zo_probe_pair_lattice_stats(
+        self,
+        random_vector: Optional[Dict[str, Any]],
+        eps: float,
+    ) -> Dict[str, Any]:
+        changed = 0
+        total = 0
+        delta_sq = 0.0
+        intended_sq = 0.0
+        dot = 0.0
+        context_key = ("probe_pair", int(id(random_vector))) if random_vector is not None else None
         try:
-            with open(self._zo_probe_csv_path, "a", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=self._zo_probe_csv_fields)
-                writer.writerow(row)
-        except Exception as e:
-            logger.warning(f"[zo_probe] failed to append CSV row: {type(e).__name__}: {e}")
+            with torch.no_grad():
+                for name, param in self.named_parameters_to_optim:
+                    if self._zo_use_quzo():
+                        if random_vector is not None and name in random_vector:
+                            bundle = random_vector[name]
+                        else:
+                            bundle = self._quzo_get_bundle(name, param)
+                        plus = self._quzo_build_clean_fd_target_state(
+                            name,
+                            param,
+                            context_key=context_key,
+                            target_scale=1.0,
+                            eps=float(eps),
+                            bundle=bundle,
+                        )
+                        minus = self._quzo_build_clean_fd_target_state(
+                            name,
+                            param,
+                            context_key=context_key,
+                            target_scale=-1.0,
+                            eps=float(eps),
+                            bundle=bundle,
+                        )
+                        direction = self._quzo_sample_raw_direction(name, param, bundle)
+                    else:
+                        if random_vector is not None and name in random_vector:
+                            direction = random_vector[name]
+                        else:
+                            direction = self._sample_sparse_noise_like(name, param.data)
+                        direction = self._zo_effective_perturb_direction(param, direction)
+                        plus = param.data.detach().float() + float(eps) * direction.detach().float()
+                        minus = param.data.detach().float() - float(eps) * direction.detach().float()
+
+                    probe_delta = torch.nan_to_num((plus.detach().float() - minus.detach().float()), nan=0.0, posinf=0.0, neginf=0.0)
+                    intended = torch.nan_to_num((2.0 * float(eps) * direction.detach().float()), nan=0.0, posinf=0.0, neginf=0.0)
+                    changed += int(torch.count_nonzero(probe_delta != 0).item())
+                    total += int(probe_delta.numel())
+                    delta_sq += float(torch.sum(probe_delta * probe_delta).item())
+                    intended_sq += float(torch.sum(intended * intended).item())
+                    dot += float(torch.sum(probe_delta * intended).item())
+        except Exception as exc:
+            return {"probe_stats_error": f"{type(exc).__name__}: {exc}"}
+        finally:
+            try:
+                if context_key is not None:
+                    self._quzo_clean_fd_base_state().pop(context_key, None)
+            except Exception:
+                pass
+
+        delta_norm = math.sqrt(max(delta_sq, 0.0))
+        intended_norm = math.sqrt(max(intended_sq, 0.0))
+        denom = delta_norm * intended_norm
+        return {
+            "probe_active_frac": float(changed / float(total)) if total > 0 else None,
+            "probe_alignment": float(dot / denom) if denom > 0.0 else None,
+            "probe_norm_ratio": float(delta_norm / (intended_norm + 1e-12)) if intended_norm > 0.0 else None,
+        }
+
+    def _zo_probe_append_csv_row(self, row: Dict[str, Any]):
+        if getattr(self, "_zo_probe_csv_path", None) is not None:
+            try:
+                with open(self._zo_probe_csv_path, "a", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=self._zo_probe_csv_fields)
+                    writer.writerow({key: row.get(key) for key in self._zo_probe_csv_fields})
+            except Exception as e:
+                logger.warning(f"[zo_probe] failed to append CSV row: {type(e).__name__}: {e}")
+        path = getattr(self, "_probe_stats_jsonl_path", None)
+        if path:
+            try:
+                with open(path, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(row, sort_keys=True) + "\n")
+            except Exception as e:
+                logger.warning(f"[zo_probe] failed to append JSONL row: {type(e).__name__}: {e}")
 
     def _quzo_probe_direction(self, bundle: Dict[str, torch.Tensor], probe_direction: str) -> torch.Tensor:
         key = str(probe_direction or "u1").lower()
@@ -3720,6 +3930,9 @@ class Trainer(LinearHeadTrainer):
                 td_u2_vals: List[float] = []
                 perturb_stats: List[Dict[str, Any]] = []
                 update_stats: List[Dict[str, Any]] = []
+                pair_stats: List[Dict[str, Any]] = []
+                loss_plus_vals: List[float] = []
+                loss_minus_vals: List[float] = []
 
                 for seed in dir_seeds:
                     if self.args.efficient_zero_order:
@@ -3772,8 +3985,14 @@ class Trainer(LinearHeadTrainer):
                     fd = self._zo_fd_projected_grad(loss1, loss2, float(eps))
                     fd_val = float(fd.detach().item())
                     fd_vals.append(fd_val)
+                    try:
+                        loss_plus_vals.append(float(loss1.detach().float().item()))
+                        loss_minus_vals.append(float(loss2.detach().float().item()))
+                    except Exception:
+                        pass
                     perturb_stats.append(stats_p)
                     update_stats.append(self._zo_probe_update_survival_stats(random_vector, fd_val))
+                    pair_stats.append(self._zo_probe_pair_lattice_stats(random_vector, float(eps)))
 
                     if self._zo_use_quzo():
                         raw_proj = proj_map.get("raw", proj_map.get("u1"))
@@ -3806,10 +4025,18 @@ class Trainer(LinearHeadTrainer):
                 update_norm_ratio_mean, _ = _mean_std_from_stats(update_stats, "update_norm_ratio")
                 update_cos_mean, _ = _mean_std_from_stats(update_stats, "update_cos")
                 update_changed_ratio_mean, _ = _mean_std_from_stats(update_stats, "update_changed_ratio")
+                probe_active_frac_mean, _ = _mean_std_from_stats(pair_stats, "probe_active_frac")
+                probe_alignment_mean, _ = _mean_std_from_stats(pair_stats, "probe_alignment")
+                probe_norm_ratio_mean, _ = _mean_std_from_stats(pair_stats, "probe_norm_ratio")
+                sparse_rate = float(self._zo_direction_sparse_rate()) if hasattr(self, "_zo_direction_sparse_rate") else 1.0
+                h_active = float(eps) / math.sqrt(sparse_rate) if sparse_rate > 0.0 else float(eps)
 
                 row = {
                     "global_step": int(global_step),
                     "eps": float(eps),
+                    "p": sparse_rate,
+                    "h_raw": float(eps),
+                    "h_active": h_active,
                     "zo_two_point_precision": precision,
                     "fd_mean": official_stats["fd_mean"],
                     "td_mean": official_stats["td_mean"],
@@ -3855,6 +4082,15 @@ class Trainer(LinearHeadTrainer):
                     "update_norm_ratio_mean": update_norm_ratio_mean,
                     "update_cos_mean": update_cos_mean,
                     "update_changed_ratio_mean": update_changed_ratio_mean,
+                    "direction_sparse_rate": sparse_rate,
+                    "sparse_mode": self._zo_direction_sparse_mode() if hasattr(self, "_zo_direction_sparse_mode") else "none",
+                    "sparse_rescale": str(getattr(self.args, "zo_sparse_rescale", "none") or "none"),
+                    "probe_active_frac": probe_active_frac_mean,
+                    "probe_alignment": probe_alignment_mean,
+                    "probe_norm_ratio": probe_norm_ratio_mean,
+                    "loss_plus_mean": float(np.mean(loss_plus_vals)) if loss_plus_vals else None,
+                    "loss_minus_mean": float(np.mean(loss_minus_vals)) if loss_minus_vals else None,
+                    "num_probe_directions": int(num_seeds),
                     "probe_num_seeds": int(num_seeds),
                 }
                 self._zo_probe_append_csv_row(row)
@@ -4822,6 +5058,7 @@ class Trainer(LinearHeadTrainer):
         # 初始化 CSV 日志文件
         self._setup_metrics_csv()
         self._setup_zo_probe_csv()
+        self._setup_probe_stats_jsonl()
         self._setup_update_stats_jsonl()
         if int(getattr(self.args, "zo_probe_every", 0)) > 0:
             logger.info(
@@ -5317,12 +5554,24 @@ class Trainer(LinearHeadTrainer):
                             train_loss_for_update = float(loss1.detach().float().item())
                         except Exception:
                             train_loss_for_update = None
-                        self._zo_begin_update_stats(
-                            projected_grad=projected_grad,
-                            lr=float(self.args.learning_rate),
-                            eps=(eps if isinstance(eps, float) else float(eps.item())),
-                            train_loss=train_loss_for_update,
-                        )
+                        base_lr = float(self.args.learning_rate)
+                        pg_for_update = projected_grad
+                        try:
+                            pg_float = float(projected_grad.detach().float().item()) if isinstance(projected_grad, torch.Tensor) else float(projected_grad)
+                        except Exception:
+                            pg_float = float("nan")
+                        scalar_clip = float(getattr(self.args, "zo_scalar_clip", 0.0) or 0.0)
+                        alpha_pre = base_lr * pg_float if math.isfinite(pg_float) else float("nan")
+                        alpha_post = alpha_pre
+                        scalar_clipped = False
+                        if scalar_clip > 0.0 and base_lr != 0.0 and math.isfinite(alpha_pre):
+                            alpha_post = max(-scalar_clip, min(scalar_clip, alpha_pre))
+                            scalar_clipped = (alpha_post != alpha_pre)
+                            if scalar_clipped:
+                                pg_for_update = torch.tensor(alpha_post / base_lr, device=loss1.device, dtype=torch.float32)
+
+                        update_items = []
+                        pre_clip_delta_sq = 0.0
                         for name, param in self.named_parameters_to_optim:
                             bundle = None
                             if self.args.efficient_zero_order:
@@ -5337,7 +5586,43 @@ class Trainer(LinearHeadTrainer):
                                     z = bundle["u2"]
                                 else:
                                     z = random_vector[name]
-                            grad_est = projected_grad * z
+                            update_items.append((name, param, z, bundle))
+                            update_direction_for_norm = pg_for_update * z.detach().float()
+                            if float(self.args.weight_decay) != 0.0 and self._hprobe_use_wd(name):
+                                wd_direction_for_norm = param.data.detach().float()
+                                if self._sparse_enabled():
+                                    wd_direction_for_norm = self._sparse_mask_tensor(name, wd_direction_for_norm)
+                                update_direction_for_norm = update_direction_for_norm + float(self.args.weight_decay) * wd_direction_for_norm
+                            delta_for_norm = -base_lr * update_direction_for_norm
+                            delta_for_norm = torch.nan_to_num(delta_for_norm.detach().float(), nan=0.0, posinf=0.0, neginf=0.0)
+                            pre_clip_delta_sq += float(torch.sum(delta_for_norm * delta_for_norm).item())
+
+                        pre_clip_norm = math.sqrt(max(pre_clip_delta_sq, 0.0))
+                        update_norm_clip = float(getattr(self.args, "zo_update_norm_clip", 0.0) or 0.0)
+                        clip_factor = 1.0
+                        if update_norm_clip > 0.0 and pre_clip_norm > update_norm_clip:
+                            clip_factor = float(update_norm_clip / (pre_clip_norm + 1e-12))
+                        effective_lr = base_lr * clip_factor
+                        clip_info = {
+                            "zo_update_norm_clip": update_norm_clip,
+                            "update_norm_pre_clip": pre_clip_norm,
+                            "update_norm_post_clip": pre_clip_norm * clip_factor,
+                            "update_norm_clip_factor": clip_factor,
+                            "update_norm_clipped": bool(clip_factor < 1.0),
+                            "zo_scalar_clip": scalar_clip,
+                            "alpha_pre_clip": alpha_pre,
+                            "alpha_post_clip": alpha_post,
+                            "scalar_clipped": bool(scalar_clipped),
+                        }
+                        self._zo_begin_update_stats(
+                            projected_grad=pg_for_update,
+                            lr=base_lr,
+                            eps=(eps if isinstance(eps, float) else float(eps.item())),
+                            train_loss=train_loss_for_update,
+                            clip_info=clip_info,
+                        )
+                        for name, param, z, bundle in update_items:
+                            grad_est = pg_for_update * z
                             if grad_norm_logging:
                                 g = grad_est.detach().float()
                                 grad_l1_acc += float(torch.sum(torch.abs(g)).item())
@@ -5347,13 +5632,24 @@ class Trainer(LinearHeadTrainer):
                                     name,
                                     param,
                                     z,
-                                    projected_grad,
-                                    float(self.args.learning_rate),
+                                    pg_for_update,
+                                    effective_lr,
                                     float(self.args.weight_decay),
                                     bundle=bundle,
                                 )
                             else:
-                                param.data = param.data - self.args.learning_rate * (grad_est + self.args.weight_decay * param.data)
+                                before = param.data.detach().clone()
+                                intended_delta = -effective_lr * (grad_est + float(self.args.weight_decay) * param.data.detach().float())
+                                param.data = param.data + intended_delta.to(dtype=param.data.dtype)
+                                self._zo_record_update_param_stats(
+                                    name,
+                                    self._quzo_update_stats_from_delta(
+                                        intended_delta=intended_delta,
+                                        actual_delta=param.data.detach() - before,
+                                        target=param.data.detach(),
+                                        bits=32,
+                                    ),
+                                )
 
                         update_stats_step = self._zo_finish_update_stats()
                         if grad_norm_logging:
@@ -5394,6 +5690,10 @@ class Trainer(LinearHeadTrainer):
                                         ("cos_intended_actual", "update_cos_intended_actual"),
                                         ("actual_over_intended_norm_ratio", "update_norm_ratio"),
                                         ("residual_norm", "update_residual_norm"),
+                                        ("residual_over_scale_p99", "residual_over_scale_p99"),
+                                        ("grid_error_norm", "update_grid_error_norm"),
+                                        ("update_norm_pre_clip", "update_norm_pre_clip"),
+                                        ("update_norm_post_clip", "update_norm_post_clip"),
                                     ]:
                                         if update_stats_step.get(src_key) is not None:
                                             logs[dst_key] = float(update_stats_step[src_key])
