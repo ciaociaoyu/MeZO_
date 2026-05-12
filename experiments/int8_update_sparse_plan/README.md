@@ -101,3 +101,61 @@ runs/sparse_probe_hsweep_20260512_173500/summary.md
 ```
 
 Current sparse status at this note update: dense cases `0-6` completed. The first two sparse exact-random cases (`p=0.03`, factors `0.25` and `0.5`) were still running and had created empty `probe_stats.jsonl` files, so the partial summary currently contains dense rows only. The exact-random sparse probe path is substantially slower on the full RoBERTa-large trainable parameter set because it generates exact masks over very large tensors.
+
+## Residual Consistency Debug Round
+
+Additional residual-grid consistency diagnostics were run after the first-round residual-over-scale anomaly. The debug command was:
+
+```bash
+source "$HOME/miniconda3/etc/profile.d/conda.sh"
+conda activate ciao
+CUDA_VISIBLE_DEVICES=0 python scripts/debug_residual_grid_consistency.py --debug-num-tensors 8 --debug-dump-tensor-stats
+```
+
+Debug output directory:
+
+```text
+runs/int8_residual_consistency_20260512_185856/debug/
+```
+
+Key debug files:
+
+```text
+runs/int8_residual_consistency_20260512_185856/debug/scale_stats.csv
+runs/int8_residual_consistency_20260512_185856/debug/synthetic_residual_test.json
+runs/int8_residual_consistency_20260512_185856/debug/noop_update_check.csv
+runs/int8_residual_consistency_20260512_185856/debug/one_step_equation_check.csv
+runs/int8_residual_consistency_20260512_185856/debug/grid_stats.csv
+```
+
+The synthetic residual test passed for `round`, `floor`, and `stochastic`. The real one-step equation check matched the expected integer update exactly for selected tensors (`max_abs_q_diff=0`), with residual differences only at floating roundoff scale. No-op updates had `active_frac=0`, `actual_update_norm=0`, and on-grid weights.
+
+Diagnosis: the earlier residual-over-scale explosion came from initializing/freeze-snapshotting residual-grid scales too late, after finite-difference perturb/reset had introduced tiny numerical noise into zero-valued trainable tensors. That produced frozen scales around `1e-12` for layers such as `classifier.bias`, `roberta.embeddings.token_type_embeddings.weight`, and `roberta.pooler.dense.bias`. The updater is now initialized before finite-difference perturbations when residual-grid is active. Logging was also corrected so residual-over-scale quantiles are computed over unsaturated coordinates and weighted by unsaturated counts; saturated/all-coordinate maxima are tracked separately.
+
+After the fix, the minimum frozen trainable scale in the real-model debug was `2.482256677467376e-4`, post-snap grid error was zero, and scale drift stayed zero under `--int8_freeze_scale True`.
+
+Short 50-step rerun command:
+
+```bash
+source "$HOME/miniconda3/etc/profile.d/conda.sh"
+conda activate ciao
+RUN_ROOT=/scratch/jy03364/MeZO_/runs/int8_residual_consistency_20260512_190000 CUDA_VISIBLE_DEVICES=0 scripts/run_int8_residual_consistency_short.sh
+```
+
+Short-run summary files:
+
+```text
+runs/int8_residual_consistency_20260512_190000/summary.csv
+runs/int8_residual_consistency_20260512_190000/summary.md
+```
+
+Final-step highlights:
+
+| run | acc | active_frac | cos | norm_ratio | residual_p99 | residual_max | violation_frac |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `direct_int8_lr1e-5` | 0.2822 | 0.9569 | 0.0292 | 34.2319 | n/a | n/a | n/a |
+| `residual_grid_round_lr3e-5` | 0.2892 | 0.0603 | 0.2484 | 3.6455 | 0.4943 | 0.5000 | 0.0 |
+| `residual_grid_round_step1_lr1e-4_clip5` | 0.2916 | 0.0610 | 0.2519 | 3.0241 | 0.4911 | 3.8966 | 0.0 |
+| `residual_grid_stoch_step1_lr3e-4_clip10` | 0.2986 | 0.3663 | 0.1659 | 5.8703 | 0.9029 | 12.8303 | 0.0 |
+
+The cleanest next 500-step candidate is `residual_grid_round_lr3e-5` with `max_code_step=0`, because it satisfies the round-mode residual bound exactly while improving cosine substantially over direct INT8. `residual_grid_round_step1_lr1e-4_clip5` is the higher-step-size candidate to test next; its larger residual maximum is expected because code-step clipping lets residual accumulate beyond the round bound.

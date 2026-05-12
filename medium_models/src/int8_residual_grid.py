@@ -41,6 +41,7 @@ class ResidualGridUpdater:
         commit_mode: str = "round",
         max_code_step: int = 0,
         freeze_scale: bool = True,
+        scale_floor: float = 0.0,
     ) -> None:
         self.bits = int(bits)
         if self.bits not in {8, 4}:
@@ -51,7 +52,9 @@ class ResidualGridUpdater:
         self.commit_mode = normalize_commit_mode(commit_mode)
         self.max_code_step = max(0, int(max_code_step))
         self.freeze_scale = bool(freeze_scale)
+        self.scale_floor = max(0.0, float(scale_floor or 0.0))
         self.scales: Dict[str, torch.Tensor] = {}
+        self.initial_scales: Dict[str, torch.Tensor] = {}
         self.residuals: Dict[str, torch.Tensor] = {}
         self.initial_snap_stats: Dict[str, Dict[str, float]] = {}
 
@@ -61,6 +64,7 @@ class ResidualGridUpdater:
                     continue
                 scale = self._compute_scale(param)
                 self.scales[name] = scale.detach().clone()
+                self.initial_scales[name] = scale.detach().clone()
                 self.residuals[name] = torch.zeros_like(param.data, dtype=self.residual_dtype, device=param.data.device)
                 self.initial_snap_stats[name] = self.snap_param_to_grid(name, param)
 
@@ -73,14 +77,32 @@ class ResidualGridUpdater:
             data = torch.where(finite, data, torch.zeros_like(data))
         max_abs = float(torch.max(torch.abs(data)).item()) if data.numel() > 0 else 0.0
         if (not math.isfinite(max_abs)) or max_abs <= 0.0:
-            max_abs = 1.0
-        return torch.tensor(max_abs / self.qmax, device=param.data.device, dtype=torch.float32)
+            scale = self.scale_floor if self.scale_floor > 0.0 else (1.0 / self.qmax)
+        else:
+            scale = max_abs / self.qmax
+            if self.scale_floor > 0.0:
+                scale = max(scale, self.scale_floor)
+        return torch.tensor(scale, device=param.data.device, dtype=torch.float32)
+
+    def _broadcast_scale(self, scale: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        scale = scale.to(device=target.device, dtype=torch.float32)
+        if scale.numel() == 1:
+            return scale
+        try:
+            out_shape = torch.broadcast_shapes(tuple(scale.shape), tuple(target.shape))
+        except RuntimeError as exc:
+            raise ValueError(f"Scale shape {tuple(scale.shape)} cannot broadcast to parameter shape {tuple(target.shape)}") from exc
+        if tuple(out_shape) != tuple(target.shape):
+            raise ValueError(f"Scale shape {tuple(scale.shape)} broadcasts to {tuple(out_shape)}, not parameter shape {tuple(target.shape)}")
+        return scale
 
     def _scale_for(self, name: str, param: nn.Parameter) -> torch.Tensor:
         if self.freeze_scale and name in self.scales:
             return self.scales[name].to(device=param.data.device)
         scale = self._compute_scale(param)
         self.scales[name] = scale.detach().clone()
+        if name not in self.initial_scales:
+            self.initial_scales[name] = scale.detach().clone()
         return scale
 
     def _grid_error_stats(self, tensor: torch.Tensor, scale: torch.Tensor) -> Tuple[float, float, float]:
@@ -108,16 +130,17 @@ class ResidualGridUpdater:
         }
 
     def quantize_to_code(self, tensor: torch.Tensor, scale: torch.Tensor) -> torch.Tensor:
-        scale = scale.to(device=tensor.device, dtype=torch.float32)
+        scale = self._broadcast_scale(scale, tensor)
         q = torch.round(torch.nan_to_num(tensor.detach().float() / scale, nan=0.0, posinf=self.qmax, neginf=self.qmin))
         return torch.clamp(q, self.qmin, self.qmax)
 
-    @staticmethod
-    def dequantize_from_code(code: torch.Tensor, scale: torch.Tensor) -> torch.Tensor:
-        return code.to(dtype=torch.float32) * scale.to(device=code.device, dtype=torch.float32)
+    def dequantize_from_code(self, code: torch.Tensor, scale: torch.Tensor) -> torch.Tensor:
+        scale = self._broadcast_scale(scale, code)
+        return code.to(dtype=torch.float32) * scale
 
     def _commit_codes(self, acc: torch.Tensor, scale: torch.Tensor) -> torch.Tensor:
-        a = acc.float() / scale.to(device=acc.device, dtype=torch.float32)
+        scale = self._broadcast_scale(scale, acc)
+        a = acc.float() / scale
         if self.commit_mode == "round":
             k = torch.round(a)
         elif self.commit_mode == "floor":
@@ -135,11 +158,28 @@ class ResidualGridUpdater:
     def _scale_stats(self, scale: torch.Tensor) -> Dict[str, float]:
         scale_f = torch.nan_to_num(scale.detach().float().reshape(-1), nan=0.0, posinf=0.0, neginf=0.0)
         if scale_f.numel() == 0:
-            return {"scale_min": 0.0, "scale_median": 0.0, "scale_max": 0.0}
+            return {
+                "scale_min": 0.0,
+                "scale_p01": 0.0,
+                "scale_median": 0.0,
+                "scale_p99": 0.0,
+                "scale_max": 0.0,
+                "num_scale_zero": 0.0,
+                "num_scale_near_zero": 0.0,
+            }
+        quantile_input = scale_f
+        quantiles = torch.quantile(
+            quantile_input,
+            torch.tensor([0.01, 0.5, 0.99], device=quantile_input.device, dtype=torch.float32),
+        )
         return {
             "scale_min": float(torch.min(scale_f).item()),
-            "scale_median": float(torch.median(scale_f).item()),
+            "scale_p01": float(quantiles[0].item()),
+            "scale_median": float(quantiles[1].item()),
+            "scale_p99": float(quantiles[2].item()),
             "scale_max": float(torch.max(scale_f).item()),
+            "num_scale_zero": float(torch.count_nonzero(scale_f == 0).item()),
+            "num_scale_near_zero": float(torch.count_nonzero(torch.abs(scale_f) <= 1e-12).item()),
         }
 
     def _residual_over_scale_stats(
@@ -154,36 +194,67 @@ class ResidualGridUpdater:
                 "residual_over_scale_p90": 0.0,
                 "residual_over_scale_p99": 0.0,
                 "residual_over_scale_max": 0.0,
+                "residual_over_scale_all_max": 0.0,
                 "unsaturated_residual_bound_violation_count": 0.0,
                 "unsaturated_count": 0.0,
                 "unsaturated_residual_bound_violation_frac": 0.0,
+                "residual_bound_check_applicable": 1.0 if self.max_code_step == 0 and self.commit_mode in {"round", "floor"} else 0.0,
             }
-        ratio = torch.abs(residual.detach().float() / scale.to(device=residual.device, dtype=torch.float32))
+        scale = self._broadcast_scale(scale, residual)
+        ratio = torch.abs(residual.detach().float() / scale)
         ratio = torch.nan_to_num(ratio, nan=0.0, posinf=float("inf"), neginf=0.0).reshape(-1)
         finite_ratio = torch.where(torch.isfinite(ratio), ratio, torch.full_like(ratio, float(self.qmax)))
-        quantile_input = finite_ratio
-        max_quantile_elems = 1_000_000
-        if quantile_input.numel() > max_quantile_elems:
-            stride = int(math.ceil(float(quantile_input.numel()) / float(max_quantile_elems)))
-            quantile_input = quantile_input[::stride][:max_quantile_elems]
-        quantiles = torch.quantile(quantile_input, torch.tensor([0.5, 0.9, 0.99], device=quantile_input.device, dtype=torch.float32))
-        bound = 0.5 if self.commit_mode == "round" and self.max_code_step == 0 else 1.0
         if q_new is None:
             unsat_mask = torch.ones_like(finite_ratio, dtype=torch.bool)
         else:
-            unsat_mask = ((q_new.reshape(-1) != self.qmin) & (q_new.reshape(-1) != self.qmax))
-        unsat_count = int(torch.count_nonzero(unsat_mask).item())
-        violation_count = 0
+            q_flat = q_new.reshape(-1)
+            unsat_mask = (q_flat > self.qmin) & (q_flat < self.qmax)
+        quantile_input = finite_ratio[unsat_mask]
+        unsat_count = int(quantile_input.numel())
+        max_quantile_elems = 1_000_000
+        if unsat_count > max_quantile_elems:
+            stride = int(math.ceil(float(quantile_input.numel()) / float(max_quantile_elems)))
+            quantile_input = quantile_input[::stride][:max_quantile_elems]
         if unsat_count > 0:
-            violation_count = int(torch.count_nonzero((finite_ratio > (bound + 1e-4)) & unsat_mask).item())
+            quantiles = torch.quantile(quantile_input, torch.tensor([0.5, 0.9, 0.99], device=quantile_input.device, dtype=torch.float32))
+            unsat_max = float(torch.max(finite_ratio[unsat_mask]).item())
+        else:
+            quantiles = torch.zeros(3, device=finite_ratio.device, dtype=torch.float32)
+            unsat_max = 0.0
+        bound = None
+        if self.max_code_step == 0 and self.commit_mode == "round":
+            bound = 0.5001
+        elif self.max_code_step == 0 and self.commit_mode == "floor":
+            bound = 1.0001
+        violation_count = 0
+        if unsat_count > 0 and bound is not None:
+            violation_count = int(torch.count_nonzero((finite_ratio > bound) & unsat_mask).item())
         return {
             "residual_over_scale_p50": float(quantiles[0].item()),
             "residual_over_scale_p90": float(quantiles[1].item()),
             "residual_over_scale_p99": float(quantiles[2].item()),
-            "residual_over_scale_max": float(torch.max(finite_ratio).item()),
+            "residual_over_scale_max": unsat_max,
+            "residual_over_scale_all_max": float(torch.max(finite_ratio).item()),
             "unsaturated_residual_bound_violation_count": float(violation_count),
+            "num_violation": float(violation_count),
             "unsaturated_count": float(unsat_count),
+            "num_unsaturated": float(unsat_count),
             "unsaturated_residual_bound_violation_frac": (float(violation_count) / float(unsat_count)) if unsat_count > 0 else 0.0,
+            "residual_bound_check_applicable": 1.0 if bound is not None else 0.0,
+        }
+
+    def scale_drift_stats(self, name: str, param: nn.Parameter) -> Dict[str, float]:
+        current = self._scale_for(name, param).detach().float().to(device=param.data.device)
+        initial = self.initial_scales.get(name)
+        if initial is None:
+            initial = current.detach().clone()
+            self.initial_scales[name] = initial
+        initial = initial.detach().float().to(device=current.device)
+        diff = torch.nan_to_num(current - initial, nan=0.0, posinf=0.0, neginf=0.0)
+        diff_sq = float(torch.sum(diff * diff).item())
+        return {
+            "scale_delta_norm": math.sqrt(max(diff_sq, 0.0)),
+            "scale_delta_max": float(torch.max(torch.abs(diff)).item()) if diff.numel() > 0 else 0.0,
         }
 
     def apply_update(

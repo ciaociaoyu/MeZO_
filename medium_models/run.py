@@ -729,6 +729,10 @@ class DynamicTrainingArguments(TrainingArguments):
         default=True,
         metadata={"help": "Freeze the low-bit parameter scale for residual_grid training. Default true for diagnostic residual semantics."}
     )
+    int8_scale_floor: float = field(
+        default=0.0,
+        metadata={"help": "Optional minimum scale for residual_grid quantization diagnostics. 0 disables flooring."}
+    )
     log_update_stats_every: int = field(
         default=0,
         metadata={"help": "Log quantized update diagnostics every N optimizer steps. <=0 logs only when save_update_stats_jsonl is set."}
@@ -744,6 +748,26 @@ class DynamicTrainingArguments(TrainingArguments):
     zo_scalar_clip: float = field(
         default=0.0,
         metadata={"help": "Optional clip for alpha=learning_rate*projected_grad in direct ZO updates. <=0 disables clipping."}
+    )
+    debug_residual_grid_consistency: bool = field(
+        default=False,
+        metadata={"help": "Run residual_grid scale/grid/equation diagnostics on one small batch and exit before training."}
+    )
+    debug_layer_regex: str = field(
+        default="",
+        metadata={"help": "Optional regex selecting layers for residual_grid one-step equation diagnostics."}
+    )
+    debug_num_tensors: int = field(
+        default=5,
+        metadata={"help": "Number of trainable tensors to include in residual_grid one-step diagnostics."}
+    )
+    debug_dump_tensor_stats: bool = field(
+        default=False,
+        metadata={"help": "Write per-tensor weight min/max JSONL during residual_grid consistency diagnostics."}
+    )
+    debug_save_dir: str = field(
+        default="",
+        metadata={"help": "Output directory for residual_grid consistency diagnostics. Relative paths resolve under output_dir."}
     )
     zo_direction_sparse_rate: float = field(
         default=1.0,
@@ -1280,9 +1304,15 @@ def main():
     training_args.residual_max_code_step = int(getattr(training_args, "residual_max_code_step", 0))
     if training_args.residual_max_code_step < 0:
         raise ValueError("--residual_max_code_step must be >= 0")
+    training_args.int8_scale_floor = float(getattr(training_args, "int8_scale_floor", 0.0) or 0.0)
+    if training_args.int8_scale_floor < 0.0:
+        raise ValueError("--int8_scale_floor must be >= 0")
     training_args.log_update_stats_every = int(getattr(training_args, "log_update_stats_every", 0))
     if training_args.log_update_stats_every < 0:
         raise ValueError("--log_update_stats_every must be >= 0")
+    training_args.debug_num_tensors = int(getattr(training_args, "debug_num_tensors", 5))
+    if training_args.debug_num_tensors <= 0:
+        raise ValueError("--debug_num_tensors must be > 0")
     training_args.zo_update_norm_clip = float(getattr(training_args, "zo_update_norm_clip", 0.0) or 0.0)
     if training_args.zo_update_norm_clip < 0.0:
         raise ValueError("--zo_update_norm_clip must be >= 0")
@@ -1499,12 +1529,13 @@ def main():
         ),
     )
     logger.info(
-        "[quzo-update-config] backend=%s | residual_dtype=%s | commit_mode=%s | max_code_step=%s | int8_freeze_scale=%s | update_norm_clip=%s | scalar_clip=%s | log_update_stats_every=%s | update_stats_jsonl=%s",
+        "[quzo-update-config] backend=%s | residual_dtype=%s | commit_mode=%s | max_code_step=%s | int8_freeze_scale=%s | int8_scale_floor=%s | update_norm_clip=%s | scalar_clip=%s | log_update_stats_every=%s | update_stats_jsonl=%s",
         str(getattr(training_args, "zo_update_backend", "direct_int8")),
         str(getattr(training_args, "residual_dtype", "fp32")),
         str(getattr(training_args, "residual_commit_mode", "round")),
         int(getattr(training_args, "residual_max_code_step", 0)),
         bool(getattr(training_args, "int8_freeze_scale", True)),
+        float(getattr(training_args, "int8_scale_floor", 0.0) or 0.0),
         float(getattr(training_args, "zo_update_norm_clip", 0.0) or 0.0),
         float(getattr(training_args, "zo_scalar_clip", 0.0) or 0.0),
         int(getattr(training_args, "log_update_stats_every", 0)),
@@ -1881,6 +1912,22 @@ def main():
         data_collator=MyDataCollatorWithPadding(tokenizer),
         **trainer_kwargs
     )
+
+    if bool(getattr(training_args, "debug_residual_grid_consistency", False)):
+        debug_save_dir = str(getattr(training_args, "debug_save_dir", "") or "").strip()
+        if not debug_save_dir:
+            debug_save_dir = os.path.join(training_args.output_dir, "residual_grid_debug")
+        elif not os.path.isabs(debug_save_dir):
+            debug_save_dir = os.path.join(training_args.output_dir, debug_save_dir)
+        summary = trainer.debug_residual_grid_consistency(
+            model,
+            save_dir=debug_save_dir,
+            layer_regex=(str(getattr(training_args, "debug_layer_regex", "") or "").strip() or None),
+            num_tensors=int(getattr(training_args, "debug_num_tensors", 5)),
+            dump_tensor_stats=bool(getattr(training_args, "debug_dump_tensor_stats", False)),
+        )
+        logger.info("[residual-grid-debug] summary: %s", json.dumps(summary, sort_keys=True))
+        return
 
     # Calibration
     if model_args.sfc:

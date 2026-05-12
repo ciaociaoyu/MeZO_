@@ -883,6 +883,7 @@ class Trainer(LinearHeadTrainer):
                 commit_mode=str(getattr(self.args, "residual_commit_mode", "round")),
                 max_code_step=int(getattr(self.args, "residual_max_code_step", 0)),
                 freeze_scale=bool(getattr(self.args, "int8_freeze_scale", True)),
+                scale_floor=float(getattr(self.args, "int8_scale_floor", 0.0) or 0.0),
             )
             self._residual_grid_updater = updater
             logger.info(
@@ -896,17 +897,43 @@ class Trainer(LinearHeadTrainer):
 
     def _setup_update_stats_jsonl(self) -> None:
         self._update_stats_jsonl_path = None
+        self._per_layer_update_stats_jsonl_path = None
+        self._scale_drift_csv_path = None
         raw = str(getattr(self.args, "save_update_stats_jsonl", "") or "").strip()
-        if not raw:
-            return
-        path = raw
-        if not os.path.isabs(path):
-            path = os.path.join(getattr(self.args, "output_dir", "./outputs") or "./outputs", path)
-        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-        self._update_stats_jsonl_path = path
-        if not os.path.exists(path):
-            with open(path, "w", encoding="utf-8"):
-                pass
+        if raw:
+            path = raw
+            if not os.path.isabs(path):
+                path = os.path.join(getattr(self.args, "output_dir", "./outputs") or "./outputs", path)
+            os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+            self._update_stats_jsonl_path = path
+            if not os.path.exists(path):
+                with open(path, "w", encoding="utf-8"):
+                    pass
+        if self._residual_grid_enabled():
+            output_dir = getattr(self.args, "output_dir", "./outputs") or "./outputs"
+            per_layer_path = os.path.join(output_dir, "per_layer_update_stats.jsonl")
+            scale_drift_path = os.path.join(output_dir, "scale_drift.csv")
+            os.makedirs(output_dir, exist_ok=True)
+            self._per_layer_update_stats_jsonl_path = per_layer_path
+            self._scale_drift_csv_path = scale_drift_path
+            if not os.path.exists(per_layer_path):
+                with open(per_layer_path, "w", encoding="utf-8"):
+                    pass
+            if not os.path.exists(scale_drift_path):
+                with open(scale_drift_path, "w", newline="", encoding="utf-8") as f:
+                    writer = csv.DictWriter(
+                        f,
+                        fieldnames=[
+                            "global_step",
+                            "layer_name",
+                            "scale_delta_norm",
+                            "scale_delta_max",
+                            "scale_min",
+                            "scale_median",
+                            "scale_max",
+                        ],
+                    )
+                    writer.writeheader()
 
     def _update_stats_should_log(self, step: Optional[int] = None) -> bool:
         every = int(getattr(self.args, "log_update_stats_every", 0) or 0)
@@ -945,6 +972,7 @@ class Trainer(LinearHeadTrainer):
             "grid_error_sq_after_snap": 0.0,
             "grid_error_max_after_snap": 0.0,
             "scale_values": [],
+            "residual_over_scale_quantile_weight": 0.0,
             "residual_over_scale_p50_weighted": 0.0,
             "residual_over_scale_p90_weighted": 0.0,
             "residual_over_scale_p99_weighted": 0.0,
@@ -975,7 +1003,14 @@ class Trainer(LinearHeadTrainer):
                 acc[key] = max(float(acc.get(key, 0.0) or 0.0), float(stats.get(key, 0.0) or 0.0))
             except Exception:
                 pass
-        for key in ["scale_min", "scale_median", "scale_max"]:
+        try:
+            acc["max_abs_residual_over_scale"] = max(
+                float(acc.get("max_abs_residual_over_scale", 0.0) or 0.0),
+                float(stats.get("residual_over_scale_all_max", stats.get("max_abs_residual_over_scale", 0.0)) or 0.0),
+            )
+        except Exception:
+            pass
+        for key in ["scale_min", "scale_p01", "scale_median", "scale_p99", "scale_max"]:
             val = stats.get(key)
             if val is not None:
                 try:
@@ -990,30 +1025,47 @@ class Trainer(LinearHeadTrainer):
             ("residual_over_scale_p99", "residual_over_scale_p99_weighted"),
         ]:
             try:
-                acc[acc_key] += float(stats.get(key, 0.0) or 0.0) * numel
+                quantile_weight = float(stats.get("num_unsaturated", stats.get("unsaturated_count", 0.0)) or 0.0)
+                if quantile_weight > 0.0:
+                    acc[acc_key] += float(stats.get(key, 0.0) or 0.0) * quantile_weight
             except Exception:
                 pass
-        acc["unsaturated_residual_bound_violation_count"] += float(stats.get("unsaturated_residual_bound_violation_count", 0.0) or 0.0)
-        acc["unsaturated_count"] += float(stats.get("unsaturated_count", 0.0) or 0.0)
         try:
-            acc["max_abs_residual_over_scale"] = max(
-                float(acc.get("max_abs_residual_over_scale", 0.0) or 0.0),
-                float(stats.get("max_abs_residual_over_scale", 0.0) or 0.0),
-            )
+            quantile_weight = float(stats.get("num_unsaturated", stats.get("unsaturated_count", 0.0)) or 0.0)
+            if quantile_weight > 0.0:
+                acc["residual_over_scale_quantile_weight"] += quantile_weight
         except Exception:
             pass
+        acc["unsaturated_residual_bound_violation_count"] += float(stats.get("unsaturated_residual_bound_violation_count", 0.0) or 0.0)
+        acc["unsaturated_count"] += float(stats.get("unsaturated_count", 0.0) or 0.0)
         if numel > 0:
             intended_norm = math.sqrt(max(float(stats.get("intended_sq", 0.0) or 0.0), 0.0))
             actual_norm = math.sqrt(max(float(stats.get("actual_sq", 0.0) or 0.0), 0.0))
             denom = intended_norm * actual_norm
             acc["layers"].append({
                 "layer_name": str(layer_name),
+                "global_step": int(getattr(self.state, "global_step", 0)),
                 "active_frac": float(stats.get("active_frac", 0.0) or 0.0),
                 "residual_norm": math.sqrt(max(float(stats.get("residual_sq", 0.0) or 0.0), 0.0)),
+                "intended_update_norm": intended_norm,
                 "actual_update_norm": actual_norm,
+                "actual_over_intended_norm_ratio": (actual_norm / intended_norm) if intended_norm > 0.0 else None,
                 "saturation_frac": float(stats.get("saturation_frac", 0.0) or 0.0),
+                "residual_over_scale_p50": stats.get("residual_over_scale_p50"),
+                "residual_over_scale_p90": stats.get("residual_over_scale_p90"),
                 "residual_over_scale_p99": stats.get("residual_over_scale_p99"),
+                "residual_over_scale_max": stats.get("residual_over_scale_max"),
+                "residual_over_scale_all_max": stats.get("residual_over_scale_all_max"),
+                "unsaturated_residual_bound_violation_frac": stats.get("unsaturated_residual_bound_violation_frac"),
+                "num_violation": stats.get("num_violation", stats.get("unsaturated_residual_bound_violation_count")),
+                "num_unsaturated": stats.get("num_unsaturated", stats.get("unsaturated_count")),
                 "grid_error_norm": stats.get("grid_error_norm"),
+                "grid_error_max": stats.get("grid_error_max"),
+                "scale_min": stats.get("scale_min"),
+                "scale_p01": stats.get("scale_p01"),
+                "scale_median": stats.get("scale_median"),
+                "scale_p99": stats.get("scale_p99"),
+                "scale_max": stats.get("scale_max"),
                 "cos_intended_actual": (
                     float(stats.get("dot", 0.0) or 0.0) / denom
                     if denom > 0.0 else None
@@ -1034,13 +1086,16 @@ class Trainer(LinearHeadTrainer):
         if scale_values:
             scale_arr = np.asarray(scale_values, dtype=np.float64)
             scale_min = float(np.min(scale_arr))
+            scale_p01 = float(np.quantile(scale_arr, 0.01))
             scale_median = float(np.median(scale_arr))
+            scale_p99 = float(np.quantile(scale_arr, 0.99))
             scale_max = float(np.max(scale_arr))
         else:
-            scale_min = scale_median = scale_max = None
-        residual_p50 = (float(acc.get("residual_over_scale_p50_weighted", 0.0) or 0.0) / numel) if numel > 0 else None
-        residual_p90 = (float(acc.get("residual_over_scale_p90_weighted", 0.0) or 0.0) / numel) if numel > 0 else None
-        residual_p99 = (float(acc.get("residual_over_scale_p99_weighted", 0.0) or 0.0) / numel) if numel > 0 else None
+            scale_min = scale_p01 = scale_median = scale_p99 = scale_max = None
+        residual_quantile_weight = float(acc.get("residual_over_scale_quantile_weight", 0.0) or 0.0)
+        residual_p50 = (float(acc.get("residual_over_scale_p50_weighted", 0.0) or 0.0) / residual_quantile_weight) if residual_quantile_weight > 0 else None
+        residual_p90 = (float(acc.get("residual_over_scale_p90_weighted", 0.0) or 0.0) / residual_quantile_weight) if residual_quantile_weight > 0 else None
+        residual_p99 = (float(acc.get("residual_over_scale_p99_weighted", 0.0) or 0.0) / residual_quantile_weight) if residual_quantile_weight > 0 else None
         unsat_count = float(acc.get("unsaturated_count", 0.0) or 0.0)
         clip_info = dict(acc.get("clip_info", {}) or {})
         row = {
@@ -1069,7 +1124,9 @@ class Trainer(LinearHeadTrainer):
             "global_cos_intended_actual": (float(acc.get("dot", 0.0) or 0.0) / denom) if denom > 0.0 else None,
             "global_actual_over_intended_norm_ratio": (actual_norm / intended_norm) if intended_norm > 0.0 else None,
             "scale_min": scale_min,
+            "scale_p01": scale_p01,
             "scale_median": scale_median,
+            "scale_p99": scale_p99,
             "scale_max": scale_max,
             "residual_over_scale_p50": residual_p50,
             "residual_over_scale_p90": residual_p90,
@@ -1079,6 +1136,8 @@ class Trainer(LinearHeadTrainer):
                 float(acc.get("unsaturated_residual_bound_violation_count", 0.0) or 0.0) / unsat_count
                 if unsat_count > 0 else None
             ),
+            "num_violation": int(float(acc.get("unsaturated_residual_bound_violation_count", 0.0) or 0.0)),
+            "num_unsaturated": int(unsat_count),
             "grid_error_norm": math.sqrt(max(float(acc.get("grid_error_sq", 0.0) or 0.0), 0.0)),
             "grid_error_max": float(acc.get("grid_error_max", 0.0) or 0.0),
             "grid_error_norm_before_snap": math.sqrt(max(float(acc.get("grid_error_sq_before_snap", 0.0) or 0.0), 0.0)),
@@ -1106,6 +1165,8 @@ class Trainer(LinearHeadTrainer):
         if getattr(self, "_update_stats_include_layers", False):
             row["layers"] = acc.get("layers", [])
         self.latest_update_stats = row
+        self._write_per_layer_update_stats(acc.get("layers", []))
+        self._write_scale_drift_stats()
         if self._update_stats_should_log(row["global_step"]):
             logger.info("[zo-update-stats] %s", json.dumps(row, sort_keys=True))
             path = getattr(self, "_update_stats_jsonl_path", None)
@@ -1116,6 +1177,379 @@ class Trainer(LinearHeadTrainer):
                 except Exception as exc:
                     logger.warning("[zo-update-stats] failed to write JSONL: %s: %s", type(exc).__name__, exc)
         return row
+
+    def _write_per_layer_update_stats(self, layers: Any) -> None:
+        path = getattr(self, "_per_layer_update_stats_jsonl_path", None)
+        if not path or not isinstance(layers, list):
+            return
+        try:
+            with open(path, "a", encoding="utf-8") as f:
+                for layer in layers:
+                    if isinstance(layer, dict):
+                        f.write(json.dumps(layer, sort_keys=True) + "\n")
+        except Exception as exc:
+            logger.warning("[zo-update-stats] failed to write per-layer JSONL: %s: %s", type(exc).__name__, exc)
+
+    def _write_scale_drift_stats(self) -> None:
+        path = getattr(self, "_scale_drift_csv_path", None)
+        updater = getattr(self, "_residual_grid_updater", None)
+        if not path or updater is None:
+            return
+        step = int(getattr(self.state, "global_step", 0))
+        rows = []
+        named_params = list(getattr(self, "named_parameters_to_optim", []) or [])
+        for name, param in named_params:
+            if name not in getattr(updater, "scales", {}):
+                continue
+            try:
+                drift = updater.scale_drift_stats(name, param)
+                scale = updater._scale_for(name, param)
+                scale_stats = updater._scale_stats(scale)
+                rows.append({
+                    "global_step": step,
+                    "layer_name": name,
+                    "scale_delta_norm": drift.get("scale_delta_norm", 0.0),
+                    "scale_delta_max": drift.get("scale_delta_max", 0.0),
+                    "scale_min": scale_stats.get("scale_min", 0.0),
+                    "scale_median": scale_stats.get("scale_median", 0.0),
+                    "scale_max": scale_stats.get("scale_max", 0.0),
+                })
+            except Exception as exc:
+                logger.warning("[scale-drift] failed for %s: %s: %s", name, type(exc).__name__, exc)
+        if not rows:
+            return
+        try:
+            with open(path, "a", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(
+                    f,
+                    fieldnames=[
+                        "global_step",
+                        "layer_name",
+                        "scale_delta_norm",
+                        "scale_delta_max",
+                        "scale_min",
+                        "scale_median",
+                        "scale_max",
+                    ],
+                )
+                writer.writerows(rows)
+        except Exception as exc:
+            logger.warning("[scale-drift] failed to write CSV: %s: %s", type(exc).__name__, exc)
+
+    def _debug_grid_error_quantiles(self, tensor: torch.Tensor, scale: torch.Tensor, updater: ResidualGridUpdater) -> Dict[str, float]:
+        q = updater.quantize_to_code(tensor, scale)
+        snapped = updater.dequantize_from_code(q, scale)
+        err = torch.abs(torch.nan_to_num(tensor.detach().float() - snapped.float(), nan=0.0, posinf=0.0, neginf=0.0)).reshape(-1)
+        if err.numel() == 0:
+            return {"grid_error_norm": 0.0, "grid_error_max": 0.0, "grid_error_p99": 0.0}
+        quantile_input = err
+        max_quantile_elems = 1_000_000
+        if quantile_input.numel() > max_quantile_elems:
+            stride = int(math.ceil(float(quantile_input.numel()) / float(max_quantile_elems)))
+            quantile_input = quantile_input[::stride][:max_quantile_elems]
+        return {
+            "grid_error_norm": float(torch.linalg.vector_norm(err).item()),
+            "grid_error_max": float(torch.max(err).item()),
+            "grid_error_p99": float(torch.quantile(quantile_input, 0.99).item()),
+        }
+
+    def _debug_write_synthetic_residual_test(self, save_dir: str) -> Dict[str, Any]:
+        out_path = os.path.join(save_dir, "synthetic_residual_test.json")
+        payload: Dict[str, Any] = {}
+        for mode in ["round", "floor", "stochastic"]:
+            torch.manual_seed(1234)
+            param = nn.Parameter(torch.zeros((8, 16), device=self.args.device, dtype=torch.float32), requires_grad=True)
+            updater = ResidualGridUpdater(
+                [],
+                bits=self._zo_quant_bits(),
+                residual_dtype="fp32",
+                commit_mode=mode,
+                max_code_step=0,
+                freeze_scale=True,
+            )
+            updater.scales["synthetic"] = torch.tensor(0.01, device=param.device, dtype=torch.float32)
+            updater.initial_scales["synthetic"] = updater.scales["synthetic"].detach().clone()
+            updater.residuals["synthetic"] = torch.zeros_like(param.data)
+            direction = -torch.ones_like(param.data)
+            jumped_at = None
+            max_residual_over_scale = 0.0
+            residual_equation_max_abs = 0.0
+            history = []
+            for step_idx in range(1, 9):
+                residual_old = updater.residuals["synthetic"].detach().clone()
+                q_old = updater.quantize_to_code(param.data, updater.scales["synthetic"])
+                acc = residual_old + 0.002
+                if mode == "stochastic":
+                    residual_expected = None
+                else:
+                    k = updater._commit_codes(acc, updater.scales["synthetic"])
+                    q_expected = torch.clamp(q_old + k, updater.qmin, updater.qmax)
+                    actual_delta_expected = updater.dequantize_from_code(q_expected - q_old, updater.scales["synthetic"])
+                    residual_expected = acc - actual_delta_expected
+                stats = updater.apply_update("synthetic", param, direction, 1.0, 0.002)
+                q_actual = updater.quantize_to_code(param.data, updater.scales["synthetic"])
+                residual_actual = updater.residuals["synthetic"].detach().float()
+                if residual_expected is None:
+                    actual_delta = updater.dequantize_from_code(q_actual - q_old, updater.scales["synthetic"])
+                    residual_expected = acc - actual_delta
+                residual_equation_max_abs = max(
+                    residual_equation_max_abs,
+                    float(torch.max(torch.abs(residual_actual - residual_expected.float())).item()),
+                )
+                code_delta = int(torch.count_nonzero(q_actual - q_old).item())
+                if jumped_at is None and code_delta > 0:
+                    jumped_at = step_idx
+                max_residual_over_scale = max(max_residual_over_scale, float(stats.get("residual_over_scale_max", 0.0) or 0.0))
+                history.append({
+                    "step": step_idx,
+                    "code_changed": code_delta,
+                    "residual_over_scale_max": float(stats.get("residual_over_scale_max", 0.0) or 0.0),
+                })
+            if mode == "round":
+                passed = bool(jumped_at is not None and max_residual_over_scale <= 0.5001 and residual_equation_max_abs <= 1e-7)
+            elif mode == "floor":
+                passed = bool(jumped_at is not None and max_residual_over_scale < 1.0001 and residual_equation_max_abs <= 1e-7)
+            else:
+                passed = bool(math.isfinite(max_residual_over_scale) and residual_equation_max_abs <= 1e-7)
+            payload[mode] = {
+                "passed": passed,
+                "jumped_at_step": jumped_at,
+                "max_residual_over_scale": max_residual_over_scale,
+                "residual_equation_max_abs": residual_equation_max_abs,
+                "history": history,
+            }
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2, sort_keys=True)
+        return payload
+
+    def debug_residual_grid_consistency(
+        self,
+        model: nn.Module,
+        *,
+        save_dir: str,
+        layer_regex: Optional[str] = None,
+        num_tensors: int = 5,
+        dump_tensor_stats: bool = False,
+    ) -> Dict[str, Any]:
+        if not self._residual_grid_enabled():
+            raise ValueError("debug_residual_grid_consistency requires --zo_quantization int8/int4 and --zo_update_backend residual_grid")
+        os.makedirs(save_dir, exist_ok=True)
+        self.named_parameters_to_optim = [(name, param) for name, param in model.named_parameters() if self.should_optim(name, param)]
+        updater = self._get_residual_grid_updater()
+        logger.info("[residual-grid-debug] freeze_scale=%s scale_floor=%s", updater.freeze_scale, updater.scale_floor)
+        pattern = re.compile(layer_regex) if layer_regex else None
+
+        scale_stats_path = os.path.join(save_dir, "scale_stats.csv")
+        grid_stats_path = os.path.join(save_dir, "grid_stats.csv")
+        tensor_stats_path = os.path.join(save_dir, "tensor_stats.jsonl")
+        selected: List[Tuple[str, nn.Parameter]] = []
+        global_grid_sq = 0.0
+        global_grid_max = 0.0
+        scale_fieldnames = [
+            "layer_name",
+            "param_shape",
+            "scale_shape",
+            "scale_dtype",
+            "scale_min",
+            "scale_p01",
+            "scale_median",
+            "scale_p99",
+            "scale_max",
+            "num_scale_zero",
+            "num_scale_near_zero",
+            "quant_axis",
+            "block_info",
+            "qmin",
+            "qmax",
+            "broadcast_ok",
+        ]
+        grid_fieldnames = ["layer_name", "grid_error_norm", "grid_error_max", "grid_error_p99"]
+        with open(scale_stats_path, "w", newline="", encoding="utf-8") as scale_f, open(grid_stats_path, "w", newline="", encoding="utf-8") as grid_f:
+            scale_writer = csv.DictWriter(scale_f, fieldnames=scale_fieldnames)
+            grid_writer = csv.DictWriter(grid_f, fieldnames=grid_fieldnames)
+            scale_writer.writeheader()
+            grid_writer.writeheader()
+            tensor_f = open(tensor_stats_path, "w", encoding="utf-8") if dump_tensor_stats else None
+            try:
+                for name, param in self.named_parameters_to_optim:
+                    scale = updater._scale_for(name, param)
+                    try:
+                        updater._broadcast_scale(scale, param.data)
+                        broadcast_ok = True
+                    except Exception:
+                        broadcast_ok = False
+                        raise
+                    updater.snap_param_to_grid(name, param)
+                    scale_stats = updater._scale_stats(scale)
+                    grid_stats = self._debug_grid_error_quantiles(param.data, scale, updater)
+                    global_grid_sq += float(grid_stats["grid_error_norm"]) ** 2
+                    global_grid_max = max(global_grid_max, float(grid_stats["grid_error_max"]))
+                    scale_writer.writerow({
+                        "layer_name": name,
+                        "param_shape": "x".join(str(x) for x in tuple(param.data.shape)),
+                        "scale_shape": "x".join(str(x) for x in tuple(scale.shape)),
+                        "scale_dtype": str(scale.dtype).replace("torch.", ""),
+                        "scale_min": scale_stats.get("scale_min"),
+                        "scale_p01": scale_stats.get("scale_p01"),
+                        "scale_median": scale_stats.get("scale_median"),
+                        "scale_p99": scale_stats.get("scale_p99"),
+                        "scale_max": scale_stats.get("scale_max"),
+                        "num_scale_zero": int(scale_stats.get("num_scale_zero", 0.0) or 0.0),
+                        "num_scale_near_zero": int(scale_stats.get("num_scale_near_zero", 0.0) or 0.0),
+                        "quant_axis": "per_tensor",
+                        "block_info": "none",
+                        "qmin": updater.qmin,
+                        "qmax": updater.qmax,
+                        "broadcast_ok": broadcast_ok,
+                    })
+                    grid_writer.writerow({"layer_name": name, **grid_stats})
+                    if tensor_f is not None:
+                        data_f = torch.nan_to_num(param.data.detach().float(), nan=0.0, posinf=0.0, neginf=0.0)
+                        tensor_f.write(json.dumps({
+                            "layer_name": name,
+                            "numel": int(data_f.numel()),
+                            "weight_min": float(torch.min(data_f).item()) if data_f.numel() > 0 else 0.0,
+                            "weight_max": float(torch.max(data_f).item()) if data_f.numel() > 0 else 0.0,
+                            "weight_abs_max": float(torch.max(torch.abs(data_f)).item()) if data_f.numel() > 0 else 0.0,
+                        }, sort_keys=True) + "\n")
+                    if pattern is None or pattern.search(name):
+                        if len(selected) < max(1, int(num_tensors)):
+                            selected.append((name, param))
+            finally:
+                if tensor_f is not None:
+                    tensor_f.close()
+
+        synthetic_payload = self._debug_write_synthetic_residual_test(save_dir)
+
+        noop_path = os.path.join(save_dir, "noop_update_check.csv")
+        noop_fieldnames = [
+            "layer_name",
+            "active_frac",
+            "actual_update_norm",
+            "residual_norm",
+            "max_abs_q_diff",
+            "max_abs_residual_diff",
+            "max_abs_grid_error_actual",
+        ]
+        with open(noop_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=noop_fieldnames)
+            writer.writeheader()
+            for name, param in selected:
+                scale = updater._scale_for(name, param)
+                updater.snap_param_to_grid(name, param)
+                q_old = updater.quantize_to_code(param.data, scale)
+                residual_old = updater.residuals[name].detach().clone()
+                direction = torch.ones_like(param.data, dtype=torch.float32)
+                stats = updater.apply_update(name, param, direction, 0.0, float(self.args.learning_rate))
+                q_actual = updater.quantize_to_code(param.data, scale)
+                residual_actual = updater.residuals[name].detach().float()
+                snapped_actual = updater.dequantize_from_code(q_actual, scale)
+                grid_err = torch.nan_to_num(param.data.detach().float() - snapped_actual.float(), nan=0.0, posinf=0.0, neginf=0.0)
+                q_diff = q_actual - q_old
+                residual_diff = residual_actual - residual_old.float()
+                writer.writerow({
+                    "layer_name": name,
+                    "active_frac": stats.get("active_frac", 0.0),
+                    "actual_update_norm": math.sqrt(max(float(stats.get("actual_sq", 0.0) or 0.0), 0.0)),
+                    "residual_norm": math.sqrt(max(float(stats.get("residual_sq", 0.0) or 0.0), 0.0)),
+                    "max_abs_q_diff": float(torch.max(torch.abs(q_diff)).item()) if q_diff.numel() > 0 else 0.0,
+                    "max_abs_residual_diff": float(torch.max(torch.abs(residual_diff)).item()) if residual_diff.numel() > 0 else 0.0,
+                    "max_abs_grid_error_actual": float(torch.max(torch.abs(grid_err)).item()) if grid_err.numel() > 0 else 0.0,
+                })
+
+        batch = next(iter(self.get_train_dataloader()))
+        random_seed = 12345
+        eps = float(self._get_training_step_size())
+        if not hasattr(self.state, "zo_forward_step"):
+            self.state.zo_forward_step = 0
+        with torch.no_grad():
+            model = self.efficient_perturb_parameters(model, random_seed)
+            loss1 = self._zo_two_point_forward(model, batch)
+            model = self.efficient_perturb_parameters(model, random_seed, scaling_factor=-2)
+            loss2 = self._zo_two_point_forward(model, batch)
+            model = self.efficient_perturb_parameters(model, random_seed)
+            projected_grad = self._zo_fd_projected_grad(loss1, loss2, eps)
+
+        equation_path = os.path.join(save_dir, "one_step_equation_check.csv")
+        eq_fieldnames = [
+            "layer_name",
+            "max_abs_q_diff",
+            "norm_q_diff",
+            "max_abs_residual_diff",
+            "norm_residual_diff",
+            "max_abs_grid_error_actual",
+            "norm_grid_error_actual",
+            "residual_over_scale_p99",
+            "residual_over_scale_max",
+            "residual_over_scale_all_max",
+            "unsaturated_residual_bound_violation_frac",
+            "saturation_frac",
+            "active_frac",
+        ]
+        with open(equation_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=eq_fieldnames)
+            writer.writeheader()
+            for name, param in selected:
+                scale = updater._scale_for(name, param)
+                updater.snap_param_to_grid(name, param)
+                residual_old = updater.residuals[name].detach().clone()
+                q_old = updater.quantize_to_code(param.data, scale)
+                bundle = self._quzo_get_bundle(name, param, random_seed=random_seed)
+                z = bundle["u2"]
+                delta = torch.nan_to_num(-float(self.args.learning_rate) * float(projected_grad.detach().float().item()) * z.detach().float(), nan=0.0, posinf=0.0, neginf=0.0)
+                acc = torch.nan_to_num(residual_old + delta.to(dtype=updater.residual_dtype), nan=0.0, posinf=0.0, neginf=0.0)
+                k = updater._commit_codes(acc, scale)
+                q_expected = torch.clamp(q_old + k, updater.qmin, updater.qmax)
+                actual_delta_expected = updater.dequantize_from_code(q_expected - q_old, scale)
+                residual_expected = acc.float() - actual_delta_expected.float()
+                stats = updater.apply_update(name, param, z, projected_grad, float(self.args.learning_rate))
+                q_actual = updater.quantize_to_code(param.data, scale)
+                residual_actual = updater.residuals[name].detach().float()
+                snapped_actual = updater.dequantize_from_code(q_actual, scale)
+                grid_err = torch.nan_to_num(param.data.detach().float() - snapped_actual.float(), nan=0.0, posinf=0.0, neginf=0.0)
+                q_diff = q_actual - q_expected
+                residual_diff = residual_actual - residual_expected.float()
+                writer.writerow({
+                    "layer_name": name,
+                    "max_abs_q_diff": float(torch.max(torch.abs(q_diff)).item()) if q_diff.numel() > 0 else 0.0,
+                    "norm_q_diff": float(torch.linalg.vector_norm(q_diff.float()).item()) if q_diff.numel() > 0 else 0.0,
+                    "max_abs_residual_diff": float(torch.max(torch.abs(residual_diff)).item()) if residual_diff.numel() > 0 else 0.0,
+                    "norm_residual_diff": float(torch.linalg.vector_norm(residual_diff).item()) if residual_diff.numel() > 0 else 0.0,
+                    "max_abs_grid_error_actual": float(torch.max(torch.abs(grid_err)).item()) if grid_err.numel() > 0 else 0.0,
+                    "norm_grid_error_actual": float(torch.linalg.vector_norm(grid_err).item()) if grid_err.numel() > 0 else 0.0,
+                    "residual_over_scale_p99": stats.get("residual_over_scale_p99"),
+                    "residual_over_scale_max": stats.get("residual_over_scale_max"),
+                    "residual_over_scale_all_max": stats.get("residual_over_scale_all_max"),
+                    "unsaturated_residual_bound_violation_frac": stats.get("unsaturated_residual_bound_violation_frac"),
+                    "saturation_frac": stats.get("saturation_frac"),
+                    "active_frac": stats.get("active_frac"),
+                })
+
+        summary = {
+            "save_dir": save_dir,
+            "freeze_scale": bool(updater.freeze_scale),
+            "scale_floor": float(updater.scale_floor),
+            "num_trainable_tensors": len(self.named_parameters_to_optim),
+            "num_checked_tensors": len(selected),
+            "global_grid_error_norm_after_snap": math.sqrt(max(global_grid_sq, 0.0)),
+            "global_grid_error_max_after_snap": global_grid_max,
+            "synthetic": synthetic_payload,
+            "loss_plus": float(loss1.detach().float().item()),
+            "loss_minus": float(loss2.detach().float().item()),
+            "projected_grad": float(projected_grad.detach().float().item()),
+            "paths": {
+                "scale_stats_csv": scale_stats_path,
+                "grid_stats_csv": grid_stats_path,
+                "noop_update_check_csv": noop_path,
+                "synthetic_residual_test_json": os.path.join(save_dir, "synthetic_residual_test.json"),
+                "one_step_equation_check_csv": equation_path,
+                "tensor_stats_jsonl": tensor_stats_path if dump_tensor_stats else None,
+            },
+        }
+        with open(os.path.join(save_dir, "debug_summary.json"), "w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2, sort_keys=True)
+        logger.info("[residual-grid-debug] wrote diagnostics to %s", save_dir)
+        return summary
 
     def _two_point_effective_dimension(self, named_params: Optional[List[Tuple[str, nn.Parameter]]] = None) -> Tuple[int, str, int, Optional[int]]:
         if named_params is None:
@@ -5162,6 +5596,10 @@ class Trainer(LinearHeadTrainer):
                     for name, param in model.named_parameters():
                         if self.should_optim(name, param):
                             self.named_parameters_to_optim.append((name, param))
+                    if self._residual_grid_enabled():
+                        # Freeze residual_grid scales before any finite-difference perturbation can leave
+                        # tiny reset noise on otherwise-zero trainable tensors.
+                        self._get_residual_grid_updater()
                     zo_method = self._zo_method()
                     if zo_method in {"lozo", "lozo_m", "hizoo"}:
                         self._perf_tail_maybe_start(
