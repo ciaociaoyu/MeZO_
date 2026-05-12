@@ -23,7 +23,14 @@ from src.models import MODEL_TYPES
 import torch
 import torch.nn.functional as F
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-from sklearn.linear_model import LinearRegression, LogisticRegression, LogisticRegressionCV
+try:
+    from sklearn.linear_model import LinearRegression, LogisticRegression, LogisticRegressionCV
+except ImportError:
+    class _MissingSklearnEstimator:
+        def __init__(self, *args, **kwargs):
+            raise ImportError("scikit-learn is required for linear-head probing")
+
+    LinearRegression = LogisticRegression = LogisticRegressionCV = _MissingSklearnEstimator
 
 import transformers
 from torch.utils.data.dataset import Dataset

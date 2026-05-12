@@ -21,6 +21,6 @@
   "task_name": "SST5",
   "seed": 16,
   "run_output_dir": "/scratch/jy03364/MeZO_/experiments/stage1_fixed_h_fp16_20260428/results/opt-1.3b/sst5/mezo_lora/h_1e-3/seed_16",
-  "git_commit": "f43ffd518583a386e0c7dc32122d7074b2ba1744",
-  "hostname": "ra8-8"
+  "git_commit": "62ecd3f16cd15fc8b27216f37fad68d226775d95",
+  "hostname": "ra7-7"
 }

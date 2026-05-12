@@ -108,6 +108,22 @@ def _read_last_csv_row(path: str):
         return None
 
 
+def _read_last_jsonl_row(path: str):
+    if not path or not os.path.exists(path):
+        return None
+    try:
+        last_row = None
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    last_row = json.loads(line)
+        return _normalize_for_json(last_row)
+    except Exception as exc:
+        logger.warning("Failed to read JSONL artifact %s: %s", path, exc)
+        return None
+
+
 def _save_model_with_shared_tensor_fallback(trainer, output_dir: str):
     try:
         trainer.save_model(output_dir)
@@ -254,6 +270,22 @@ def normalize_zo_method_name(value: Optional[str]) -> Optional[str]:
     allowed = {"mezo", "sparse_mezo", "lozo", "lozo_m", "hizoo"}
     if normalized not in allowed:
         raise ValueError(f"Unsupported --zo_method={value!r}. Expected one of {sorted(allowed)}.")
+    return normalized
+
+
+def normalize_zo_update_backend(value: str) -> str:
+    normalized = str(value or "direct_int8").strip().lower()
+    aliases = {
+        "residual": "residual_grid",
+        "int8_residual": "residual_grid",
+        "int8_residual_accum": "residual_grid",
+        "grid_residual": "residual_grid",
+        "quzo_fp16_master": "fp16_master",
+    }
+    normalized = aliases.get(normalized, normalized)
+    allowed = {"direct_int8", "residual_grid", "fp16_master"}
+    if normalized not in allowed:
+        raise ValueError(f"Unsupported --zo_update_backend={value!r}. Expected one of {sorted(allowed)}.")
     return normalized
 
 
@@ -676,6 +708,54 @@ class DynamicTrainingArguments(TrainingArguments):
         metadata={
             "help": "String alias for the same ZO-side method switch. Supported values: fp32/off/none, fp16, int8, int4. Overrides --zo_quantization_bits when set. In medium_models, int8 means QuZO int8, not model-loading int8."
         }
+    )
+    zo_update_backend: str = field(
+        default="direct_int8",
+        metadata={"help": "QuZO low-bit update backend. Choices: direct_int8, residual_grid, fp16_master."}
+    )
+    residual_dtype: str = field(
+        default="fp32",
+        metadata={"help": "Residual buffer dtype for --zo_update_backend residual_grid. Choices: fp16, bf16, fp32."}
+    )
+    residual_commit_mode: str = field(
+        default="round",
+        metadata={"help": "Residual-grid commit rule. Choices: round, floor, stochastic."}
+    )
+    residual_max_code_step: int = field(
+        default=0,
+        metadata={"help": "Max absolute INT code movement per coordinate per optimizer step for residual_grid. 0 means unlimited."}
+    )
+    int8_freeze_scale: bool = field(
+        default=True,
+        metadata={"help": "Freeze the low-bit parameter scale for residual_grid training. Default true for diagnostic residual semantics."}
+    )
+    log_update_stats_every: int = field(
+        default=0,
+        metadata={"help": "Log quantized update diagnostics every N optimizer steps. <=0 logs only when save_update_stats_jsonl is set."}
+    )
+    save_update_stats_jsonl: str = field(
+        default="",
+        metadata={"help": "Optional path for JSONL quantized update diagnostics. Relative paths are resolved under output_dir."}
+    )
+    zo_direction_sparse_rate: float = field(
+        default=1.0,
+        metadata={"help": "Random ZO direction active probability/fraction. 1.0 disables direction sparsity."}
+    )
+    zo_direction_sparse_mode: str = field(
+        default="none",
+        metadata={"help": "Random ZO direction sparsity mode. Choices: none, exact_random, bernoulli."}
+    )
+    zo_sparse_rescale: str = field(
+        default="none",
+        metadata={"help": "Sparse direction rescaling. Choices: none, inv_sqrt_p."}
+    )
+    zo_sparse_per_layer_exact: bool = field(
+        default=True,
+        metadata={"help": "For exact_random direction sparsity, enforce exact round(p*numel) active coordinates per trainable tensor. False enforces the exact fraction globally."}
+    )
+    zo_h: Optional[float] = field(
+        default=None,
+        metadata={"help": "Alias for --zero_order_eps used by sparse h sweeps."}
     )
     sparse_ratio: float = field(
         default=1.0,
@@ -1163,6 +1243,33 @@ def main():
         training_args.zo_quantization_bits = validate_quzo_bits(zo_quantization_alias)
     else:
         training_args.zo_quantization_bits = validate_quzo_bits(getattr(training_args, "zo_quantization_bits", 32))
+    if getattr(training_args, "zo_h", None) is not None:
+        zo_h = float(getattr(training_args, "zo_h"))
+        if (not math.isfinite(zo_h)) or zo_h <= 0.0:
+            raise ValueError("--zo_h must be a finite positive float")
+        training_args.zero_order_eps = zo_h
+        training_args.initial_h = zo_h
+        training_args.init_h = zo_h
+    training_args.zo_update_backend = normalize_zo_update_backend(getattr(training_args, "zo_update_backend", "direct_int8"))
+    training_args.residual_dtype = str(getattr(training_args, "residual_dtype", "fp32")).strip().lower()
+    if training_args.residual_dtype not in {"fp16", "float16", "bf16", "bfloat16", "fp32", "float32"}:
+        raise ValueError("--residual_dtype must be one of fp16, bf16, fp32")
+    training_args.residual_commit_mode = str(getattr(training_args, "residual_commit_mode", "round")).strip().lower()
+    if training_args.residual_commit_mode not in {"round", "floor", "stochastic"}:
+        raise ValueError("--residual_commit_mode must be one of round, floor, stochastic")
+    training_args.residual_max_code_step = int(getattr(training_args, "residual_max_code_step", 0))
+    if training_args.residual_max_code_step < 0:
+        raise ValueError("--residual_max_code_step must be >= 0")
+    training_args.log_update_stats_every = int(getattr(training_args, "log_update_stats_every", 0))
+    if training_args.log_update_stats_every < 0:
+        raise ValueError("--log_update_stats_every must be >= 0")
+    training_args.zo_direction_sparse_rate = validate_sparse_ratio(getattr(training_args, "zo_direction_sparse_rate", 1.0))
+    training_args.zo_direction_sparse_mode = str(getattr(training_args, "zo_direction_sparse_mode", "none")).strip().lower()
+    if training_args.zo_direction_sparse_mode not in {"none", "exact_random", "bernoulli"}:
+        raise ValueError("--zo_direction_sparse_mode must be one of none, exact_random, bernoulli")
+    training_args.zo_sparse_rescale = str(getattr(training_args, "zo_sparse_rescale", "none")).strip().lower()
+    if training_args.zo_sparse_rescale not in {"none", "inv_sqrt_p"}:
+        raise ValueError("--zo_sparse_rescale must be one of none, inv_sqrt_p")
     training_args.zo_method = normalize_zo_method_name(getattr(training_args, "zo_method", None))
     training_args.sparse_ratio = validate_sparse_ratio(getattr(training_args, "sparse_ratio", 1.0))
     training_args.sparse_mask_strategy = normalize_sparse_mask_strategy(getattr(training_args, "sparse_mask_strategy", "percentile_per_layer"))
@@ -1183,6 +1290,11 @@ def main():
             raise ValueError(f"--zo_method={training_args.zo_method} is incompatible with --sparse_ratio < 1.0")
         if int(getattr(training_args, "zo_quantization_bits", 32)) in {8, 4}:
             raise ValueError(f"--zo_method={training_args.zo_method} is incompatible with QuZO low-bit perturbations")
+    if training_args.zo_update_backend in {"residual_grid", "fp16_master"}:
+        if int(getattr(training_args, "zo_quantization_bits", 32)) not in {8, 4}:
+            raise ValueError("--zo_update_backend residual_grid/fp16_master requires --zo_quantization int8 or int4")
+        if bool(getattr(training_args, "zero_order_use_trainer_optim", False)):
+            raise ValueError("--zo_update_backend residual_grid/fp16_master currently requires direct ZO updates; set --zero_order_use_trainer_optim false")
     if int(getattr(training_args, "measure_perf_tail_window_steps", 10)) <= 0:
         raise ValueError("--measure_perf_tail_window_steps must be > 0")
     if int(getattr(training_args, "zo_probe_num_seeds", 16)) <= 0:
@@ -1351,6 +1463,16 @@ def main():
             else "n/a"
         ),
     )
+    logger.info(
+        "[quzo-update-config] backend=%s | residual_dtype=%s | commit_mode=%s | max_code_step=%s | int8_freeze_scale=%s | log_update_stats_every=%s | update_stats_jsonl=%s",
+        str(getattr(training_args, "zo_update_backend", "direct_int8")),
+        str(getattr(training_args, "residual_dtype", "fp32")),
+        str(getattr(training_args, "residual_commit_mode", "round")),
+        int(getattr(training_args, "residual_max_code_step", 0)),
+        bool(getattr(training_args, "int8_freeze_scale", True)),
+        int(getattr(training_args, "log_update_stats_every", 0)),
+        str(getattr(training_args, "save_update_stats_jsonl", "") or ""),
+    )
     if bool(getattr(training_args, "zero_order_optim", False)):
         logger.info(
             "[sparse-mezo-config] enabled=%s | sparse_ratio=%s | sparse_mask_strategy=%s | sparse_scope=%s | sparse_log_active_fraction=%s | sparse_mask_refresh_steps=%s",
@@ -1363,6 +1485,14 @@ def main():
         )
         logger.info(
             "[sparse-mezo-config] ratio semantics: sparse_ratio targets the active fraction per trainable tensor; ratio=1.0 disables masking. Order: refresh thresholds+mask on the configured cadence -> sample sparse-aware direction -> apply QuZO snapping after the sparse perturb/update path when low-bit QuZO is active."
+        )
+        logger.info(
+            "[zo-direction-sparse-config] mode=%s | rate=%s | rescale=%s | per_layer_exact=%s | zo_h=%s",
+            str(getattr(training_args, "zo_direction_sparse_mode", "none")),
+            float(getattr(training_args, "zo_direction_sparse_rate", 1.0)),
+            str(getattr(training_args, "zo_sparse_rescale", "none")),
+            bool(getattr(training_args, "zo_sparse_per_layer_exact", True)),
+            getattr(training_args, "zo_h", None),
         )
 
     # Set seed
@@ -1886,6 +2016,9 @@ def main():
         zo_probe_csv_path = os.path.join(training_args.output_dir, "zo_directional_probe.csv")
         h_estimation_csv_path = os.path.join(training_args.output_dir, "h_estimation.csv")
         eval_loss_last5_path = os.path.join(training_args.output_dir, "eval_loss_last5.json")
+        update_stats_path = str(getattr(training_args, "save_update_stats_jsonl", "") or "").strip()
+        if update_stats_path and not os.path.isabs(update_stats_path):
+            update_stats_path = os.path.join(training_args.output_dir, update_stats_path)
         run_summary_path = os.path.join(training_args.output_dir, "run_summary.json")
         summary_payload = {
             "time": final_result["time"],
@@ -1898,6 +2031,8 @@ def main():
             "artifacts": {
                 "metrics_csv_last_row": _read_last_csv_row(metrics_csv_path),
                 "zo_directional_probe_last_row": _read_last_csv_row(zo_probe_csv_path),
+                "update_stats_last_row": _read_last_jsonl_row(update_stats_path),
+                "direction_sparse_last_stats": getattr(trainer, "latest_zo_direction_sparse_stats", None),
                 "sparse_mezo_last_stats": getattr(trainer, "latest_sparse_mezo_stats", None),
                 "tail_perf_metrics": getattr(trainer, "latest_perf_tail_metrics", None),
                 "h_estimation_last_row": _read_last_csv_row(h_estimation_csv_path),
@@ -1906,6 +2041,7 @@ def main():
             "paths": {
                 "metrics_csv": metrics_csv_path if os.path.exists(metrics_csv_path) else None,
                 "zo_directional_probe_csv": zo_probe_csv_path if os.path.exists(zo_probe_csv_path) else None,
+                "update_stats_jsonl": update_stats_path if update_stats_path and os.path.exists(update_stats_path) else None,
                 "h_estimation_csv": h_estimation_csv_path if os.path.exists(h_estimation_csv_path) else None,
                 "eval_loss_last5_json": eval_loss_last5_path if os.path.exists(eval_loss_last5_path) else None,
                 "eval_results": eval_output_files,

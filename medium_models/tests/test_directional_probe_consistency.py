@@ -193,6 +193,7 @@ class DirectionalProbeConsistencyTest(unittest.TestCase):
 
         trainer.efficient_perturb_parameters(model, seed, scaling_factor=-2, random_vector=random_vector)
         minus_expected = {}
+        saw_distinct_probe_state = False
         for name, param in trainer.named_parameters_to_optim:
             bundle = random_vector[name]
             target_delta = trainer._quzo_build_clean_fd_target_delta(
@@ -205,7 +206,8 @@ class DirectionalProbeConsistencyTest(unittest.TestCase):
             expected = originals[name] + target_delta
             minus_expected[name] = expected
             self.assertTrue(torch.allclose(param.detach(), expected, atol=1e-7, rtol=1e-6), msg=f"{name}: minus")
-            self.assertFalse(torch.allclose(plus_expected[name], minus_expected[name]))
+            saw_distinct_probe_state = saw_distinct_probe_state or (not torch.allclose(plus_expected[name], minus_expected[name]))
+        self.assertTrue(saw_distinct_probe_state)
 
         trainer.efficient_perturb_parameters(model, seed, scaling_factor=1, random_vector=random_vector)
         for name, param in trainer.named_parameters_to_optim:

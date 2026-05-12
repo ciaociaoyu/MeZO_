@@ -12,10 +12,10 @@
   "output_dir": "/scratch/jy03364/MeZO_/experiments/stage1_fixed_h_fp16_20260428/results/opt-1.3b/sst2/mezo_lora/h_1e-5/seed_16",
   "slurm_array_task_id": "17",
   "slurm_job_id": "44808814",
-  "state": "running",
+  "state": "completed",
   "stderr_log": "/scratch/jy03364/MeZO_/experiments/stage1_fixed_h_fp16_20260428/logs/17_opt-1.3b_sst2_mezo_lora_h1e-5/train.err",
   "stdout_log": "/scratch/jy03364/MeZO_/experiments/stage1_fixed_h_fp16_20260428/logs/17_opt-1.3b_sst2_mezo_lora_h1e-5/train.log",
   "task_key": "sst2",
   "task_name": "SST2",
-  "updated_at": "2026-04-28T21:04:05"
+  "updated_at": "2026-04-28T22:04:02"
 }

@@ -1,0 +1,143 @@
+{
+  "d_dim": 407938142,
+  "h_ref": 0.000251189,
+  "kappa_bound_mean": 0.045329330474372924,
+  "kappa_realized_sup_mean": 0.04531483515266316,
+  "kappa_realized_rms_mean": 0.01695517497507872,
+  "g_hat": 10.87156718503729,
+  "l_hat": 9.207526376657146e-06,
+  "h2_for_l_probe": 0.003374348706421324,
+  "delta_hat_impl_at_href": 1.1386229192527262e-05,
+  "rows": [
+    {
+      "h": 1,
+      "corrected_bound_kappa_bound": 56436887.33118944,
+      "corrected_bound_kappa_rms": 56434569.97833655
+    },
+    {
+      "h": 0.630957,
+      "corrected_bound_kappa_bound": 22468767.0497352,
+      "corrected_bound_kappa_rms": 22467304.8804602
+    },
+    {
+      "h": 0.398107,
+      "corrected_bound_kappa_bound": 8945523.310522128,
+      "corrected_bound_kappa_rms": 8944600.724699765
+    },
+    {
+      "h": 0.251189,
+      "corrected_bound_kappa_bound": 3561633.35494778,
+      "corrected_bound_kappa_rms": 3561051.2222999684
+    },
+    {
+      "h": 0.158489,
+      "corrected_bound_kappa_bound": 1418118.6026081794,
+      "corrected_bound_kappa_rms": 1417751.2837291434
+    },
+    {
+      "h": 0.1,
+      "corrected_bound_kappa_bound": 564702.1152024164,
+      "corrected_bound_kappa_rms": 564470.3329201649
+    },
+    {
+      "h": 0.0630957,
+      "corrected_bound_kappa_bound": 224897.9539825836,
+      "corrected_bound_kappa_rms": 224751.6900581209
+    },
+    {
+      "h": 0.0398107,
+      "corrected_bound_kappa_bound": 89587.93521193638,
+      "corrected_bound_kappa_rms": 89495.62963273733
+    },
+    {
+      "h": 0.0251189,
+      "corrected_bound_kappa_bound": 35700.085254780475,
+      "corrected_bound_kappa_rms": 35641.82499303664
+    },
+    {
+      "h": 0.0158489,
+      "corrected_bound_kappa_bound": 14234.051779963054,
+      "corrected_bound_kappa_rms": 14197.27289509678
+    },
+    {
+      "h": 0.01,
+      "corrected_bound_kappa_bound": 5680.399436512895,
+      "corrected_bound_kappa_rms": 5657.174211325065
+    },
+    {
+      "h": 0.00630957,
+      "corrected_bound_kappa_bound": 2270.0619837855334,
+      "corrected_bound_kappa_rms": 2255.38859437659
+    },
+    {
+      "h": 0.00398107,
+      "corrected_bound_kappa_bound": 909.2036582274144,
+      "corrected_bound_kappa_rms": 899.9261033448367
+    },
+    {
+      "h": 0.00251189,
+      "corrected_bound_kappa_bound": 365.43011851461307,
+      "corrected_bound_kappa_rms": 359.55709537755644
+    },
+    {
+      "h": 0.00158489,
+      "corrected_bound_kappa_bound": 147.68118862429725,
+      "corrected_bound_kappa_rms": 143.95630317499706
+    },
+    {
+      "h": 0.001,
+      "corrected_bound_kappa_bound": 60.19591825054295,
+      "corrected_bound_kappa_rms": 57.8263987690873
+    },
+    {
+      "h": 0.000630957,
+      "corrected_bound_kappa_bound": 24.86295967036603,
+      "corrected_bound_kappa_rms": 23.34862376679895
+    },
+    {
+      "h": 0.000398107,
+      "corrected_bound_kappa_bound": 10.478562629620136,
+      "corrected_bound_kappa_rms": 9.503810178689616
+    },
+    {
+      "h": 0.000251189,
+      "corrected_bound_kappa_bound": 4.55132321836789,
+      "corrected_bound_kappa_rms": 3.917023941989479
+    },
+    {
+      "h": 0.000158489,
+      "corrected_bound_kappa_bound": 2.064974405250567,
+      "corrected_bound_kappa_rms": 1.645488897647803
+    },
+    {
+      "h": 0.0001,
+      "corrected_bound_kappa_bound": 0.9952470075877582,
+      "corrected_bound_kappa_rms": 0.7112980967694469
+    },
+    {
+      "h": 6.30957e-05,
+      "corrected_bound_kappa_bound": 0.5189590164956575,
+      "corrected_bound_kappa_rms": 0.3205284634662037
+    },
+    {
+      "h": 3.98107e-05,
+      "corrected_bound_kappa_bound": 0.2975336675717284,
+      "corrected_bound_kappa_rms": 0.15306145980593078
+    },
+    {
+      "h": 2.51189e-05,
+      "corrected_bound_kappa_bound": 0.18931087204678268,
+      "corrected_bound_kappa_rms": 0.07888398173619579
+    },
+    {
+      "h": 1.58489e-05,
+      "corrected_bound_kappa_bound": 0.13356143249419317,
+      "corrected_bound_kappa_rms": 0.044615919061170926
+    },
+    {
+      "h": 1e-05,
+      "corrected_bound_kappa_bound": 0.10337668912503846,
+      "corrected_bound_kappa_rms": 0.02798483537046152
+    }
+  ]
+}

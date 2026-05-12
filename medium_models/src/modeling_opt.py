@@ -39,7 +39,14 @@ from transformers.utils import (
 )
 #from .configuration_opt import OPTConfig
 
-import loralib as lora
+try:
+    import loralib as lora
+except ImportError:
+    class _MissingLora:
+        class Linear(nn.Linear):
+            def __init__(self, *args, **kwargs):
+                raise ImportError("loralib is required when config.apply_lora=True")
+    lora = _MissingLora()
 
 
 logger = logging.get_logger(__name__)

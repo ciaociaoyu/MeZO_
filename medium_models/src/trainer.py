@@ -29,6 +29,7 @@ import json
 import random
 import collections
 import inspect
+import hashlib
 import math
 from contextlib import nullcontext
 import os
@@ -94,6 +95,7 @@ from torch.optim import SGD
 import torch.nn.functional as F
 
 from src.linearhead_trainer import LinearHeadTrainer
+from src.int8_residual_grid import ResidualGridUpdater
 from src.quzo import _normal_like_with_seed, make_quzo_direction_pair, quantize_tensor
 from src.sparse_mezo import (
     apply_sparse_mask,
@@ -793,6 +795,14 @@ class Trainer(LinearHeadTrainer):
         return float(val)
 
     def _get_training_step_size(self) -> float:
+        override = getattr(self, "_zo_training_step_size_override", None)
+        if override is not None:
+            try:
+                val = float(override)
+                if math.isfinite(val) and val > 0.0:
+                    return val
+            except Exception:
+                pass
         src = self._get_active_h_source()
         if src == "additive" and self._should_compute_additive_h():
             return self._get_current_additive_h()
@@ -848,6 +858,174 @@ class Trainer(LinearHeadTrainer):
                 named_params.append((name, param))
         self.named_parameters_to_optim = named_params
         return named_params
+
+    def _zo_update_backend(self) -> str:
+        backend = str(getattr(self.args, "zo_update_backend", "direct_int8") or "direct_int8").strip().lower()
+        aliases = {
+            "residual": "residual_grid",
+            "int8_residual": "residual_grid",
+            "int8_residual_accum": "residual_grid",
+            "grid_residual": "residual_grid",
+            "quzo_fp16_master": "fp16_master",
+        }
+        return aliases.get(backend, backend)
+
+    def _residual_grid_enabled(self) -> bool:
+        return self._zo_use_quzo() and self._zo_update_backend() == "residual_grid"
+
+    def _get_residual_grid_updater(self) -> ResidualGridUpdater:
+        updater = getattr(self, "_residual_grid_updater", None)
+        if updater is None:
+            updater = ResidualGridUpdater(
+                self.named_parameters_to_optim,
+                bits=self._zo_quant_bits(),
+                residual_dtype=str(getattr(self.args, "residual_dtype", "fp32")),
+                commit_mode=str(getattr(self.args, "residual_commit_mode", "round")),
+                max_code_step=int(getattr(self.args, "residual_max_code_step", 0)),
+                freeze_scale=bool(getattr(self.args, "int8_freeze_scale", True)),
+            )
+            self._residual_grid_updater = updater
+            logger.info(
+                "[quzo-update] enabled residual_grid backend: residual_dtype=%s commit_mode=%s max_code_step=%s freeze_scale=%s",
+                str(getattr(self.args, "residual_dtype", "fp32")),
+                str(getattr(self.args, "residual_commit_mode", "round")),
+                int(getattr(self.args, "residual_max_code_step", 0)),
+                bool(getattr(self.args, "int8_freeze_scale", True)),
+            )
+        return updater
+
+    def _setup_update_stats_jsonl(self) -> None:
+        self._update_stats_jsonl_path = None
+        raw = str(getattr(self.args, "save_update_stats_jsonl", "") or "").strip()
+        if not raw:
+            return
+        path = raw
+        if not os.path.isabs(path):
+            path = os.path.join(getattr(self.args, "output_dir", "./outputs") or "./outputs", path)
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        self._update_stats_jsonl_path = path
+        if not os.path.exists(path):
+            with open(path, "w", encoding="utf-8"):
+                pass
+
+    def _update_stats_should_log(self, step: Optional[int] = None) -> bool:
+        every = int(getattr(self.args, "log_update_stats_every", 0) or 0)
+        if every <= 0 and not getattr(self, "_update_stats_jsonl_path", None):
+            return False
+        if step is None:
+            step = int(getattr(self.state, "global_step", 0))
+        if int(step) <= 1:
+            return True
+        return every <= 0 or (int(step) % every == 0)
+
+    def _zo_begin_update_stats(
+        self,
+        *,
+        projected_grad: Union[torch.Tensor, float],
+        lr: float,
+        eps: float,
+        train_loss: Optional[float],
+    ) -> None:
+        pg = float(projected_grad.detach().float().item()) if isinstance(projected_grad, torch.Tensor) else float(projected_grad)
+        self._zo_current_update_stats = {
+            "intended_sq": 0.0,
+            "actual_sq": 0.0,
+            "residual_sq": 0.0,
+            "dot": 0.0,
+            "active_count": 0.0,
+            "saturation_count": 0.0,
+            "numel": 0.0,
+            "skipped_count": 0.0,
+            "max_abs_residual_over_scale": 0.0,
+            "layers": [],
+            "projected_grad": pg,
+            "lr": float(lr),
+            "eps": float(eps),
+            "train_loss": None if train_loss is None else float(train_loss),
+        }
+
+    def _zo_record_update_param_stats(self, layer_name: str, stats: Optional[Dict[str, Any]]) -> None:
+        acc = getattr(self, "_zo_current_update_stats", None)
+        if not isinstance(acc, dict) or not isinstance(stats, dict):
+            return
+        numel = float(stats.get("numel", 0.0) or 0.0)
+        acc["numel"] += numel
+        acc["skipped_count"] += float(stats.get("skipped", 0.0) or 0.0)
+        for key in ["intended_sq", "actual_sq", "residual_sq", "dot", "active_count", "saturation_count"]:
+            acc[key] += float(stats.get(key, 0.0) or 0.0)
+        try:
+            acc["max_abs_residual_over_scale"] = max(
+                float(acc.get("max_abs_residual_over_scale", 0.0) or 0.0),
+                float(stats.get("max_abs_residual_over_scale", 0.0) or 0.0),
+            )
+        except Exception:
+            pass
+        if numel > 0:
+            intended_norm = math.sqrt(max(float(stats.get("intended_sq", 0.0) or 0.0), 0.0))
+            actual_norm = math.sqrt(max(float(stats.get("actual_sq", 0.0) or 0.0), 0.0))
+            denom = intended_norm * actual_norm
+            acc["layers"].append({
+                "layer_name": str(layer_name),
+                "active_frac": float(stats.get("active_frac", 0.0) or 0.0),
+                "residual_norm": math.sqrt(max(float(stats.get("residual_sq", 0.0) or 0.0), 0.0)),
+                "actual_update_norm": actual_norm,
+                "saturation_frac": float(stats.get("saturation_frac", 0.0) or 0.0),
+                "cos_intended_actual": (
+                    float(stats.get("dot", 0.0) or 0.0) / denom
+                    if denom > 0.0 else None
+                ),
+            })
+
+    def _zo_finish_update_stats(self) -> Optional[Dict[str, Any]]:
+        acc = getattr(self, "_zo_current_update_stats", None)
+        self._zo_current_update_stats = None
+        if not isinstance(acc, dict):
+            return None
+        intended_norm = math.sqrt(max(float(acc.get("intended_sq", 0.0) or 0.0), 0.0))
+        actual_norm = math.sqrt(max(float(acc.get("actual_sq", 0.0) or 0.0), 0.0))
+        residual_norm = math.sqrt(max(float(acc.get("residual_sq", 0.0) or 0.0), 0.0))
+        numel = float(acc.get("numel", 0.0) or 0.0)
+        denom = intended_norm * actual_norm
+        row = {
+            "global_step": int(getattr(self.state, "global_step", 0)),
+            "train_loss": acc.get("train_loss"),
+            "eval_loss": None,
+            "eval_acc": None,
+            "projected_grad": acc.get("projected_grad"),
+            "lr": acc.get("lr"),
+            "h": acc.get("eps"),
+            "update_backend": self._zo_update_backend(),
+            "residual_commit_mode": str(getattr(self.args, "residual_commit_mode", "round")),
+            "residual_max_code_step": int(getattr(self.args, "residual_max_code_step", 0)),
+            "intended_update_norm": intended_norm,
+            "actual_update_norm": actual_norm,
+            "residual_norm": residual_norm,
+            "active_frac": (float(acc.get("active_count", 0.0) or 0.0) / numel) if numel > 0 else None,
+            "saturation_frac": (float(acc.get("saturation_count", 0.0) or 0.0) / numel) if numel > 0 else None,
+            "cos_intended_actual": (float(acc.get("dot", 0.0) or 0.0) / denom) if denom > 0.0 else None,
+            "actual_over_intended_norm_ratio": (actual_norm / intended_norm) if intended_norm > 0.0 else None,
+            "numel": int(numel),
+            "skipped_count": int(float(acc.get("skipped_count", 0.0) or 0.0)),
+            "max_abs_residual_over_scale": float(acc.get("max_abs_residual_over_scale", 0.0) or 0.0),
+        }
+        sparse_stats = getattr(self, "latest_zo_direction_sparse_stats", None)
+        if isinstance(sparse_stats, dict):
+            row["direction_sparse_active_fraction"] = sparse_stats.get("active_fraction")
+            row["direction_sparse_active_params"] = sparse_stats.get("active_params")
+            row["direction_sparse_total_params"] = sparse_stats.get("total_params")
+        if getattr(self, "_update_stats_include_layers", False):
+            row["layers"] = acc.get("layers", [])
+        self.latest_update_stats = row
+        if self._update_stats_should_log(row["global_step"]):
+            logger.info("[zo-update-stats] %s", json.dumps(row, sort_keys=True))
+            path = getattr(self, "_update_stats_jsonl_path", None)
+            if path:
+                try:
+                    with open(path, "a", encoding="utf-8") as f:
+                        f.write(json.dumps(row, sort_keys=True) + "\n")
+                except Exception as exc:
+                    logger.warning("[zo-update-stats] failed to write JSONL: %s: %s", type(exc).__name__, exc)
+        return row
 
     def _two_point_effective_dimension(self, named_params: Optional[List[Tuple[str, nn.Parameter]]] = None) -> Tuple[int, str, int, Optional[int]]:
         if named_params is None:
@@ -2394,6 +2572,192 @@ class Trainer(LinearHeadTrainer):
     def _sparse_mask_tensor(self, name: str, tensor: torch.Tensor) -> torch.Tensor:
         return apply_sparse_mask(tensor, self._sparse_get_mask(name))
 
+    def _zo_direction_sparse_mode(self) -> str:
+        mode = str(getattr(self.args, "zo_direction_sparse_mode", "none") or "none").strip().lower()
+        if mode == "none" and str(os.environ.get("QUZO_DIRECTION_SPARSE_RATE", "")).strip():
+            mode = "bernoulli"
+        return mode
+
+    def _zo_direction_sparse_rate(self) -> float:
+        raw = getattr(self.args, "zo_direction_sparse_rate", None)
+        if raw is None:
+            raw = os.environ.get("QUZO_DIRECTION_SPARSE_RATE", "")
+        if not str(raw).strip():
+            return 1.0
+        try:
+            rate = float(raw)
+        except Exception:
+            return 1.0
+        if (not math.isfinite(rate)) or rate <= 0.0:
+            return 1.0
+        return min(rate, 1.0)
+
+    def _zo_direction_sparse_enabled(self) -> bool:
+        return self._zo_direction_sparse_mode() in {"exact_random", "bernoulli"} and self._zo_direction_sparse_rate() < 1.0
+
+    def _zo_sparse_rescale_factor(self) -> float:
+        if str(getattr(self.args, "zo_sparse_rescale", "none") or "none").strip().lower() != "inv_sqrt_p":
+            return 1.0
+        p = self._zo_direction_sparse_rate()
+        if (not math.isfinite(p)) or p <= 0.0:
+            return 1.0
+        return float(1.0 / math.sqrt(p))
+
+    def _zo_direction_sparse_note_mask(self, *, step_seed: int, name: str, mask: torch.Tensor, total_numel: int) -> None:
+        key = (int(getattr(self.state, "global_step", 0)), int(step_seed), self._zo_direction_sparse_mode(), f"{self._zo_direction_sparse_rate():.12g}")
+        stats = getattr(self, "_zo_direction_sparse_step_stats", None)
+        if not isinstance(stats, dict) or stats.get("key") != key:
+            stats = {
+                "key": key,
+                "global_step": int(getattr(self.state, "global_step", 0)),
+                "step_seed": int(step_seed),
+                "mode": self._zo_direction_sparse_mode(),
+                "configured_rate": float(self._zo_direction_sparse_rate()),
+                "rescale": str(getattr(self.args, "zo_sparse_rescale", "none") or "none"),
+                "active_params": 0,
+                "total_params": 0,
+                "seen_names": set(),
+                "layers": {},
+            }
+            self._zo_direction_sparse_step_stats = stats
+        if name in stats["seen_names"]:
+            return
+        active = int(mask.detach().sum().item())
+        total = int(total_numel)
+        stats["seen_names"].add(name)
+        stats["active_params"] += active
+        stats["total_params"] += total
+        stats["layers"][name] = {
+            "active_params": active,
+            "total_params": total,
+            "active_fraction": (float(active) / float(total)) if total > 0 else 0.0,
+        }
+        stats_public = {
+            k: v for k, v in stats.items()
+            if k not in {"key", "seen_names"}
+        }
+        total_seen = int(stats_public.get("total_params", 0) or 0)
+        stats_public["active_fraction"] = (
+            float(stats_public.get("active_params", 0) or 0) / float(total_seen)
+            if total_seen > 0 else 0.0
+        )
+        self.latest_zo_direction_sparse_stats = stats_public
+
+    def _zo_exact_direction_mask_for_tensor(
+        self,
+        *,
+        name: str,
+        tensor: torch.Tensor,
+        step_seed: int,
+        base_mask: Optional[torch.Tensor],
+    ) -> torch.Tensor:
+        rate = self._zo_direction_sparse_rate()
+        seed = self._quzo_stable_seed(int(step_seed), name, "direction_sparse_exact", rate)
+        generator = torch.Generator(device=tensor.device.type)
+        generator.manual_seed(int(seed))
+        scores = torch.rand(tensor.size(), device=tensor.device, dtype=torch.float32, generator=generator)
+        if base_mask is None:
+            eligible = torch.ones(tensor.size(), device=tensor.device, dtype=torch.bool)
+        else:
+            eligible = base_mask.to(device=tensor.device, dtype=torch.bool)
+        eligible_count = int(eligible.sum().item())
+        k = int(round(float(rate) * float(eligible_count)))
+        if k <= 0 or eligible_count <= 0:
+            return torch.zeros(tensor.size(), device=tensor.device, dtype=torch.bool)
+        if k >= eligible_count:
+            return eligible
+        eligible_scores = scores[eligible]
+        threshold = torch.kthvalue(eligible_scores, k).values
+        return eligible & (scores <= threshold)
+
+    def _zo_global_exact_direction_masks(self, step_seed: int) -> Dict[str, torch.Tensor]:
+        rate = self._zo_direction_sparse_rate()
+        key = (int(getattr(self.state, "global_step", 0)), int(step_seed), f"{rate:.12g}", "global_exact")
+        cache = getattr(self, "_zo_direction_sparse_global_cache", None)
+        if isinstance(cache, dict) and cache.get("key") == key:
+            return cache["masks"]
+        masks: Dict[str, torch.Tensor] = {}
+        score_parts = []
+        meta = []
+        total_eligible = 0
+        for name, param in self.named_parameters_to_optim:
+            tensor = param.data
+            base_mask = self._sparse_get_mask(name)
+            if base_mask is None:
+                eligible = torch.ones(tensor.size(), device=tensor.device, dtype=torch.bool)
+            else:
+                eligible = base_mask.to(device=tensor.device, dtype=torch.bool)
+            seed = self._quzo_stable_seed(int(step_seed), name, "direction_sparse_global_exact", rate)
+            generator = torch.Generator(device=tensor.device.type)
+            generator.manual_seed(int(seed))
+            scores = torch.rand(tensor.size(), device=tensor.device, dtype=torch.float32, generator=generator)
+            active_scores = scores[eligible]
+            score_parts.append(active_scores)
+            meta.append((name, tensor, eligible, scores))
+            total_eligible += int(active_scores.numel())
+        k = int(round(float(rate) * float(total_eligible)))
+        if k <= 0 or total_eligible <= 0:
+            for name, tensor, _, _ in meta:
+                masks[name] = torch.zeros(tensor.size(), device=tensor.device, dtype=torch.bool)
+        elif k >= total_eligible:
+            for name, _, eligible, _ in meta:
+                masks[name] = eligible
+        else:
+            flat_scores = torch.cat(score_parts, dim=0)
+            threshold = torch.kthvalue(flat_scores, k).values
+            for name, _, eligible, scores in meta:
+                masks[name] = eligible & (scores <= threshold.to(device=scores.device))
+        self._zo_direction_sparse_global_cache = {"key": key, "masks": masks}
+        return masks
+
+    def _zo_direction_sparse_mask(
+        self,
+        name: str,
+        param: nn.Parameter,
+        *,
+        step_seed: int,
+        base_mask: Optional[torch.Tensor] = None,
+    ) -> Optional[torch.Tensor]:
+        if not self._zo_direction_sparse_enabled():
+            return base_mask
+        mode = self._zo_direction_sparse_mode()
+        if mode == "bernoulli":
+            rate = self._zo_direction_sparse_rate()
+            seed = self._quzo_stable_seed(int(step_seed), name, "direction_sparse_bernoulli", rate)
+            generator = torch.Generator(device=param.data.device.type)
+            generator.manual_seed(int(seed))
+            mask = torch.rand(param.data.size(), device=param.data.device, dtype=torch.float32, generator=generator) < float(rate)
+            if base_mask is not None:
+                mask = mask & base_mask.to(device=param.data.device, dtype=torch.bool)
+        else:
+            if bool(getattr(self.args, "zo_sparse_per_layer_exact", True)):
+                mask = self._zo_exact_direction_mask_for_tensor(
+                    name=name,
+                    tensor=param.data,
+                    step_seed=int(step_seed),
+                    base_mask=base_mask,
+                )
+            else:
+                mask = self._zo_global_exact_direction_masks(int(step_seed)).get(name)
+                if mask is None:
+                    mask = self._zo_exact_direction_mask_for_tensor(
+                        name=name,
+                        tensor=param.data,
+                        step_seed=int(step_seed),
+                        base_mask=base_mask,
+                    )
+        self._zo_direction_sparse_note_mask(step_seed=int(step_seed), name=name, mask=mask, total_numel=int(param.data.numel()))
+        if not getattr(self, "_zo_direction_sparse_logged", False):
+            logger.info(
+                "[zo-direction-sparse] enabled mode=%s rate=%s rescale=%s per_layer_exact=%s",
+                self._zo_direction_sparse_mode(),
+                self._zo_direction_sparse_rate(),
+                str(getattr(self.args, "zo_sparse_rescale", "none") or "none"),
+                bool(getattr(self.args, "zo_sparse_per_layer_exact", True)),
+            )
+            self._zo_direction_sparse_logged = True
+        return mask
+
     def _sample_sparse_noise_like(
         self,
         name: str,
@@ -2402,12 +2766,20 @@ class Trainer(LinearHeadTrainer):
         seed: Optional[int] = None,
         dtype: Optional[torch.dtype] = None,
     ) -> torch.Tensor:
-        return sample_masked_normal_like(
+        base_mask = self._sparse_get_mask(name)
+        step_seed = int(seed) if seed is not None else int(getattr(self.state, "global_step", 0))
+        mask = self._zo_direction_sparse_mask(name, nn.Parameter(tensor, requires_grad=False), step_seed=step_seed, base_mask=base_mask)
+        out = sample_masked_normal_like(
             tensor,
-            mask=self._sparse_get_mask(name),
+            mask=mask,
             seed=seed,
             dtype=dtype,
         )
+        factor = self._zo_sparse_rescale_factor()
+        if factor != 1.0 and self._zo_direction_sparse_enabled():
+            out = out * factor
+        return out
+
 
     def _zo_reset_random_seed(self, random_seed: int) -> None:
         torch.manual_seed(int(random_seed))
@@ -2446,7 +2818,12 @@ class Trainer(LinearHeadTrainer):
         if random_vector is not None and name in random_vector:
             return random_vector[name]
         step_seed = int(random_seed if random_seed is not None else np.random.randint(2147483647))
-        mask = self._sparse_get_mask(name)
+        mask = self._quzo_direction_sparse_mask(
+            name,
+            param,
+            step_seed=step_seed,
+            base_mask=self._sparse_get_mask(name),
+        )
         bundle = make_quzo_direction_pair(
             param.data,
             bits=self._zo_quant_bits(),
@@ -2459,12 +2836,84 @@ class Trainer(LinearHeadTrainer):
             bundle = dict(bundle)
             bundle["u1"] = bundle["z"]
             bundle["u2"] = bundle["z"]
+        factor = self._zo_sparse_rescale_factor()
+        if factor != 1.0 and self._zo_direction_sparse_enabled():
+            bundle = dict(bundle)
+            for key in ("z", "u1", "u2"):
+                if key in bundle:
+                    bundle[key] = bundle[key] * factor
+        if random_vector is not None:
+            bundle = dict(bundle)
+            bundle["_clean_fd_context_key"] = ("random_vector", int(id(random_vector)))
         if random_vector is not None:
             random_vector[name] = bundle
         return bundle
 
+    def _quzo_direction_sparse_rate(self) -> float:
+        return self._zo_direction_sparse_rate()
+
+    @staticmethod
+    def _quzo_stable_seed(*parts: object) -> int:
+        text = "::".join(str(part) for part in parts)
+        digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        return int(digest[:16], 16) % 2147483647
+
+    def _quzo_direction_sparse_mask(
+        self,
+        name: str,
+        param: nn.Parameter,
+        *,
+        step_seed: int,
+        base_mask: Optional[torch.Tensor] = None,
+    ) -> Optional[torch.Tensor]:
+        return self._zo_direction_sparse_mask(
+            name,
+            param,
+            step_seed=int(step_seed),
+            base_mask=base_mask,
+        )
+
     def _quzo_use_clean_lowbit_fd(self) -> bool:
         return self._zo_use_quzo() and self._zo_quant_bits() in {8, 4}
+
+    def _quzo_grid_update_enabled(self) -> bool:
+        return self._zo_use_quzo() and self._hprobe_bool_env("QUZO_GRID_UPDATE", "0")
+
+    def _quzo_fp16_master_update_enabled(self) -> bool:
+        return self._zo_use_quzo() and (
+            self._zo_update_backend() == "fp16_master"
+            or self._hprobe_bool_env("QUZO_FP16_MASTER_UPDATE", "0")
+        )
+
+    def _quzo_fp16_master_state(self) -> Dict[str, torch.Tensor]:
+        if not hasattr(self, "_quzo_fp16_master_update_state"):
+            self._quzo_fp16_master_update_state = {}
+        return self._quzo_fp16_master_update_state
+
+    def _quzo_fp16_master_param(self, name: str, param: nn.Parameter) -> torch.Tensor:
+        state = self._quzo_fp16_master_state()
+        master = state.get(name)
+        if master is None or master.shape != param.data.shape or master.device != param.data.device:
+            master = param.data.detach().to(dtype=torch.float16).clone()
+            state[name] = master
+            if not getattr(self, "_quzo_fp16_master_update_logged", False):
+                logger.info(
+                    "[quzo-update] enabled FP16 master update: finite-difference forwards remain low-bit; "
+                    "updates accumulate in FP16 master and are snapped back to low-bit parameters."
+                )
+                self._quzo_fp16_master_update_logged = True
+        return master
+
+    def _quzo_grid_update_h(self) -> float:
+        raw = os.environ.get("QUZO_GRID_UPDATE_H", "")
+        try:
+            val = float(raw) if str(raw).strip() else float(self._get_training_step_size())
+        except Exception:
+            val = float(self._get_training_step_size())
+        if (not math.isfinite(val)) or val <= 0.0:
+            val = float(self._get_training_step_size())
+        scale = float(os.environ.get("QUZO_GRID_UPDATE_SCALE", "1.0"))
+        return float(val * scale)
 
     @staticmethod
     def _quzo_bundle_seed(bundle: Optional[Dict[str, torch.Tensor]], key: str) -> Optional[int]:
@@ -2486,12 +2935,25 @@ class Trainer(LinearHeadTrainer):
         gaussian_seed = self._quzo_bundle_seed(bundle, "gaussian_seed")
         if gaussian_seed is None:
             raise KeyError(f"QuZO bundle for {name} is missing gaussian_seed")
-        return _normal_like_with_seed(
+        step_seed = self._quzo_bundle_seed(bundle, "seed")
+        mask = self._sparse_get_mask(name)
+        if step_seed is not None:
+            mask = self._quzo_direction_sparse_mask(
+                name,
+                param,
+                step_seed=step_seed,
+                base_mask=mask,
+            )
+        direction = _normal_like_with_seed(
             param.data,
             gaussian_seed,
             dtype=torch.float32,
-            mask=self._sparse_get_mask(name),
+            mask=mask,
         )
+        factor = self._zo_sparse_rescale_factor()
+        if factor != 1.0 and self._zo_direction_sparse_enabled():
+            direction = direction * factor
+        return direction
 
     def _quzo_clean_fd_base_state(self) -> Dict[Tuple[str, int], Dict[str, torch.Tensor]]:
         if not hasattr(self, "_quzo_clean_fd_base_state_map"):
@@ -2553,6 +3015,33 @@ class Trainer(LinearHeadTrainer):
             target_dtype=param.data.dtype,
         )
 
+    def _quzo_build_clean_fd_target_delta(
+        self,
+        name: str,
+        param: nn.Parameter,
+        *,
+        target_scale: float,
+        eps: float,
+        bundle: Dict[str, torch.Tensor],
+    ) -> torch.Tensor:
+        context_key = None
+        if isinstance(bundle, dict):
+            context_key = bundle.get("_clean_fd_context_key")
+        base_param = self._quzo_clean_fd_get_base_param(
+            context_key=context_key,
+            name=name,
+            param=param,
+        )
+        target = self._quzo_build_clean_fd_target_state(
+            name,
+            param,
+            context_key=context_key,
+            target_scale=target_scale,
+            eps=eps,
+            bundle=bundle,
+        )
+        return target - base_param
+
     def _quzo_clean_fd_context_key(
         self,
         *,
@@ -2613,6 +3102,48 @@ class Trainer(LinearHeadTrainer):
             )
         )
 
+    def _quzo_update_stats_from_delta(
+        self,
+        *,
+        intended_delta: torch.Tensor,
+        actual_delta: torch.Tensor,
+        target: torch.Tensor,
+        bits: Optional[int] = None,
+    ) -> Dict[str, float]:
+        bits = self._zo_quant_bits() if bits is None else int(bits)
+        qmax = float((1 << (bits - 1)) - 1) if bits in {8, 4} else float("inf")
+        qmin = -qmax
+        intended_f = torch.nan_to_num(intended_delta.detach().float(), nan=0.0, posinf=0.0, neginf=0.0)
+        actual_f = torch.nan_to_num(actual_delta.detach().float(), nan=0.0, posinf=0.0, neginf=0.0)
+        intended_sq = float(torch.sum(intended_f * intended_f).item())
+        actual_sq = float(torch.sum(actual_f * actual_f).item())
+        dot = float(torch.sum(intended_f * actual_f).item())
+        changed = int(torch.count_nonzero(actual_f != 0).item())
+        numel = int(actual_f.numel())
+        saturated = 0
+        if bits in {8, 4}:
+            try:
+                target_f = target.detach().float()
+                max_abs = float(torch.max(torch.abs(target_f)).item()) if target_f.numel() > 0 else 0.0
+                if math.isfinite(max_abs) and max_abs > 0.0:
+                    scale = max_abs / qmax
+                    q = torch.round(target_f / scale).clamp(qmin, qmax)
+                    saturated = int(torch.count_nonzero((q == qmin) | (q == qmax)).item())
+            except Exception:
+                saturated = 0
+        return {
+            "skipped": 0.0,
+            "numel": float(numel),
+            "intended_sq": intended_sq,
+            "actual_sq": actual_sq,
+            "residual_sq": 0.0,
+            "dot": dot,
+            "active_count": float(changed),
+            "saturation_count": float(saturated),
+            "active_frac": (float(changed) / float(numel)) if numel > 0 else 0.0,
+            "saturation_frac": (float(saturated) / float(numel)) if numel > 0 else 0.0,
+        }
+
     def _quzo_apply_update_to_param(
         self,
         name: str,
@@ -2624,32 +3155,89 @@ class Trainer(LinearHeadTrainer):
         bundle: Optional[Dict[str, torch.Tensor]] = None,
     ) -> None:
         pg = float(projected_grad.detach().float().item()) if isinstance(projected_grad, torch.Tensor) else float(projected_grad)
+        if not math.isfinite(pg):
+            self._zo_record_update_param_stats(
+                name,
+                {"skipped": 1.0, "skip_reason": "nonfinite_projected_grad", "numel": float(param.data.numel())},
+            )
+            return
         if (not self._zo_use_quzo()) and (not self._sparse_enabled()):
             if weight_decay != 0.0 and self._hprobe_use_wd(name):
                 param.data.mul_(1.0 - float(learning_rate) * float(weight_decay))
             param.data.add_(direction.detach().to(dtype=param.data.dtype), alpha=-(float(learning_rate) * pg))
             return
-        update_direction = pg * direction.detach().float()
-        if weight_decay != 0.0 and self._hprobe_use_wd(name):
-            wd_direction = param.data.detach().float()
-            if self._sparse_enabled():
-                wd_direction = self._sparse_mask_tensor(name, wd_direction)
-            update_direction = update_direction + float(weight_decay) * wd_direction
-        update = float(learning_rate) * update_direction
+        if self._quzo_grid_update_enabled():
+            pg_sign = 0.0
+            if pg > 0.0:
+                pg_sign = 1.0
+            elif pg < 0.0:
+                pg_sign = -1.0
+            update = self._quzo_grid_update_h() * pg_sign * direction.detach().float()
+        else:
+            update_direction = pg * direction.detach().float()
+            if weight_decay != 0.0 and self._hprobe_use_wd(name):
+                wd_direction = param.data.detach().float()
+                if self._sparse_enabled():
+                    wd_direction = self._sparse_mask_tensor(name, wd_direction)
+                update_direction = update_direction + float(weight_decay) * wd_direction
+            update = float(learning_rate) * update_direction
         if not self._zo_use_quzo():
+            before = param.data.detach().clone()
+            intended_delta = -update
             param.data.add_(update.to(dtype=param.data.dtype), alpha=-1.0)
+            self._zo_record_update_param_stats(
+                name,
+                self._quzo_update_stats_from_delta(
+                    intended_delta=intended_delta,
+                    actual_delta=param.data.detach() - before,
+                    target=param.data.detach(),
+                    bits=32,
+                ),
+            )
             return
         # QuZO composition order is: build sparse-aware direction -> update ->
         # project the updated parameter back to the quantized grid.
         seed_val = None if bundle is None else bundle.get("state_seed", None)
         seed = int(seed_val.item()) if isinstance(seed_val, torch.Tensor) else None
-        param.data.copy_(
-            quantize_tensor(
-                param.data.detach().float() - update,
-                self._zo_quant_bits(),
-                seed=seed,
-                target_dtype=param.data.dtype,
+        wd_direction = None
+        if weight_decay != 0.0 and self._hprobe_use_wd(name):
+            wd_direction = param.data.detach().float()
+            if self._sparse_enabled():
+                wd_direction = self._sparse_mask_tensor(name, wd_direction)
+        if self._residual_grid_enabled():
+            stats = self._get_residual_grid_updater().apply_update(
+                name,
+                param,
+                direction,
+                projected_grad,
+                float(learning_rate),
+                weight_decay=(float(weight_decay) if self._hprobe_use_wd(name) else 0.0),
+                weight_decay_direction=wd_direction,
             )
+            self._zo_record_update_param_stats(name, stats)
+            return
+        before = param.data.detach().clone()
+        if self._quzo_fp16_master_update_enabled():
+            master = self._quzo_fp16_master_param(name, param)
+            master_next = master.detach().float() - update
+            master.copy_(master_next.to(dtype=torch.float16))
+            quant_source = master.detach().float()
+        else:
+            quant_source = param.data.detach().float() - update
+        target = quantize_tensor(
+            quant_source,
+            self._zo_quant_bits(),
+            seed=seed,
+            target_dtype=param.data.dtype,
+        )
+        param.data.copy_(target)
+        self._zo_record_update_param_stats(
+            name,
+            self._quzo_update_stats_from_delta(
+                intended_delta=-update,
+                actual_delta=param.data.detach() - before,
+                target=target,
+            ),
         )
 
     def _perf_tail_enabled(self) -> bool:
@@ -2785,14 +3373,45 @@ class Trainer(LinearHeadTrainer):
             "td_u2_mean_debug",
             "mae",
             "mse",
+            "g2",
+            "nmse",
             "rmse",
             "sign_acc",
             "corr",
+            "fd_zero_ratio",
+            "fd_abs_median",
+            "td_abs_median",
+            "td_raw_mean",
+            "g2_raw",
+            "mse_raw",
+            "nmse_raw",
+            "rmse_raw",
+            "sign_acc_raw",
+            "corr_raw",
+            "td_u1_mean_debug",
+            "g2_u1_debug",
+            "mse_u1_debug",
+            "nmse_u1_debug",
+            "rmse_u1_debug",
+            "sign_acc_u1_debug",
+            "corr_u1_debug",
             "mae_u2_debug",
             "mse_u2_debug",
+            "g2_u2_debug",
+            "nmse_u2_debug",
             "rmse_u2_debug",
             "sign_acc_u2_debug",
             "corr_u2_debug",
+            "param_changed_ratio_mean",
+            "param_changed_ratio_std",
+            "perturb_delta_norm_mean",
+            "perturb_delta_norm_std",
+            "perturb_changed_numel_mean",
+            "update_intended_norm_mean",
+            "update_actual_norm_mean",
+            "update_norm_ratio_mean",
+            "update_cos_mean",
+            "update_changed_ratio_mean",
             "probe_num_seeds",
         ]
 
@@ -2819,7 +3438,11 @@ class Trainer(LinearHeadTrainer):
             return False
 
         global_step = int(getattr(self.state, "global_step", 0))
-        if global_step <= 0 or (global_step % every) != 0:
+        include_step0 = self._hprobe_bool_env("ZO_PROBE_INCLUDE_STEP0", "0")
+        if global_step <= 0:
+            if not include_step0:
+                return False
+        elif (global_step % every) != 0:
             return False
         if getattr(self, "_zo_probe_last_step", None) == global_step:
             return False
@@ -2831,6 +3454,142 @@ class Trainer(LinearHeadTrainer):
         mixed_seed = (base_seed * 1000003 + int(global_step) * 9176 + 97) % 2147483647
         rng = np.random.RandomState(int(mixed_seed))
         return [int(x) for x in rng.randint(0, 2147483647, size=max(1, int(num_seeds)))]
+
+    def _zo_probe_h_values(self, default_eps: float) -> List[float]:
+        raw = os.environ.get("ZO_PROBE_HLIST", os.environ.get("ZO_PROBE_EPS_LIST", ""))
+        raw = str(raw or "").strip()
+        if not raw:
+            return [float(default_eps)]
+        values = []
+        for tok in re.split(r"[\s,]+", raw):
+            if not tok:
+                continue
+            try:
+                h = float(tok)
+            except Exception:
+                continue
+            if math.isfinite(h) and h > 0.0:
+                values.append(float(h))
+        seen = set()
+        deduped = []
+        for h in values:
+            key = f"{h:.17g}"
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(h)
+        return deduped if deduped else [float(default_eps)]
+
+    def _zo_begin_perturb_stats(self) -> None:
+        self._zo_current_perturb_stats = {
+            "changed_count": 0,
+            "numel": 0,
+            "delta_sq": 0.0,
+        }
+
+    def _zo_record_perturb_delta_stats(self, delta: torch.Tensor) -> None:
+        stats = getattr(self, "_zo_current_perturb_stats", None)
+        if not isinstance(stats, dict):
+            return
+        try:
+            d = delta.detach()
+            stats["numel"] = int(stats.get("numel", 0)) + int(d.numel())
+            stats["changed_count"] = int(stats.get("changed_count", 0)) + int(torch.count_nonzero(d != 0).item())
+            df = d.float()
+            stats["delta_sq"] = float(stats.get("delta_sq", 0.0)) + float(torch.sum(df * df).item())
+        except Exception:
+            stats["failed"] = True
+
+    def _zo_finish_perturb_stats(self) -> Dict[str, Any]:
+        stats = getattr(self, "_zo_current_perturb_stats", None)
+        self._zo_current_perturb_stats = None
+        if not isinstance(stats, dict) or bool(stats.get("failed", False)):
+            return {
+                "param_changed_ratio": None,
+                "param_changed_count": None,
+                "numel": None,
+                "delta_norm": None,
+            }
+        numel = int(stats.get("numel", 0) or 0)
+        changed = int(stats.get("changed_count", 0) or 0)
+        delta_sq = float(stats.get("delta_sq", 0.0) or 0.0)
+        return {
+            "param_changed_ratio": (float(changed) / float(numel)) if numel > 0 else None,
+            "param_changed_count": changed,
+            "numel": numel,
+            "delta_norm": float(math.sqrt(max(delta_sq, 0.0))),
+        }
+
+    def _zo_probe_update_survival_stats(
+        self,
+        random_vector: Optional[Dict[str, Any]],
+        projected_grad: float,
+    ) -> Dict[str, Any]:
+        if not self._hprobe_bool_env("ZO_PROBE_UPDATE_STATS", "0"):
+            return {}
+        intended_sq = 0.0
+        actual_sq = 0.0
+        dot = 0.0
+        changed = 0
+        total = 0
+        lr = float(getattr(self.args, "learning_rate", 0.0))
+        wd = float(getattr(self.args, "weight_decay", 0.0))
+        pg = float(projected_grad)
+        try:
+            with torch.no_grad():
+                for name, param in self.named_parameters_to_optim:
+                    if self._zo_use_quzo():
+                        if random_vector is not None and name in random_vector:
+                            bundle = random_vector[name]
+                        else:
+                            bundle = self._quzo_get_bundle(name, param)
+                        direction = bundle["u2"].detach().float()
+                    else:
+                        if random_vector is not None and name in random_vector:
+                            direction = random_vector[name].detach().float()
+                        else:
+                            direction = self._sample_sparse_noise_like(name, param.data).detach().float()
+
+                    update_direction = pg * direction
+                    if wd != 0.0 and self._hprobe_use_wd(name):
+                        wd_direction = param.data.detach().float()
+                        if self._sparse_enabled():
+                            wd_direction = self._sparse_mask_tensor(name, wd_direction)
+                        update_direction = update_direction + wd * wd_direction
+                    intended_delta = -lr * update_direction
+
+                    if self._zo_use_quzo():
+                        seed_val = bundle.get("state_seed", None)
+                        seed = int(seed_val.item()) if isinstance(seed_val, torch.Tensor) else None
+                        target = quantize_tensor(
+                            param.data.detach().float() + intended_delta,
+                            self._zo_quant_bits(),
+                            seed=seed,
+                            target_dtype=param.data.dtype,
+                        )
+                    else:
+                        target = param.data.detach() + intended_delta.to(dtype=param.data.dtype)
+
+                    actual_delta = (target.detach() - param.data.detach()).float()
+                    intended_f = intended_delta.detach().float()
+                    intended_sq += float(torch.sum(intended_f * intended_f).item())
+                    actual_sq += float(torch.sum(actual_delta * actual_delta).item())
+                    dot += float(torch.sum(intended_f * actual_delta).item())
+                    changed += int(torch.count_nonzero(target.detach() != param.data.detach()).item())
+                    total += int(param.data.numel())
+        except Exception as exc:
+            return {"update_stats_error": f"{type(exc).__name__}: {exc}"}
+
+        intended_norm = math.sqrt(max(intended_sq, 0.0))
+        actual_norm = math.sqrt(max(actual_sq, 0.0))
+        denom = intended_norm * actual_norm
+        return {
+            "update_intended_norm": float(intended_norm),
+            "update_actual_norm": float(actual_norm),
+            "update_norm_ratio": float(actual_norm / intended_norm) if intended_norm > 0.0 else None,
+            "update_cos": float(dot / denom) if denom > 0.0 else None,
+            "update_changed_ratio": float(changed / float(total)) if total > 0 else None,
+        }
 
     def _zo_probe_append_csv_row(self, row: Dict[str, Any]):
         if getattr(self, "_zo_probe_csv_path", None) is None:
@@ -2855,6 +3614,9 @@ class Trainer(LinearHeadTrainer):
     @staticmethod
     def _zo_probe_metric_summary(fd_arr: np.ndarray, td_arr: np.ndarray) -> Dict[str, float]:
         diff = fd_arr - td_arr
+        mse = float(np.mean(diff * diff))
+        g2 = float(np.mean(td_arr * td_arr))
+        zero_eps = float(os.environ.get("ZO_PROBE_ZERO_EPS", "1e-12"))
         corr = float("nan")
         if fd_arr.size >= 2:
             std_fd = float(np.std(fd_arr))
@@ -2865,10 +3627,15 @@ class Trainer(LinearHeadTrainer):
             "fd_mean": float(np.mean(fd_arr)),
             "td_mean": float(np.mean(td_arr)),
             "mae": float(np.mean(np.abs(diff))),
-            "mse": float(np.mean(diff * diff)),
-            "rmse": float(np.sqrt(np.mean(diff * diff))),
+            "mse": mse,
+            "g2": g2,
+            "nmse": float(mse / g2) if g2 > 0.0 else float("nan"),
+            "rmse": float(np.sqrt(mse)),
             "sign_acc": float(np.mean(np.sign(fd_arr) == np.sign(td_arr))),
             "corr": corr,
+            "fd_zero_ratio": float(np.mean(np.abs(fd_arr) < zero_eps)),
+            "fd_abs_median": float(np.median(np.abs(fd_arr))),
+            "td_abs_median": float(np.median(np.abs(td_arr))),
         }
 
     def _zo_maybe_run_directional_probe(self, model: nn.Module, inputs: Dict[str, Any]):
@@ -2877,13 +3644,10 @@ class Trainer(LinearHeadTrainer):
 
         global_step = int(getattr(self.state, "global_step", 0))
         num_seeds = max(1, int(getattr(self.args, "zo_probe_num_seeds", 16)))
-        eps = float(self._get_training_step_size())
+        base_eps = float(self._get_training_step_size())
+        eps_values = self._zo_probe_h_values(base_eps)
         precision = str(getattr(self.args, "zo_two_point_precision", "fp32")).lower()
         dir_seeds = self._zo_probe_seed_list(global_step, num_seeds)
-
-        fd_vals: List[float] = []
-        td_vals: List[float] = []
-        td_u2_vals: List[float] = []
 
         zo_forward_step_backup = int(getattr(self.state, "zo_forward_step", 0))
         torch_state = torch.random.get_rng_state()
@@ -2894,120 +3658,229 @@ class Trainer(LinearHeadTrainer):
         except Exception:
             cuda_states = None
 
-        try:
-            for seed in dir_seeds:
-                if self.args.efficient_zero_order:
-                    random_vector = self._zo_materialize_random_vector(seed)
-                    with torch.no_grad():
-                        model = self.efficient_perturb_parameters(model, seed, random_vector=random_vector)
-                        loss1 = self._zo_two_point_forward(model, inputs)
-                        model = self.efficient_perturb_parameters(model, seed, scaling_factor=-2, random_vector=random_vector)
-                        loss2 = self._zo_two_point_forward(model, inputs)
-                        model = self.efficient_perturb_parameters(model, seed, scaling_factor=1, random_vector=random_vector)
-                    _, proj_map = self._zo_true_directional_projections(
-                        model,
-                        inputs,
-                        random_vector=random_vector,
-                        quzo_probe_directions=(["u1", "u2"] if self._zo_use_quzo() else ["u1"]),
-                    )
-                else:
-                    # Deterministically sample the same z direction for FD and true-directional checks.
-                    self._zo_reset_random_seed(int(seed))
-
-                    random_vector = None
-                    with torch.no_grad():
-                        if self.args.zo_variant is not None:
-                            model, random_vector = self.norm_perturb_parameters(model)
-                        else:
-                            model, random_vector = self.perturb_parameters(model)
-                        loss1 = self._zo_two_point_forward(model, inputs)
-
-                        if self.args.zo_variant is not None:
-                            model, random_vector = self.norm_perturb_parameters(model, random_vector=random_vector, scaling_factor=-2)
-                        else:
-                            model, random_vector = self.perturb_parameters(model, random_vector=random_vector, scaling_factor=-2)
-                        loss2 = self._zo_two_point_forward(model, inputs)
-
-                        if self.args.zo_variant is not None:
-                            model, random_vector = self.norm_perturb_parameters(model, random_vector=random_vector, scaling_factor=1)
-                        else:
-                            model, random_vector = self.perturb_parameters(model, random_vector=random_vector, scaling_factor=1)
-                    _, proj_map = self._zo_true_directional_projections(
-                        model,
-                        inputs,
-                        random_vector=random_vector,
-                        quzo_probe_directions=(["u1", "u2"] if self._zo_use_quzo() else ["u1"]),
-                    )
-
-                fd = self._zo_fd_projected_grad(loss1, loss2, eps)
-                fd_vals.append(float(fd.detach().item()))
-                td_vals.append(float(proj_map["u1"].detach().float().item()))
-                if self._zo_use_quzo() and "u2" in proj_map:
-                    td_u2_vals.append(float(proj_map["u2"].detach().float().item()))
-
-            fd_raw = np.asarray(fd_vals, dtype=np.float64)
-            td_raw = np.asarray(td_vals, dtype=np.float64)
+        def _metric_or_none(fd_values: List[float], td_values: List[float]) -> Optional[Dict[str, float]]:
+            if len(fd_values) == 0 or len(td_values) == 0:
+                return None
+            fd_raw = np.asarray(fd_values, dtype=np.float64)
+            td_raw = np.asarray(td_values, dtype=np.float64)
+            if fd_raw.size != td_raw.size:
+                n = min(int(fd_raw.size), int(td_raw.size))
+                fd_raw = fd_raw[:n]
+                td_raw = td_raw[:n]
             valid = np.isfinite(fd_raw) & np.isfinite(td_raw)
             fd_arr = fd_raw[valid]
             td_arr = td_raw[valid]
             if fd_arr.size == 0:
-                logger.warning(f"[zo_probe] step={global_step}: no finite probe pairs; skipping row.")
+                return None
+            return self._zo_probe_metric_summary(fd_arr, td_arr)
+
+        def _empty_metric() -> Dict[str, Any]:
+            return {
+                "fd_mean": None,
+                "td_mean": None,
+                "mae": None,
+                "mse": None,
+                "g2": None,
+                "nmse": None,
+                "rmse": None,
+                "sign_acc": None,
+                "corr": None,
+                "fd_zero_ratio": None,
+                "fd_abs_median": None,
+                "td_abs_median": None,
+            }
+
+        def _mean_std_from_stats(stats_list: List[Dict[str, Any]], key: str) -> Tuple[Optional[float], Optional[float]]:
+            vals = []
+            for stats in stats_list:
+                if not isinstance(stats, dict):
+                    continue
+                val = stats.get(key)
+                if val is None:
+                    continue
+                try:
+                    fv = float(val)
+                except Exception:
+                    continue
+                if math.isfinite(fv):
+                    vals.append(fv)
+            if len(vals) == 0:
+                return None, None
+            arr = np.asarray(vals, dtype=np.float64)
+            return float(arr.mean()), float(arr.std())
+
+        wrote_any = False
+        try:
+            for eps in eps_values:
+                self._zo_training_step_size_override = float(eps)
+                fd_vals: List[float] = []
+                td_vals: List[float] = []
+                td_raw_vals: List[float] = []
+                td_u1_vals: List[float] = []
+                td_u2_vals: List[float] = []
+                perturb_stats: List[Dict[str, Any]] = []
+                update_stats: List[Dict[str, Any]] = []
+
+                for seed in dir_seeds:
+                    if self.args.efficient_zero_order:
+                        random_vector = self._zo_materialize_random_vector(seed)
+                        self._zo_begin_perturb_stats()
+                        with torch.no_grad():
+                            model = self.efficient_perturb_parameters(model, seed, random_vector=random_vector)
+                            stats_p = self._zo_finish_perturb_stats()
+                            loss1 = self._zo_two_point_forward(model, inputs)
+                            model = self.efficient_perturb_parameters(model, seed, scaling_factor=-2, random_vector=random_vector)
+                            loss2 = self._zo_two_point_forward(model, inputs)
+                            model = self.efficient_perturb_parameters(model, seed, scaling_factor=1, random_vector=random_vector)
+                        _, proj_map = self._zo_true_directional_projections(
+                            model,
+                            inputs,
+                            random_vector=random_vector,
+                            quzo_probe_directions=(["raw", "u1", "u2"] if self._zo_use_quzo() else ["u1"]),
+                        )
+                    else:
+                        # Deterministically sample the same z direction for FD and true-directional checks.
+                        self._zo_reset_random_seed(int(seed))
+
+                        random_vector = None
+                        self._zo_begin_perturb_stats()
+                        with torch.no_grad():
+                            if self.args.zo_variant is not None:
+                                model, random_vector = self.norm_perturb_parameters(model)
+                            else:
+                                model, random_vector = self.perturb_parameters(model)
+                            stats_p = self._zo_finish_perturb_stats()
+                            loss1 = self._zo_two_point_forward(model, inputs)
+
+                            if self.args.zo_variant is not None:
+                                model, random_vector = self.norm_perturb_parameters(model, random_vector=random_vector, scaling_factor=-2)
+                            else:
+                                model, random_vector = self.perturb_parameters(model, random_vector=random_vector, scaling_factor=-2)
+                            loss2 = self._zo_two_point_forward(model, inputs)
+
+                            if self.args.zo_variant is not None:
+                                model, random_vector = self.norm_perturb_parameters(model, random_vector=random_vector, scaling_factor=1)
+                            else:
+                                model, random_vector = self.perturb_parameters(model, random_vector=random_vector, scaling_factor=1)
+                        _, proj_map = self._zo_true_directional_projections(
+                            model,
+                            inputs,
+                            random_vector=random_vector,
+                            quzo_probe_directions=(["raw", "u1", "u2"] if self._zo_use_quzo() else ["u1"]),
+                        )
+
+                    fd = self._zo_fd_projected_grad(loss1, loss2, float(eps))
+                    fd_val = float(fd.detach().item())
+                    fd_vals.append(fd_val)
+                    perturb_stats.append(stats_p)
+                    update_stats.append(self._zo_probe_update_survival_stats(random_vector, fd_val))
+
+                    if self._zo_use_quzo():
+                        raw_proj = proj_map.get("raw", proj_map.get("u1"))
+                        u1_proj = proj_map.get("u1", raw_proj)
+                        u2_proj = proj_map.get("u2", u1_proj)
+                        td_vals.append(float(raw_proj.detach().float().item()))
+                        td_raw_vals.append(float(raw_proj.detach().float().item()))
+                        td_u1_vals.append(float(u1_proj.detach().float().item()))
+                        td_u2_vals.append(float(u2_proj.detach().float().item()))
+                    else:
+                        u1_proj = proj_map["u1"]
+                        val = float(u1_proj.detach().float().item())
+                        td_vals.append(val)
+                        td_raw_vals.append(val)
+                        td_u1_vals.append(val)
+
+                official_stats = _metric_or_none(fd_vals, td_vals)
+                if official_stats is None:
+                    logger.warning(f"[zo_probe] step={global_step} eps={float(eps):.3e}: no finite probe pairs; skipping row.")
+                    continue
+
+                raw_stats = _metric_or_none(fd_vals, td_raw_vals) or _empty_metric()
+                u1_stats = _metric_or_none(fd_vals, td_u1_vals) or _empty_metric()
+                u2_stats = _metric_or_none(fd_vals, td_u2_vals) or _empty_metric()
+                changed_ratio_mean, changed_ratio_std = _mean_std_from_stats(perturb_stats, "param_changed_ratio")
+                delta_norm_mean, delta_norm_std = _mean_std_from_stats(perturb_stats, "delta_norm")
+                changed_numel_mean, _ = _mean_std_from_stats(perturb_stats, "param_changed_count")
+                update_intended_norm_mean, _ = _mean_std_from_stats(update_stats, "update_intended_norm")
+                update_actual_norm_mean, _ = _mean_std_from_stats(update_stats, "update_actual_norm")
+                update_norm_ratio_mean, _ = _mean_std_from_stats(update_stats, "update_norm_ratio")
+                update_cos_mean, _ = _mean_std_from_stats(update_stats, "update_cos")
+                update_changed_ratio_mean, _ = _mean_std_from_stats(update_stats, "update_changed_ratio")
+
+                row = {
+                    "global_step": int(global_step),
+                    "eps": float(eps),
+                    "zo_two_point_precision": precision,
+                    "fd_mean": official_stats["fd_mean"],
+                    "td_mean": official_stats["td_mean"],
+                    "td_u2_mean_debug": u2_stats["td_mean"],
+                    "mae": official_stats["mae"],
+                    "mse": official_stats["mse"],
+                    "g2": official_stats["g2"],
+                    "nmse": official_stats["nmse"],
+                    "rmse": official_stats["rmse"],
+                    "sign_acc": official_stats["sign_acc"],
+                    "corr": official_stats["corr"],
+                    "fd_zero_ratio": official_stats["fd_zero_ratio"],
+                    "fd_abs_median": official_stats["fd_abs_median"],
+                    "td_abs_median": official_stats["td_abs_median"],
+                    "td_raw_mean": raw_stats["td_mean"],
+                    "g2_raw": raw_stats["g2"],
+                    "mse_raw": raw_stats["mse"],
+                    "nmse_raw": raw_stats["nmse"],
+                    "rmse_raw": raw_stats["rmse"],
+                    "sign_acc_raw": raw_stats["sign_acc"],
+                    "corr_raw": raw_stats["corr"],
+                    "td_u1_mean_debug": u1_stats["td_mean"],
+                    "g2_u1_debug": u1_stats["g2"],
+                    "mse_u1_debug": u1_stats["mse"],
+                    "nmse_u1_debug": u1_stats["nmse"],
+                    "rmse_u1_debug": u1_stats["rmse"],
+                    "sign_acc_u1_debug": u1_stats["sign_acc"],
+                    "corr_u1_debug": u1_stats["corr"],
+                    "mae_u2_debug": u2_stats["mae"],
+                    "mse_u2_debug": u2_stats["mse"],
+                    "g2_u2_debug": u2_stats["g2"],
+                    "nmse_u2_debug": u2_stats["nmse"],
+                    "rmse_u2_debug": u2_stats["rmse"],
+                    "sign_acc_u2_debug": u2_stats["sign_acc"],
+                    "corr_u2_debug": u2_stats["corr"],
+                    "param_changed_ratio_mean": changed_ratio_mean,
+                    "param_changed_ratio_std": changed_ratio_std,
+                    "perturb_delta_norm_mean": delta_norm_mean,
+                    "perturb_delta_norm_std": delta_norm_std,
+                    "perturb_changed_numel_mean": changed_numel_mean,
+                    "update_intended_norm_mean": update_intended_norm_mean,
+                    "update_actual_norm_mean": update_actual_norm_mean,
+                    "update_norm_ratio_mean": update_norm_ratio_mean,
+                    "update_cos_mean": update_cos_mean,
+                    "update_changed_ratio_mean": update_changed_ratio_mean,
+                    "probe_num_seeds": int(num_seeds),
+                }
+                self._zo_probe_append_csv_row(row)
+                wrote_any = True
+                logger.info(
+                    "[zo_probe] step=%d eps=%.3e precision=%s n=%d mse=%.6e g2=%.6e nmse=%.6e sign_acc=%.4f corr=%s fd0=%.3e changed=%.3e",
+                    int(global_step),
+                    float(eps),
+                    precision,
+                    int(len(fd_vals)),
+                    official_stats["mse"],
+                    official_stats["g2"],
+                    official_stats["nmse"],
+                    official_stats["sign_acc"],
+                    f"{official_stats['corr']:.6f}" if math.isfinite(official_stats["corr"]) else "nan",
+                    official_stats["fd_zero_ratio"],
+                    changed_ratio_mean if changed_ratio_mean is not None else float("nan"),
+                )
+
+            if wrote_any:
+                self._zo_probe_health_guard_note_good_probe()
+            else:
                 self._zo_probe_health_guard_note_bad_probe(
                     global_step=global_step,
                     reason="no_finite_probe_pairs",
                 )
-                return
-
-            official_stats = self._zo_probe_metric_summary(fd_arr, td_arr)
-            debug_stats = {
-                "td_mean": None,
-                "mae": None,
-                "mse": None,
-                "rmse": None,
-                "sign_acc": None,
-                "corr": None,
-            }
-            if self._zo_use_quzo() and len(td_u2_vals) > 0:
-                td_u2_raw = np.asarray(td_u2_vals, dtype=np.float64)
-                valid_u2 = np.isfinite(fd_raw) & np.isfinite(td_u2_raw)
-                fd_u2_arr = fd_raw[valid_u2]
-                td_u2_arr = td_u2_raw[valid_u2]
-                if fd_u2_arr.size > 0:
-                    debug_stats = self._zo_probe_metric_summary(fd_u2_arr, td_u2_arr)
-
-            row = {
-                "global_step": int(global_step),
-                "eps": float(eps),
-                "zo_two_point_precision": precision,
-                "fd_mean": official_stats["fd_mean"],
-                "td_mean": official_stats["td_mean"],
-                "td_u2_mean_debug": debug_stats["td_mean"],
-                "mae": official_stats["mae"],
-                "mse": official_stats["mse"],
-                "rmse": official_stats["rmse"],
-                "sign_acc": official_stats["sign_acc"],
-                "corr": official_stats["corr"],
-                "mae_u2_debug": debug_stats["mae"],
-                "mse_u2_debug": debug_stats["mse"],
-                "rmse_u2_debug": debug_stats["rmse"],
-                "sign_acc_u2_debug": debug_stats["sign_acc"],
-                "corr_u2_debug": debug_stats["corr"],
-                "probe_num_seeds": int(num_seeds),
-            }
-            self._zo_probe_health_guard_note_good_probe()
-            self._zo_probe_append_csv_row(row)
-            logger.info(
-                "[zo_probe] step=%d eps=%.3e precision=%s n=%d mae=%.6e mse=%.6e rmse=%.6e sign_acc=%.4f corr=%s",
-                int(global_step),
-                float(eps),
-                precision,
-                int(fd_arr.size),
-                official_stats["mae"],
-                official_stats["mse"],
-                official_stats["rmse"],
-                official_stats["sign_acc"],
-                f"{official_stats['corr']:.6f}" if math.isfinite(official_stats["corr"]) else "nan",
-            )
         except Exception as e:
             logger.warning(f"[zo_probe] step={global_step} failed: {type(e).__name__}: {e}")
             self._zo_probe_health_guard_note_bad_probe(
@@ -3016,6 +3889,9 @@ class Trainer(LinearHeadTrainer):
                 detail=f"{type(e).__name__}: {e}",
             )
         finally:
+            self._zo_current_perturb_stats = None
+            if hasattr(self, "_zo_training_step_size_override"):
+                self._zo_training_step_size_override = None
             self.state.zo_forward_step = zo_forward_step_backup
             torch.random.set_rng_state(torch_state)
             try:
@@ -3096,7 +3972,12 @@ class Trainer(LinearHeadTrainer):
                         random_vector[name] = bundle
                 else:
                     bundle = random_vector[name]
-                direction_map = {key: self._quzo_probe_direction(bundle, key) for key in direction_keys}
+                direction_map = {}
+                for key in direction_keys:
+                    if key in {"raw", "gaussian", "z_raw"}:
+                        direction_map[key] = self._quzo_sample_raw_direction(name, param, bundle)
+                    else:
+                        direction_map[key] = self._quzo_probe_direction(bundle, key)
             else:
                 if random_vector is None or name not in random_vector:
                     z = self._sample_sparse_noise_like(name, param.data)
@@ -3170,6 +4051,10 @@ class Trainer(LinearHeadTrainer):
             for name, param in self.named_parameters_to_optim:
                 if random_vector is not None and name in random_vector:
                     bundle = random_vector[name]
+                    if isinstance(bundle, dict) and "_clean_fd_context_key" not in bundle:
+                        bundle = dict(bundle)
+                        bundle["_clean_fd_context_key"] = ("random_vector", int(id(random_vector)))
+                        random_vector[name] = bundle
                 else:
                     bundle = self._quzo_get_bundle(name, param, random_seed=random_seed)
                 eps = float(self._get_training_step_size())
@@ -3193,6 +4078,7 @@ class Trainer(LinearHeadTrainer):
                     delta = next_target - prev_target
                 else:
                     delta = bundle["u1"].detach().to(dtype=param.data.dtype) * (float(scaling_factor) * eps)
+                self._zo_record_perturb_delta_stats(delta)
                 param.data = param.data + delta
                 if not use_clean_lowbit_fd:
                     self._quzo_quantize_param_from_bundle(param, bundle)
@@ -3212,6 +4098,7 @@ class Trainer(LinearHeadTrainer):
             eps = float(self._get_training_step_size())
             direction = self._zo_effective_perturb_direction(param, z)
             delta = direction * (float(scaling_factor) * eps)
+            self._zo_record_perturb_delta_stats(delta)
             param.data = param.data + delta
             # === End Adaptive h ===
         return model
@@ -3278,6 +4165,7 @@ class Trainer(LinearHeadTrainer):
                 delta = z * (float(scaling_factor) * eps)
             if (not self._zo_use_quzo()) and self._should_quantize_training_perturbation():
                 delta = self._quantize_delta_tensor(delta, target_dtype=param.data.dtype)
+            self._zo_record_perturb_delta_stats(delta)
             param.data = param.data + delta
             if self._zo_use_quzo() and (not use_clean_lowbit_fd):
                 self._quzo_quantize_param_from_bundle(param, bundle)
@@ -3336,6 +4224,7 @@ class Trainer(LinearHeadTrainer):
                 delta = z * (float(scaling_factor) * eps)
             if (not self._zo_use_quzo()) and self._should_quantize_training_perturbation():
                 delta = self._quantize_delta_tensor(delta, target_dtype=param.data.dtype)
+            self._zo_record_perturb_delta_stats(delta)
             param.data = param.data + delta
             if self._zo_use_quzo() and (not use_clean_lowbit_fd):
                 self._quzo_quantize_param_from_bundle(param, bundle)
@@ -3396,6 +4285,7 @@ class Trainer(LinearHeadTrainer):
                 delta = z * (float(scaling_factor) * eps)
             if (not self._zo_use_quzo()) and self._should_quantize_training_perturbation():
                 delta = self._quantize_delta_tensor(delta, target_dtype=param.data.dtype)
+            self._zo_record_perturb_delta_stats(delta)
             param.data = param.data + delta
             if self._zo_use_quzo() and (not use_clean_lowbit_fd):
                 self._quzo_quantize_param_from_bundle(param, bundle)
@@ -3932,6 +4822,7 @@ class Trainer(LinearHeadTrainer):
         # 初始化 CSV 日志文件
         self._setup_metrics_csv()
         self._setup_zo_probe_csv()
+        self._setup_update_stats_jsonl()
         if int(getattr(self.args, "zo_probe_every", 0)) > 0:
             logger.info(
                 "[zo_probe] enabled: every=%d, num_seeds=%d, csv=%s",
@@ -4384,6 +5275,8 @@ class Trainer(LinearHeadTrainer):
                                     logs["grad_l2_norm"] = float(grad_l2_step)
                                 if self._sparse_enabled() and getattr(self, "latest_sparse_mezo_stats", None):
                                     logs["sparse_active_fraction"] = float(self.latest_sparse_mezo_stats.get("active_fraction", 0.0))
+                                if getattr(self, "latest_zo_direction_sparse_stats", None):
+                                    logs["direction_sparse_active_fraction"] = float(self.latest_zo_direction_sparse_stats.get("active_fraction", 0.0))
                                 self.log(logs)
                                 logger.info(str(logs))
                                 # === CSV：记录本 step 的训练度量，评估结果稍后补充 ===
@@ -4420,6 +5313,16 @@ class Trainer(LinearHeadTrainer):
                         grad_l2_step = None
                         grad_l1_acc = 0.0
                         grad_l2_sq_acc = 0.0
+                        try:
+                            train_loss_for_update = float(loss1.detach().float().item())
+                        except Exception:
+                            train_loss_for_update = None
+                        self._zo_begin_update_stats(
+                            projected_grad=projected_grad,
+                            lr=float(self.args.learning_rate),
+                            eps=(eps if isinstance(eps, float) else float(eps.item())),
+                            train_loss=train_loss_for_update,
+                        )
                         for name, param in self.named_parameters_to_optim:
                             bundle = None
                             if self.args.efficient_zero_order:
@@ -4452,6 +5355,7 @@ class Trainer(LinearHeadTrainer):
                             else:
                                 param.data = param.data - self.args.learning_rate * (grad_est + self.args.weight_decay * param.data)
 
+                        update_stats_step = self._zo_finish_update_stats()
                         if grad_norm_logging:
                             grad_l1_step = float(grad_l1_acc)
                             grad_l2_step = float(math.sqrt(max(grad_l2_sq_acc, 0.0)))
@@ -4481,6 +5385,18 @@ class Trainer(LinearHeadTrainer):
                                     logs["grad_l2_norm"] = float(grad_l2_step)
                                 if self._sparse_enabled() and getattr(self, "latest_sparse_mezo_stats", None):
                                     logs["sparse_active_fraction"] = float(self.latest_sparse_mezo_stats.get("active_fraction", 0.0))
+                                if getattr(self, "latest_zo_direction_sparse_stats", None):
+                                    logs["direction_sparse_active_fraction"] = float(self.latest_zo_direction_sparse_stats.get("active_fraction", 0.0))
+                                if isinstance(update_stats_step, dict):
+                                    for src_key, dst_key in [
+                                        ("active_frac", "update_active_frac"),
+                                        ("saturation_frac", "update_saturation_frac"),
+                                        ("cos_intended_actual", "update_cos_intended_actual"),
+                                        ("actual_over_intended_norm_ratio", "update_norm_ratio"),
+                                        ("residual_norm", "update_residual_norm"),
+                                    ]:
+                                        if update_stats_step.get(src_key) is not None:
+                                            logs[dst_key] = float(update_stats_step[src_key])
                                 self.log(logs)
                                 logger.info(str(logs))
                                 # === CSV：记录本 step 的训练度量，评估结果稍后补充 ===
