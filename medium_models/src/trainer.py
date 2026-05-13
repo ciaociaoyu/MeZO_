@@ -814,7 +814,7 @@ class Trainer(LinearHeadTrainer):
         return (
             self._zo_use_quzo()
             or self._get_active_h_source() == "two_point"
-            or str(getattr(self.args, "zo_two_point_precision", "fp32")).lower() == "fp16"
+            or str(getattr(self.args, "zo_two_point_precision", "fp32")).lower() in {"fp16", "bf16"}
         )
 
     def _quantize_delta_tensor(self, delta: torch.Tensor, target_dtype: Optional[torch.dtype] = None) -> torch.Tensor:
@@ -827,6 +827,8 @@ class Trainer(LinearHeadTrainer):
         precision = str(getattr(self.args, "zo_two_point_precision", "fp32")).lower()
         if target_dtype is None:
             target_dtype = delta.dtype
+        if precision == "bf16":
+            return delta.detach().to(dtype=torch.bfloat16).to(dtype=target_dtype)
         if precision != "fp16":
             return delta.to(dtype=target_dtype)
         return delta.detach().to(dtype=torch.float16).to(dtype=target_dtype)
@@ -3886,13 +3888,15 @@ class Trainer(LinearHeadTrainer):
 
     def _zo_two_point_autocast_context(self):
         precision = str(getattr(self.args, "zo_two_point_precision", "fp32")).lower()
-        if precision == "fp16":
+        if precision in {"fp16", "bf16"}:
             if torch.cuda.is_available() and _use_native_amp and ("autocast" in globals()):
-                return autocast(dtype=torch.float16)
+                return autocast(dtype=(torch.bfloat16 if precision == "bf16" else torch.float16))
             if not getattr(self, "_zo_two_point_fp16_warned", False):
                 logger.warning(
-                    "[zo] zo_two_point_precision=fp16 requested but CUDA AMP autocast is unavailable; "
+                    "[zo] zo_two_point_precision=%s requested but CUDA AMP autocast is unavailable; "
                     "falling back to fp32 for two-point evaluations."
+                    ,
+                    precision,
                 )
                 self._zo_two_point_fp16_warned = True
         return nullcontext()
@@ -4227,6 +4231,12 @@ class Trainer(LinearHeadTrainer):
             "probe_active_frac": float(changed / float(total)) if total > 0 else None,
             "probe_alignment": float(dot / denom) if denom > 0.0 else None,
             "probe_norm_ratio": float(delta_norm / (intended_norm + 1e-12)) if intended_norm > 0.0 else None,
+            "delta_q_norm": float(delta_norm),
+            "probe_delta_norm": float(delta_norm),
+            "nominal_delta_norm": float(intended_norm),
+            "intended_norm": float(intended_norm),
+            "multi_code_jump_frac": None,
+            "saturation_frac": None,
         }
 
     def _zo_probe_append_csv_row(self, row: Dict[str, Any]):
@@ -4569,6 +4579,263 @@ class Trainer(LinearHeadTrainer):
                     torch.cuda.set_rng_state_all(cuda_states)
             except Exception:
                 pass
+
+    def _probe_window_h_values(self) -> List[float]:
+        raw = str(getattr(self.args, "probe_window_h_list", "") or "").strip()
+        if not raw:
+            raw = os.environ.get("PROBE_WINDOW_HLIST", os.environ.get("ZO_PROBE_HLIST", ""))
+        values: List[float] = []
+        for tok in re.split(r"[\s,]+", str(raw or "").strip()):
+            if not tok:
+                continue
+            try:
+                h = float(tok)
+            except Exception:
+                continue
+            if math.isfinite(h) and h > 0.0:
+                values.append(float(h))
+        if not values:
+            values = [float(self._get_training_step_size())]
+        deduped: List[float] = []
+        seen = set()
+        for h in values:
+            key = f"{h:.17g}"
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(float(h))
+        return deduped
+
+    def _probe_window_precision_mode(self) -> str:
+        raw = str(getattr(self.args, "precision_mode", "") or "").strip().lower()
+        if raw:
+            return raw
+        bits = int(getattr(self.args, "zo_quantization_bits", 32))
+        if bits in {8, 4}:
+            return f"int{bits}"
+        if bits == 16:
+            return "fp16"
+        return str(getattr(self.args, "zo_two_point_precision", "fp32") or "fp32").strip().lower()
+
+    def _probe_window_direction_type(self) -> str:
+        raw = str(getattr(self.args, "direction_type", "") or "").strip().lower()
+        if raw in {"dense", "sparse"}:
+            return raw
+        return "sparse" if self._zo_direction_sparse_enabled() else "dense"
+
+    def _probe_window_direction_for_param(
+        self,
+        name: str,
+        param: nn.Parameter,
+        random_vector: Dict[str, Any],
+    ) -> torch.Tensor:
+        if self._zo_use_quzo():
+            bundle = random_vector[name]
+            return self._quzo_sample_raw_direction(name, param, bundle).detach().float()
+        direction = random_vector[name].detach()
+        return self._zo_effective_perturb_direction(param, direction).detach().float()
+
+    def _probe_window_true_directional_from_grads(
+        self,
+        grads: Optional[Tuple[Optional[torch.Tensor], ...]],
+        random_vector: Dict[str, Any],
+    ) -> Optional[float]:
+        if grads is None:
+            return None
+        total: Optional[torch.Tensor] = None
+        for (name, param), grad in zip(self.named_parameters_to_optim, grads):
+            if grad is None:
+                continue
+            direction = self._probe_window_direction_for_param(name, param, random_vector)
+            contrib = torch.sum(grad.detach().float() * direction)
+            total = contrib if total is None else total + contrib
+        if total is None:
+            return 0.0
+        return float(total.detach().float().item())
+
+    def _probe_window_compute_grads_once(
+        self,
+        model: nn.Module,
+        inputs: Dict[str, Any],
+    ) -> Tuple[torch.Tensor, Tuple[Optional[torch.Tensor], ...]]:
+        model.eval()
+        prepared = self._prepare_inputs(inputs)
+        if self.args.optimize_acc:
+            loss, logits = model(**prepared)
+            preds = F.softmax(logits, dim=-1)
+            acc = torch.sum(torch.argmax(preds, 1) == prepared["labels"]) / len(preds)
+            loss = -acc
+        else:
+            with self.compute_loss_context_manager():
+                loss = self.compute_loss(model, prepared)
+            if self.args.n_gpu > 1:
+                loss = loss.mean()
+        params = [p for _, p in self.named_parameters_to_optim]
+        grads = torch.autograd.grad(loss, params, retain_graph=False, create_graph=False, allow_unused=True)
+        self.state.zo_forward_step += 1
+        return loss.detach(), grads
+
+    def run_probe_window_diagnostics(
+        self,
+        model: nn.Module,
+        *,
+        output_dir: Optional[str] = None,
+        num_batches: Optional[int] = None,
+        num_directions: Optional[int] = None,
+        compute_true_grad_directional: Optional[bool] = None,
+    ) -> Dict[str, Any]:
+        """Run signal-only finite-difference window diagnostics and write per-direction JSONL."""
+        out_dir = output_dir or getattr(self.args, "output_dir", "./outputs") or "./outputs"
+        os.makedirs(out_dir, exist_ok=True)
+        jsonl_name = str(getattr(self.args, "save_probe_stats_jsonl", "") or "probe_stats.jsonl").strip()
+        jsonl_path = jsonl_name if os.path.isabs(jsonl_name) else os.path.join(out_dir, jsonl_name)
+        os.makedirs(os.path.dirname(jsonl_path) or ".", exist_ok=True)
+
+        self.named_parameters_to_optim = []
+        for name, param in model.named_parameters():
+            if self.should_optim(name, param):
+                self.named_parameters_to_optim.append((name, param))
+        if not self.named_parameters_to_optim:
+            raise ValueError("probe-window diagnostics found no trainable parameters")
+
+        if not hasattr(self.state, "zo_forward_step"):
+            self.state.zo_forward_step = 0
+        self.state.global_step = int(getattr(self.state, "global_step", 0) or 0)
+
+        h_values = self._probe_window_h_values()
+        n_batches = max(1, int(num_batches if num_batches is not None else getattr(self.args, "num_probe_batches", 1)))
+        n_dirs = max(1, int(num_directions if num_directions is not None else getattr(self.args, "zo_probe_num_seeds", 16)))
+        compute_true = bool(
+            compute_true_grad_directional
+            if compute_true_grad_directional is not None
+            else getattr(self.args, "compute_true_grad_directional", True)
+        )
+        precision_mode = self._probe_window_precision_mode()
+        direction_type = self._probe_window_direction_type()
+        sparse_rate = float(self._zo_direction_sparse_rate())
+        sparse_mode = self._zo_direction_sparse_mode()
+        sparse_rescale = str(getattr(self.args, "zo_sparse_rescale", "none") or "none")
+
+        logger.info(
+            "[probe-window] output=%s precision=%s h_values=%s batches=%d directions=%d direction_type=%s sparse_rate=%s sparse_mode=%s rescale=%s true_grad=%s",
+            jsonl_path,
+            precision_mode,
+            ",".join(f"{h:.6g}" for h in h_values),
+            n_batches,
+            n_dirs,
+            direction_type,
+            sparse_rate,
+            sparse_mode,
+            sparse_rescale,
+            compute_true,
+        )
+
+        torch_state = torch.random.get_rng_state()
+        cuda_states = None
+        try:
+            if torch.cuda.is_available():
+                cuda_states = torch.cuda.get_rng_state_all()
+        except Exception:
+            cuda_states = None
+        zo_forward_step_backup = int(getattr(self.state, "zo_forward_step", 0))
+
+        rows_written = 0
+        zero_eps = float(os.environ.get("ZO_PROBE_ZERO_EPS", "1e-12"))
+        try:
+            with open(jsonl_path, "w", encoding="utf-8") as out:
+                dataloader = self.get_train_dataloader()
+                for batch_index, batch in enumerate(dataloader):
+                    if batch_index >= n_batches:
+                        break
+                    grads: Optional[Tuple[Optional[torch.Tensor], ...]] = None
+                    base_loss = None
+                    if compute_true:
+                        base_loss, grads = self._probe_window_compute_grads_once(model, batch)
+
+                    for h in h_values:
+                        self._zo_training_step_size_override = float(h)
+                        seeds = self._zo_probe_seed_list(batch_index, n_dirs)
+                        for direction_index, seed in enumerate(seeds):
+                            random_vector = self._zo_materialize_random_vector(int(seed))
+                            with torch.no_grad():
+                                model = self.efficient_perturb_parameters(model, int(seed), random_vector=random_vector)
+                                loss_plus = self._zo_two_point_forward(model, batch)
+                                model = self.efficient_perturb_parameters(model, int(seed), scaling_factor=-2, random_vector=random_vector)
+                                loss_minus = self._zo_two_point_forward(model, batch)
+                                model = self.efficient_perturb_parameters(model, int(seed), scaling_factor=1, random_vector=random_vector)
+
+                            d_fd = float(self._zo_fd_projected_grad(loss_plus, loss_minus, float(h)).detach().item())
+                            d_true = self._probe_window_true_directional_from_grads(grads, random_vector) if compute_true else None
+                            pair_stats = self._zo_probe_pair_lattice_stats(random_vector, float(h))
+                            h_active = float(h) / math.sqrt(sparse_rate) if sparse_rescale == "inv_sqrt_p" and sparse_rate > 0.0 else float(h)
+                            delta_q_norm = pair_stats.get("delta_q_norm", pair_stats.get("probe_delta_norm"))
+                            nominal_delta_norm = pair_stats.get("nominal_delta_norm", pair_stats.get("intended_norm"))
+                            row = {
+                                "batch_index": int(batch_index),
+                                "direction_index": int(direction_index),
+                                "seed": int(seed),
+                                "h_raw": float(h),
+                                "h_active": float(h_active),
+                                "precision_mode": precision_mode,
+                                "quant_bits": int(getattr(self.args, "zo_quantization_bits", 32)),
+                                "zo_two_point_precision": str(getattr(self.args, "zo_two_point_precision", "fp32") or "fp32"),
+                                "direction_type": direction_type,
+                                "sparse_rate": float(sparse_rate),
+                                "p": float(sparse_rate),
+                                "sparse_mode": sparse_mode,
+                                "sparse_rescale": sparse_rescale,
+                                "loss_base": None if base_loss is None else float(base_loss.detach().float().item()),
+                                "loss_plus": float(loss_plus.detach().float().item()),
+                                "loss_minus": float(loss_minus.detach().float().item()),
+                                "d_fd": float(d_fd),
+                                "fd_abs": float(abs(d_fd)),
+                                "fd_is_zero": bool(abs(d_fd) < zero_eps),
+                                "d_true": d_true,
+                                "sign_match": None if d_true is None else bool(np.sign(d_fd) == np.sign(float(d_true))),
+                                "probe_active_frac": pair_stats.get("probe_active_frac"),
+                                "probe_alignment": pair_stats.get("probe_alignment"),
+                                "probe_norm_ratio": pair_stats.get("probe_norm_ratio"),
+                                "delta_q_norm": delta_q_norm,
+                                "nominal_delta_norm": nominal_delta_norm,
+                                "multi_code_jump_frac": pair_stats.get("multi_code_jump_frac"),
+                                "saturation_frac": pair_stats.get("saturation_frac"),
+                                "probe_stats_error": pair_stats.get("probe_stats_error"),
+                            }
+                            out.write(json.dumps(row, sort_keys=True) + "\n")
+                            rows_written += 1
+                            del random_vector
+
+                    del grads
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+        finally:
+            if hasattr(self, "_zo_training_step_size_override"):
+                self._zo_training_step_size_override = None
+            self.state.zo_forward_step = zo_forward_step_backup
+            torch.random.set_rng_state(torch_state)
+            try:
+                if cuda_states is not None and torch.cuda.is_available():
+                    torch.cuda.set_rng_state_all(cuda_states)
+            except Exception:
+                pass
+
+        summary = {
+            "jsonl_path": jsonl_path,
+            "rows_written": int(rows_written),
+            "h_values": h_values,
+            "num_probe_batches": int(n_batches),
+            "num_probe_directions": int(n_dirs),
+            "precision_mode": precision_mode,
+            "direction_type": direction_type,
+            "sparse_rate": float(sparse_rate),
+            "sparse_mode": sparse_mode,
+            "sparse_rescale": sparse_rescale,
+            "compute_true_grad_directional": bool(compute_true),
+        }
+        with open(os.path.join(out_dir, "probe_window_summary.json"), "w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2, sort_keys=True)
+        logger.info("[probe-window] wrote %d rows to %s", int(rows_written), jsonl_path)
+        return summary
 
     def zo_forward(self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]]) -> torch.Tensor:
         model.eval()

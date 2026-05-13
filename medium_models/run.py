@@ -694,8 +694,16 @@ class DynamicTrainingArguments(TrainingArguments):
     zo_two_point_precision: str = field(
         default="fp32",
         metadata={
-            'help': 'Precision used ONLY for the two finite-difference function evaluations (loss1/loss2) in ZO. Choices: fp32, fp16.'
+            'help': 'Precision used ONLY for the two finite-difference function evaluations (loss1/loss2) in ZO. Choices: fp32, fp16, bf16.'
         }
+    )
+    precision_mode: str = field(
+        default="",
+        metadata={"help": "Probe-window convenience alias. Choices: fp32, fp16, bf16, int8. Maps to the existing ZO precision/quantization flags."}
+    )
+    quant_bits: Optional[int] = field(
+        default=None,
+        metadata={"help": "Probe-window convenience alias for --zo_quantization_bits."}
     )
     zo_quantization_bits: int = field(
         default=32,
@@ -768,6 +776,38 @@ class DynamicTrainingArguments(TrainingArguments):
     debug_save_dir: str = field(
         default="",
         metadata={"help": "Output directory for residual_grid consistency diagnostics. Relative paths resolve under output_dir."}
+    )
+    probe_window_diagnostics_only: bool = field(
+        default=False,
+        metadata={"help": "Run signal-only h-window diagnostics and exit before training updates."}
+    )
+    probe_window_h_list: str = field(
+        default="",
+        metadata={"help": "Comma/space-separated h values for --probe_window_diagnostics_only. Defaults to --zo_h/--zero_order_eps."}
+    )
+    num_probe_batches: int = field(
+        default=1,
+        metadata={"help": "Number of train batches used by probe-window diagnostics."}
+    )
+    compute_true_grad_directional: bool = field(
+        default=True,
+        metadata={"help": "Compute one true gradient per probe batch and log grad-dot-direction diagnostics."}
+    )
+    direction_type: str = field(
+        default="dense",
+        metadata={"help": "Probe-window direction type. Choices: dense, sparse."}
+    )
+    sparse_rate: Optional[float] = field(
+        default=None,
+        metadata={"help": "Alias for --zo_direction_sparse_rate used by probe-window scripts."}
+    )
+    sparse_mode: Optional[str] = field(
+        default=None,
+        metadata={"help": "Alias for --zo_direction_sparse_mode used by probe-window scripts."}
+    )
+    sparse_rescale: Optional[str] = field(
+        default=None,
+        metadata={"help": "Alias for --zo_sparse_rescale used by probe-window scripts."}
     )
     zo_direction_sparse_rate: float = field(
         default=1.0,
@@ -1279,9 +1319,28 @@ def main():
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
     data_args.task_name = normalize_medium_task_name(getattr(data_args, "task_name", ""))
+    precision_mode = str(getattr(training_args, "precision_mode", "") or "").strip().lower()
+    if precision_mode:
+        if precision_mode not in {"fp32", "fp16", "bf16", "int8"}:
+            raise ValueError("--precision_mode must be one of fp32, fp16, bf16, int8")
+        if precision_mode == "int8":
+            training_args.zo_quantization = "int8"
+            if str(getattr(training_args, "zo_two_point_precision", "fp32")).lower() == "fp32":
+                training_args.zo_two_point_precision = "fp16"
+        elif precision_mode == "fp16":
+            training_args.zo_quantization = "fp16"
+            training_args.zo_two_point_precision = "fp16"
+        elif precision_mode == "bf16":
+            training_args.zo_quantization = "fp32"
+            training_args.zo_two_point_precision = "bf16"
+        else:
+            training_args.zo_quantization = "fp32"
+            training_args.zo_two_point_precision = "fp32"
+    if getattr(training_args, "quant_bits", None) is not None:
+        training_args.zo_quantization_bits = validate_quzo_bits(getattr(training_args, "quant_bits"))
     training_args.zo_two_point_precision = str(getattr(training_args, "zo_two_point_precision", "fp32")).lower()
-    if training_args.zo_two_point_precision not in {"fp32", "fp16"}:
-        raise ValueError(f"Invalid --zo_two_point_precision={training_args.zo_two_point_precision}. Allowed: fp32, fp16")
+    if training_args.zo_two_point_precision not in {"fp32", "fp16", "bf16"}:
+        raise ValueError(f"Invalid --zo_two_point_precision={training_args.zo_two_point_precision}. Allowed: fp32, fp16, bf16")
     zo_quantization_alias = getattr(training_args, "zo_quantization", None)
     if zo_quantization_alias not in (None, ""):
         training_args.zo_quantization_bits = validate_quzo_bits(zo_quantization_alias)
@@ -1313,12 +1372,32 @@ def main():
     training_args.debug_num_tensors = int(getattr(training_args, "debug_num_tensors", 5))
     if training_args.debug_num_tensors <= 0:
         raise ValueError("--debug_num_tensors must be > 0")
+    training_args.num_probe_batches = int(getattr(training_args, "num_probe_batches", 1))
+    if training_args.num_probe_batches <= 0:
+        raise ValueError("--num_probe_batches must be > 0")
     training_args.zo_update_norm_clip = float(getattr(training_args, "zo_update_norm_clip", 0.0) or 0.0)
     if training_args.zo_update_norm_clip < 0.0:
         raise ValueError("--zo_update_norm_clip must be >= 0")
     training_args.zo_scalar_clip = float(getattr(training_args, "zo_scalar_clip", 0.0) or 0.0)
     if training_args.zo_scalar_clip < 0.0:
         raise ValueError("--zo_scalar_clip must be >= 0")
+    training_args.zo_direction_sparse_rate = validate_sparse_ratio(getattr(training_args, "zo_direction_sparse_rate", 1.0))
+    training_args.zo_direction_sparse_mode = str(getattr(training_args, "zo_direction_sparse_mode", "none")).strip().lower()
+    if getattr(training_args, "sparse_rate", None) is not None:
+        training_args.zo_direction_sparse_rate = getattr(training_args, "sparse_rate")
+    if getattr(training_args, "sparse_mode", None) not in (None, ""):
+        training_args.zo_direction_sparse_mode = getattr(training_args, "sparse_mode")
+    if getattr(training_args, "sparse_rescale", None) not in (None, ""):
+        training_args.zo_sparse_rescale = getattr(training_args, "sparse_rescale")
+    training_args.direction_type = str(getattr(training_args, "direction_type", "dense") or "dense").strip().lower()
+    if training_args.direction_type not in {"dense", "sparse"}:
+        raise ValueError("--direction_type must be one of dense, sparse")
+    if training_args.direction_type == "dense":
+        training_args.zo_direction_sparse_rate = 1.0
+        training_args.zo_direction_sparse_mode = "none"
+        training_args.zo_sparse_rescale = "none"
+    elif str(getattr(training_args, "zo_direction_sparse_mode", "none")).strip().lower() == "none":
+        training_args.zo_direction_sparse_mode = "bernoulli"
     training_args.zo_direction_sparse_rate = validate_sparse_ratio(getattr(training_args, "zo_direction_sparse_rate", 1.0))
     training_args.zo_direction_sparse_mode = str(getattr(training_args, "zo_direction_sparse_mode", "none")).strip().lower()
     if training_args.zo_direction_sparse_mode not in {"none", "exact_random", "bernoulli"}:
@@ -1927,6 +2006,17 @@ def main():
             dump_tensor_stats=bool(getattr(training_args, "debug_dump_tensor_stats", False)),
         )
         logger.info("[residual-grid-debug] summary: %s", json.dumps(summary, sort_keys=True))
+        return
+
+    if bool(getattr(training_args, "probe_window_diagnostics_only", False)):
+        summary = trainer.run_probe_window_diagnostics(
+            model,
+            output_dir=training_args.output_dir,
+            num_batches=int(getattr(training_args, "num_probe_batches", 1)),
+            num_directions=int(getattr(training_args, "zo_probe_num_seeds", 16)),
+            compute_true_grad_directional=bool(getattr(training_args, "compute_true_grad_directional", True)),
+        )
+        logger.info("[probe-window] summary: %s", json.dumps(summary, sort_keys=True))
         return
 
     # Calibration
