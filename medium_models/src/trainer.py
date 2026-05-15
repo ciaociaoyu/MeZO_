@@ -4683,11 +4683,14 @@ class Trainer(LinearHeadTrainer):
         num_batches: Optional[int] = None,
         num_directions: Optional[int] = None,
         compute_true_grad_directional: Optional[bool] = None,
+        jsonl_path_override: Optional[str] = None,
+        append: bool = False,
+        extra_row_fields: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Run signal-only finite-difference window diagnostics and write per-direction JSONL."""
         out_dir = output_dir or getattr(self.args, "output_dir", "./outputs") or "./outputs"
         os.makedirs(out_dir, exist_ok=True)
-        jsonl_name = str(getattr(self.args, "save_probe_stats_jsonl", "") or "probe_stats.jsonl").strip()
+        jsonl_name = str(jsonl_path_override or getattr(self.args, "save_probe_stats_jsonl", "") or "probe_stats.jsonl").strip()
         jsonl_path = jsonl_name if os.path.isabs(jsonl_name) else os.path.join(out_dir, jsonl_name)
         os.makedirs(os.path.dirname(jsonl_path) or ".", exist_ok=True)
 
@@ -4742,7 +4745,7 @@ class Trainer(LinearHeadTrainer):
         rows_written = 0
         zero_eps = float(os.environ.get("ZO_PROBE_ZERO_EPS", "1e-12"))
         try:
-            with open(jsonl_path, "w", encoding="utf-8") as out:
+            with open(jsonl_path, "a" if append else "w", encoding="utf-8") as out:
                 dataloader = self.get_train_dataloader()
                 for batch_index, batch in enumerate(dataloader):
                     if batch_index >= n_batches:
@@ -4801,6 +4804,8 @@ class Trainer(LinearHeadTrainer):
                                 "saturation_frac": pair_stats.get("saturation_frac"),
                                 "probe_stats_error": pair_stats.get("probe_stats_error"),
                             }
+                            if extra_row_fields:
+                                row.update(extra_row_fields)
                             out.write(json.dumps(row, sort_keys=True) + "\n")
                             rows_written += 1
                             del random_vector
@@ -4836,6 +4841,61 @@ class Trainer(LinearHeadTrainer):
             json.dump(summary, f, indent=2, sort_keys=True)
         logger.info("[probe-window] wrote %d rows to %s", int(rows_written), jsonl_path)
         return summary
+
+    def _checkpoint_probe_step_set(self) -> set:
+        raw = str(getattr(self.args, "checkpoint_probe_steps", "") or "").strip()
+        if not raw:
+            raw = os.environ.get("CHECKPOINT_PROBE_STEPS", "")
+        steps = set()
+        for tok in re.split(r"[\s,]+", raw.strip()):
+            if not tok:
+                continue
+            try:
+                step = int(tok)
+            except Exception:
+                continue
+            if step >= 0:
+                steps.add(step)
+        return steps
+
+    def _checkpoint_probe_maybe_run(self, model: nn.Module, step: int):
+        steps = self._checkpoint_probe_step_set()
+        if not steps or int(step) not in steps:
+            return
+        done = getattr(self, "_checkpoint_probe_completed_steps", None)
+        if done is None:
+            done = set()
+            self._checkpoint_probe_completed_steps = done
+        if int(step) in done:
+            return
+        done.add(int(step))
+
+        out_dir = getattr(self.args, "output_dir", "./outputs") or "./outputs"
+        jsonl_name = str(getattr(self.args, "save_checkpoint_probe_stats_jsonl", "") or "checkpoint_probe_stats.jsonl")
+        logger.info("[checkpoint-probe] running signal-only probe diagnostics at step=%d -> %s", int(step), jsonl_name)
+        model_was_training = bool(getattr(model, "training", False))
+        try:
+            summary = self.run_probe_window_diagnostics(
+                model,
+                output_dir=out_dir,
+                num_batches=int(getattr(self.args, "checkpoint_probe_num_batches", 1)),
+                num_directions=int(getattr(self.args, "checkpoint_probe_num_directions", 16)),
+                compute_true_grad_directional=bool(getattr(self.args, "checkpoint_probe_compute_true_grad", True)),
+                jsonl_path_override=jsonl_name,
+                append=True,
+                extra_row_fields={
+                    "checkpoint_step": int(step),
+                    "global_step": int(step),
+                    "probe_kind": "training_checkpoint",
+                },
+            )
+            logger.info("[checkpoint-probe] step=%d wrote %s rows", int(step), summary.get("rows_written"))
+        finally:
+            model.zero_grad()
+            if model_was_training:
+                model.train()
+            else:
+                model.eval()
 
     def zo_forward(self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]]) -> torch.Tensor:
         model.eval()
@@ -5783,6 +5843,7 @@ class Trainer(LinearHeadTrainer):
         self.latest_perf_tail_metrics = None
         start_time = time.time()
         self.state.zo_forward_step = 0
+        self._checkpoint_probe_maybe_run(model, 0)
         self._init_h_estimation_state()
         logger.info(
             "[h_estimation][init] h0=%.3e active_source=%s additive=%s two_point=%s",
@@ -6530,6 +6591,8 @@ class Trainer(LinearHeadTrainer):
                 if self.args.max_steps > 0 and self.state.global_step > self.args.max_steps or (self.args.max_zo_forward_steps > 0 and self.state.zo_forward_step > self.args.max_zo_forward_steps):
                     epoch_iterator.close()
                     break
+
+                self._checkpoint_probe_maybe_run(model, int(self.state.global_step))
 
                 # Optional: force eval on the last K steps (each step once)
                 try:

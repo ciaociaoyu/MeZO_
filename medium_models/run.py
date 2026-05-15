@@ -793,6 +793,26 @@ class DynamicTrainingArguments(TrainingArguments):
         default=True,
         metadata={"help": "Compute one true gradient per probe batch and log grad-dot-direction diagnostics."}
     )
+    checkpoint_probe_steps: str = field(
+        default="",
+        metadata={"help": "Comma/space-separated global steps at which to run signal-only probe-window diagnostics during training, e.g. 0,300,1000,2000. Empty disables it."}
+    )
+    checkpoint_probe_num_directions: int = field(
+        default=16,
+        metadata={"help": "Number of directions for training checkpoint probe diagnostics."}
+    )
+    checkpoint_probe_num_batches: int = field(
+        default=1,
+        metadata={"help": "Number of train/eval batches for training checkpoint probe diagnostics."}
+    )
+    checkpoint_probe_compute_true_grad: bool = field(
+        default=True,
+        metadata={"help": "Whether training checkpoint probe diagnostics compute true grad-dot-direction values."}
+    )
+    save_checkpoint_probe_stats_jsonl: str = field(
+        default="checkpoint_probe_stats.jsonl",
+        metadata={"help": "Output JSONL filename/path for training checkpoint probe diagnostics."}
+    )
     direction_type: str = field(
         default="dense",
         metadata={"help": "Probe-window direction type. Choices: dense, sparse."}
@@ -1375,6 +1395,12 @@ def main():
     training_args.num_probe_batches = int(getattr(training_args, "num_probe_batches", 1))
     if training_args.num_probe_batches <= 0:
         raise ValueError("--num_probe_batches must be > 0")
+    training_args.checkpoint_probe_num_directions = int(getattr(training_args, "checkpoint_probe_num_directions", 16))
+    if training_args.checkpoint_probe_num_directions <= 0:
+        raise ValueError("--checkpoint_probe_num_directions must be > 0")
+    training_args.checkpoint_probe_num_batches = int(getattr(training_args, "checkpoint_probe_num_batches", 1))
+    if training_args.checkpoint_probe_num_batches <= 0:
+        raise ValueError("--checkpoint_probe_num_batches must be > 0")
     training_args.zo_update_norm_clip = float(getattr(training_args, "zo_update_norm_clip", 0.0) or 0.0)
     if training_args.zo_update_norm_clip < 0.0:
         raise ValueError("--zo_update_norm_clip must be >= 0")
