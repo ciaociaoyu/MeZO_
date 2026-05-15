@@ -1,0 +1,3 @@
+# Next residual local commands
+RESULT_ROOT='/scratch/jy03364/MeZO_/runs/next_residual_local_20260515_082009' CUDA_VISIBLE_DEVICES='0' bash scripts/run_next_residual_local.sh
+python scripts/summarize_next_experiments.py '/scratch/jy03364/MeZO_/runs/next_residual_local_20260515_082009'

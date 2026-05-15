@@ -1,0 +1,2 @@
+local_sequential_stage_a cases=3
+AUTO_PROMOTE=0; residual promotion not launched.
