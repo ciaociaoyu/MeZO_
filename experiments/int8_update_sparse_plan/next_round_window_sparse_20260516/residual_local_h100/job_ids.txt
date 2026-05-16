@@ -1,0 +1,2 @@
+local_sequential_next_round cases=3
+AUTO_PROMOTE=0; residual promotion not launched.

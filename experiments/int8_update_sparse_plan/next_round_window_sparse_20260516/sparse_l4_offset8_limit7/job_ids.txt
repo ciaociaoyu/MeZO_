@@ -1,0 +1,2 @@
+submit_command=sbatch --array=0-6%3 /scratch/jy03364/MeZO_/runs/next_round_window_sparse_20260515_205233_offset8_limit7_l4/slurm/next_round_window_sparse_all.sbatch 
+Submitted batch job 45306349
