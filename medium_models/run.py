@@ -733,6 +733,38 @@ class DynamicTrainingArguments(TrainingArguments):
         default=0,
         metadata={"help": "Max absolute INT code movement per coordinate per optimizer step for residual_grid. 0 means unlimited."}
     )
+    residual_commit_threshold: float = field(
+        default=0.0,
+        metadata={"help": "Only commit residual_grid candidate code moves where abs(acc / scale) is at least this threshold. <=0 disables thresholding."}
+    )
+    residual_commit_select: str = field(
+        default="all",
+        metadata={"help": "Residual-grid commit selection. Choices: all, top_abs_acc, norm_budget."}
+    )
+    residual_target_active_frac: float = field(
+        default=0.0,
+        metadata={"help": "Optional target active fraction for residual_grid top_abs_acc or norm_budget selection. <=0 disables top-k selection."}
+    )
+    residual_actual_norm_ratio_cap: float = field(
+        default=0.0,
+        metadata={"help": "Optional norm-budget cap for residual_grid: ||actual_selected|| <= cap * ||reference||. <=0 disables norm budget."}
+    )
+    residual_budget_reference: str = field(
+        default="acc",
+        metadata={"help": "Reference norm for residual_grid norm_budget. Choices: acc, delta."}
+    )
+    residual_decay: float = field(
+        default=1.0,
+        metadata={"help": "Residual carry decay for residual_grid. 1.0 keeps exact error-feedback semantics; values <1 are stale-residual ablations."}
+    )
+    residual_scale_mode: str = field(
+        default="tensor",
+        metadata={"help": "Residual-grid scale mode scaffolding. Choices: tensor, channel, block. Only tensor is implemented in this prototype."}
+    )
+    residual_block_size: int = field(
+        default=0,
+        metadata={"help": "Block size for residual_scale_mode=block once block-scale residual_grid is implemented."}
+    )
     int8_freeze_scale: bool = field(
         default=True,
         metadata={"help": "Freeze the low-bit parameter scale for residual_grid training. Default true for diagnostic residual semantics."}
@@ -1383,6 +1415,30 @@ def main():
     training_args.residual_max_code_step = int(getattr(training_args, "residual_max_code_step", 0))
     if training_args.residual_max_code_step < 0:
         raise ValueError("--residual_max_code_step must be >= 0")
+    training_args.residual_commit_threshold = float(getattr(training_args, "residual_commit_threshold", 0.0) or 0.0)
+    if training_args.residual_commit_threshold < 0.0:
+        raise ValueError("--residual_commit_threshold must be >= 0")
+    training_args.residual_commit_select = str(getattr(training_args, "residual_commit_select", "all")).strip().lower()
+    if training_args.residual_commit_select not in {"all", "top_abs_acc", "norm_budget"}:
+        raise ValueError("--residual_commit_select must be one of all, top_abs_acc, norm_budget")
+    training_args.residual_target_active_frac = float(getattr(training_args, "residual_target_active_frac", 0.0) or 0.0)
+    if training_args.residual_target_active_frac < 0.0:
+        raise ValueError("--residual_target_active_frac must be >= 0")
+    training_args.residual_actual_norm_ratio_cap = float(getattr(training_args, "residual_actual_norm_ratio_cap", 0.0) or 0.0)
+    if training_args.residual_actual_norm_ratio_cap < 0.0:
+        raise ValueError("--residual_actual_norm_ratio_cap must be >= 0")
+    training_args.residual_budget_reference = str(getattr(training_args, "residual_budget_reference", "acc")).strip().lower()
+    if training_args.residual_budget_reference not in {"acc", "delta"}:
+        raise ValueError("--residual_budget_reference must be one of acc, delta")
+    training_args.residual_decay = float(getattr(training_args, "residual_decay", 1.0) if getattr(training_args, "residual_decay", None) is not None else 1.0)
+    if (not math.isfinite(training_args.residual_decay)) or training_args.residual_decay < 0.0:
+        raise ValueError("--residual_decay must be a finite non-negative float")
+    training_args.residual_scale_mode = str(getattr(training_args, "residual_scale_mode", "tensor")).strip().lower()
+    if training_args.residual_scale_mode not in {"tensor", "channel", "block"}:
+        raise ValueError("--residual_scale_mode must be one of tensor, channel, block")
+    training_args.residual_block_size = int(getattr(training_args, "residual_block_size", 0) or 0)
+    if training_args.residual_scale_mode == "block" and training_args.residual_block_size <= 0:
+        raise ValueError("--residual_block_size must be > 0 when --residual_scale_mode block")
     training_args.int8_scale_floor = float(getattr(training_args, "int8_scale_floor", 0.0) or 0.0)
     if training_args.int8_scale_floor < 0.0:
         raise ValueError("--int8_scale_floor must be >= 0")
@@ -1634,11 +1690,19 @@ def main():
         ),
     )
     logger.info(
-        "[quzo-update-config] backend=%s | residual_dtype=%s | commit_mode=%s | max_code_step=%s | int8_freeze_scale=%s | int8_scale_floor=%s | update_norm_clip=%s | scalar_clip=%s | log_update_stats_every=%s | update_stats_jsonl=%s",
+        "[quzo-update-config] backend=%s | residual_dtype=%s | commit_mode=%s | max_code_step=%s | residual_commit_threshold=%s | residual_commit_select=%s | residual_target_active_frac=%s | residual_actual_norm_ratio_cap=%s | residual_budget_reference=%s | residual_decay=%s | residual_scale_mode=%s | residual_block_size=%s | int8_freeze_scale=%s | int8_scale_floor=%s | update_norm_clip=%s | scalar_clip=%s | log_update_stats_every=%s | update_stats_jsonl=%s",
         str(getattr(training_args, "zo_update_backend", "direct_int8")),
         str(getattr(training_args, "residual_dtype", "fp32")),
         str(getattr(training_args, "residual_commit_mode", "round")),
         int(getattr(training_args, "residual_max_code_step", 0)),
+        float(getattr(training_args, "residual_commit_threshold", 0.0) or 0.0),
+        str(getattr(training_args, "residual_commit_select", "all")),
+        float(getattr(training_args, "residual_target_active_frac", 0.0) or 0.0),
+        float(getattr(training_args, "residual_actual_norm_ratio_cap", 0.0) or 0.0),
+        str(getattr(training_args, "residual_budget_reference", "acc")),
+        float(getattr(training_args, "residual_decay", 1.0) if getattr(training_args, "residual_decay", None) is not None else 1.0),
+        str(getattr(training_args, "residual_scale_mode", "tensor")),
+        int(getattr(training_args, "residual_block_size", 0) or 0),
         bool(getattr(training_args, "int8_freeze_scale", True)),
         float(getattr(training_args, "int8_scale_floor", 0.0) or 0.0),
         float(getattr(training_args, "zo_update_norm_clip", 0.0) or 0.0),

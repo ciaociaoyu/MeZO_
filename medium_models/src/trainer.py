@@ -886,14 +886,30 @@ class Trainer(LinearHeadTrainer):
                 max_code_step=int(getattr(self.args, "residual_max_code_step", 0)),
                 freeze_scale=bool(getattr(self.args, "int8_freeze_scale", True)),
                 scale_floor=float(getattr(self.args, "int8_scale_floor", 0.0) or 0.0),
+                commit_threshold=float(getattr(self.args, "residual_commit_threshold", 0.0) or 0.0),
+                commit_select=str(getattr(self.args, "residual_commit_select", "all")),
+                target_active_frac=float(getattr(self.args, "residual_target_active_frac", 0.0) or 0.0),
+                actual_norm_ratio_cap=float(getattr(self.args, "residual_actual_norm_ratio_cap", 0.0) or 0.0),
+                budget_reference=str(getattr(self.args, "residual_budget_reference", "acc")),
+                residual_decay=float(getattr(self.args, "residual_decay", 1.0) if getattr(self.args, "residual_decay", None) is not None else 1.0),
+                scale_mode=str(getattr(self.args, "residual_scale_mode", "tensor")),
+                block_size=int(getattr(self.args, "residual_block_size", 0) or 0),
             )
             self._residual_grid_updater = updater
             logger.info(
-                "[quzo-update] enabled residual_grid backend: residual_dtype=%s commit_mode=%s max_code_step=%s freeze_scale=%s",
+                "[quzo-update] enabled residual_grid backend: residual_dtype=%s commit_mode=%s max_code_step=%s freeze_scale=%s threshold=%s select=%s target_active_frac=%s norm_cap=%s budget_reference=%s decay=%s scale_mode=%s block_size=%s",
                 str(getattr(self.args, "residual_dtype", "fp32")),
                 str(getattr(self.args, "residual_commit_mode", "round")),
                 int(getattr(self.args, "residual_max_code_step", 0)),
                 bool(getattr(self.args, "int8_freeze_scale", True)),
+                float(getattr(self.args, "residual_commit_threshold", 0.0) or 0.0),
+                str(getattr(self.args, "residual_commit_select", "all")),
+                float(getattr(self.args, "residual_target_active_frac", 0.0) or 0.0),
+                float(getattr(self.args, "residual_actual_norm_ratio_cap", 0.0) or 0.0),
+                str(getattr(self.args, "residual_budget_reference", "acc")),
+                float(getattr(self.args, "residual_decay", 1.0) if getattr(self.args, "residual_decay", None) is not None else 1.0),
+                str(getattr(self.args, "residual_scale_mode", "tensor")),
+                int(getattr(self.args, "residual_block_size", 0) or 0),
             )
         return updater
 
@@ -959,11 +975,25 @@ class Trainer(LinearHeadTrainer):
         pg = float(projected_grad.detach().float().item()) if isinstance(projected_grad, torch.Tensor) else float(projected_grad)
         self._zo_current_update_stats = {
             "intended_sq": 0.0,
+            "acc_sq": 0.0,
             "actual_sq": 0.0,
             "residual_sq": 0.0,
+            "residual_before_sq": 0.0,
+            "residual_after_sq": 0.0,
             "dot": 0.0,
+            "acc_actual_dot": 0.0,
+            "ef_error_sq": 0.0,
+            "ef_error_max": 0.0,
             "active_count": 0.0,
+            "candidate_active_count": 0.0,
+            "active_after_threshold_count": 0.0,
+            "selected_active_count": 0.0,
+            "selection_dropped_count": 0.0,
             "saturation_count": 0.0,
+            "actual_sq_before_selection": 0.0,
+            "actual_sq_after_selection": 0.0,
+            "norm_budget_reference_sq": 0.0,
+            "norm_budget_cap": 0.0,
             "numel": 0.0,
             "skipped_count": 0.0,
             "max_abs_residual_over_scale": 0.0,
@@ -996,11 +1026,34 @@ class Trainer(LinearHeadTrainer):
         numel = float(stats.get("numel", 0.0) or 0.0)
         acc["numel"] += numel
         acc["skipped_count"] += float(stats.get("skipped", 0.0) or 0.0)
-        for key in ["intended_sq", "actual_sq", "residual_sq", "dot", "active_count", "saturation_count"]:
+        for key in [
+            "intended_sq",
+            "acc_sq",
+            "actual_sq",
+            "residual_sq",
+            "residual_before_sq",
+            "residual_after_sq",
+            "dot",
+            "acc_actual_dot",
+            "ef_error_sq",
+            "active_count",
+            "candidate_active_count",
+            "active_after_threshold_count",
+            "selected_active_count",
+            "selection_dropped_count",
+            "saturation_count",
+            "actual_sq_before_selection",
+            "actual_sq_after_selection",
+            "norm_budget_reference_sq",
+        ]:
             acc[key] += float(stats.get(key, 0.0) or 0.0)
+        try:
+            acc["norm_budget_cap"] = max(float(acc.get("norm_budget_cap", 0.0) or 0.0), float(stats.get("norm_budget_cap", 0.0) or 0.0))
+        except Exception:
+            pass
         for key in ["grid_error_sq", "grid_error_sq_before_snap", "grid_error_sq_after_snap"]:
             acc[key] += float(stats.get(key, 0.0) or 0.0)
-        for key in ["grid_error_max", "grid_error_max_before_snap", "grid_error_max_after_snap", "residual_over_scale_max"]:
+        for key in ["grid_error_max", "grid_error_max_before_snap", "grid_error_max_after_snap", "residual_over_scale_max", "ef_error_max"]:
             try:
                 acc[key] = max(float(acc.get(key, 0.0) or 0.0), float(stats.get(key, 0.0) or 0.0))
             except Exception:
@@ -1042,16 +1095,27 @@ class Trainer(LinearHeadTrainer):
         acc["unsaturated_count"] += float(stats.get("unsaturated_count", 0.0) or 0.0)
         if numel > 0:
             intended_norm = math.sqrt(max(float(stats.get("intended_sq", 0.0) or 0.0), 0.0))
+            acc_norm = math.sqrt(max(float(stats.get("acc_sq", 0.0) or 0.0), 0.0))
             actual_norm = math.sqrt(max(float(stats.get("actual_sq", 0.0) or 0.0), 0.0))
             denom = intended_norm * actual_norm
+            acc_denom = acc_norm * actual_norm
             acc["layers"].append({
                 "layer_name": str(layer_name),
                 "global_step": int(getattr(self.state, "global_step", 0)),
                 "active_frac": float(stats.get("active_frac", 0.0) or 0.0),
+                "candidate_active_frac": float(stats.get("candidate_active_frac", 0.0) or 0.0),
+                "candidate_active_frac_before_threshold": float(stats.get("candidate_active_frac_before_threshold", 0.0) or 0.0),
+                "active_frac_after_threshold": float(stats.get("active_frac_after_threshold", 0.0) or 0.0),
+                "selected_active_frac": float(stats.get("selected_active_frac", 0.0) or 0.0),
+                "selection_dropped_frac": float(stats.get("selection_dropped_frac", 0.0) or 0.0),
                 "residual_norm": math.sqrt(max(float(stats.get("residual_sq", 0.0) or 0.0), 0.0)),
+                "residual_before_norm": math.sqrt(max(float(stats.get("residual_before_sq", 0.0) or 0.0), 0.0)),
+                "residual_after_norm": math.sqrt(max(float(stats.get("residual_after_sq", 0.0) or 0.0), 0.0)),
+                "acc_update_norm": acc_norm,
                 "intended_update_norm": intended_norm,
                 "actual_update_norm": actual_norm,
                 "actual_over_intended_norm_ratio": (actual_norm / intended_norm) if intended_norm > 0.0 else None,
+                "actual_over_acc_norm_ratio": (actual_norm / acc_norm) if acc_norm > 0.0 else None,
                 "saturation_frac": float(stats.get("saturation_frac", 0.0) or 0.0),
                 "residual_over_scale_p50": stats.get("residual_over_scale_p50"),
                 "residual_over_scale_p90": stats.get("residual_over_scale_p90"),
@@ -1072,6 +1136,14 @@ class Trainer(LinearHeadTrainer):
                     float(stats.get("dot", 0.0) or 0.0) / denom
                     if denom > 0.0 else None
                 ),
+                "acc_actual_cos": (
+                    float(stats.get("acc_actual_dot", 0.0) or 0.0) / acc_denom
+                    if acc_denom > 0.0 else None
+                ),
+                "ef_error_norm": stats.get("ef_error_norm"),
+                "ef_error_max": stats.get("ef_error_max"),
+                "residual_decay": stats.get("residual_decay"),
+                "ef_exact_conservation_applicable": stats.get("ef_exact_conservation_applicable"),
             })
 
     def _zo_finish_update_stats(self) -> Optional[Dict[str, Any]]:
@@ -1080,10 +1152,18 @@ class Trainer(LinearHeadTrainer):
         if not isinstance(acc, dict):
             return None
         intended_norm = math.sqrt(max(float(acc.get("intended_sq", 0.0) or 0.0), 0.0))
+        acc_norm = math.sqrt(max(float(acc.get("acc_sq", 0.0) or 0.0), 0.0))
         actual_norm = math.sqrt(max(float(acc.get("actual_sq", 0.0) or 0.0), 0.0))
         residual_norm = math.sqrt(max(float(acc.get("residual_sq", 0.0) or 0.0), 0.0))
+        residual_before_norm = math.sqrt(max(float(acc.get("residual_before_sq", 0.0) or 0.0), 0.0))
+        residual_after_norm = math.sqrt(max(float(acc.get("residual_after_sq", 0.0) or 0.0), 0.0))
+        ef_error_norm = math.sqrt(max(float(acc.get("ef_error_sq", 0.0) or 0.0), 0.0))
+        actual_norm_before_selection = math.sqrt(max(float(acc.get("actual_sq_before_selection", 0.0) or 0.0), 0.0))
+        actual_norm_after_selection = math.sqrt(max(float(acc.get("actual_sq_after_selection", 0.0) or 0.0), 0.0))
+        norm_budget_reference_norm = math.sqrt(max(float(acc.get("norm_budget_reference_sq", 0.0) or 0.0), 0.0))
         numel = float(acc.get("numel", 0.0) or 0.0)
         denom = intended_norm * actual_norm
+        acc_denom = acc_norm * actual_norm
         scale_values = [float(x) for x in acc.get("scale_values", []) if math.isfinite(float(x))]
         if scale_values:
             scale_arr = np.asarray(scale_values, dtype=np.float64)
@@ -1111,20 +1191,55 @@ class Trainer(LinearHeadTrainer):
             "update_backend": self._zo_update_backend(),
             "residual_commit_mode": str(getattr(self.args, "residual_commit_mode", "round")),
             "residual_max_code_step": int(getattr(self.args, "residual_max_code_step", 0)),
+            "residual_commit_threshold": float(getattr(self.args, "residual_commit_threshold", 0.0) or 0.0),
+            "residual_commit_select": str(getattr(self.args, "residual_commit_select", "all")),
+            "residual_target_active_frac": float(getattr(self.args, "residual_target_active_frac", 0.0) or 0.0),
+            "residual_actual_norm_ratio_cap": float(getattr(self.args, "residual_actual_norm_ratio_cap", 0.0) or 0.0),
+            "residual_budget_reference": str(getattr(self.args, "residual_budget_reference", "acc")),
+            "residual_decay": float(getattr(self.args, "residual_decay", 1.0) if getattr(self.args, "residual_decay", None) is not None else 1.0),
+            "ef_exact_conservation_applicable": 1.0 if abs(float(getattr(self.args, "residual_decay", 1.0) if getattr(self.args, "residual_decay", None) is not None else 1.0) - 1.0) <= 1e-12 else 0.0,
             "intended_update_norm": intended_norm,
+            "acc_update_norm": acc_norm,
             "actual_update_norm": actual_norm,
             "residual_norm": residual_norm,
+            "residual_before_norm": residual_before_norm,
+            "residual_after_norm": residual_after_norm,
             "active_frac": (float(acc.get("active_count", 0.0) or 0.0) / numel) if numel > 0 else None,
+            "candidate_active_frac": (float(acc.get("candidate_active_count", 0.0) or 0.0) / numel) if numel > 0 else None,
+            "candidate_active_frac_before_threshold": (float(acc.get("candidate_active_count", 0.0) or 0.0) / numel) if numel > 0 else None,
+            "active_frac_after_threshold": (float(acc.get("active_after_threshold_count", 0.0) or 0.0) / numel) if numel > 0 else None,
+            "selected_active_frac": (float(acc.get("selected_active_count", 0.0) or 0.0) / numel) if numel > 0 else None,
+            "selection_dropped_frac": (float(acc.get("selection_dropped_count", 0.0) or 0.0) / numel) if numel > 0 else None,
             "saturation_frac": (float(acc.get("saturation_count", 0.0) or 0.0) / numel) if numel > 0 else None,
             "cos_intended_actual": (float(acc.get("dot", 0.0) or 0.0) / denom) if denom > 0.0 else None,
             "actual_over_intended_norm_ratio": (actual_norm / intended_norm) if intended_norm > 0.0 else None,
+            "acc_actual_cos": (float(acc.get("acc_actual_dot", 0.0) or 0.0) / acc_denom) if acc_denom > 0.0 else None,
+            "actual_over_acc_norm_ratio": (actual_norm / acc_norm) if acc_norm > 0.0 else None,
+            "ef_error_norm": ef_error_norm,
+            "ef_error_max": float(acc.get("ef_error_max", 0.0) or 0.0),
+            "norm_budget_cap": float(acc.get("norm_budget_cap", 0.0) or 0.0),
+            "norm_budget_reference_norm": norm_budget_reference_norm,
+            "actual_norm_before_selection": actual_norm_before_selection,
+            "actual_norm_after_selection": actual_norm_after_selection,
             "global_intended_update_norm": intended_norm,
+            "global_acc_update_norm": acc_norm,
             "global_actual_update_norm": actual_norm,
             "global_residual_norm": residual_norm,
+            "global_residual_before_norm": residual_before_norm,
+            "global_residual_after_norm": residual_after_norm,
             "global_active_frac": (float(acc.get("active_count", 0.0) or 0.0) / numel) if numel > 0 else None,
+            "global_candidate_active_frac": (float(acc.get("candidate_active_count", 0.0) or 0.0) / numel) if numel > 0 else None,
+            "global_candidate_active_frac_before_threshold": (float(acc.get("candidate_active_count", 0.0) or 0.0) / numel) if numel > 0 else None,
+            "global_active_frac_after_threshold": (float(acc.get("active_after_threshold_count", 0.0) or 0.0) / numel) if numel > 0 else None,
+            "global_selected_active_frac": (float(acc.get("selected_active_count", 0.0) or 0.0) / numel) if numel > 0 else None,
+            "global_selection_dropped_frac": (float(acc.get("selection_dropped_count", 0.0) or 0.0) / numel) if numel > 0 else None,
             "global_saturation_frac": (float(acc.get("saturation_count", 0.0) or 0.0) / numel) if numel > 0 else None,
             "global_cos_intended_actual": (float(acc.get("dot", 0.0) or 0.0) / denom) if denom > 0.0 else None,
             "global_actual_over_intended_norm_ratio": (actual_norm / intended_norm) if intended_norm > 0.0 else None,
+            "global_acc_actual_cos": (float(acc.get("acc_actual_dot", 0.0) or 0.0) / acc_denom) if acc_denom > 0.0 else None,
+            "global_actual_over_acc_norm_ratio": (actual_norm / acc_norm) if acc_norm > 0.0 else None,
+            "global_ef_error_norm": ef_error_norm,
+            "global_ef_error_max": float(acc.get("ef_error_max", 0.0) or 0.0),
             "scale_min": scale_min,
             "scale_p01": scale_p01,
             "scale_median": scale_median,
@@ -1156,6 +1271,10 @@ class Trainer(LinearHeadTrainer):
             "alpha_post_clip": clip_info.get("alpha_post_clip"),
             "scalar_clipped": clip_info.get("scalar_clipped"),
             "numel": int(numel),
+            "candidate_active_count": int(float(acc.get("candidate_active_count", 0.0) or 0.0)),
+            "active_after_threshold_count": int(float(acc.get("active_after_threshold_count", 0.0) or 0.0)),
+            "selected_active_count": int(float(acc.get("selected_active_count", 0.0) or 0.0)),
+            "selection_dropped_count": int(float(acc.get("selection_dropped_count", 0.0) or 0.0)),
             "skipped_count": int(float(acc.get("skipped_count", 0.0) or 0.0)),
             "max_abs_residual_over_scale": float(acc.get("max_abs_residual_over_scale", 0.0) or 0.0),
         }
@@ -1284,7 +1403,8 @@ class Trainer(LinearHeadTrainer):
                 if mode == "stochastic":
                     residual_expected = None
                 else:
-                    k = updater._commit_codes(acc, updater.scales["synthetic"])
+                    delta_expected = torch.full_like(param.data, 0.002)
+                    k = updater._commit_codes(acc, updater.scales["synthetic"], delta=delta_expected)
                     q_expected = torch.clamp(q_old + k, updater.qmin, updater.qmax)
                     actual_delta_expected = updater.dequantize_from_code(q_expected - q_old, updater.scales["synthetic"])
                     residual_expected = acc - actual_delta_expected
@@ -1487,6 +1607,12 @@ class Trainer(LinearHeadTrainer):
             "unsaturated_residual_bound_violation_frac",
             "saturation_frac",
             "active_frac",
+            "cos_delta_actual",
+            "cos_acc_actual",
+            "actual_over_delta_norm_ratio",
+            "actual_over_acc_norm_ratio",
+            "ef_error_norm",
+            "ef_error_max",
         ]
         with open(equation_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=eq_fieldnames)
@@ -1500,7 +1626,7 @@ class Trainer(LinearHeadTrainer):
                 z = bundle["u2"]
                 delta = torch.nan_to_num(-float(self.args.learning_rate) * float(projected_grad.detach().float().item()) * z.detach().float(), nan=0.0, posinf=0.0, neginf=0.0)
                 acc = torch.nan_to_num(residual_old + delta.to(dtype=updater.residual_dtype), nan=0.0, posinf=0.0, neginf=0.0)
-                k = updater._commit_codes(acc, scale)
+                k = updater._commit_codes(acc, scale, delta=delta)
                 q_expected = torch.clamp(q_old + k, updater.qmin, updater.qmax)
                 actual_delta_expected = updater.dequantize_from_code(q_expected - q_old, scale)
                 residual_expected = acc.float() - actual_delta_expected.float()
@@ -1511,6 +1637,11 @@ class Trainer(LinearHeadTrainer):
                 grid_err = torch.nan_to_num(param.data.detach().float() - snapped_actual.float(), nan=0.0, posinf=0.0, neginf=0.0)
                 q_diff = q_actual - q_expected
                 residual_diff = residual_actual - residual_expected.float()
+                intended_norm = math.sqrt(max(float(stats.get("intended_sq", 0.0) or 0.0), 0.0))
+                acc_norm = math.sqrt(max(float(stats.get("acc_sq", 0.0) or 0.0), 0.0))
+                actual_norm = math.sqrt(max(float(stats.get("actual_sq", 0.0) or 0.0), 0.0))
+                delta_actual_denom = intended_norm * actual_norm
+                acc_actual_denom = acc_norm * actual_norm
                 writer.writerow({
                     "layer_name": name,
                     "max_abs_q_diff": float(torch.max(torch.abs(q_diff)).item()) if q_diff.numel() > 0 else 0.0,
@@ -1525,6 +1656,18 @@ class Trainer(LinearHeadTrainer):
                     "unsaturated_residual_bound_violation_frac": stats.get("unsaturated_residual_bound_violation_frac"),
                     "saturation_frac": stats.get("saturation_frac"),
                     "active_frac": stats.get("active_frac"),
+                    "cos_delta_actual": (
+                        float(stats.get("dot", 0.0) or 0.0) / delta_actual_denom
+                        if delta_actual_denom > 0.0 else None
+                    ),
+                    "cos_acc_actual": (
+                        float(stats.get("acc_actual_dot", 0.0) or 0.0) / acc_actual_denom
+                        if acc_actual_denom > 0.0 else None
+                    ),
+                    "actual_over_delta_norm_ratio": (actual_norm / intended_norm) if intended_norm > 0.0 else None,
+                    "actual_over_acc_norm_ratio": (actual_norm / acc_norm) if acc_norm > 0.0 else None,
+                    "ef_error_norm": stats.get("ef_error_norm"),
+                    "ef_error_max": stats.get("ef_error_max"),
                 })
 
         summary = {
@@ -6452,12 +6595,16 @@ class Trainer(LinearHeadTrainer):
                                 if isinstance(update_stats_step, dict):
                                     for src_key, dst_key in [
                                         ("active_frac", "update_active_frac"),
+                                        ("selected_active_frac", "update_selected_active_frac"),
                                         ("saturation_frac", "update_saturation_frac"),
                                         ("cos_intended_actual", "update_cos_intended_actual"),
+                                        ("acc_actual_cos", "update_acc_actual_cos"),
                                         ("actual_over_intended_norm_ratio", "update_norm_ratio"),
+                                        ("actual_over_acc_norm_ratio", "update_acc_norm_ratio"),
                                         ("residual_norm", "update_residual_norm"),
                                         ("residual_over_scale_p99", "residual_over_scale_p99"),
                                         ("grid_error_norm", "update_grid_error_norm"),
+                                        ("ef_error_norm", "update_ef_error_norm"),
                                         ("update_norm_pre_clip", "update_norm_pre_clip"),
                                         ("update_norm_post_clip", "update_norm_post_clip"),
                                     ]:

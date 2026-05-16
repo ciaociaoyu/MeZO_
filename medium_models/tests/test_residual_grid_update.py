@@ -83,8 +83,88 @@ class ResidualGridUpdaterTest(unittest.TestCase):
         stats = updater.apply_update("w", param, torch.randn_like(param), projected_grad=0.0, learning_rate=1.0)
         self.assertEqual(stats["actual_sq"], 0.0)
         self.assertEqual(stats["active_frac"], 0.0)
+        self.assertEqual(stats["candidate_active_count"], 0.0)
+        self.assertEqual(stats["selected_active_count"], 0.0)
+        self.assertEqual(stats["ef_error_norm"], 0.0)
+        self.assertEqual(stats["ef_error_max"], 0.0)
         self.assertTrue(torch.allclose(param.detach(), before))
         self.assertTrue(torch.allclose(param.detach(), torch.round(param.detach() / scale) * scale))
+
+    def test_thresholded_commit_keeps_uncommitted_update_in_residual(self):
+        param = nn.Parameter(torch.zeros(4, dtype=torch.float32))
+        updater = ResidualGridUpdater(
+            [("w", param)],
+            bits=8,
+            residual_dtype="fp32",
+            commit_mode="round",
+            commit_threshold=0.75,
+            freeze_scale=True,
+        )
+        updater.scales["w"] = torch.tensor(0.1, dtype=torch.float32)
+        updater.snap_param_to_grid("w", param)
+
+        stats = updater.apply_update("w", param, torch.ones_like(param), projected_grad=1.0, learning_rate=0.06)
+        self.assertEqual(stats["candidate_active_count"], 4.0)
+        self.assertEqual(stats["active_after_threshold_count"], 0.0)
+        self.assertEqual(stats["selected_active_count"], 0.0)
+        self.assertEqual(stats["active_count"], 0.0)
+        self.assertTrue(torch.allclose(param.detach(), torch.zeros_like(param)))
+        self.assertTrue(torch.allclose(updater.residuals["w"], torch.full_like(param, -0.06), atol=1e-7))
+        self.assertEqual(stats["ef_error_norm"], 0.0)
+
+    def test_top_abs_acc_selection_keeps_top_k_candidates(self):
+        param = nn.Parameter(torch.zeros(4, dtype=torch.float32))
+        updater = ResidualGridUpdater(
+            [("w", param)],
+            bits=8,
+            residual_dtype="fp32",
+            commit_mode="round",
+            max_code_step=1,
+            commit_select="top_abs_acc",
+            target_active_frac=0.5,
+            freeze_scale=True,
+        )
+        updater.scales["w"] = torch.tensor(0.1, dtype=torch.float32)
+        updater.snap_param_to_grid("w", param)
+        direction = torch.tensor([1.1, 0.9, 0.4, 1.6], dtype=torch.float32)
+
+        stats = updater.apply_update("w", param, direction, projected_grad=1.0, learning_rate=0.1)
+        self.assertEqual(stats["candidate_active_count"], 3.0)
+        self.assertEqual(stats["selected_active_count"], 2.0)
+        self.assertEqual(stats["selection_dropped_count"], 1.0)
+        self.assertTrue(torch.allclose(param.detach(), torch.tensor([-0.1, 0.0, 0.0, -0.1]), atol=1e-7))
+        acc = -0.1 * direction
+        actual = param.detach()
+        self.assertTrue(torch.allclose(updater.residuals["w"], acc - actual, atol=1e-7))
+        self.assertEqual(stats["ef_error_norm"], 0.0)
+        self.assertGreater(stats["acc_actual_cos"], 0.0)
+
+    def test_norm_budget_selection_respects_acc_norm_cap(self):
+        param = nn.Parameter(torch.zeros(4, dtype=torch.float32))
+        updater = ResidualGridUpdater(
+            [("w", param)],
+            bits=8,
+            residual_dtype="fp32",
+            commit_mode="round",
+            max_code_step=1,
+            commit_select="norm_budget",
+            actual_norm_ratio_cap=0.5,
+            budget_reference="acc",
+            freeze_scale=True,
+        )
+        updater.scales["w"] = torch.tensor(0.1, dtype=torch.float32)
+        updater.snap_param_to_grid("w", param)
+        direction = torch.tensor([3.0, 2.0, 1.0, 0.6], dtype=torch.float32)
+
+        stats = updater.apply_update("w", param, direction, projected_grad=1.0, learning_rate=0.1)
+        self.assertEqual(stats["candidate_active_count"], 4.0)
+        self.assertEqual(stats["selected_active_count"], 3.0)
+        self.assertLessEqual(stats["actual_norm_after_selection"], 0.5 * stats["norm_budget_reference_norm"] + 1e-7)
+        self.assertTrue(torch.allclose(param.detach(), torch.tensor([-0.1, -0.1, -0.1, 0.0]), atol=1e-7))
+        acc = -0.1 * direction
+        actual = param.detach()
+        self.assertTrue(torch.allclose(updater.residuals["w"], acc - actual, atol=1e-7))
+        self.assertEqual(stats["ef_error_norm"], 0.0)
 
     def test_fixed_scale_subgrid_deltas_accumulate_then_jump(self):
         param = nn.Parameter(torch.zeros(4, dtype=torch.float32))
