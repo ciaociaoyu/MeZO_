@@ -94,11 +94,6 @@ class ResidualGridUpdater:
         self.block_size = int(block_size or 0)
         if self.scale_mode == "block" and self.block_size <= 0:
             raise ValueError("residual_block_size must be > 0 when residual_scale_mode=block.")
-        if self.scale_mode != "tensor":
-            # The CLI exposes this as scaffolding, but this prototype keeps the
-            # existing per-tensor scale behavior until channel/block storage is
-            # implemented end to end.
-            raise NotImplementedError("residual_scale_mode channel/block is not implemented yet; use tensor.")
         self.scales: Dict[str, torch.Tensor] = {}
         self.initial_scales: Dict[str, torch.Tensor] = {}
         self.residuals: Dict[str, torch.Tensor] = {}
@@ -121,6 +116,32 @@ class ResidualGridUpdater:
         finite = torch.isfinite(data)
         if not bool(finite.all().item()):
             data = torch.where(finite, data, torch.zeros_like(data))
+        if self.scale_mode == "channel" and data.ndim >= 2:
+            reduce_dims = tuple(range(1, data.ndim))
+            max_abs = torch.amax(torch.abs(data), dim=reduce_dims, keepdim=True)
+            default_scale = torch.full_like(max_abs, 1.0 / self.qmax)
+            scale = torch.where(max_abs > 0.0, max_abs / self.qmax, default_scale)
+            if self.scale_floor > 0.0:
+                scale = torch.clamp(scale, min=float(self.scale_floor))
+            return scale.to(device=param.data.device, dtype=torch.float32)
+        if self.scale_mode == "block":
+            flat = data.reshape(-1)
+            numel = int(flat.numel())
+            num_groups = int(math.ceil(float(numel) / float(self.block_size)))
+            padded_numel = num_groups * int(self.block_size)
+            if padded_numel > numel:
+                pad = torch.zeros(padded_numel - numel, device=flat.device, dtype=flat.dtype)
+                flat_padded = torch.cat([flat, pad], dim=0)
+            else:
+                flat_padded = flat
+            grouped = flat_padded.view(num_groups, int(self.block_size))
+            max_abs = torch.amax(torch.abs(grouped), dim=1, keepdim=True)
+            default_scale = torch.full_like(max_abs, 1.0 / self.qmax)
+            scale = torch.where(max_abs > 0.0, max_abs / self.qmax, default_scale)
+            if self.scale_floor > 0.0:
+                scale = torch.clamp(scale, min=float(self.scale_floor))
+            expanded = scale.expand(num_groups, int(self.block_size)).reshape(-1)[:numel]
+            return expanded.view_as(data).to(device=param.data.device, dtype=torch.float32)
         max_abs = float(torch.max(torch.abs(data)).item()) if data.numel() > 0 else 0.0
         if (not math.isfinite(max_abs)) or max_abs <= 0.0:
             scale = self.scale_floor if self.scale_floor > 0.0 else (1.0 / self.qmax)
@@ -335,6 +356,10 @@ class ResidualGridUpdater:
                 "num_scale_near_zero": 0.0,
             }
         quantile_input = scale_f
+        max_quantile_elems = 1_000_000
+        if quantile_input.numel() > max_quantile_elems:
+            stride = int(math.ceil(float(quantile_input.numel()) / float(max_quantile_elems)))
+            quantile_input = quantile_input[::stride][:max_quantile_elems]
         quantiles = torch.quantile(
             quantile_input,
             torch.tensor([0.01, 0.5, 0.99], device=quantile_input.device, dtype=torch.float32),

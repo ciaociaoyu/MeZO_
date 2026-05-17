@@ -268,6 +268,171 @@ class Trainer(LinearHeadTrainer):
             return None
         return value if math.isfinite(value) else None
 
+    @staticmethod
+    def _truthy(value: Optional[Any]) -> bool:
+        if isinstance(value, str):
+            return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+        return bool(value)
+
+    def _main_checkpoints_enabled(self) -> bool:
+        return self._truthy(getattr(self.args, "main_save_checkpoints", False))
+
+    def _main_checkpoint_interval(self) -> int:
+        interval = int(getattr(self.args, "main_checkpoint_steps", 0) or 0)
+        if interval <= 0:
+            interval = int(getattr(self.args, "save_steps", 0) or 0)
+        return max(0, interval)
+
+    def _main_checkpoint_root(self) -> str:
+        return os.path.join(str(getattr(self.args, "output_dir", "./outputs") or "./outputs"), "checkpoints")
+
+    def _save_model_for_main_checkpoint(self, output_dir: str) -> None:
+        try:
+            self.save_model(output_dir)
+            return
+        except RuntimeError as exc:
+            message = str(exc)
+            if "shared tensors" not in message and "mismatching the transformers base configuration" not in message:
+                raise
+        logger.warning("[main-checkpoint] retrying model save with cloned safetensors fallback for %s", output_dir)
+        os.makedirs(output_dir, exist_ok=True)
+        model_to_save = self.model
+        if hasattr(model_to_save, "config") and hasattr(model_to_save.config, "save_pretrained"):
+            model_to_save.config.save_pretrained(output_dir)
+        try:
+            from safetensors.torch import save_file as safe_save_file
+
+            state_dict = {
+                key: value.detach().cpu().clone()
+                for key, value in model_to_save.state_dict().items()
+            }
+            safe_save_file(state_dict, os.path.join(output_dir, "model.safetensors"), metadata={"format": "pt"})
+        except Exception as exc:
+            logger.warning("[main-checkpoint] safetensors fallback failed, writing pytorch_model.bin: %s", exc)
+            if hasattr(model_to_save, "save_pretrained"):
+                model_to_save.save_pretrained(output_dir, safe_serialization=False)
+            else:
+                torch.save(model_to_save.state_dict(), os.path.join(output_dir, "pytorch_model.bin"))
+        try:
+            torch.save(self.args, os.path.join(output_dir, "training_args.bin"))
+        except Exception as exc:
+            logger.warning("[main-checkpoint] failed to save training_args.bin: %s", exc)
+
+    def _main_checkpoint_metadata(self, label: str, metrics: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        return {
+            "label": str(label),
+            "global_step": int(getattr(self.state, "global_step", 0) or 0),
+            "epoch": float(getattr(self, "epoch", 0.0) or 0.0),
+            "precision_mode": str(getattr(self.args, "precision_mode", "")),
+            "zo_quantization_bits": int(getattr(self.args, "zo_quantization_bits", 32)),
+            "zo_two_point_precision": str(getattr(self.args, "zo_two_point_precision", "")),
+            "zero_order_eps": float(getattr(self.args, "zero_order_eps", 0.0) or 0.0),
+            "seed": int(getattr(self.args, "seed", 0) or 0),
+            "data_seed": int(getattr(self.args, "data_seed", getattr(self.args, "seed", 0)) or 0),
+            "dataloader_shuffle": getattr(self.args, "dataloader_shuffle", None),
+            "metrics": metrics or {},
+        }
+
+    def _save_main_checkpoint(
+        self,
+        label: str,
+        optimizer: Optional[torch.optim.Optimizer] = None,
+        scheduler: Optional[Any] = None,
+        metrics: Optional[Dict[str, Any]] = None,
+        *,
+        force: bool = False,
+    ) -> Optional[str]:
+        if not self._main_checkpoints_enabled() and not force:
+            return None
+        if not self.is_world_process_zero():
+            return None
+        checkpoint_dir = os.path.join(self._main_checkpoint_root(), str(label))
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        self._save_model_for_main_checkpoint(checkpoint_dir)
+        if optimizer is not None:
+            torch.save(optimizer.state_dict(), os.path.join(checkpoint_dir, "optimizer.pt"))
+        if scheduler is not None:
+            torch.save(scheduler.state_dict(), os.path.join(checkpoint_dir, "scheduler.pt"))
+        tokenizer = getattr(self, "tokenizer", None) or getattr(self, "processing_class", None)
+        if tokenizer is not None and hasattr(tokenizer, "save_pretrained"):
+            try:
+                tokenizer.save_pretrained(checkpoint_dir)
+            except Exception as exc:
+                logger.warning("[main-checkpoint] failed to save tokenizer for %s: %s", label, exc)
+        scaler = getattr(self, "scaler", None)
+        if scaler is not None:
+            try:
+                torch.save(scaler.state_dict(), os.path.join(checkpoint_dir, "scaler.pt"))
+            except Exception as exc:
+                logger.warning("[main-checkpoint] failed to save scaler state for %s: %s", label, exc)
+        try:
+            torch.save(
+                {
+                    "python": random.getstate(),
+                    "numpy": np.random.get_state(),
+                    "torch": torch.get_rng_state(),
+                    "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
+                },
+                os.path.join(checkpoint_dir, "rng_state.pt"),
+            )
+        except Exception as exc:
+            logger.warning("[main-checkpoint] failed to save RNG state for %s: %s", label, exc)
+        try:
+            state_json = os.path.join(checkpoint_dir, "trainer_state.json")
+            if hasattr(self.state, "save_to_json"):
+                self.state.save_to_json(state_json)
+            else:
+                with open(state_json, "w", encoding="utf-8") as f:
+                    json.dump({"global_step": int(getattr(self.state, "global_step", 0) or 0)}, f)
+        except Exception as exc:
+            logger.warning("[main-checkpoint] failed to save trainer state for %s: %s", label, exc)
+        with open(os.path.join(checkpoint_dir, "main_checkpoint_metadata.json"), "w", encoding="utf-8") as f:
+            json.dump(self._main_checkpoint_metadata(label, metrics), f, ensure_ascii=False, indent=2)
+        logger.info("[main-checkpoint] saved %s at global_step=%s", checkpoint_dir, getattr(self.state, "global_step", 0))
+        return checkpoint_dir
+
+    def _main_checkpoint_maybe_save(
+        self,
+        optimizer: Optional[torch.optim.Optimizer],
+        scheduler: Optional[Any],
+        metrics: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        if not self._main_checkpoints_enabled():
+            return
+        interval = self._main_checkpoint_interval()
+        step = int(getattr(self.state, "global_step", 0) or 0)
+        if interval <= 0 or step <= 0 or step % interval != 0:
+            return
+        saved_steps = getattr(self, "_main_checkpoint_saved_steps", None)
+        if saved_steps is None:
+            saved_steps = set()
+            self._main_checkpoint_saved_steps = saved_steps
+        if step in saved_steps:
+            return
+        self._save_main_checkpoint(f"step_{step}", optimizer=optimizer, scheduler=scheduler, metrics=metrics)
+        saved_steps.add(step)
+
+    def _main_checkpoint_maybe_save_best(
+        self,
+        metrics: Optional[Dict[str, Any]],
+        optimizer: Optional[torch.optim.Optimizer],
+        scheduler: Optional[Any],
+    ) -> None:
+        if not self._main_checkpoints_enabled() or not isinstance(metrics, dict):
+            return
+        eval_acc = self._safe_float(metrics.get("eval_acc"))
+        eval_loss = self._safe_float(metrics.get("eval_loss"))
+        if self._truthy(getattr(self.args, "main_save_best_acc_checkpoint", True)) and eval_acc is not None:
+            best_acc = getattr(self, "_main_checkpoint_best_acc", None)
+            if best_acc is None or eval_acc > float(best_acc):
+                self._main_checkpoint_best_acc = float(eval_acc)
+                self._save_main_checkpoint("best_acc", optimizer=optimizer, scheduler=scheduler, metrics=metrics, force=True)
+        if self._truthy(getattr(self.args, "main_save_best_loss_checkpoint", True)) and eval_loss is not None:
+            best_loss = getattr(self, "_main_checkpoint_best_loss", None)
+            if best_loss is None or eval_loss < float(best_loss):
+                self._main_checkpoint_best_loss = float(eval_loss)
+                self._save_main_checkpoint("best_loss", optimizer=optimizer, scheduler=scheduler, metrics=metrics, force=True)
+
     def _record_eval_for_guards(self, *, global_step: int, eval_loss: Optional[float], eval_acc: Optional[float]) -> Optional[float]:
         loss_value = self._safe_float(eval_loss)
         acc_value = self._safe_float(eval_acc)
@@ -819,9 +984,8 @@ class Trainer(LinearHeadTrainer):
 
     def _quantize_delta_tensor(self, delta: torch.Tensor, target_dtype: Optional[torch.dtype] = None) -> torch.Tensor:
         if self._zo_use_quzo():
-            return quantize_tensor(
+            return self._quzo_quantize_tensor(
                 delta,
-                self._zo_quant_bits(),
                 target_dtype=(delta.dtype if target_dtype is None else target_dtype),
             )
         precision = str(getattr(self.args, "zo_two_point_precision", "fp32")).lower()
@@ -1189,6 +1353,13 @@ class Trainer(LinearHeadTrainer):
             "lr": acc.get("lr"),
             "h": acc.get("eps"),
             "update_backend": self._zo_update_backend(),
+            "quantization_requested_algorithm": str(getattr(self.args, "quantization_requested_algorithm", getattr(self.args, "quantization_algorithm", "")) or ""),
+            "quantization_algorithm": str(getattr(self.args, "quantization_algorithm", "per_tensor_symmetric")),
+            "quantization_algorithm_impl": str(getattr(self.args, "quantization_algorithm_impl", "per_tensor_symmetric")),
+            "group_size": int(getattr(self.args, "quantization_group_size", 0) or 0),
+            "block_size": int(getattr(self.args, "quantization_block_size", 0) or 0),
+            "quantization_exact_gptq": bool(getattr(self.args, "quantization_exact_gptq", False)),
+            "quantization_fallback_reason": str(getattr(self.args, "quantization_fallback_reason", "") or ""),
             "residual_commit_mode": str(getattr(self.args, "residual_commit_mode", "round")),
             "residual_max_code_step": int(getattr(self.args, "residual_max_code_step", 0)),
             "residual_commit_threshold": float(getattr(self.args, "residual_commit_threshold", 0.0) or 0.0),
@@ -3152,6 +3323,34 @@ class Trainer(LinearHeadTrainer):
     def _zo_quant_bits(self) -> int:
         return int(getattr(self.args, "zo_quantization_bits", 32))
 
+    def _quzo_quantization_algorithm(self) -> str:
+        return str(getattr(self.args, "quantization_algorithm", "per_tensor_symmetric") or "per_tensor_symmetric")
+
+    def _quzo_quantization_group_size(self) -> int:
+        group_size = int(getattr(self.args, "quantization_group_size", 0) or 0)
+        block_size = int(getattr(self.args, "quantization_block_size", 0) or 0)
+        return group_size if group_size > 0 else block_size
+
+    def _quzo_quantize_tensor(
+        self,
+        tensor: torch.Tensor,
+        *,
+        seed: Optional[int] = None,
+        target_dtype: Optional[torch.dtype] = None,
+        stochastic: bool = True,
+        return_metadata: bool = False,
+    ):
+        return quantize_tensor(
+            tensor,
+            self._zo_quant_bits(),
+            seed=seed,
+            target_dtype=(tensor.dtype if target_dtype is None else target_dtype),
+            stochastic=stochastic,
+            algorithm=self._quzo_quantization_algorithm(),
+            group_size=self._quzo_quantization_group_size(),
+            return_metadata=return_metadata,
+        )
+
     def _zo_use_quzo(self) -> bool:
         # medium_models has no separate load_int8 model-loading flag.
         # This switch depends only on zo_quantization_bits / zo_quantization:
@@ -3500,6 +3699,8 @@ class Trainer(LinearHeadTrainer):
             step_seed=step_seed,
             mask=mask,
             target_dtype=param.data.dtype,
+            algorithm=self._quzo_quantization_algorithm(),
+            group_size=self._quzo_quantization_group_size(),
         )
         if self._zo_quant_bits() == 16 and "z" in bundle:
             bundle = dict(bundle)
@@ -3677,9 +3878,8 @@ class Trainer(LinearHeadTrainer):
         if self._zo_quant_bits() not in {8, 4}:
             return target.to(dtype=param.data.dtype)
         seed = self._quzo_bundle_seed(bundle, "state_seed")
-        return quantize_tensor(
+        return self._quzo_quantize_tensor(
             target,
-            self._zo_quant_bits(),
             seed=seed,
             target_dtype=param.data.dtype,
         )
@@ -3763,9 +3963,8 @@ class Trainer(LinearHeadTrainer):
         seed_val = bundle.get("state_seed", None)
         seed = int(seed_val.item()) if isinstance(seed_val, torch.Tensor) else None
         param.data.copy_(
-            quantize_tensor(
+            self._quzo_quantize_tensor(
                 param.data,
-                self._zo_quant_bits(),
                 seed=seed,
                 target_dtype=param.data.dtype,
             )
@@ -3796,16 +3995,22 @@ class Trainer(LinearHeadTrainer):
         if bits in {8, 4}:
             try:
                 target_f = target.detach().float()
-                max_abs = float(torch.max(torch.abs(target_f)).item()) if target_f.numel() > 0 else 0.0
-                if math.isfinite(max_abs) and max_abs > 0.0:
-                    scale = max_abs / qmax
-                    q = torch.round(target_f / scale).clamp(qmin, qmax)
-                    saturated = int(torch.count_nonzero((q == qmin) | (q == qmax)).item())
-                    snapped = q * scale
-                    grid_error = torch.nan_to_num(target_f - snapped, nan=0.0, posinf=0.0, neginf=0.0)
-                    grid_error_sq = float(torch.sum(grid_error * grid_error).item())
-                    grid_error_max = float(torch.max(torch.abs(grid_error)).item()) if grid_error.numel() > 0 else 0.0
-                    scale_min = scale_median = scale_max = float(scale)
+                snapped, qmeta = quantize_tensor(
+                    target_f,
+                    bits,
+                    target_dtype=torch.float32,
+                    stochastic=False,
+                    algorithm=self._quzo_quantization_algorithm(),
+                    group_size=self._quzo_quantization_group_size(),
+                    return_metadata=True,
+                )
+                saturated = int(qmeta.get("saturation_count", 0) or 0)
+                grid_error = torch.nan_to_num(target_f - snapped.float(), nan=0.0, posinf=0.0, neginf=0.0)
+                grid_error_sq = float(torch.sum(grid_error * grid_error).item())
+                grid_error_max = float(torch.max(torch.abs(grid_error)).item()) if grid_error.numel() > 0 else 0.0
+                scale_min = qmeta.get("scale_min")
+                scale_median = qmeta.get("scale_median")
+                scale_max = qmeta.get("scale_max")
             except Exception:
                 saturated = 0
         stats = {
@@ -3911,9 +4116,8 @@ class Trainer(LinearHeadTrainer):
             quant_source = master.detach().float()
         else:
             quant_source = param.data.detach().float() - update
-        target = quantize_tensor(
+        target = self._quzo_quantize_tensor(
             quant_source,
-            self._zo_quant_bits(),
             seed=seed,
             target_dtype=param.data.dtype,
         )
@@ -4276,9 +4480,8 @@ class Trainer(LinearHeadTrainer):
                     if self._zo_use_quzo():
                         seed_val = bundle.get("state_seed", None)
                         seed = int(seed_val.item()) if isinstance(seed_val, torch.Tensor) else None
-                        target = quantize_tensor(
+                        target = self._quzo_quantize_tensor(
                             param.data.detach().float() + intended_delta,
-                            self._zo_quant_bits(),
                             seed=seed,
                             target_dtype=param.data.dtype,
                         )
@@ -4924,6 +5127,13 @@ class Trainer(LinearHeadTrainer):
                                 "h_active": float(h_active),
                                 "precision_mode": precision_mode,
                                 "quant_bits": int(getattr(self.args, "zo_quantization_bits", 32)),
+                                "quantization_requested_algorithm": str(getattr(self.args, "quantization_requested_algorithm", getattr(self.args, "quantization_algorithm", "")) or ""),
+                                "quantization_algorithm": str(getattr(self.args, "quantization_algorithm", "per_tensor_symmetric")),
+                                "quantization_algorithm_impl": str(getattr(self.args, "quantization_algorithm_impl", "per_tensor_symmetric")),
+                                "group_size": int(getattr(self.args, "quantization_group_size", 0) or 0),
+                                "block_size": int(getattr(self.args, "quantization_block_size", 0) or 0),
+                                "quantization_exact_gptq": bool(getattr(self.args, "quantization_exact_gptq", False)),
+                                "quantization_fallback_reason": str(getattr(self.args, "quantization_fallback_reason", "") or ""),
                                 "zo_two_point_precision": str(getattr(self.args, "zo_two_point_precision", "fp32") or "fp32"),
                                 "direction_type": direction_type,
                                 "sparse_rate": float(sparse_rate),
@@ -6006,7 +6216,11 @@ class Trainer(LinearHeadTrainer):
         if model_path is not None:
             # set global_step to global_step of last saved checkpoint from model path
             try:
-                self.state.global_step = int(model_path.split("-")[-1].split("/")[0])
+                step_match = re.search(r"(?:checkpoint-|step_)(\d+)", str(model_path))
+                if step_match is not None:
+                    self.state.global_step = int(step_match.group(1))
+                else:
+                    self.state.global_step = int(model_path.split("-")[-1].split("/")[0])
                 epochs_trained = self.state.global_step // (len(train_dataloader) // self.args.gradient_accumulation_steps)
                 steps_trained_in_current_epoch = self.state.global_step % (
                     len(train_dataloader) // self.args.gradient_accumulation_steps
@@ -6811,6 +7025,7 @@ class Trainer(LinearHeadTrainer):
 
                         # Now we save this to (CPU) memory instead of disk <-- much faster
                         self.best_model_ckpt = {k: v.detach().cpu() for k, v in model.state_dict().items()}
+                    self._main_checkpoint_maybe_save_best(metrics, optimizer, scheduler)
                 else:
                     # === CSV：本步未触发评估，立即写入一行并标注未评估 ===
                     try:
@@ -6831,6 +7046,8 @@ class Trainer(LinearHeadTrainer):
                             writer.writerow(row)
                     except Exception as e:
                         logger.warning(f"[CSV] failed to write non-eval row: {e}")
+
+                self._main_checkpoint_maybe_save(optimizer, scheduler, metrics)
 
             if self.args.max_steps > 0 and self.state.global_step > self.args.max_steps or (self.args.max_zo_forward_steps > 0 and self.state.zo_forward_step > self.args.max_zo_forward_steps):
                 # train_iterator.close()
@@ -6920,6 +7137,8 @@ class Trainer(LinearHeadTrainer):
                 pass
 
         logger.info("\n\nTraining completed. Do not forget to share your model on huggingface.co/models =)\n\n")
+        if self._main_checkpoints_enabled() and self._truthy(getattr(self.args, "main_save_final_checkpoint", True)):
+            self._save_main_checkpoint("final", optimizer=optimizer, scheduler=scheduler, metrics=metrics, force=True)
         perf_tail_metrics = self._perf_tail_finalize()
         if perf_tail_metrics:
             if metrics is None:

@@ -1,0 +1,3 @@
+# Raw residual diagnostics are preserved locally but too large/noisy for GitHub.
+**/per_layer_update_stats.jsonl
+**/scale_drift.csv

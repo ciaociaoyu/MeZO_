@@ -28,7 +28,13 @@ from src.linearhead_trainer import LinearHeadTrainer
 from src.dataset import FewShotDataset, OurInputFeatures
 from src.data_utils import resolve_and_prepare_data
 from src.models import MODEL_TYPES, resize_token_type_embeddings, convert_opt_model
-from src.quzo import quantize_model_in_place, validate_quzo_bits
+from src.quzo import (
+    exact_gptq_available,
+    normalize_quantization_algorithm,
+    quantization_algorithm_label,
+    quantize_model_in_place,
+    validate_quzo_bits,
+)
 from src.sparse_mezo import (
     normalize_sparse_mask_strategy,
     normalize_sparse_scope,
@@ -541,6 +547,10 @@ class DynamicTrainingArguments(TrainingArguments):
     log_file: str = field(
         default='log'
     )
+    overwrite_output_dir: bool = field(
+        default=True,
+        metadata={"help": "Compatibility flag for legacy launchers that still pass --overwrite_output_dir."}
+    )
 
     # For ensemble
     array_id: int = field(
@@ -717,6 +727,24 @@ class DynamicTrainingArguments(TrainingArguments):
             "help": "String alias for the same ZO-side method switch. Supported values: fp32/off/none, fp16, int8, int4. Overrides --zo_quantization_bits when set. In medium_models, int8 means QuZO int8, not model-loading int8."
         }
     )
+    quantization_algorithm: str = field(
+        default="per_tensor_symmetric",
+        metadata={
+            "help": "Low-bit fake-quant algorithm for QuZO. Supported local values: per_tensor_symmetric, groupwise_int8_block256. Passing gptq records an explicit fallback to groupwise_int8_block256 because exact GPTQ is not implemented here."
+        }
+    )
+    quantization_group_size: int = field(
+        default=0,
+        metadata={"help": "Group size for groupwise low-bit quantization. For the GPTQ-256 fallback use 256."}
+    )
+    quantization_block_size: int = field(
+        default=0,
+        metadata={"help": "Alias for --quantization_group_size used in block/group-size experiment manifests."}
+    )
+    quantization_calibration_samples: int = field(
+        default=0,
+        metadata={"help": "Calibration sample count. Exact GPTQ is unavailable in this code path, so this is logged only."}
+    )
     zo_update_backend: str = field(
         default="direct_int8",
         metadata={"help": "QuZO low-bit update backend. Choices: direct_int8, residual_grid, fp16_master."}
@@ -759,11 +787,11 @@ class DynamicTrainingArguments(TrainingArguments):
     )
     residual_scale_mode: str = field(
         default="tensor",
-        metadata={"help": "Residual-grid scale mode scaffolding. Choices: tensor, channel, block. Only tensor is implemented in this prototype."}
+        metadata={"help": "Residual-grid scale mode. Choices: tensor, channel, block. Block uses an expanded per-block scale tensor for correctness."}
     )
     residual_block_size: int = field(
         default=0,
-        metadata={"help": "Block size for residual_scale_mode=block once block-scale residual_grid is implemented."}
+        metadata={"help": "Block size for residual_scale_mode=block."}
     )
     int8_freeze_scale: bool = field(
         default=True,
@@ -844,6 +872,26 @@ class DynamicTrainingArguments(TrainingArguments):
     save_checkpoint_probe_stats_jsonl: str = field(
         default="checkpoint_probe_stats.jsonl",
         metadata={"help": "Output JSONL filename/path for training checkpoint probe diagnostics."}
+    )
+    main_save_checkpoints: bool = field(
+        default=False,
+        metadata={"help": "If true, the custom MeZO trainer writes restartable checkpoints under output_dir/checkpoints."}
+    )
+    main_checkpoint_steps: int = field(
+        default=0,
+        metadata={"help": "Checkpoint interval in optimizer steps for --main_save_checkpoints. <=0 falls back to save_steps."}
+    )
+    main_save_final_checkpoint: bool = field(
+        default=True,
+        metadata={"help": "When --main_save_checkpoints is true, save output_dir/checkpoints/final at training end."}
+    )
+    main_save_best_acc_checkpoint: bool = field(
+        default=True,
+        metadata={"help": "When --main_save_checkpoints is true, maintain output_dir/checkpoints/best_acc."}
+    )
+    main_save_best_loss_checkpoint: bool = field(
+        default=True,
+        metadata={"help": "When --main_save_checkpoints is true, maintain output_dir/checkpoints/best_loss."}
     )
     direction_type: str = field(
         default="dense",
@@ -1398,6 +1446,43 @@ def main():
         training_args.zo_quantization_bits = validate_quzo_bits(zo_quantization_alias)
     else:
         training_args.zo_quantization_bits = validate_quzo_bits(getattr(training_args, "zo_quantization_bits", 32))
+    requested_quantization_algorithm = str(getattr(training_args, "quantization_algorithm", "per_tensor_symmetric") or "per_tensor_symmetric").strip().lower().replace("-", "_")
+    training_args.quantization_requested_algorithm = requested_quantization_algorithm
+    quantization_fallback_reason = ""
+    algo_for_impl = requested_quantization_algorithm
+    quantization_group_size = int(getattr(training_args, "quantization_group_size", 0) or 0)
+    quantization_block_size = int(getattr(training_args, "quantization_block_size", 0) or 0)
+    if quantization_group_size <= 0 and quantization_block_size > 0:
+        quantization_group_size = quantization_block_size
+    if quantization_block_size <= 0 and quantization_group_size > 0:
+        quantization_block_size = quantization_group_size
+    if requested_quantization_algorithm in {"gptq", "gptq256", "gptq_256"}:
+        if exact_gptq_available():
+            raise ValueError("exact GPTQ was reported available but no GPTQ execution path is wired in medium_models")
+        algo_for_impl = "groupwise_int8_block256"
+        if quantization_group_size <= 0:
+            quantization_group_size = 256
+            quantization_block_size = 256
+        quantization_fallback_reason = "exact GPTQ/Hessian calibration is not implemented in medium_models; using groupwise symmetric INT8 block-256 fallback"
+    if algo_for_impl in {"groupwise_int8_block256", "groupwise_int4_block256"} and quantization_group_size <= 0:
+        quantization_group_size = 256
+        quantization_block_size = 256
+    quantization_impl = normalize_quantization_algorithm(algo_for_impl)
+    if quantization_impl == "groupwise_symmetric" and quantization_group_size <= 0:
+        raise ValueError("--quantization_algorithm groupwise_* requires --quantization_group_size/--quantization_block_size > 0")
+    training_args.quantization_algorithm_impl = quantization_impl
+    training_args.quantization_group_size = int(quantization_group_size)
+    training_args.quantization_block_size = int(quantization_block_size)
+    training_args.quantization_algorithm = quantization_algorithm_label(
+        quantization_impl,
+        bits=int(training_args.zo_quantization_bits),
+        group_size=int(quantization_group_size),
+    )
+    training_args.quantization_exact_gptq = False
+    training_args.quantization_fallback_reason = quantization_fallback_reason
+    training_args.quantization_calibration_samples = int(getattr(training_args, "quantization_calibration_samples", 0) or 0)
+    if training_args.quantization_calibration_samples < 0:
+        raise ValueError("--quantization_calibration_samples must be >= 0")
     if getattr(training_args, "zo_h", None) is not None:
         zo_h = float(getattr(training_args, "zo_h"))
         if (not math.isfinite(zo_h)) or zo_h <= 0.0:
@@ -1680,7 +1765,7 @@ def main():
         bool(getattr(training_args, "zo_use_true_directional_derivative", False)),
     )
     logger.info(
-        "[quzo-config] zo_quantization_bits=%s | quzo_lowbit_enabled=%s | quzo_lowbit_probe_impl=%s",
+        "[quzo-config] zo_quantization_bits=%s | quzo_lowbit_enabled=%s | quzo_lowbit_probe_impl=%s | quantization_algorithm=%s | quantization_algorithm_impl=%s | requested_quantization_algorithm=%s | group_size=%s | block_size=%s | exact_gptq=%s | calibration_samples=%s | fallback_reason=%s",
         int(getattr(training_args, "zo_quantization_bits", 32)),
         int(getattr(training_args, "zo_quantization_bits", 32)) in {8, 4},
         (
@@ -1688,6 +1773,14 @@ def main():
             if int(getattr(training_args, "zo_quantization_bits", 32)) in {8, 4}
             else "n/a"
         ),
+        str(getattr(training_args, "quantization_algorithm", "per_tensor_symmetric")),
+        str(getattr(training_args, "quantization_algorithm_impl", "per_tensor_symmetric")),
+        str(getattr(training_args, "quantization_requested_algorithm", getattr(training_args, "quantization_algorithm", "per_tensor_symmetric"))),
+        int(getattr(training_args, "quantization_group_size", 0) or 0),
+        int(getattr(training_args, "quantization_block_size", 0) or 0),
+        bool(getattr(training_args, "quantization_exact_gptq", False)),
+        int(getattr(training_args, "quantization_calibration_samples", 0) or 0),
+        str(getattr(training_args, "quantization_fallback_reason", "") or ""),
     )
     logger.info(
         "[quzo-update-config] backend=%s | residual_dtype=%s | commit_mode=%s | max_code_step=%s | residual_commit_threshold=%s | residual_commit_select=%s | residual_target_active_frac=%s | residual_actual_norm_ratio_cap=%s | residual_budget_reference=%s | residual_decay=%s | residual_scale_mode=%s | residual_block_size=%s | int8_freeze_scale=%s | int8_scale_floor=%s | update_norm_clip=%s | scalar_clip=%s | log_update_stats_every=%s | update_stats_jsonl=%s",
@@ -2005,10 +2098,15 @@ def main():
             int(training_args.zo_quantization_bits),
             include_frozen=True,
             seed=int(getattr(training_args, "seed", 0)),
+            algorithm=str(getattr(training_args, "quantization_algorithm", "per_tensor_symmetric")),
+            group_size=int(getattr(training_args, "quantization_group_size", 0) or 0),
+            block_size=int(getattr(training_args, "quantization_block_size", 0) or 0),
         )
         logger.info(
-            "[quzo-config] quantized model parameters in-place at %d bits before ZO training",
+            "[quzo-config] quantized model parameters in-place at %d bits before ZO training with algorithm=%s group_size=%s",
             int(training_args.zo_quantization_bits),
+            str(getattr(training_args, "quantization_algorithm", "per_tensor_symmetric")),
+            int(getattr(training_args, "quantization_group_size", 0) or 0),
         )
     elif bool(getattr(training_args, "zero_order_optim", False)) and int(getattr(training_args, "zo_quantization_bits", 32)) == 16:
         logger.info(
@@ -2030,6 +2128,14 @@ def main():
                 if int(getattr(training_args, "zo_quantization_bits", 32)) in {8, 4}
                 else "n/a"
             ),
+            "quantization_requested_algorithm": str(getattr(training_args, "quantization_requested_algorithm", getattr(training_args, "quantization_algorithm", "")) or ""),
+            "quantization_algorithm": str(getattr(training_args, "quantization_algorithm", "per_tensor_symmetric")),
+            "quantization_algorithm_impl": str(getattr(training_args, "quantization_algorithm_impl", "per_tensor_symmetric")),
+            "quantization_group_size": int(getattr(training_args, "quantization_group_size", 0) or 0),
+            "quantization_block_size": int(getattr(training_args, "quantization_block_size", 0) or 0),
+            "quantization_exact_gptq": bool(getattr(training_args, "quantization_exact_gptq", False)),
+            "quantization_fallback_reason": str(getattr(training_args, "quantization_fallback_reason", "") or ""),
+            "quantization_calibration_samples": int(getattr(training_args, "quantization_calibration_samples", 0) or 0),
             "zo_use_true_directional_derivative": bool(getattr(training_args, "zo_use_true_directional_derivative", False)),
         },
     )
@@ -2079,6 +2185,7 @@ def main():
         eval_dataset=eval_dataset,
         compute_metrics=build_compute_metrics_fn(data_args.task_name),
         data_collator=MyDataCollatorWithPadding(tokenizer),
+        processing_class=tokenizer,
         **trainer_kwargs
     )
 

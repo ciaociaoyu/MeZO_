@@ -19,6 +19,9 @@ def main() -> None:
     parser.add_argument("--task_name", default="SST-5")
     parser.add_argument("--precision_mode", choices=["fp32", "fp16", "bf16", "int8"], required=True)
     parser.add_argument("--quant_bits", type=int, default=None)
+    parser.add_argument("--quantization_algorithm", default="per_tensor_symmetric")
+    parser.add_argument("--quantization_group_size", type=int, default=0)
+    parser.add_argument("--quantization_block_size", type=int, default=0)
     parser.add_argument("--zo_h", type=float, default=3e-3)
     parser.add_argument("--h_list", default="")
     parser.add_argument("--num_probe_directions", type=int, default=50)
@@ -82,10 +85,18 @@ def main() -> None:
         "probe_stats.jsonl",
         "--random_prediction_guard_enabled",
         "False",
+        "--gradient_accumulation_steps",
+        "1",
         "--save_strategy",
         "no",
         "--no_predict",
     ]
+    if args.quantization_algorithm:
+        extra_args.extend(["--quantization_algorithm", args.quantization_algorithm])
+    if args.quantization_group_size > 0:
+        extra_args.extend(["--quantization_group_size", str(args.quantization_group_size)])
+    if args.quantization_block_size > 0:
+        extra_args.extend(["--quantization_block_size", str(args.quantization_block_size)])
     if args.quant_bits is not None:
         extra_args.extend(["--quant_bits", str(args.quant_bits)])
     if args.precision_mode == "int8":
@@ -109,7 +120,7 @@ def main() -> None:
             "MODEL": args.model_name_or_path,
             "USE_H": "False",
             "USE_C": "False",
-            "DATALOADER_SHUFFLE": "False",
+            "DATALOADER_SHUFFLE": "True",
             "EFFICIENT_ZERO_ORDER": "True",
             "EXTRA_TAG": "probe-window",
             "CUDA_VISIBLE_DEVICES": args.cuda_visible_devices,
