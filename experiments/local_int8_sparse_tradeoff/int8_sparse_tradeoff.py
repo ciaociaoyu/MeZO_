@@ -355,7 +355,13 @@ def plot_summary(summary: pd.DataFrame, meta: Dict[str, Any], output_path: Path,
     ax = axes[0]
     color_err = "#C44E52"
     color_snr = "#4C78A8"
-    ax.plot(x, summary["projection_mse"], marker="o", color=color_err, label="projection MSE")
+    projection_line, = ax.plot(
+        x,
+        summary["projection_mse"],
+        marker="o",
+        color=color_err,
+        label="Projection MSE: FD projection vs true grad projection",
+    )
     ax.fill_between(
         x,
         summary["projection_error_sq_p25"],
@@ -372,7 +378,13 @@ def plot_summary(summary: pd.DataFrame, meta: Dict[str, Any], output_path: Path,
     ax.grid(True, which="both", linewidth=0.5, alpha=0.28)
 
     ax2 = ax.twinx()
-    ax2.plot(x, summary["loss_gap_floor_snr_median"], marker="s", color=color_snr, label="signal SNR")
+    snr_line, = ax2.plot(
+        x,
+        summary["loss_gap_floor_snr_median"],
+        marker="s",
+        color=color_snr,
+        label="Loss-gap SNR: signal quality",
+    )
     ax2.fill_between(
         x,
         summary["loss_gap_floor_snr_p25"],
@@ -381,10 +393,27 @@ def plot_summary(summary: pd.DataFrame, meta: Dict[str, Any], output_path: Path,
         alpha=0.14,
         linewidth=0,
     )
-    ax2.axhline(target_snr, color=color_snr, linestyle="--", linewidth=1.0, alpha=0.55)
+    target_line = ax2.axhline(
+        target_snr,
+        color=color_snr,
+        linestyle="--",
+        linewidth=1.0,
+        alpha=0.55,
+        label=f"Target SNR={target_snr:g}",
+    )
     ax2.set_yscale("log")
     ax2.set_ylabel("loss-gap SNR vs fixed noise floor", color=color_snr)
     ax2.tick_params(axis="y", labelcolor=color_snr)
+    legend = ax.legend(
+        handles=[projection_line, snr_line, target_line],
+        loc="upper left",
+        frameon=True,
+        fontsize=8.4,
+        borderpad=0.5,
+        handlelength=2.4,
+    )
+    legend.get_frame().set_alpha(0.88)
+    legend.get_frame().set_linewidth(0.4)
 
     ax.axvline(float(sweet["active_fraction"]), color="#333333", linestyle=":", linewidth=1.2)
     ax.text(

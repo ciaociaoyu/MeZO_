@@ -1,0 +1,62 @@
+#!/bin/bash
+#SBATCH --job-name=sst5_bs32_h_precision_sweep
+#SBATCH --partition=gpu_p
+#SBATCH --array=0-25%4
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=100G
+#SBATCH --gres=gpu:H100:1
+#SBATCH --time=12:00:00
+#SBATCH --output=jobs/%x_%A_%a.out
+#SBATCH --mail-user=jichao.yu@uga.edu
+#SBATCH --mail-type=ALL
+
+ml jq
+
+source ~/.bashrc
+conda activate ciao
+
+cd /home/jy03364/MeZO/medium_models
+
+# =========================
+# SST-5 h + precision sweep
+# =========================
+export TASK=sst-5
+export MODEL=roberta-large
+export K=16
+
+# 单种子可先快速跑通；需要多种子可改成: "13 21 42"
+export SEEDS="13"
+export DATA_SEED=16
+
+export BS=32
+export LR=1e-6
+export STEP=20000
+export EVAL_STEP=200
+export DATALOADER_SHUFFLE=False
+
+# 固定 h 扫描（不要自适应 h）
+export USE_H=False
+export USE_C=False
+
+# 方向导数探针
+export ZO_PROBE_EVERY=200
+export ZO_PROBE_NUM_SEEDS=16
+export ZO_PROBE_LOG_CSV=True
+
+# 对比两种 two-point 精度
+export PRECISIONS="fp32 fp16"
+
+# 输出目录：result/<sweep_name>/<precision>/eps_<value>/seed<seed>/
+export SWEEP_NAME="sst5-bs32-h-precision-sweep"
+export RESULT_ROOT="/home/jy03364/MeZO/medium_models/sh_file/sst5/bs32/h_precision_sweep/result"
+
+echo "SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID}"
+# 当前设置下总任务数 = 2(precision) * 13(eps) * 1(seed) = 26，所以 array=0-25
+# 若需更高并发（比如 %8），可在提交时覆盖：
+#   sbatch --array=0-25%8 sst5_bs32_h_precision_sweep_a100.txt
+# 若集群限制 array 大小，可拆成两次提交：
+#   sbatch --array=0-12%8 sst5_bs32_h_precision_sweep_a100.txt
+#   sbatch --array=13-25%8 sst5_bs32_h_precision_sweep_a100.txt
+
+bash scripts/exp_sst5_h_precision_sweep.sh

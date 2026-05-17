@@ -1,0 +1,43 @@
+Archive: medium_models/sh_file/sst5/bs32/h_vs_error/ANL.zip
+Size bytes: 597177
+SHA256: 0fa4bf2d6d98bf5918bfbc57426b9359ba8e1b5986f1f0bd9a20f3e834142690
+Checksum file: 
+Checksum status: missing
+Member count: 26
+Contains summaries: True
+Contains plots: True
+Contains commands/manifests: False
+Contains JSONL stats: False
+Contains logs: False
+Contains run summaries/eval files: False
+Contains model checkpoints: False
+Contains tokenizer artifacts: False
+Checkpoint/tokenizer note: no model checkpoints or tokenizer artifacts seen in member list
+
+Members:
+ANL/
+__MACOSX/._ANL
+ANL/probe_loss_curve.png
+__MACOSX/ANL/._probe_loss_curve.png
+ANL/best_h_by_step.csv
+__MACOSX/ANL/._best_h_by_step.csv
+ANL/slope_a_vs_h.png
+__MACOSX/ANL/._slope_a_vs_h.png
+ANL/error_heatmap.png
+__MACOSX/ANL/._error_heatmap.png
+ANL/quality_vs_h.png
+__MACOSX/ANL/._quality_vs_h.png
+ANL/h_eff_over_h_vs_h.png
+__MACOSX/ANL/._h_eff_over_h_vs_h.png
+ANL/error_vs_h.png
+__MACOSX/ANL/._error_vs_h.png
+ANL/deltaL_vs_h.png
+__MACOSX/ANL/._deltaL_vs_h.png
+ANL/delta_pred_vs_h.png
+__MACOSX/ANL/._delta_pred_vs_h.png
+ANL/delta_zero_frac_vs_h.png
+__MACOSX/ANL/._delta_zero_frac_vs_h.png
+ANL/summary_by_h.csv
+__MACOSX/ANL/._summary_by_h.csv
+ANL/param_changed_ratio_vs_h.png
+__MACOSX/ANL/._param_changed_ratio_vs_h.png

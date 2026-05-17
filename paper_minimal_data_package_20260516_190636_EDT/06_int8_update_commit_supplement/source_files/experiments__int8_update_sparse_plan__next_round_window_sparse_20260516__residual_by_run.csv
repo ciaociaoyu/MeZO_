@@ -1,0 +1,4 @@
+run_name,lr,update_norm_clip,steps_completed,best_eval_acc,last_eval_acc,last_eval_loss,cos_intended_actual_last,actual_over_intended_norm_ratio_last,residual_over_scale_p99_last,residual_bound_violation_frac_last,scale_drift_max,nan_occurred
+residual_grid_round_step1_lr7e-5_clip3_step500,7e-05,,501,0.3711943793911007,0.3711943793911007,1.5153218507766724,0.20314424404898687,4.83640025795546,0.49490455034505304,0.0,0.0,False
+residual_grid_round_step1_lr5e-5_clip5_step500,5e-05,,501,0.36768149882903983,0.36768149882903983,1.5306928157806396,0.14020638664489307,7.132000912016304,0.49501846803314686,0.0,0.0,False
+residual_grid_round_step1_lr1e-4_clip2_step500,0.0001,,501,0.3126463700234192,0.3126463700234192,1.5485763549804688,0.16365605661325328,5.462877049182004,0.4941201839282794,0.0,0.0,False

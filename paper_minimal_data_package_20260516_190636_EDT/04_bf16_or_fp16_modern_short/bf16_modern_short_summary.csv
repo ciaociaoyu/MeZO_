@@ -1,0 +1,4 @@
+run_name,precision_mode,zo_quantization,update_backend,direction_type,h,h_active,lr,steps_completed,final_train_loss,final_train_acc,final_eval_loss,final_acc,best_acc,nan_occurred,source_path
+dense_bf16_h1e-2,bf16,fp32,direct_int8,dense,0.01,0.01,1e-05,301,1.8302001953125,0.171875,1.639345645904541,0.27985948477751754,0.27985948477751754,False,experiments/int8_update_sparse_plan/probe_window_h100_20260512/window_training_summary.csv
+dense_bf16_h1e-3,bf16,fp32,direct_int8,dense,0.001,0.001,1e-05,301,1.58599853515625,0.265625,1.53264319896698,0.32786885245901637,0.32786885245901637,False,experiments/int8_update_sparse_plan/probe_window_h100_20260512/window_training_summary.csv
+dense_bf16_h1e-5,bf16,fp32,direct_int8,dense,1e-05,1e-05,1e-05,301,1.7852783203125,0.125,1.5790549516677856,0.2903981264637002,0.2903981264637002,False,experiments/int8_update_sparse_plan/probe_window_h100_20260512/window_training_summary.csv

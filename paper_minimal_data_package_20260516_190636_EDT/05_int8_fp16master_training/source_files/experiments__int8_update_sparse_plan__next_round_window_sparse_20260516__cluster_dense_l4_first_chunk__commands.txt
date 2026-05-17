@@ -1,0 +1,3 @@
+# Next-round window/sparse commands
+RESULT_ROOT='/scratch/jy03364/MeZO_/runs/next_round_window_sparse_20260515_163221_chunk8_l4' MODE='all' CASE_OFFSET='0' CASE_LIMIT='8' MAX_CONCURRENT_JOBS='2' CONFIRM_SUBMIT=1 bash scripts/submit_next_round_window_sparse.sh
+python scripts/summarize_next_round.py '/scratch/jy03364/MeZO_/runs/next_round_window_sparse_20260515_163221_chunk8_l4'

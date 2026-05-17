@@ -1,0 +1,13 @@
+| run_name | precision_mode | zo_quantization | update_backend | direction_type | h | sparse_rate | h_active | sparse_mode | sparse_rescale | lr | steps_completed | final_train_loss | final_train_acc | final_eval_loss | final_acc | best_acc | nan_occurred |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| dense_bf16_h1e-2 | bf16 | fp32 | direct_int8 | dense | 0.01 | 1 | 0.01 | none | none | 1e-05 | 301 | 1.8302001953125 | 0.171875 | 1.63935 | 0.279859 | 0.279859 | False |
+| dense_bf16_h1e-3 | bf16 | fp32 | direct_int8 | dense | 0.001 | 1 | 0.001 | none | none | 1e-05 | 301 | 1.58599853515625 | 0.265625 | 1.53264 | 0.327869 | 0.327869 | False |
+| dense_bf16_h1e-5 | bf16 | fp32 | direct_int8 | dense | 1e-05 | 1 | 1e-05 | none | none | 1e-05 | 301 | 1.7852783203125 | 0.125 | 1.57905 | 0.290398 | 0.290398 | False |
+| dense_fp32_h1e-2 | fp32 | fp32 | direct_int8 | dense | 0.01 | 1 | 0.01 | none | none | 1e-05 | 301 | 1.8311944007873535 | 0.171875 | 1.6363 | 0.279859 | 0.279859 | False |
+| dense_fp32_h1e-3 | fp32 | fp32 | direct_int8 | dense | 0.001 | 1 | 0.001 | none | none | 1e-05 | 301 | 1.5870813131332397 | 0.265625 | 1.53234 | 0.327869 | 0.327869 | False |
+| dense_fp32_h1e-5 | fp32 | fp32 | direct_int8 | dense | 1e-05 | 1 | 1e-05 | none | none | 1e-05 | 301 | 1.5810317993164062 | 0.265625 | 1.53217 | 0.336066 | 0.336066 | False |
+| dense_int8_fp16master_h1e-2 | int8 | int8 | fp16_master | dense | 0.01 | 1 | 0.01 | none | none | 1e-05 | 301 | 1.6390914916992188 | 0.1875 | 1.63473 | 0.282201 | 0.282201 | False |
+| dense_int8_fp16master_h3e-3 | int8 | int8 | fp16_master | dense | 0.003 | 1 | 0.003 | none | none | 1e-05 | 301 | 1.5600357055664062 | 0.296875 | 1.52927 | 0.338407 | 0.338407 | False |
+| dense_int8_fp16master_h3e-4 | int8 | int8 | fp16_master | dense | 0.0003 | 1 | 0.0003 | none | none | 1e-05 | 301 | 1.5494918823242188 | 0.234375 | 1.53784 | 0.350117 | 0.350117 | False |
+| sparse_int8_fp16master_p0p003_h0p0003286 | int8 | int8 | fp16_master | sparse | 0.000328634 | 0.003 | 0.006 | bernoulli | inv_sqrt_p | 1e-05 | 301 | 1.600006103515625 | 0.265625 | 1.53562 | 0.324356 | 0.324356 | False |
+| sparse_int8_fp16master_p0p01_h0p0012 | int8 | int8 | fp16_master | sparse | 0.0012 | 0.01 | 0.012 | bernoulli | inv_sqrt_p | 1e-05 | 301 | 1.5981521606445312 | 0.28125 | 1.5488 | 0.326698 | 0.326698 | False |

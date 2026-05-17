@@ -3,7 +3,7 @@
   "batch_size_for_snr": 64,
   "bits": 8,
   "code_step": 8,
-  "created_at_unix": 1777425047.591507,
+  "created_at_unix": 1777425614.648473,
   "dim": 2048,
   "loss_noise_floor": 0.0001,
   "model_info": {

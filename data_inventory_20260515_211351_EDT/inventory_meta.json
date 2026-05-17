@@ -1,0 +1,30 @@
+{
+  "output_dir": "/Users/jichaoyu/Documents/GitHub/MeZO/data_inventory_20260515_211351_EDT",
+  "files_scanned": 3841,
+  "summaries_found": 83,
+  "archives_inspected": 7,
+  "top_important_files": [
+    "experiments/int8_update_sparse_plan/probe_window_h100_20260512/dense_probe_summary.csv",
+    "experiments/int8_update_sparse_plan/probe_window_h100_20260512/sparse_probe_summary.csv",
+    "experiments/int8_update_sparse_plan/probe_window_h100_20260512/window_training_summary.csv",
+    "experiments/int8_update_sparse_plan/probe_window_h100_20260512/probe_window_h100_20260512_results.tar.gz",
+    "experiments/future_probe_window_training_20260512_235627_package/summary_all.csv",
+    "experiments/future_probe_window_training_20260512_235627_package/summary_checkpoint_probe.csv",
+    "experiments/future_probe_window_training_20260512_235627_package.zip",
+    "experiments/int8_update_sparse_plan/next_window_sparse_residual_20260515/cluster_dense_a100/summary_dense_by_h.csv",
+    "experiments/int8_update_sparse_plan/next_window_sparse_residual_20260515/residual_local_h100/summary_residual.csv",
+    "results_packages/residual_local_h100_20260515_172944_essential.tar.gz"
+  ],
+  "top_missing_materials": [
+    "missing .bib files",
+    "missing paper scaffold",
+    "missing style files",
+    "missing final paper plots",
+    "missing raw logs for compact packages",
+    "missing command manifests for older/legacy runs",
+    "missing seeds",
+    "missing long dense training",
+    "ambiguous final_acc summaries",
+    "sparse training incomplete"
+  ]
+}

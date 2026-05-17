@@ -1,0 +1,86 @@
+Archive: results_packages/residual_local_h100_20260515_172944_essential.tar.gz
+Size bytes: 3082458
+SHA256: 45557eb252cd8fd8d3ad7a4a6d408d8b28784bfd0f715eb7e5e61f3771011ef9
+Checksum file: results_packages/residual_local_h100_20260515_172944_essential.tar.gz.sha256
+Checksum status: verified
+Member count: 69
+Contains summaries: True
+Contains plots: False
+Contains commands/manifests: True
+Contains JSONL stats: True
+Contains logs: True
+Contains run summaries/eval files: True
+Contains model checkpoints: False
+Contains tokenizer artifacts: True
+Checkpoint/tokenizer note: contains model checkpoints/tokenizer artifacts
+
+Members:
+commands.txt
+config_manifest.json
+created_at.txt
+cuda_visible_devices.txt
+git_commit.err
+git_commit.txt
+hostname.txt
+nvidia-smi.txt
+report.md
+run_env.txt
+sanity_summary.json
+summary_residual.csv
+summary_residual.md
+logs
+logs/residual_unit_tests.log
+logs/sanity_noop_lr0.log
+logs/residual_grid_round_step1_lr7e-5_clip3_step500.log
+logs/residual_grid_round_step1_lr5e-5_clip5_step500.log
+logs/residual_grid_round_step1_lr7e-5_clip3_step500_promote_step2000.log
+logs/residual_grid_round_step1_lr1e-4_clip2_step500.log
+logs/residual_grid_consistency_debug.log
+sanity
+sanity/noop_lr0
+sanity/noop_lr0/noop_residual_grid_lr0
+sanity/noop_lr0/noop_residual_grid_lr0/seed0
+sanity/noop_lr0/noop_residual_grid_lr0/seed0/metrics_logs
+sanity/noop_lr0/noop_residual_grid_lr0/seed0/metrics_logs/metrics_adaptiveH-0_cscale-0.csv
+sanity/noop_lr0/noop_residual_grid_lr0/seed0/run_metadata.json
+sanity/noop_lr0/noop_residual_grid_lr0/seed0/scale_drift.csv
+sanity/noop_lr0/noop_residual_grid_lr0/seed0/tokenizer.json
+sanity/noop_lr0/noop_residual_grid_lr0/seed0/eval_results_sst-5.txt
+sanity/noop_lr0/noop_residual_grid_lr0/seed0/per_layer_update_stats.jsonl
+sanity/noop_lr0/noop_residual_grid_lr0/seed0/update_stats.jsonl
+sanity/noop_lr0/noop_residual_grid_lr0/seed0/run_summary.json
+sanity/noop_lr0/noop_residual_grid_lr0/seed0/merges.txt
+sanity/noop_lr0/noop_residual_grid_lr0/seed0/tokenizer_config.json
+sanity/noop_lr0/noop_residual_grid_lr0/seed0/vocab.json
+sanity/noop_lr0/noop_residual_grid_lr0/seed0/data_args.bin
+sanity/noop_lr0/noop_residual_grid_lr0/seed0/model_args.bin
+sanity/noop_lr0/noop_residual_grid_lr0/seed0/special_tokens_map.json
+sanity/residual_grid_consistency
+sanity/residual_grid_consistency/debug_command.txt
+sanity/residual_grid_consistency/residual_grid_consistency_debug
+sanity/residual_grid_consistency/residual_grid_consistency_debug/seed16
+sanity/residual_grid_consistency/residual_grid_consistency_debug/seed16/run_metadata.json
+sanity/residual_grid_consistency/debug
+sanity/residual_grid_consistency/debug/debug_summary.json
+sanity/residual_grid_consistency/debug/grid_stats.csv
+sanity/residual_grid_consistency/debug/one_step_equation_check.csv
+sanity/residual_grid_consistency/debug/synthetic_residual_test.json
+sanity/residual_grid_consistency/debug/noop_update_check.csv
+sanity/residual_grid_consistency/debug/scale_stats.csv
+sanity/residual_grid_consistency/logs
+residual_grid_round_step1_lr5e-5_clip5_step500/seed0/run_summary.json
+residual_grid_round_step1_lr5e-5_clip5_step500/seed0/update_stats.jsonl
+residual_grid_round_step1_lr5e-5_clip5_step500/seed0/metrics_logs
+residual_grid_round_step1_lr5e-5_clip5_step500/seed0/metrics_logs/metrics_adaptiveH-0_cscale-0.csv
+residual_grid_round_step1_lr1e-4_clip2_step500/seed0/run_summary.json
+residual_grid_round_step1_lr1e-4_clip2_step500/seed0/update_stats.jsonl
+residual_grid_round_step1_lr1e-4_clip2_step500/seed0/metrics_logs
+residual_grid_round_step1_lr1e-4_clip2_step500/seed0/metrics_logs/metrics_adaptiveH-0_cscale-0.csv
+residual_grid_round_step1_lr7e-5_clip3_step500/seed0/run_summary.json
+residual_grid_round_step1_lr7e-5_clip3_step500/seed0/update_stats.jsonl
+residual_grid_round_step1_lr7e-5_clip3_step500/seed0/metrics_logs
+residual_grid_round_step1_lr7e-5_clip3_step500/seed0/metrics_logs/metrics_adaptiveH-0_cscale-0.csv
+residual_grid_round_step1_lr7e-5_clip3_step500_promote_step2000/seed0/run_summary.json
+residual_grid_round_step1_lr7e-5_clip3_step500_promote_step2000/seed0/update_stats.jsonl
+residual_grid_round_step1_lr7e-5_clip3_step500_promote_step2000/seed0/metrics_logs
+residual_grid_round_step1_lr7e-5_clip3_step500_promote_step2000/seed0/metrics_logs/metrics_adaptiveH-0_cscale-0.csv

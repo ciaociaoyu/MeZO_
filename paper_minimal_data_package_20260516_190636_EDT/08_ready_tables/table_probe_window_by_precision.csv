@@ -1,0 +1,4 @@
+precision,best_h_by_corr,corr_at_best_h,nMSE_at_best_h,sign_agreement_at_best_h,small_h_example,small_h_corr,large_h_example,large_h_corr,notes,source_path
+fp32,1e-05,0.9999997106604281,6.666072230573788e-07,1.0,1e-05,0.9999997106604281,0.01,-0.09860844632614087,stable at very small h in probe; broad good region before locality failure,experiments/int8_update_sparse_plan/probe_window_h100_20260512/dense_probe_summary.csv
+bf16,0.001,0.9979581804430964,0.004620757523848902,0.98,1e-05,0.2041549274974257,0.01,-0.10034172425038886,best probe corr around 1e-3; tiny h worse than FP32,experiments/int8_update_sparse_plan/probe_window_h100_20260512/dense_probe_summary.csv
+int8,0.003,0.9375666196909768,0.12639306022704247,0.94,1e-05,0.12096525191839812,0.01,0.05671528321337012,small h distorted; best corr around 3e-3; h=1e-2 geometry alone is misleading,experiments/int8_update_sparse_plan/probe_window_h100_20260512/dense_probe_summary.csv
