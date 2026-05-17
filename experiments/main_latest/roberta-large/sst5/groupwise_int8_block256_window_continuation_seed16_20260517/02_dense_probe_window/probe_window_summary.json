@@ -1,0 +1,25 @@
+{
+  "compute_true_grad_directional": true,
+  "direction_type": "dense",
+  "h_values": [
+    0.0001,
+    0.0003,
+    0.0007,
+    0.001,
+    0.0015,
+    0.002,
+    0.0025,
+    0.003,
+    0.004,
+    0.005,
+    0.01
+  ],
+  "jsonl_path": "/scratch/jy03364/MeZO_/experiments/main_latest/roberta-large/sst5/groupwise_int8_block256_window_continuation_seed16_20260517/02_dense_probe_window/probe_stats.jsonl",
+  "num_probe_batches": 1,
+  "num_probe_directions": 50,
+  "precision_mode": "int8",
+  "rows_written": 550,
+  "sparse_mode": "none",
+  "sparse_rate": 1.0,
+  "sparse_rescale": "none"
+}

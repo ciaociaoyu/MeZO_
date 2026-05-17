@@ -1,0 +1,20 @@
+{
+  "compute_true_grad_directional": true,
+  "direction_type": "sparse",
+  "h_values": [
+    7.5e-05,
+    0.00015,
+    0.0003,
+    0.0006,
+    0.0012,
+    0.0024
+  ],
+  "jsonl_path": "/scratch/jy03364/MeZO_/experiments/main_latest/roberta-large/sst5/groupwise_int8_block256_window_continuation_seed16_20260517/04_sparse_probe_by_rate/bernoulli_p0p01/probe_stats.jsonl",
+  "num_probe_batches": 1,
+  "num_probe_directions": 50,
+  "precision_mode": "int8",
+  "rows_written": 300,
+  "sparse_mode": "bernoulli",
+  "sparse_rate": 0.01,
+  "sparse_rescale": "inv_sqrt_p"
+}

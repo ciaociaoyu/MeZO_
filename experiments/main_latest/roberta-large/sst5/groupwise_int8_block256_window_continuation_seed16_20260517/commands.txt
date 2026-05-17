@@ -1,0 +1,33 @@
+# groupwise_int8_block256 continuation commands
+
+Root:
+experiments/main_latest/roberta-large/sst5/groupwise_int8_block256_window_continuation_seed16_20260517
+
+Commands are appended as they are launched.
+
+Environment:
+bash experiments/main_latest/roberta-large/sst5/groupwise_int8_block256_window_continuation_seed16_20260517/jobs/00_record_environment.sh
+
+Quantizer check:
+bash experiments/main_latest/roberta-large/sst5/groupwise_int8_block256_window_continuation_seed16_20260517/jobs/01_quantizer_check.sh
+
+Dense probe K=50:
+bash experiments/main_latest/roberta-large/sst5/groupwise_int8_block256_window_continuation_seed16_20260517/jobs/02_dense_probe_k50.sh
+
+Sparse probe by rate K=50:
+bash experiments/main_latest/roberta-large/sst5/groupwise_int8_block256_window_continuation_seed16_20260517/jobs/04_sparse_probe_by_rate_k50.sh
+
+Sparse probe by rate K=50, Bernoulli fallback after exact_random p=0.003 exceeded local budget:
+bash experiments/main_latest/roberta-large/sst5/groupwise_int8_block256_window_continuation_seed16_20260517/jobs/04_sparse_probe_by_rate_bernoulli_k50.sh
+
+Dense FP16-master training h=1e-3, 1.5e-3, 2e-3:
+bash experiments/main_latest/roberta-large/sst5/groupwise_int8_block256_window_continuation_seed16_20260517/jobs/03_dense_train_required.sh
+
+Optional dense FP16-master training h=3e-3:
+bash experiments/main_latest/roberta-large/sst5/groupwise_int8_block256_window_continuation_seed16_20260517/jobs/03_dense_train_optional_h3e-3.sh
+
+Residual-grid 2k:
+bash experiments/main_latest/roberta-large/sst5/groupwise_int8_block256_window_continuation_seed16_20260517/jobs/06_residual_grid_step2000.sh
+
+Summaries:
+bash experiments/main_latest/roberta-large/sst5/groupwise_int8_block256_window_continuation_seed16_20260517/jobs/99_summarize.sh

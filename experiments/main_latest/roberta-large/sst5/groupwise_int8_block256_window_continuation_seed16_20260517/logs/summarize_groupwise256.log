@@ -1,0 +1,1 @@
+{"dense_probe_rows": 11, "dense_train_rows": 3, "residual_rows": 1, "root": "/scratch/jy03364/MeZO_/experiments/main_latest/roberta-large/sst5/groupwise_int8_block256_window_continuation_seed16_20260517", "sparse_probe_rows": 24}

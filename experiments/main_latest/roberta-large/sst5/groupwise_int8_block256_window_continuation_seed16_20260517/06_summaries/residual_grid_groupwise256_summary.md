@@ -1,0 +1,5 @@
+# groupwise_int8_block256 Residual Grid Summary
+
+| run_name | model | dataset | quantization_algorithm | group_size | update_backend | direction_type | h | h_active | sparse_rate | lr | steps_completed | seed | best_eval_acc | last_eval_acc | best_eval_loss | last_eval_loss | corr_fd_true | nMSE_fd_true | probe_alignment | probe_norm_ratio | active_frac | cos_intended_actual | actual_over_intended_norm_ratio | acc_actual_cos | actual_over_acc_norm_ratio | residual_bound_violation_frac | grid_error_norm | scale_drift_max | nan_occurred | status | notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| residual_grid_groupwise256_h3e-3_lr7e-5_clip3_step2000 | roberta-large | sst-5 | groupwise_int8_block256 | 256 | residual_grid | dense | 0.003 | 0.003 | 1 | 7e-05 | 2000 | 16 | 0.447307 | 0.447307 | 1.32867 | 1.32867 |  |  |  |  | 0.129804 | 0.404017 | 2.46703 | 0.417574 | 0.717596 | 0 | 0 | 0 | False | completed | 06_summaries |

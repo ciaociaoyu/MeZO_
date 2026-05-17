@@ -1,0 +1,9 @@
+03_dense_fp16master_training/**/checkpoints/
+06_int8_residual_grid/**/checkpoints/
+05_sparse_training_optional/**/checkpoints/
+*.safetensors
+*.pt
+*.pth
+*.bin
+**/per_layer_update_stats.jsonl
+**/scale_drift.csv

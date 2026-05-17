@@ -1,0 +1,21 @@
+{
+  "experiment": "groupwise_int8_block256_window_continuation",
+  "date": "2026-05-17",
+  "model": "roberta-large",
+  "dataset": "SST-5",
+  "actual_quantizer": "groupwise_int8_block256",
+  "exact_gptq": false,
+  "bits": 8,
+  "group_size": 256,
+  "block_size": 256,
+  "symmetric": true,
+  "calibration_samples": 0,
+  "seed": 16,
+  "data_seed": 16,
+  "dataset_mode": "full",
+  "dataloader_shuffle": true,
+  "per_device_train_batch_size": 64,
+  "gradient_accumulation_steps": 1,
+  "notes": "Continuation of the previously GPTQ-labeled robustness run, relabeled honestly as groupwise_int8_block256."
+}
+
