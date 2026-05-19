@@ -1,0 +1,51 @@
+{
+  "default_thresholds": {
+    "lambda_l": 1.0,
+    "lambda_s": 0.25,
+    "lambda_v": 1.0,
+    "loss_snr_k": 5.0,
+    "tau_active": 0.01,
+    "tau_align": 0.7,
+    "tau_code": 0.01,
+    "tau_rho_high": 1.5,
+    "tau_rho_low": 0.7,
+    "tau_richardson": 0.3
+  },
+  "git_commit": "9f0b9652c3e858c737480c4f24b9ac548c37305d",
+  "guardrails": {
+    "changed_quantizer_semantics": false,
+    "launched_training": false,
+    "submitted_jobs": false,
+    "used_gptq": false,
+    "used_residual_grid": false
+  },
+  "hostname": "ra7-1",
+  "inspected_docs_and_code": [
+    "tools/rtnclip_roberta_sst5_batch.py",
+    "tools/smoke_rtnclip_roberta_sst5.py",
+    "medium_models/src/trainer.py",
+    "docs/sparse_mezo_h100_experiments.md",
+    "experiments/int8_update_sparse_plan/probe_window_h100_20260512/dense_probe_summary.md",
+    "experiments/int8_update_sparse_plan/probe_window_h100_20260512/sparse_probe_summary.md"
+  ],
+  "missing_artifacts": [
+    "Current G128 RTNClip INT8 does not have a complete fixed-batch/fixed-direction h-grid with Richardson pairs; only geometry diagnostics/smoke rows were found.",
+    "Repeated same-batch base-loss evaluations for the loss-SNR floor baseline were not found.",
+    "Current G128 RTNClip sparse p=0.01 and p=0.003 probe-only h-grids were not found; historical groupwise256 sparse INT8 probes are included as reference only."
+  ],
+  "num_result_rows": 109,
+  "num_selected_rows": 92,
+  "num_sensitivity_rows": 8064,
+  "python": "/home/jy03364/miniconda3/bin/python",
+  "repo_root": "/scratch/jy03364/MeZO_",
+  "source_summary": {
+    "current_fp32_fp16": 22,
+    "current_rtnclip_int4_probe": 11,
+    "current_rtnclip_int8_geometry": 7,
+    "historical_groupwise256_int8": 23,
+    "legacy_dense_sparse": 46
+  },
+  "warnings": [
+    "matplotlib unavailable; generated SVG fallback plots"
+  ]
+}

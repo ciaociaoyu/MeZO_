@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="482" viewBox="0 0 980 482">
+<rect width="100%" height="100%" fill="white"/>
+<text x="490.0" y="24" text-anchor="middle" font-family="Arial" font-size="18">Valid-window overlay</text>
+<text x="82" y="68" text-anchor="end" font-family="Arial" font-size="10">int8 dense groupwise_int8_block256_histori</text>
+<line x1="92" y1="64" x2="720" y2="64" stroke="#ddd"/>
+<circle cx="277.8" cy="64" r="5" fill="#d62728"/>
+<circle cx="366.4" cy="64" r="5" fill="#ff7f0e"/>
+<circle cx="434.8" cy="64" r="5" fill="#ff7f0e"/>
+<circle cx="463.6" cy="64" r="5" fill="#2ca02c"/>
+<circle cx="496.3" cy="64" r="5" fill="#2ca02c"/>
+<circle cx="519.5" cy="64" r="5" fill="#2ca02c"/>
+<circle cx="537.5" cy="64" r="5" fill="#2ca02c"/>
+<circle cx="552.2" cy="64" r="5" fill="#2ca02c"/>
+<circle cx="575.4" cy="64" r="5" fill="#2ca02c"/>
+<circle cx="593.4" cy="64" r="5" fill="#ff7f0e"/>
+<circle cx="649.4" cy="64" r="5" fill="#ff7f0e"/>
+<text x="82" y="96" text-anchor="end" font-family="Arial" font-size="10">int8 sparse groupwise_int8_block256_histor</text>
+<line x1="92" y1="92" x2="720" y2="92" stroke="#ddd"/>
+<circle cx="440.4" cy="92" r="5" fill="#d62728"/>
+<circle cx="496.3" cy="92" r="5" fill="#d62728"/>
+<circle cx="552.2" cy="92" r="5" fill="#d62728"/>
+<circle cx="608.1" cy="92" r="5" fill="#d62728"/>
+<circle cx="664.1" cy="92" r="5" fill="#2ca02c"/>
+<circle cx="720.0" cy="92" r="5" fill="#2ca02c"/>
+<text x="82" y="124" text-anchor="end" font-family="Arial" font-size="10">int8 sparse groupwise_int8_block256_histor</text>
+<line x1="92" y1="120" x2="720" y2="120" stroke="#ddd"/>
+<circle cx="440.4" cy="120" r="5" fill="#ff7f0e"/>
+<circle cx="496.3" cy="120" r="5" fill="#ff7f0e"/>
+<circle cx="552.2" cy="120" r="5" fill="#2ca02c"/>
+<circle cx="608.1" cy="120" r="5" fill="#2ca02c"/>
+<circle cx="664.1" cy="120" r="5" fill="#2ca02c"/>
+<circle cx="720.0" cy="120" r="5" fill="#2ca02c"/>
+<text x="82" y="152" text-anchor="end" font-family="Arial" font-size="10">fp32 dense identity</text>
+<line x1="92" y1="148" x2="720" y2="148" stroke="#ddd"/>
+<circle cx="92.0" cy="148" r="5" fill="#ff7f0e"/>
+<circle cx="180.6" cy="148" r="5" fill="#ff7f0e"/>
+<circle cx="277.8" cy="148" r="5" fill="#ff7f0e"/>
+<circle cx="366.4" cy="148" r="5" fill="#ff7f0e"/>
+<circle cx="463.6" cy="148" r="5" fill="#ff7f0e"/>
+<circle cx="496.3" cy="148" r="5" fill="#ff7f0e"/>
+<circle cx="519.5" cy="148" r="5" fill="#ff7f0e"/>
+<circle cx="552.2" cy="148" r="5" fill="#ff7f0e"/>
+<circle cx="575.4" cy="148" r="5" fill="#ff7f0e"/>
+<circle cx="593.4" cy="148" r="5" fill="#ff7f0e"/>
+<circle cx="649.4" cy="148" r="5" fill="#ff7f0e"/>
+<text x="82" y="180" text-anchor="end" font-family="Arial" font-size="10">int8 dense legacy_int8_fp16master_probe</text>
+<line x1="92" y1="176" x2="720" y2="176" stroke="#ddd"/>
+<circle cx="92.0" cy="176" r="5" fill="#d62728"/>
+<circle cx="180.6" cy="176" r="5" fill="#d62728"/>
+<circle cx="277.8" cy="176" r="5" fill="#d62728"/>
+<circle cx="366.4" cy="176" r="5" fill="#d62728"/>
+<circle cx="463.6" cy="176" r="5" fill="#ff7f0e"/>
+<circle cx="496.3" cy="176" r="5" fill="#ff7f0e"/>
+<circle cx="519.5" cy="176" r="5" fill="#ff7f0e"/>
+<circle cx="552.2" cy="176" r="5" fill="#ff7f0e"/>
+<circle cx="575.4" cy="176" r="5" fill="#ff7f0e"/>
+<circle cx="593.4" cy="176" r="5" fill="#ff7f0e"/>
+<circle cx="649.4" cy="176" r="5" fill="#ff7f0e"/>
+<text x="82" y="208" text-anchor="end" font-family="Arial" font-size="10">int8 sparse legacy_int8_fp16master_probe p</text>
+<line x1="92" y1="204" x2="720" y2="204" stroke="#ddd"/>
+<circle cx="440.4" cy="204" r="5" fill="#d62728"/>
+<circle cx="496.3" cy="204" r="5" fill="#d62728"/>
+<circle cx="552.2" cy="204" r="5" fill="#d62728"/>
+<circle cx="608.1" cy="204" r="5" fill="#ff7f0e"/>
+<circle cx="664.1" cy="204" r="5" fill="#ff7f0e"/>
+<circle cx="720.0" cy="204" r="5" fill="#ff7f0e"/>
+<text x="82" y="236" text-anchor="end" font-family="Arial" font-size="10">int8 sparse legacy_int8_fp16master_probe p</text>
+<line x1="92" y1="232" x2="720" y2="232" stroke="#ddd"/>
+<circle cx="440.4" cy="232" r="5" fill="#d62728"/>
+<circle cx="496.3" cy="232" r="5" fill="#ff7f0e"/>
+<circle cx="552.2" cy="232" r="5" fill="#ff7f0e"/>
+<circle cx="608.1" cy="232" r="5" fill="#ff7f0e"/>
+<circle cx="664.1" cy="232" r="5" fill="#ff7f0e"/>
+<circle cx="720.0" cy="232" r="5" fill="#ff7f0e"/>
+<text x="82" y="264" text-anchor="end" font-family="Arial" font-size="10">int8 sparse legacy_int8_fp16master_probe p</text>
+<line x1="92" y1="260" x2="720" y2="260" stroke="#ddd"/>
+<circle cx="440.4" cy="260" r="5" fill="#d62728"/>
+<circle cx="496.3" cy="260" r="5" fill="#ff7f0e"/>
+<circle cx="552.2" cy="260" r="5" fill="#ff7f0e"/>
+<circle cx="608.1" cy="260" r="5" fill="#ff7f0e"/>
+<circle cx="664.1" cy="260" r="5" fill="#ff7f0e"/>
+<circle cx="720.0" cy="260" r="5" fill="#ff7f0e"/>
+<text x="82" y="292" text-anchor="end" font-family="Arial" font-size="10">int8 sparse legacy_int8_fp16master_probe p</text>
+<line x1="92" y1="288" x2="720" y2="288" stroke="#ddd"/>
+<circle cx="440.4" cy="288" r="5" fill="#d62728"/>
+<circle cx="496.3" cy="288" r="5" fill="#ff7f0e"/>
+<circle cx="552.2" cy="288" r="5" fill="#ff7f0e"/>
+<circle cx="608.1" cy="288" r="5" fill="#ff7f0e"/>
+<circle cx="664.1" cy="288" r="5" fill="#ff7f0e"/>
+<circle cx="720.0" cy="288" r="5" fill="#ff7f0e"/>
+<text x="82" y="320" text-anchor="end" font-family="Arial" font-size="10">fp16 dense fp16_forward_oracle</text>
+<line x1="92" y1="316" x2="720" y2="316" stroke="#ddd"/>
+<circle cx="92.0" cy="316" r="5" fill="#ff7f0e"/>
+<circle cx="180.6" cy="316" r="5" fill="#2ca02c"/>
+<circle cx="277.8" cy="316" r="5" fill="#2ca02c"/>
+<circle cx="366.4" cy="316" r="5" fill="#ff7f0e"/>
+<circle cx="463.6" cy="316" r="5" fill="#2ca02c"/>
+<circle cx="496.3" cy="316" r="5" fill="#ff7f0e"/>
+<circle cx="519.5" cy="316" r="5" fill="#ff7f0e"/>
+<circle cx="552.2" cy="316" r="5" fill="#ff7f0e"/>
+<circle cx="575.4" cy="316" r="5" fill="#2ca02c"/>
+<circle cx="593.4" cy="316" r="5" fill="#ff7f0e"/>
+<circle cx="649.4" cy="316" r="5" fill="#ff7f0e"/>
+<text x="82" y="348" text-anchor="end" font-family="Arial" font-size="10">fp32 dense identity</text>
+<line x1="92" y1="344" x2="720" y2="344" stroke="#ddd"/>
+<circle cx="92.0" cy="344" r="5" fill="#ff7f0e"/>
+<circle cx="180.6" cy="344" r="5" fill="#2ca02c"/>
+<circle cx="277.8" cy="344" r="5" fill="#2ca02c"/>
+<circle cx="366.4" cy="344" r="5" fill="#ff7f0e"/>
+<circle cx="463.6" cy="344" r="5" fill="#2ca02c"/>
+<circle cx="496.3" cy="344" r="5" fill="#ff7f0e"/>
+<circle cx="519.5" cy="344" r="5" fill="#ff7f0e"/>
+<circle cx="552.2" cy="344" r="5" fill="#ff7f0e"/>
+<circle cx="575.4" cy="344" r="5" fill="#2ca02c"/>
+<circle cx="593.4" cy="344" r="5" fill="#ff7f0e"/>
+<circle cx="649.4" cy="344" r="5" fill="#ff7f0e"/>
+<text x="82" y="376" text-anchor="end" font-family="Arial" font-size="10">int4 dense G128_groupwise_RTNClip_fake_qua</text>
+<line x1="92" y1="372" x2="720" y2="372" stroke="#ddd"/>
+<circle cx="92.0" cy="372" r="5" fill="#d62728"/>
+<circle cx="180.6" cy="372" r="5" fill="#d62728"/>
+<circle cx="277.8" cy="372" r="5" fill="#d62728"/>
+<circle cx="366.4" cy="372" r="5" fill="#d62728"/>
+<circle cx="463.6" cy="372" r="5" fill="#d62728"/>
+<circle cx="496.3" cy="372" r="5" fill="#d62728"/>
+<circle cx="519.5" cy="372" r="5" fill="#d62728"/>
+<circle cx="552.2" cy="372" r="5" fill="#ff7f0e"/>
+<circle cx="575.4" cy="372" r="5" fill="#ff7f0e"/>
+<circle cx="593.4" cy="372" r="5" fill="#ff7f0e"/>
+<circle cx="649.4" cy="372" r="5" fill="#ff7f0e"/>
+<text x="82" y="404" text-anchor="end" font-family="Arial" font-size="10">int8 dense G128_groupwise_RTNClip_fake_qua</text>
+<line x1="92" y1="400" x2="720" y2="400" stroke="#ddd"/>
+<circle cx="463.6" cy="400" r="5" fill="#ff7f0e"/>
+<text x="82" y="432" text-anchor="end" font-family="Arial" font-size="10">int8 dense G128_groupwise_RTNClip_fake_qua</text>
+<line x1="92" y1="428" x2="720" y2="428" stroke="#ddd"/>
+<circle cx="92.0" cy="428" r="5" fill="#d62728"/>
+<circle cx="180.6" cy="428" r="5" fill="#d62728"/>
+<circle cx="277.8" cy="428" r="5" fill="#d62728"/>
+<circle cx="366.4" cy="428" r="5" fill="#ff7f0e"/>
+<circle cx="575.4" cy="428" r="5" fill="#ff7f0e"/>
+<circle cx="649.4" cy="428" r="5" fill="#ff7f0e"/>
+<text x="406.0" y="464" text-anchor="middle" font-family="Arial" font-size="13">green valid, orange geometry-only, red not visible/locality unavailable</text>
+</svg>
