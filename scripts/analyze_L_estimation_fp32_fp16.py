@@ -50,6 +50,9 @@ L_CANDIDATE_FIELDS = [
     "direction_normalization",
     "forward_precision",
     "loss_dtype",
+    "tf32_enabled",
+    "autocast_enabled",
+    "autocast_dtype",
     "delta_mode",
     "base_loss",
     "median_abs_K",
@@ -141,6 +144,9 @@ class EvalContext:
     forward_precision: str
     delta_mode: str
     direction_dtype_name: str
+    tf32_enabled: str
+    autocast_enabled: bool
+    autocast_dtype: str
     loss_dtype: str = ""
 
 
@@ -167,6 +173,16 @@ def write_csv(path: Path, rows: Iterable[Dict[str, Any]], fields: Sequence[str])
         writer.writeheader()
         for row in rows:
             writer.writerow({key: row.get(key, "") for key in fields})
+
+
+def fail_analysis(out_dir: Path, diagnostics: Dict[str, Any], message: str, code: int) -> int:
+    diagnostics.setdefault("warnings", []).append(message)
+    diagnostics["failure"] = message
+    diagnostics["end_time"] = dt.datetime.now().isoformat()
+    write_json(out_dir / "L_diagnostics.json", diagnostics)
+    (out_dir / "failure_report.txt").write_text(f"FAILED: {message}\n", encoding="utf-8")
+    print(f"FAILED: {message}", file=sys.stderr)
+    return int(code)
 
 
 def safe_float(value: Any) -> Optional[float]:
@@ -428,7 +444,7 @@ def select_checkpoints(reference_runs: Dict[str, RunInfo], diagnostics: Dict[str
 def import_medium_modules():
     if str(MEDIUM_ROOT) not in sys.path:
         sys.path.insert(0, str(MEDIUM_ROOT))
-    from transformers import AutoConfig, AutoTokenizer, default_data_collator
+    from transformers import AutoConfig, AutoTokenizer
     from src.dataset import FewShotDataset
     from src.models import MODEL_TYPES
     from src.processors import num_labels_mapping, output_modes_mapping
@@ -436,12 +452,58 @@ def import_medium_modules():
     return {
         "AutoConfig": AutoConfig,
         "AutoTokenizer": AutoTokenizer,
-        "default_data_collator": default_data_collator,
         "FewShotDataset": FewShotDataset,
         "MODEL_TYPES": MODEL_TYPES,
         "num_labels_mapping": num_labels_mapping,
         "output_modes_mapping": output_modes_mapping,
     }
+
+
+def collate_with_project_padding(tokenizer: Any, features: Sequence[Any]) -> Dict[str, Any]:
+    """Mirror medium_models.run.MyDataCollatorWithPadding without importing run.py."""
+    import torch
+
+    standard_features: List[Dict[str, Any]] = []
+    mask_pos: List[Any] = []
+    has_sfc = bool(features and getattr(features[0], "sfc_input_ids", None) is not None)
+    sfc_features: List[Dict[str, Any]] = []
+    sfc_mask_pos: List[Any] = []
+
+    for item in features:
+        standard_item: Dict[str, Any] = {}
+        for field in ["input_ids", "label", "attention_mask", "token_type_ids"]:
+            value = getattr(item, field, None)
+            if value is not None:
+                standard_item[field] = value
+        standard_features.append(standard_item)
+        mask_pos.append(getattr(item, "mask_pos", None))
+
+        if has_sfc:
+            sfc_item: Dict[str, Any] = {}
+            if getattr(item, "sfc_input_ids", None) is not None:
+                sfc_item["input_ids"] = getattr(item, "sfc_input_ids")
+            if getattr(item, "sfc_attention_mask", None) is not None:
+                sfc_item["attention_mask"] = getattr(item, "sfc_attention_mask")
+            sfc_features.append(sfc_item)
+            sfc_mask_pos.append(getattr(item, "sfc_mask_pos", None))
+
+    batch = tokenizer.pad(standard_features, padding=True, return_tensors="pt")
+    if any(mask_pos):
+        batch["mask_pos"] = torch.tensor(mask_pos)
+    if "label" in batch:
+        batch["labels"] = batch["label"]
+        del batch["label"]
+    if "label_ids" in batch:
+        batch["labels"] = batch["label_ids"]
+        del batch["label_ids"]
+
+    if has_sfc:
+        sfc_batch = tokenizer.pad(sfc_features, padding=True, return_tensors="pt")
+        batch["sfc_input_ids"] = sfc_batch["input_ids"]
+        batch["sfc_attention_mask"] = sfc_batch["attention_mask"]
+        if any(sfc_mask_pos):
+            batch["sfc_mask_pos"] = torch.tensor(sfc_mask_pos)
+    return batch
 
 
 def namespace_from_config(cfg: Dict[str, Any]) -> SimpleNamespace:
@@ -467,6 +529,23 @@ def get_device(device_arg: str, diagnostics: Dict[str, Any]):
         device = torch.device(device_arg)
     diagnostics.setdefault("compute_environment", {})["selected_device"] = str(device)
     return device
+
+
+def current_tf32_state() -> Dict[str, bool]:
+    import torch
+
+    return {
+        "matmul": bool(getattr(torch.backends.cuda.matmul, "allow_tf32", False)),
+        "cudnn": bool(getattr(torch.backends.cudnn, "allow_tf32", False)),
+    }
+
+
+def set_tf32_state(matmul: bool, cudnn: bool) -> Dict[str, bool]:
+    import torch
+
+    torch.backends.cuda.matmul.allow_tf32 = bool(matmul)
+    torch.backends.cudnn.allow_tf32 = bool(cudnn)
+    return current_tf32_state()
 
 
 def set_all_seeds(seed: int) -> None:
@@ -496,7 +575,6 @@ def load_eval_context(
     mods = import_medium_modules()
     AutoConfig = mods["AutoConfig"]
     AutoTokenizer = mods["AutoTokenizer"]
-    default_data_collator = mods["default_data_collator"]
     FewShotDataset = mods["FewShotDataset"]
     MODEL_TYPES = mods["MODEL_TYPES"]
     num_labels_mapping = mods["num_labels_mapping"]
@@ -528,12 +606,15 @@ def load_eval_context(
     forward_precision = "fp32"
     delta_mode = "identity_fp32"
     direction_dtype_name = "float32"
+    tf32_defaults = diagnostics.get("tf32_default_state") or current_tf32_state()
     if mode_name == "L_clean32":
+        tf32_state = set_tf32_state(False, False)
         model.float()
         forward_precision = "fp32"
         delta_mode = "identity_fp32"
         direction_dtype_name = "float32"
     elif mode_name in {"L_oracle_precision", "L_oracle_oldSNR"}:
+        tf32_state = set_tf32_state(bool(tf32_defaults.get("matmul", False)), bool(tf32_defaults.get("cudnn", False)))
         if checkpoint.precision == "fp16":
             model.half()
             forward_precision = "fp16"
@@ -554,7 +635,7 @@ def load_eval_context(
     generator.manual_seed(int(getattr(training_args, "data_seed", 16)))
     batch_size = int(getattr(training_args, "per_device_train_batch_size", 64))
     batch_indices = torch.randperm(len(label_source), generator=generator)[:batch_size].tolist()
-    batch = default_data_collator([label_source[int(i)] for i in batch_indices])
+    batch = collate_with_project_padding(tokenizer, [label_source[int(i)] for i in batch_indices])
     batch = {k: v.to(device) if hasattr(v, "to") else v for k, v in batch.items()}
 
     named_params = [(name, param) for name, param in model.named_parameters() if param.requires_grad]
@@ -582,6 +663,9 @@ def load_eval_context(
         forward_precision=forward_precision,
         delta_mode=delta_mode,
         direction_dtype_name=direction_dtype_name,
+        tf32_enabled=f"matmul={tf32_state['matmul']};cudnn={tf32_state['cudnn']}",
+        autocast_enabled=bool(forward_precision == "fp16" and str(device).startswith("cuda")),
+        autocast_dtype="torch.float16" if forward_precision == "fp16" and str(device).startswith("cuda") else "",
     )
 
 
@@ -766,7 +850,10 @@ def estimate_ulp_stats(ctx: EvalContext, dtype_name: str) -> Dict[str, Any]:
         for _, param in ctx.named_params:
             tensor = param.detach()
             dtype_seen[str(tensor.dtype)] = dtype_seen.get(str(tensor.dtype), 0) + 1
-            cast = tensor.to(dtype=target_dtype)
+            if target_dtype == torch.float16:
+                cast = tensor.cpu().to(dtype=target_dtype)
+            else:
+                cast = tensor.to(dtype=target_dtype)
             inf = torch.full_like(cast, float("inf"))
             spacing = (torch.nextafter(cast, inf) - cast).abs().to(dtype=torch.float32).reshape(-1)
             finite = torch.isfinite(spacing)
@@ -785,8 +872,7 @@ def estimate_ulp_stats(ctx: EvalContext, dtype_name: str) -> Dict[str, Any]:
                 if n_sample == int(vals.numel()):
                     sample = vals
                 else:
-                    idx = torch.linspace(0, int(vals.numel()) - 1, steps=n_sample, dtype=torch.long, device=vals.device)
-                    sample = vals[idx]
+                    sample = vals[:n_sample]
                 samples.append(sample.detach().cpu().numpy().astype(np.float64, copy=False))
             del cast, inf, spacing
     out: Dict[str, Any] = {
@@ -880,6 +966,9 @@ def summarize_h2(
         "direction_normalization": "raw Gaussian unnormalized; torch normal per trainable parameter",
         "forward_precision": ctx.forward_precision,
         "loss_dtype": loss_dtype or ctx.loss_dtype,
+        "tf32_enabled": ctx.tf32_enabled,
+        "autocast_enabled": ctx.autocast_enabled,
+        "autocast_dtype": ctx.autocast_dtype,
         "delta_mode": ctx.delta_mode,
         "base_loss": float(base_loss),
         "median_abs_K": med_abs_k,
@@ -1244,13 +1333,16 @@ def run_group(
     raw_by_h2: Dict[float, List[Dict[str, Any]]] = {}
     eff_count = max(0, int(args.effective_directions))
     t0 = time.time()
+    print(f"[L-est] start {grid_key}: h2_count={len(h2_grid)} m_L={len(direction_seeds)} device={device}", flush=True)
     for h2 in h2_grid:
+        h2_t0 = time.time()
         direction_outputs: List[Dict[str, Any]] = []
         for idx, seed in enumerate(direction_seeds):
             collect_eff = idx < eff_count
             out = second_order_probe_direction(ctx, seed=int(seed), h2=float(h2), base_loss=base_loss, collect_eff=collect_eff)
             direction_outputs.append(out)
         raw_by_h2[float(h2)] = direction_outputs
+        print(f"[L-est] done {grid_key}: h2={float(h2):.6g} directions={len(direction_outputs)} elapsed_sec={time.time() - h2_t0:.1f}", flush=True)
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
     elapsed = time.time() - t0
@@ -1558,6 +1650,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Root to search for run_config.json. May be repeated.",
     )
     parser.add_argument("--output-root", default=str(REPO_ROOT / "analysis"))
+    parser.add_argument("--output-dir", default=None, help="Exact output directory. Refuses to overwrite existing L output files.")
     parser.add_argument("--m-L", type=int, default=32)
     parser.add_argument("--effective-directions", type=int, default=4)
     parser.add_argument("--direction-seed-base", type=int, default=16)
@@ -1572,6 +1665,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Allow full model forward probes on CPU. This is usually impractical for RoBERTa-large.",
     )
+    parser.add_argument("--require-cuda", action="store_true", help="Exit nonzero instead of writing empty outputs unless CUDA is selected.")
+    parser.add_argument("--require-h100", action="store_true", help="Exit nonzero unless the selected CUDA device name contains H100.")
+    parser.add_argument("--fail-on-empty", action="store_true", help="Exit nonzero if no candidate or selector rows are produced.")
     parser.add_argument("--max-groups", type=int, default=0, help="Optional limit for smoke testing; 0 means no limit.")
     return parser
 
@@ -1587,8 +1683,16 @@ def main() -> int:
     else:
         reduced_msg = ""
 
-    out_dir = Path(args.output_root) / f"L_estimation_fp32_fp16_{now_stamp()}"
-    out_dir.mkdir(parents=True, exist_ok=False)
+    if args.output_dir:
+        out_dir = Path(args.output_dir)
+        existing_outputs = ["L_candidates.csv", "L_selected.csv", "L_diagnostics.json", "L_summary.md"]
+        present = [name for name in existing_outputs if (out_dir / name).exists()]
+        if present:
+            raise FileExistsError(f"{out_dir} already contains analysis outputs: {', '.join(present)}")
+        out_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        out_dir = Path(args.output_root) / f"L_estimation_fp32_fp16_{now_stamp()}"
+        out_dir.mkdir(parents=True, exist_ok=False)
 
     diagnostics: Dict[str, Any] = {
         "analysis_output_dir": str(out_dir),
@@ -1621,8 +1725,10 @@ def main() -> int:
                 "torch_version": torch.__version__,
                 "cuda_available": bool(torch.cuda.is_available()),
                 "cuda_device_count": int(torch.cuda.device_count()),
+                "torch_cuda_version": torch.version.cuda,
             }
         )
+        diagnostics["tf32_default_state"] = current_tf32_state()
         if torch.cuda.is_available():
             diagnostics["compute_environment"]["cuda_device_name_0"] = torch.cuda.get_device_name(0)
     except Exception as exc:
@@ -1656,9 +1762,23 @@ def main() -> int:
         diagnostics["warnings"].append("dry_run requested; model forwards were not executed")
     else:
         device = get_device(args.device, diagnostics)
+        if (args.require_cuda or not args.allow_cpu_forward) and not str(device).startswith("cuda"):
+            return fail_analysis(
+                out_dir,
+                diagnostics,
+                "CUDA is unavailable and --allow-cpu-forward was not set; refusing to write empty L outputs",
+                2,
+            )
+        if args.require_h100:
+            device_name = str(diagnostics.get("compute_environment", {}).get("cuda_device_name_0", ""))
+            if "H100" not in device_name:
+                return fail_analysis(out_dir, diagnostics, f"H100 device not detected; selected CUDA device is {device_name!r}", 2)
         if str(device) == "cpu" and not args.allow_cpu_forward:
-            diagnostics["warnings"].append(
-                "CUDA is unavailable and --allow-cpu-forward was not set; full RoBERTa-large forward probes were skipped"
+            return fail_analysis(
+                out_dir,
+                diagnostics,
+                "CUDA is unavailable and --allow-cpu-forward was not set; refusing to write empty L outputs",
+                2,
             )
         else:
             modes = args.mode or ["L_clean32", "L_oracle_precision"]
@@ -1696,6 +1816,14 @@ def main() -> int:
     selected_rows: List[Dict[str, Any]] = []
     for rows in grouped.values():
         selected_rows.extend(select_all(rows))
+
+    if args.fail_on_empty and (not all_candidate_rows or not selected_rows):
+        return fail_analysis(
+            out_dir,
+            diagnostics,
+            "no L candidate/selector rows were produced; refusing to write empty scientific outputs",
+            3,
+        )
 
     write_csv(out_dir / "L_candidates.csv", all_candidate_rows, L_CANDIDATE_FIELDS)
     write_csv(out_dir / "L_selected.csv", selected_rows, L_SELECTED_FIELDS)

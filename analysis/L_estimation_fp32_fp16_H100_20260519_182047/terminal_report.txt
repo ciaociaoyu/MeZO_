@@ -1,0 +1,23 @@
+Analysis output directory: analysis/L_estimation_fp32_fp16_H100_20260519_182047
+
+FP32:
+  checkpoint: step_1000
+  L_clean32 plateau_q90: h2=0.003, L=1.64806e-05, SNR2=0.761452, stability=0.0437579, flags=
+  L_oracle plateau_q90: h2=0.003, L=1.64806e-05, SNR2=0.761452, stability=0.0437579, flags=
+  L_oracle oldSNR ablation: h2=0.0015, L=1.97773e-05, SNR2=1.99154, stability=0.166689, flags=ablation_only;fallback_max_snr
+
+FP16:
+  checkpoint: step_1000
+  L_clean32 plateau_q90: h2=0.0015, L=1.46317e-05, SNR2=0.592921, stability=0.405575, flags=
+  L_oracle plateau_q90: h2=0.0015, L=1.47168e-05, SNR2=0.583991, stability=0.396528, flags=
+  L_oracle oldSNR ablation: h2=1e-05, L=0.00972553, SNR2=1.16503, stability=0.898718, flags=ablation_only;fallback_max_snr;selected_low_h2_noise;low_h2_noise
+
+Warnings:
+  - fp16/step_1000/L_oracle_precision: old h2 ladder value 0.0130843 exceeds 1e-2 and was skipped
+  - fp16/step_1000/L_oracle_precision: old h2 ladder value 0.0261685 exceeds 1e-2 and was skipped
+  - fp16/step_1000/L_oracle_precision: old h2 ladder value 0.0523371 exceeds 1e-2 and was skipped
+  - fp16/step_1000/L_oracle_precision: old h2 ladder value 0.104674 exceeds 1e-2 and was skipped
+  - fp16/final/L_oracle_precision: old h2 ladder value 0.0127448 exceeds 1e-2 and was skipped
+  - fp16/final/L_oracle_precision: old h2 ladder value 0.0254897 exceeds 1e-2 and was skipped
+  - fp16/final/L_oracle_precision: old h2 ladder value 0.0509794 exceeds 1e-2 and was skipped
+  - fp16/final/L_oracle_precision: old h2 ladder value 0.101959 exceeds 1e-2 and was skipped

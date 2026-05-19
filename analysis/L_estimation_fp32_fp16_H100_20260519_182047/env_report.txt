@@ -1,0 +1,104 @@
+hostname: ra7-1
+pwd: /scratch/jy03364/MeZO_
+date: Tue May 19 18:20:56 EDT 2026
+whoami: jy03364
+CUDA_VISIBLE_DEVICES: 0
+CONDA_DEFAULT_ENV: base
+which python: /home/jy03364/miniconda3/bin/python
+python --version: Python 3.13.5
+
+conda info --envs:
+
+# conda environments:
+#
+ciao                   /home/jy03364/.conda/envs/ciao
+ciao122                /home/jy03364/.conda/envs/ciao122
+fs                     /home/jy03364/.conda/envs/fs
+base                 * /home/jy03364/miniconda3
+mezo-env               /home/jy03364/miniconda3/envs/mezo-env
+mezo-mistral           /home/jy03364/miniconda3/envs/mezo-mistral
+
+
+nvidia-smi:
+Tue May 19 18:20:57 2026
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.124.06             Driver Version: 570.124.06     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA H100 80GB HBM3          Off |   00000000:4E:00.0 Off |                    0 |
+| N/A   47C    P0             74W /  700W |       5MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+
+torch cuda probe:
+/home/jy03364/miniconda3/lib/python3.13/site-packages/torch/cuda/__init__.py:180: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 12080). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at /pytorch/c10/cuda/CUDAFunctions.cpp:119.)
+  return torch._C._cuda_getDeviceCount() > 0
+2.11.0+cu130
+13.0
+False
+1
+NO_CUDA
+
+transformers probe:
+5.6.2
+
+candidate conda env probes:
+--- env: ciao ---
+torch 2.5.1+cu121
+transformers 4.56.0
+cuda_version 12.1
+cuda_available True
+device_count 1
+device_name NVIDIA H100 80GB HBM3
+
+--- env: ciao122 ---
+/tmp/tmp8dwk1b8b: line 3: python: command not found
+
+ERROR conda.cli.main_run:execute(127): `conda run python -c import torch; import transformers; print('torch', torch.__version__); print('transformers', transformers.__version__); print('cuda_version', torch.version.cuda); print('cuda_available', torch.cuda.is_available()); print('device_count', torch.cuda.device_count()); print('device_name', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'NO_CUDA')` failed. (See above for error)
+--- env: fs ---
+torch 2.6.0+cu124
+transformers 4.48.2
+cuda_version 12.4
+cuda_available True
+device_count 1
+device_name NVIDIA H100 80GB HBM3
+
+--- env: mezo-env ---
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/__init__.py", line 26, in <module>
+    from . import dependency_versions_check
+  File "/home/jy03364/miniconda3/envs/mezo-env/lib/python3.10/site-packages/transformers/dependency_versions_check.py", line 16, in <module>
+    from .utils.versions import require_version, require_version_core
+ModuleNotFoundError: No module named 'transformers.utils'
+
+ERROR conda.cli.main_run:execute(127): `conda run python -c import torch; import transformers; print('torch', torch.__version__); print('transformers', transformers.__version__); print('cuda_version', torch.version.cuda); print('cuda_available', torch.cuda.is_available()); print('device_count', torch.cuda.device_count()); print('device_name', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'NO_CUDA')` failed. (See above for error)
+--- env: mezo-mistral ---
+torch 2.5.1
+transformers 4.48.0
+cuda_version 12.1
+cuda_available True
+device_count 1
+device_name NVIDIA H100 80GB HBM3
+
+
+selected conda env: ciao
+selected python: /home/jy03364/.conda/envs/ciao/bin/python
+selected torch 2.5.1+cu121
+selected torch_cuda 12.1
+selected transformers 4.56.0
+selected cuda_available True
+selected device NVIDIA H100 80GB HBM3
+selected tf32_matmul_default False
+selected tf32_cudnn_default True

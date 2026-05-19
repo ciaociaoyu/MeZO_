@@ -1,0 +1,37 @@
+Analysis output directory: /scratch/jy03364/MeZO_/analysis/L_estimation_fp32_fp16_H100_20260519_182047
+
+Environment:
+  conda env: ciao
+  python: /home/jy03364/.conda/envs/ciao/bin/python
+  torch: 2.5.1+cu121
+  torch CUDA: 12.1
+  CUDA_VISIBLE_DEVICES: 0
+  device: NVIDIA H100 80GB HBM3
+
+Smoke:
+  status: passed
+  smoke rows: 9
+
+FP32:
+  checkpoint: step_1000
+    L_clean32 plateau_q90: h2=0.003, L=1.64806e-05, SNR2=0.761452, stability=0.0437579, flags=none
+    L_oracle plateau_q90: h2=0.003, L=1.64806e-05, SNR2=0.761452, stability=0.0437579, flags=none
+    L_oracle oldSNR ablation: h2=0.0015, L=1.97773e-05, SNR2=1.99154, stability=0.166689, flags=ablation_only;fallback_max_snr
+  checkpoint: final
+    L_clean32 plateau_q90: h2=0.002, L=7.01863e-05, SNR2=4.32461, stability=0.386151, flags=none
+    L_oracle plateau_q90: h2=0.002, L=7.01863e-05, SNR2=4.32461, stability=0.386151, flags=none
+    L_oracle oldSNR ablation: h2=1e-05, L=6.04881e-05, SNR2=2.13589, stability=0.245754, flags=ablation_only
+
+FP16:
+  checkpoint: step_1000
+    L_clean32 plateau_q90: h2=0.0015, L=1.46317e-05, SNR2=0.592921, stability=0.405575, flags=none
+    L_oracle plateau_q90: h2=0.0015, L=1.47168e-05, SNR2=0.583991, stability=0.396528, flags=none
+    L_oracle oldSNR ablation: h2=1e-05, L=0.00972553, SNR2=1.16503, stability=0.898718, flags=ablation_only;fallback_max_snr;selected_low_h2_noise;low_h2_noise
+  checkpoint: final
+    L_clean32 plateau_q90: h2=0.001, L=2.9366e-05, SNR2=2.69826, stability=0.0903291, flags=none
+    L_oracle plateau_q90: h2=0.0015, L=2.93499e-05, SNR2=3.63213, stability=0.283217, flags=none
+    L_oracle oldSNR ablation: h2=0.001, L=2.93404e-05, SNR2=2.57253, stability=0.0864423, flags=ablation_only
+
+Warnings:
+  - current base conda env unusable; selected fallback env ciao
+  - FP16 step_1000 oldSNR selected a low-h2 noisy point

@@ -1,0 +1,15 @@
+status: passed
+smoke_output_dir: analysis/L_estimation_fp32_fp16_H100_20260519_182047/smoke
+smoke_rows: 9
+candidate_modes: ['L_clean32', 'L_oracle_oldSNR', 'L_oracle_precision']
+finite_rate_positive_rows: 9
+cuda_available: True
+selected_device: cuda:0
+device_name: NVIDIA H100 80GB HBM3
+tf32_default_state: {'cudnn': True, 'matmul': False}
+warnings:
+- m_L reduced from recommended 32 to 4
+- fp16/step_1000/L_oracle_precision: old h2 ladder value 0.0130843 exceeds 1e-2 and was skipped
+- fp16/step_1000/L_oracle_precision: old h2 ladder value 0.0261685 exceeds 1e-2 and was skipped
+- fp16/step_1000/L_oracle_precision: old h2 ladder value 0.0523371 exceeds 1e-2 and was skipped
+- fp16/step_1000/L_oracle_precision: old h2 ladder value 0.104674 exceeds 1e-2 and was skipped

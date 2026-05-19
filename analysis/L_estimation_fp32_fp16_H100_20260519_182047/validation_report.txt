@@ -1,0 +1,7 @@
+status: passed
+candidate_rows: 132
+selected_rows: 108
+candidate_groups: 12
+selected_groups: 12
+plot_png_count: 48
+precision_guards: passed
