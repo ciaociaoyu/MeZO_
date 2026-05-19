@@ -13,6 +13,7 @@ OPT=${OPT:-"adam"}
 USE_H=${USE_H:-"True"}
 USE_C=${USE_C:-"False"}
 DATALOADER_SHUFFLE=${DATALOADER_SHUFFLE:-"True"}
+KEEP_CHECKPOINTS=${KEEP_CHECKPOINTS:-"False"}
 DATA_SEED=${DATA_SEED:-$SEED}
 DATASET_MODE=${DATASET_MODE:-"auto"}
 DATA_ROOT=${DATA_ROOT:-"data/k-shot-1k-test"}
@@ -63,6 +64,8 @@ echo "Output dir: $OUTPUT_DIR"
 echo "Dataset mode: $DATASET_MODE"
 echo "Data root: $DATA_ROOT"
 echo "Full dev ratio: $FULL_DEV_RATIO"
+echo "Dataloader shuffle: $DATALOADER_SHUFFLE"
+echo "Keep checkpoints: $KEEP_CHECKPOINTS"
 
 
 
@@ -190,5 +193,12 @@ else
 fi
 
 run_exit_code=$?
-rm -rf "$OUTPUT_DIR"/checkpoint-*
+case "$KEEP_CHECKPOINTS" in
+  True|true|1|YES|yes|Y|y)
+    echo "KEEP_CHECKPOINTS=$KEEP_CHECKPOINTS; preserving checkpoint directories under $OUTPUT_DIR"
+    ;;
+  *)
+    rm -rf "$OUTPUT_DIR"/checkpoint-*
+    ;;
+esac
 exit $run_exit_code
