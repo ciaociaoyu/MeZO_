@@ -1,0 +1,36 @@
+{
+  "batch_size": 64,
+  "data_seed": 16,
+  "description": "INT4 effective-displacement direction update on small h",
+  "h_grid": [
+    {
+      "h": 0.0005,
+      "label": "5e-4"
+    },
+    {
+      "h": 0.001,
+      "label": "1e-3"
+    },
+    {
+      "h": 0.002,
+      "label": "2e-3"
+    },
+    {
+      "h": 0.003,
+      "label": "3e-3"
+    }
+  ],
+  "lr": 1e-06,
+  "phase": "D",
+  "scope": "quantized_linear_weights_only",
+  "seed": 16,
+  "shuffle": true,
+  "steps": 1000,
+  "update_norm_clip": 1.0,
+  "variants": [
+    "standard",
+    "effdir_global",
+    "effdir_active",
+    "effdir_secant"
+  ]
+}
