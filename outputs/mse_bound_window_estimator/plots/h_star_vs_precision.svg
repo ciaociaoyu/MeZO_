@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560">
+<rect width="100%" height="100%" fill="white"/>
+<text x="450.0" y="24" text-anchor="middle" font-family="Arial" font-size="18">h_star by precision/group index</text>
+<rect x="86" y="46" width="574" height="442" fill="none" stroke="#222" stroke-width="1"/>
+<text x="373.0" y="538" text-anchor="middle" font-family="Arial" font-size="13">h_active for sparse, raw h for dense (log scale)</text>
+<text transform="translate(20,267.0) rotate(-90)" text-anchor="middle" font-family="Arial" font-size="13">h_star</text>
+<line x1="86.0" y1="46" x2="86.0" y2="488" stroke="#ddd" stroke-width="1"/>
+<line x1="86" y1="46.0" x2="660" y2="46.0" stroke="#eee" stroke-width="1"/>
+<line x1="200.8" y1="46" x2="200.8" y2="488" stroke="#ddd" stroke-width="1"/>
+<line x1="86" y1="134.4" x2="660" y2="134.4" stroke="#eee" stroke-width="1"/>
+<line x1="315.6" y1="46" x2="315.6" y2="488" stroke="#ddd" stroke-width="1"/>
+<line x1="86" y1="222.8" x2="660" y2="222.8" stroke="#eee" stroke-width="1"/>
+<line x1="430.4" y1="46" x2="430.4" y2="488" stroke="#ddd" stroke-width="1"/>
+<line x1="86" y1="311.2" x2="660" y2="311.2" stroke="#eee" stroke-width="1"/>
+<line x1="545.2" y1="46" x2="545.2" y2="488" stroke="#ddd" stroke-width="1"/>
+<line x1="86" y1="399.6" x2="660" y2="399.6" stroke="#eee" stroke-width="1"/>
+<line x1="660.0" y1="46" x2="660.0" y2="488" stroke="#ddd" stroke-width="1"/>
+<line x1="86" y1="488.0" x2="660" y2="488.0" stroke="#eee" stroke-width="1"/>
+<text x="86.0" y="508" text-anchor="middle" font-family="Arial" font-size="10">1.0e+00</text>
+<text x="78" y="492.0" text-anchor="end" font-family="Arial" font-size="10">1e-05</text>
+<text x="200.8" y="508" text-anchor="middle" font-family="Arial" font-size="10">1.7e+00</text>
+<text x="78" y="403.6" text-anchor="end" font-family="Arial" font-size="10">5e-05</text>
+<text x="315.6" y="508" text-anchor="middle" font-family="Arial" font-size="10">2.9e+00</text>
+<text x="78" y="315.2" text-anchor="end" font-family="Arial" font-size="10">0.00024</text>
+<text x="430.4" y="508" text-anchor="middle" font-family="Arial" font-size="10">4.9e+00</text>
+<text x="78" y="226.8" text-anchor="end" font-family="Arial" font-size="10">0.0012</text>
+<text x="545.2" y="508" text-anchor="middle" font-family="Arial" font-size="10">8.3e+00</text>
+<text x="78" y="138.4" text-anchor="end" font-family="Arial" font-size="10">0.0059</text>
+<text x="660.0" y="508" text-anchor="middle" font-family="Arial" font-size="10">1.4e+01</text>
+<text x="78" y="50.0" text-anchor="end" font-family="Arial" font-size="10">0.029</text>
+<polyline fill="none" stroke="#1f77b4" stroke-width="2" points="86.0,262.7"/>
+<circle cx="86.0" cy="262.7" r="3" fill="#1f77b4"/>
+<line x1="682" y1="60" x2="702" y2="60" stroke="#1f77b4" stroke-width="2"/>
+<text x="708" y="64" font-family="Arial" font-size="11">bf16</text>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="2" points="86.0,319.7"/>
+<circle cx="86.0" cy="319.7" r="3" fill="#ff7f0e"/>
+<line x1="682" y1="78" x2="702" y2="78" stroke="#ff7f0e" stroke-width="2"/>
+<text x="708" y="82" font-family="Arial" font-size="11">fp16</text>
+<polyline fill="none" stroke="#2ca02c" stroke-width="2" points="86.0,457.5"/>
+<circle cx="86.0" cy="457.5" r="3" fill="#2ca02c"/>
+<line x1="682" y1="96" x2="702" y2="96" stroke="#2ca02c" stroke-width="2"/>
+<text x="708" y="100" font-family="Arial" font-size="11">fp32</text>
+<polyline fill="none" stroke="#d62728" stroke-width="2" points="86.0,225.5 236.8,275.4 325.0,114.0 387.5,264.1 436.1,136.1 475.7,234.3 509.2,238.0 538.3,76.5 563.9,235.0 586.8,107.0 607.5,229.8 626.5,132.3 643.9,224.8 660.0,160.8"/>
+<circle cx="86.0" cy="225.5" r="3" fill="#d62728"/>
+<circle cx="236.8" cy="275.4" r="3" fill="#d62728"/>
+<circle cx="325.0" cy="114.0" r="3" fill="#d62728"/>
+<circle cx="387.5" cy="264.1" r="3" fill="#d62728"/>
+<circle cx="436.1" cy="136.1" r="3" fill="#d62728"/>
+<circle cx="475.7" cy="234.3" r="3" fill="#d62728"/>
+<circle cx="509.2" cy="238.0" r="3" fill="#d62728"/>
+<circle cx="538.3" cy="76.5" r="3" fill="#d62728"/>
+<circle cx="563.9" cy="235.0" r="3" fill="#d62728"/>
+<circle cx="586.8" cy="107.0" r="3" fill="#d62728"/>
+<circle cx="607.5" cy="229.8" r="3" fill="#d62728"/>
+<circle cx="626.5" cy="132.3" r="3" fill="#d62728"/>
+<circle cx="643.9" cy="224.8" r="3" fill="#d62728"/>
+<circle cx="660.0" cy="160.8" r="3" fill="#d62728"/>
+<line x1="682" y1="114" x2="702" y2="114" stroke="#d62728" stroke-width="2"/>
+<text x="708" y="118" font-family="Arial" font-size="11">int8</text>
+</svg>

@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560">
+<rect width="100%" height="100%" fill="white"/>
+<text x="450.0" y="24" text-anchor="middle" font-family="Arial" font-size="18">Sparse raw vs h_active fitted h_star</text>
+<rect x="86" y="46" width="574" height="442" fill="none" stroke="#222" stroke-width="1"/>
+<text x="373.0" y="538" text-anchor="middle" font-family="Arial" font-size="13">h_active for sparse, raw h for dense (log scale)</text>
+<text transform="translate(20,267.0) rotate(-90)" text-anchor="middle" font-family="Arial" font-size="13">h_star</text>
+<line x1="86.0" y1="46" x2="86.0" y2="488" stroke="#ddd" stroke-width="1"/>
+<line x1="86" y1="46.0" x2="660" y2="46.0" stroke="#eee" stroke-width="1"/>
+<line x1="200.8" y1="46" x2="200.8" y2="488" stroke="#ddd" stroke-width="1"/>
+<line x1="86" y1="134.4" x2="660" y2="134.4" stroke="#eee" stroke-width="1"/>
+<line x1="315.6" y1="46" x2="315.6" y2="488" stroke="#ddd" stroke-width="1"/>
+<line x1="86" y1="222.8" x2="660" y2="222.8" stroke="#eee" stroke-width="1"/>
+<line x1="430.4" y1="46" x2="430.4" y2="488" stroke="#ddd" stroke-width="1"/>
+<line x1="86" y1="311.2" x2="660" y2="311.2" stroke="#eee" stroke-width="1"/>
+<line x1="545.2" y1="46" x2="545.2" y2="488" stroke="#ddd" stroke-width="1"/>
+<line x1="86" y1="399.6" x2="660" y2="399.6" stroke="#eee" stroke-width="1"/>
+<line x1="660.0" y1="46" x2="660.0" y2="488" stroke="#ddd" stroke-width="1"/>
+<line x1="86" y1="488.0" x2="660" y2="488.0" stroke="#eee" stroke-width="1"/>
+<text x="86.0" y="508" text-anchor="middle" font-family="Arial" font-size="10">1.0e-01</text>
+<text x="78" y="492.0" text-anchor="end" font-family="Arial" font-size="10">0.00035</text>
+<text x="200.8" y="508" text-anchor="middle" font-family="Arial" font-size="10">2.5e-01</text>
+<text x="78" y="403.6" text-anchor="end" font-family="Arial" font-size="10">0.0008</text>
+<text x="315.6" y="508" text-anchor="middle" font-family="Arial" font-size="10">6.3e-01</text>
+<text x="78" y="315.2" text-anchor="end" font-family="Arial" font-size="10">0.0018</text>
+<text x="430.4" y="508" text-anchor="middle" font-family="Arial" font-size="10">1.6e+00</text>
+<text x="78" y="226.8" text-anchor="end" font-family="Arial" font-size="10">0.0042</text>
+<text x="545.2" y="508" text-anchor="middle" font-family="Arial" font-size="10">4.0e+00</text>
+<text x="78" y="138.4" text-anchor="end" font-family="Arial" font-size="10">0.0097</text>
+<text x="660.0" y="508" text-anchor="middle" font-family="Arial" font-size="10">1.0e+01</text>
+<text x="78" y="50.0" text-anchor="end" font-family="Arial" font-size="10">0.022</text>
+<polyline fill="none" stroke="#1f77b4" stroke-width="2" points="373.0,457.5"/>
+<circle cx="373.0" cy="457.5" r="3" fill="#1f77b4"/>
+<line x1="682" y1="60" x2="702" y2="60" stroke="#1f77b4" stroke-width="2"/>
+<text x="708" y="64" font-family="Arial" font-size="11">int8 p=0.003 raw</text>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="2" points="373.0,148.3"/>
+<circle cx="373.0" cy="148.3" r="3" fill="#ff7f0e"/>
+<line x1="682" y1="78" x2="702" y2="78" stroke="#ff7f0e" stroke-width="2"/>
+<text x="708" y="82" font-family="Arial" font-size="11">int8 p=0.003 active</text>
+<polyline fill="none" stroke="#2ca02c" stroke-width="2" points="373.0,435.8"/>
+<circle cx="373.0" cy="435.8" r="3" fill="#2ca02c"/>
+<line x1="682" y1="96" x2="702" y2="96" stroke="#2ca02c" stroke-width="2"/>
+<text x="708" y="100" font-family="Arial" font-size="11">int8 p=0.01 raw</text>
+<polyline fill="none" stroke="#d62728" stroke-width="2" points="373.0,190.6"/>
+<circle cx="373.0" cy="190.6" r="3" fill="#d62728"/>
+<line x1="682" y1="114" x2="702" y2="114" stroke="#d62728" stroke-width="2"/>
+<text x="708" y="118" font-family="Arial" font-size="11">int8 p=0.01 active</text>
+<polyline fill="none" stroke="#9467bd" stroke-width="2" points="373.0,385.7"/>
+<circle cx="373.0" cy="385.7" r="3" fill="#9467bd"/>
+<line x1="682" y1="132" x2="702" y2="132" stroke="#9467bd" stroke-width="2"/>
+<text x="708" y="136" font-family="Arial" font-size="11">int8 p=0.003 raw</text>
+<polyline fill="none" stroke="#8c564b" stroke-width="2" points="373.0,76.5"/>
+<circle cx="373.0" cy="76.5" r="3" fill="#8c564b"/>
+<line x1="682" y1="150" x2="702" y2="150" stroke="#8c564b" stroke-width="2"/>
+<text x="708" y="154" font-family="Arial" font-size="11">int8 p=0.003 active</text>
+<polyline fill="none" stroke="#e377c2" stroke-width="2" points="373.0,380.0"/>
+<circle cx="373.0" cy="380.0" r="3" fill="#e377c2"/>
+<line x1="682" y1="168" x2="702" y2="168" stroke="#e377c2" stroke-width="2"/>
+<text x="708" y="172" font-family="Arial" font-size="11">int8 p=0.01 raw</text>
+<polyline fill="none" stroke="#7f7f7f" stroke-width="2" points="373.0,134.8"/>
+<circle cx="373.0" cy="134.8" r="3" fill="#7f7f7f"/>
+<line x1="682" y1="186" x2="702" y2="186" stroke="#7f7f7f" stroke-width="2"/>
+<text x="708" y="190" font-family="Arial" font-size="11">int8 p=0.01 active</text>
+<polyline fill="none" stroke="#bcbd22" stroke-width="2" points="373.0,370.1"/>
+<circle cx="373.0" cy="370.1" r="3" fill="#bcbd22"/>
+<line x1="682" y1="204" x2="702" y2="204" stroke="#bcbd22" stroke-width="2"/>
+<text x="708" y="208" font-family="Arial" font-size="11">int8 p=0.03 raw</text>
+<polyline fill="none" stroke="#17becf" stroke-width="2" points="373.0,183.4"/>
+<circle cx="373.0" cy="183.4" r="3" fill="#17becf"/>
+<line x1="682" y1="222" x2="702" y2="222" stroke="#17becf" stroke-width="2"/>
+<text x="708" y="226" font-family="Arial" font-size="11">int8 p=0.03 active</text>
+<polyline fill="none" stroke="#1f77b4" stroke-width="2" points="373.0,360.6"/>
+<circle cx="373.0" cy="360.6" r="3" fill="#1f77b4"/>
+<line x1="682" y1="240" x2="702" y2="240" stroke="#1f77b4" stroke-width="2"/>
+<text x="708" y="244" font-family="Arial" font-size="11">int8 p=0.1 raw</text>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="2" points="373.0,238.0"/>
+<circle cx="373.0" cy="238.0" r="3" fill="#ff7f0e"/>
+<line x1="682" y1="258" x2="702" y2="258" stroke="#ff7f0e" stroke-width="2"/>
+<text x="708" y="262" font-family="Arial" font-size="11">int8 p=0.1 active</text>
+</svg>
