@@ -61,6 +61,12 @@ SUMMARY_COLUMNS = [
     "saturation_frac_w_plus",
     "saturation_frac_w_minus",
     "recon_mse_global",
+    "weight_recon_mse",
+    "weight_recon_rel_mse",
+    "weight_recon_sqnr_db",
+    "delta_visibility_mse",
+    "delta_visibility_nmse",
+    "delta_visibility_rel_l2",
     "alpha_lt_1_frac",
     "num_scale_refreshes",
     "status",
@@ -198,7 +204,13 @@ def compute_rtnclip_state(name: str, weight: torch.Tensor, bitwidth: int, group_
         valid=valid.detach(),
     )
     q_w, stats = quantize_with_state(weight, state, return_stats=True)
-    recon_mse = float(((q_w.float() - weight.float()) ** 2).mean().detach().cpu())
+    diff = q_w.float() - weight.float()
+    err_sq = diff.square().double().sum()
+    ref_sq = weight.float().double().square().sum()
+    eps = torch.tensor(1e-30, device=weight.device, dtype=torch.float64)
+    recon_mse = float((err_sq / max(int(weight.numel()), 1)).detach().cpu())
+    recon_rel_mse = float((err_sq / ref_sq.clamp_min(eps)).detach().cpu())
+    recon_sqnr_db = float((10.0 * torch.log10(ref_sq / err_sq.clamp_min(eps))).detach().cpu())
     stats.update(
         {
             "module_name": name,
@@ -209,6 +221,11 @@ def compute_rtnclip_state(name: str, weight: torch.Tensor, bitwidth: int, group_
             "scale_median": float(best_scales.median().detach().cpu()),
             "scale_max": float(best_scales.max().detach().cpu()),
             "recon_mse": recon_mse,
+            "weight_recon_mse": recon_mse,
+            "weight_recon_rel_mse": recon_rel_mse,
+            "weight_recon_sqnr_db": recon_sqnr_db,
+            "weight_recon_sse": float(err_sq.detach().cpu()),
+            "weight_recon_ref_sse": float(ref_sq.detach().cpu()),
             "alpha_lt_1_frac": float((alpha_values < 1.0).float().mean().detach().cpu()),
         }
     )
@@ -414,7 +431,7 @@ def aggregate_quantizer_stats(rows: List[Dict[str, object]], numel_by_name: Dict
     total = sum(numel_by_name[r["module_name"]] for r in rows)
     group_total = sum(int(r["num_groups"]) for r in rows)
     weighted = {}
-    for key in ("recon_mse", "clip_frac", "alpha_lt_1_frac", "scale_min", "scale_median", "scale_max"):
+    for key in ("recon_mse", "weight_recon_mse", "weight_recon_rel_mse", "weight_recon_sqnr_db", "clip_frac", "alpha_lt_1_frac", "scale_min", "scale_median", "scale_max"):
         vals = []
         weights = []
         for row in rows:
@@ -423,10 +440,19 @@ def aggregate_quantizer_stats(rows: List[Dict[str, object]], numel_by_name: Dict
             weights.append(weight)
         denom = max(sum(weights), 1)
         weighted[key] = sum(v * w for v, w in zip(vals, weights)) / denom
+    err_total = sum(float(row.get("weight_recon_sse", 0.0)) for row in rows)
+    ref_total = sum(float(row.get("weight_recon_ref_sse", 0.0)) for row in rows)
+    pooled_rel_mse = err_total / max(ref_total, 1e-30) if ref_total > 0.0 else weighted["weight_recon_rel_mse"]
+    pooled_sqnr_db = 10.0 * math.log10(ref_total / max(err_total, 1e-30)) if ref_total > 0.0 else weighted["weight_recon_sqnr_db"]
     hist = {f"alpha_{alpha:g}_count": sum(int(r.get(f"alpha_{alpha:g}_count", 0)) for r in rows) for alpha in ALPHA_GRID_VALUES}
     return {
         "recon_mse_global": weighted["recon_mse"],
+        "weight_recon_mse": weighted["weight_recon_mse"],
+        "weight_recon_rel_mse": pooled_rel_mse,
+        "weight_recon_sqnr_db": pooled_sqnr_db,
         "saturation_frac_w": weighted["clip_frac"],
+        "saturation_frac": weighted["clip_frac"],
+        "clip_frac": weighted["clip_frac"],
         "clip_frac_w": weighted["clip_frac"],
         "alpha_lt_1_frac": weighted["alpha_lt_1_frac"],
         "scale_min_global": min(float(r["scale_min"]) for r in rows),
@@ -487,6 +513,7 @@ def perturbation_metrics(
     dot = torch.zeros((), device=next(iter(master.values())).device, dtype=torch.float64)
     delta_sq = torch.zeros_like(dot)
     intended_sq = torch.zeros_like(dot)
+    delta_err_sq = torch.zeros_like(dot)
     clip_plus_num = 0.0
     clip_minus_num = 0.0
     value_num = 0
@@ -496,11 +523,13 @@ def perturbation_metrics(
         plus, plus_stats = quantize_with_state(master[name].float().add(directions[name].float(), alpha=h), state, True)
         minus, minus_stats = quantize_with_state(master[name].float().add(directions[name].float(), alpha=-h), state, True)
         delta = plus.float() - minus.float()
+        delta_err = delta.float() - intended.float()
         active += int((delta != 0).sum().detach().cpu())
         total += delta.numel()
         dot += (delta.double() * intended.double()).sum()
         delta_sq += (delta.double() * delta.double()).sum()
         intended_sq += (intended.double() * intended.double()).sum()
+        delta_err_sq += delta_err.double().square().sum()
         clip_plus_num += float(plus_stats["clip_frac"]) * delta.numel()
         clip_minus_num += float(minus_stats["clip_frac"]) * delta.numel()
         value_num += delta.numel()
@@ -510,11 +539,20 @@ def perturbation_metrics(
     active_frac = active / max(total, 1)
     alignment = float((dot / (delta_sq.sqrt() * intended_sq.sqrt() + eps)).detach().cpu())
     norm_ratio = float((delta_sq.sqrt() / (intended_sq.sqrt() + eps)).detach().cpu())
+    delta_visibility_mse = float((delta_err_sq / max(total, 1)).detach().cpu())
+    delta_visibility_nmse = float((delta_err_sq / intended_sq.clamp_min(eps)).detach().cpu())
+    delta_visibility_rel_l2 = float((delta_err_sq.sqrt() / intended_sq.sqrt().clamp_min(eps)).detach().cpu())
+    avg_clip = (clip_plus_num + clip_minus_num) / max(2 * value_num, 1)
     return {
         "active_frac": active_frac,
         "alignment": alignment,
         "norm_ratio": norm_ratio,
+        "delta_visibility_mse": delta_visibility_mse,
+        "delta_visibility_nmse": delta_visibility_nmse,
+        "delta_visibility_rel_l2": delta_visibility_rel_l2,
         "zero_effective_displacement_frac": 1.0 - active_frac,
+        "clip_frac": avg_clip,
+        "saturation_frac": avg_clip,
         "saturation_frac_w_plus": clip_plus_num / max(value_num, 1),
         "saturation_frac_w_minus": clip_minus_num / max(value_num, 1),
         "clip_frac_w_plus": clip_plus_num / max(value_num, 1),
@@ -843,6 +881,12 @@ def run_one_config(args, base_context: Dict[str, object], config: Dict[str, obje
         "clip_frac_w_plus": last_pert.get("clip_frac_w_plus"),
         "clip_frac_w_minus": last_pert.get("clip_frac_w_minus"),
         "recon_mse_global": last_quant.get("recon_mse_global"),
+        "weight_recon_mse": last_quant.get("weight_recon_mse", last_quant.get("recon_mse_global")),
+        "weight_recon_rel_mse": last_quant.get("weight_recon_rel_mse"),
+        "weight_recon_sqnr_db": last_quant.get("weight_recon_sqnr_db"),
+        "delta_visibility_mse": last_pert.get("delta_visibility_mse"),
+        "delta_visibility_nmse": last_pert.get("delta_visibility_nmse"),
+        "delta_visibility_rel_l2": last_pert.get("delta_visibility_rel_l2"),
         "alpha_lt_1_frac": last_quant.get("alpha_lt_1_frac"),
         "num_scale_refreshes": num_refreshes,
         "status": status,

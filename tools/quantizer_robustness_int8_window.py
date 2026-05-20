@@ -288,7 +288,13 @@ def compute_quantizer_state(
         valid=valid.detach(),
     )
     q_w, stats = quantize_with_state(weight, state, return_stats=True)
-    recon_mse = float((q_w.float() - weight.float()).square().mean().detach().cpu())
+    diff = q_w.float() - weight.float()
+    err_sq = diff.double().square().sum()
+    ref_sq = weight.float().double().square().sum()
+    eps64 = torch.tensor(1e-30, device=weight.device, dtype=torch.float64)
+    recon_mse = float((err_sq / max(int(weight.numel()), 1)).detach().cpu())
+    recon_rel_mse = float((err_sq / ref_sq.clamp_min(eps64)).detach().cpu())
+    recon_sqnr_db = float((10.0 * torch.log10(ref_sq / err_sq.clamp_min(eps64))).detach().cpu())
     if quantizer == "awq" and activation_rms is not None and activation_rms.numel() == weight.shape[1]:
         col_w = activation_rms.detach().float().to(weight.device).square().clamp_min(1e-12)
         weighted_mse = ((q_w.float() - weight.float()).square() * (col_w / col_w.mean().clamp_min(1e-12)).view(1, -1)).mean()
@@ -311,6 +317,11 @@ def compute_quantizer_state(
             "alpha_max": float(best_alpha.max().detach().cpu()),
             "alpha_lt_1_frac": float((best_alpha < 1.0).float().mean().detach().cpu()),
             "recon_mse": recon_mse,
+            "weight_recon_mse": recon_mse,
+            "weight_recon_rel_mse": recon_rel_mse,
+            "weight_recon_sqnr_db": recon_sqnr_db,
+            "weight_recon_sse": float(err_sq.detach().cpu()),
+            "weight_recon_ref_sse": float(ref_sq.detach().cpu()),
             "activation_weighted_mse": awq_weighted_mse,
             "activation_rms_available": activation_rms is not None and activation_rms.numel() == weight.shape[1],
         }
@@ -383,11 +394,18 @@ def aggregate_quantizer_stats(rows: List[Dict[str, object]], numel_by_name: Dict
         denom = max(sum(weights), 1)
         return sum(v * w for v, w in zip(vals, weights)) / denom
 
+    err_total = sum(float(row.get("weight_recon_sse", 0.0)) for row in rows)
+    ref_total = sum(float(row.get("weight_recon_ref_sse", 0.0)) for row in rows)
+    pooled_rel_mse = err_total / max(ref_total, 1e-30) if ref_total > 0.0 else weighted_mean("weight_recon_rel_mse")
+    pooled_sqnr_db = 10.0 * math.log10(ref_total / max(err_total, 1e-30)) if ref_total > 0.0 else weighted_mean("weight_recon_sqnr_db")
     out = {
         "num_quantized_modules": len(rows),
         "num_quantized_values": total_values,
         "num_groups": total_groups,
         "recon_mse_global": weighted_mean("recon_mse"),
+        "weight_recon_mse": weighted_mean("weight_recon_mse"),
+        "weight_recon_rel_mse": pooled_rel_mse,
+        "weight_recon_sqnr_db": pooled_sqnr_db,
         "activation_weighted_mse_global": weighted_mean("activation_weighted_mse"),
         "clip_frac": weighted_mean("clip_frac"),
         "saturation_frac": weighted_mean("saturation_frac"),
@@ -494,6 +512,7 @@ def perturbation_metrics(
     dot = torch.zeros((), device=device, dtype=torch.float64)
     delta_sq = torch.zeros((), device=device, dtype=torch.float64)
     intended_sq = torch.zeros((), device=device, dtype=torch.float64)
+    delta_err_sq = torch.zeros((), device=device, dtype=torch.float64)
     clip_plus_num = 0.0
     clip_minus_num = 0.0
     value_num = 0
@@ -503,11 +522,13 @@ def perturbation_metrics(
         plus, plus_stats = quantize_with_state(master[name].float().add(directions[name].float(), alpha=float(h)), state, True)
         minus, minus_stats = quantize_with_state(master[name].float().add(directions[name].float(), alpha=-float(h)), state, True)
         delta = plus.float() - minus.float()
+        delta_err = delta.float() - intended.float()
         active += int((delta != 0).sum().detach().cpu())
         total += delta.numel()
         dot += (delta.double() * intended.double()).sum()
         delta_sq += delta.double().square().sum()
         intended_sq += intended.double().square().sum()
+        delta_err_sq += delta_err.double().square().sum()
         clip_plus_num += float(plus_stats["clip_frac"]) * delta.numel()
         clip_minus_num += float(minus_stats["clip_frac"]) * delta.numel()
         value_num += delta.numel()
@@ -517,14 +538,23 @@ def perturbation_metrics(
     alignment = float((dot / (delta_sq.sqrt() * intended_sq.sqrt() + eps)).detach().cpu())
     norm_ratio = float((delta_sq.sqrt() / (intended_sq.sqrt() + eps)).detach().cpu())
     active_frac = active / max(total, 1)
+    delta_visibility_mse = float((delta_err_sq / max(total, 1)).detach().cpu())
+    delta_visibility_nmse = float((delta_err_sq / intended_sq.clamp_min(eps)).detach().cpu())
+    delta_visibility_rel_l2 = float((delta_err_sq.sqrt() / intended_sq.sqrt().clamp_min(eps)).detach().cpu())
+    avg_clip = (clip_plus_num + clip_minus_num) / max(2 * value_num, 1)
     return {
         "delta_q_norm": float(delta_sq.sqrt().detach().cpu()),
         "nominal_delta_norm": float(intended_sq.sqrt().detach().cpu()),
         "alignment": alignment,
         "norm_ratio": norm_ratio,
+        "delta_visibility_mse": delta_visibility_mse,
+        "delta_visibility_nmse": delta_visibility_nmse,
+        "delta_visibility_rel_l2": delta_visibility_rel_l2,
         "active_frac": active_frac,
         "code_change_frac": active_frac,
         "zero_effective_displacement_frac": 1.0 - active_frac,
+        "clip_frac": avg_clip,
+        "saturation_frac": avg_clip,
         "clip_frac_w_plus": clip_plus_num / max(value_num, 1),
         "clip_frac_w_minus": clip_minus_num / max(value_num, 1),
         "saturation_frac_w_plus": clip_plus_num / max(value_num, 1),
@@ -1193,12 +1223,18 @@ def run_training_job(
         "alignment": last_pert.get("alignment"),
         "norm_ratio": last_pert.get("norm_ratio"),
         "code_change_frac": last_pert.get("code_change_frac"),
+        "delta_visibility_mse": last_pert.get("delta_visibility_mse"),
+        "delta_visibility_nmse": last_pert.get("delta_visibility_nmse"),
+        "delta_visibility_rel_l2": last_pert.get("delta_visibility_rel_l2"),
         "delta_q_norm": last_pert.get("delta_q_norm"),
         "saturation_frac_w": last_quant.get("saturation_frac_w"),
         "saturation_frac_w_plus": last_pert.get("saturation_frac_w_plus"),
         "saturation_frac_w_minus": last_pert.get("saturation_frac_w_minus"),
         "clip_frac": last_quant.get("clip_frac"),
         "recon_mse_global": last_quant.get("recon_mse_global"),
+        "weight_recon_mse": last_quant.get("weight_recon_mse", last_quant.get("recon_mse_global")),
+        "weight_recon_rel_mse": last_quant.get("weight_recon_rel_mse"),
+        "weight_recon_sqnr_db": last_quant.get("weight_recon_sqnr_db"),
         "activation_weighted_mse_global": last_quant.get("activation_weighted_mse_global"),
         "alpha_mean": last_quant.get("alpha_mean"),
         "alpha_lt_1_frac": last_quant.get("alpha_lt_1_frac"),
@@ -1208,6 +1244,11 @@ def run_training_job(
         "fresh_round_codes_observed": bool(last_pert.get("fresh_round_codes_check", False)),
         "corr_fd_true": None,
         "nMSE_fd_true": None,
+        "fd_true_available": False,
+        "fd_true_mse": None,
+        "fd_true_nmse": None,
+        "fd_true_rmse": None,
+        "fd_true_bias": None,
         "true_gradient_metrics": "unavailable_not_computed",
         "total_runtime": elapsed,
         "seconds_per_step": elapsed / max(steps_completed, 1),
@@ -1298,6 +1339,9 @@ def run_probe(
             "norm_ratio": [],
             "active_frac": [],
             "code_change_frac": [],
+            "delta_visibility_mse": [],
+            "delta_visibility_nmse": [],
+            "delta_visibility_rel_l2": [],
             "delta_q_norm": [],
             "nominal_delta_norm": [],
             "clip_plus": [],
@@ -1333,9 +1377,30 @@ def run_probe(
                 "scale_id_sharing_check": True,
                 "corr_fd_true": None,
                 "nMSE_fd_true": None,
+                "fd_true_available": False,
+                "fd_true_mse": None,
+                "fd_true_nmse": None,
+                "fd_true_rmse": None,
+                "fd_true_bias": None,
                 "true_gradient_metrics": "unavailable_not_computed",
                 **pert,
-                **{key: quant.get(key) for key in ("clip_frac", "saturation_frac_w", "recon_mse_global", "activation_weighted_mse_global", "alpha_mean", "alpha_lt_1_frac", "scale_min_global", "scale_median_weighted", "scale_max_global")},
+                **{
+                    key: quant.get(key)
+                    for key in (
+                        "clip_frac",
+                        "saturation_frac_w",
+                        "recon_mse_global",
+                        "weight_recon_mse",
+                        "weight_recon_rel_mse",
+                        "weight_recon_sqnr_db",
+                        "activation_weighted_mse_global",
+                        "alpha_mean",
+                        "alpha_lt_1_frac",
+                        "scale_min_global",
+                        "scale_median_weighted",
+                        "scale_max_global",
+                    )
+                },
             }
             append_jsonl(stats_path, item)
             acc["loss_plus"].append(lp)
@@ -1348,6 +1413,9 @@ def run_probe(
             acc["norm_ratio"].append(float(pert["norm_ratio"]))
             acc["active_frac"].append(float(pert["active_frac"]))
             acc["code_change_frac"].append(float(pert["code_change_frac"]))
+            acc["delta_visibility_mse"].append(float(pert["delta_visibility_mse"]))
+            acc["delta_visibility_nmse"].append(float(pert["delta_visibility_nmse"]))
+            acc["delta_visibility_rel_l2"].append(float(pert["delta_visibility_rel_l2"]))
             acc["delta_q_norm"].append(float(pert["delta_q_norm"]))
             acc["nominal_delta_norm"].append(float(pert["nominal_delta_norm"]))
             acc["clip_plus"].append(float(pert["clip_frac_w_plus"]))
@@ -1373,11 +1441,19 @@ def run_probe(
             "norm_ratio": sum(acc["norm_ratio"]) / len(acc["norm_ratio"]),
             "active_frac": sum(acc["active_frac"]) / len(acc["active_frac"]),
             "code_change_frac": sum(acc["code_change_frac"]) / len(acc["code_change_frac"]),
+            "delta_visibility_mse": sum(acc["delta_visibility_mse"]) / len(acc["delta_visibility_mse"]),
+            "delta_visibility_nmse": sum(acc["delta_visibility_nmse"]) / len(acc["delta_visibility_nmse"]),
+            "delta_visibility_rel_l2": sum(acc["delta_visibility_rel_l2"]) / len(acc["delta_visibility_rel_l2"]),
             "clip_frac": quant.get("clip_frac"),
             "clip_frac_w_plus": sum(acc["clip_plus"]) / len(acc["clip_plus"]),
             "clip_frac_w_minus": sum(acc["clip_minus"]) / len(acc["clip_minus"]),
             "saturation_frac": quant.get("saturation_frac"),
             "saturation_frac_w": quant.get("saturation_frac_w"),
+            "recon_mse_global": quant.get("recon_mse_global"),
+            "weight_recon_mse": quant.get("weight_recon_mse", quant.get("recon_mse_global")),
+            "weight_recon_rel_mse": quant.get("weight_recon_rel_mse"),
+            "weight_recon_sqnr_db": quant.get("weight_recon_sqnr_db"),
+            "activation_weighted_mse_global": quant.get("activation_weighted_mse_global"),
             "scale_min_global": quant.get("scale_min_global"),
             "scale_median_weighted": quant.get("scale_median_weighted"),
             "scale_max_global": quant.get("scale_max_global"),
@@ -1389,6 +1465,11 @@ def run_probe(
             "fresh_round_codes_check": True,
             "corr_fd_true": None,
             "nMSE_fd_true": None,
+            "fd_true_available": False,
+            "fd_true_mse": None,
+            "fd_true_nmse": None,
+            "fd_true_rmse": None,
+            "fd_true_bias": None,
             "true_gradient_metrics": "unavailable_not_computed",
         }
         rows.append(row)
@@ -1932,11 +2013,19 @@ def write_markdown_outputs(
         "norm_ratio",
         "active_frac",
         "code_change_frac",
+        "delta_visibility_mse",
+        "delta_visibility_nmse",
+        "delta_visibility_rel_l2",
         "clip_frac",
         "clip_frac_w_plus",
         "clip_frac_w_minus",
         "saturation_frac",
         "saturation_frac_w",
+        "recon_mse_global",
+        "weight_recon_mse",
+        "weight_recon_rel_mse",
+        "weight_recon_sqnr_db",
+        "activation_weighted_mse_global",
         "scale_min_global",
         "scale_median_weighted",
         "scale_max_global",
@@ -1948,6 +2037,11 @@ def write_markdown_outputs(
         "fresh_round_codes_check",
         "corr_fd_true",
         "nMSE_fd_true",
+        "fd_true_available",
+        "fd_true_mse",
+        "fd_true_nmse",
+        "fd_true_rmse",
+        "fd_true_bias",
         "true_gradient_metrics",
     ]
     write_csv(output_root / "probe_results.csv", probe_rows, probe_cols)

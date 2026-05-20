@@ -1,0 +1,81 @@
+{
+  "K": 1,
+  "attention_projections": "quantized",
+  "batch_size": 64,
+  "batch_size_fallback_used": false,
+  "bias": "fp16",
+  "data_seed": 16,
+  "dataloader_shuffle": true,
+  "dataset": "SST-5",
+  "dataset_mode": "full",
+  "direct_int_update": false,
+  "direction": "dense",
+  "directions_per_h_per_batch": 16,
+  "embeddings": "fp16",
+  "fd_true_requested": true,
+  "fresh_round_codes": true,
+  "group_size": 128,
+  "h_grid": [
+    {
+      "h": 1e-05,
+      "label": "1e-5"
+    },
+    {
+      "h": 3e-05,
+      "label": "3e-5"
+    },
+    {
+      "h": 0.0001,
+      "label": "1e-4"
+    },
+    {
+      "h": 0.0003,
+      "label": "3e-4"
+    },
+    {
+      "h": 0.001,
+      "label": "1e-3"
+    },
+    {
+      "h": 0.0015,
+      "label": "1p5e-3"
+    },
+    {
+      "h": 0.002,
+      "label": "2e-3"
+    },
+    {
+      "h": 0.003,
+      "label": "3e-3"
+    },
+    {
+      "h": 0.004,
+      "label": "4e-3"
+    },
+    {
+      "h": 0.005,
+      "label": "5e-3"
+    },
+    {
+      "h": 0.01,
+      "label": "1e-2"
+    }
+  ],
+  "independent_q_plus_q_minus_scales": false,
+  "layernorm": "fp16",
+  "master_dtype": "fp16",
+  "mlp_projections": "quantized",
+  "model": "roberta-large",
+  "pair_shared_grid": true,
+  "probe_batches": 3,
+  "q_w_plus_hu_bypass": false,
+  "quant_bits": 8,
+  "quantized_modules": "Linear weights only",
+  "quantizer": "G128_RTNClip_shared_grid_fake_quant",
+  "quantizer_backend": "G128_RTNClip_shared_grid_fake_quant",
+  "requested_batch_size": 64,
+  "sampler": "RandomSampler",
+  "scale_refresh_k": 1,
+  "seed": 16,
+  "update_backend": "FP16 master"
+}

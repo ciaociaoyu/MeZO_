@@ -75,6 +75,12 @@ SMOKE_SUMMARY_COLUMNS = [
     "saturation_frac_w_plus",
     "saturation_frac_w_minus",
     "recon_mse_global",
+    "weight_recon_mse",
+    "weight_recon_rel_mse",
+    "weight_recon_sqnr_db",
+    "delta_visibility_mse",
+    "delta_visibility_nmse",
+    "delta_visibility_rel_l2",
     "alpha_lt_1_frac",
     "num_scale_refreshes",
     "status",
@@ -108,11 +114,22 @@ HSEARCH_SUMMARY_COLUMNS = [
     "alignment",
     "norm_ratio",
     "code_change_frac",
+    "delta_visibility_mse",
+    "delta_visibility_nmse",
+    "delta_visibility_rel_l2",
     "saturation_frac_w",
     "saturation_frac_w_plus",
     "saturation_frac_w_minus",
+    "weight_recon_mse",
+    "weight_recon_rel_mse",
+    "weight_recon_sqnr_db",
     "corr_fd_true",
     "nMSE_fd_true",
+    "fd_true_available",
+    "fd_true_mse",
+    "fd_true_nmse",
+    "fd_true_rmse",
+    "fd_true_bias",
     "run_dir",
     "resume_command",
     "warnings",
@@ -512,10 +529,17 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
         "alignment": last_pert.get("alignment"),
         "norm_ratio": last_pert.get("norm_ratio"),
         "code_change_frac": last_pert.get("code_change_frac"),
+        "delta_visibility_mse": last_pert.get("delta_visibility_mse"),
+        "delta_visibility_nmse": last_pert.get("delta_visibility_nmse"),
+        "delta_visibility_rel_l2": last_pert.get("delta_visibility_rel_l2"),
         "saturation_frac_w": last_quant.get("saturation_frac_w"),
         "saturation_frac_w_plus": last_pert.get("saturation_frac_w_plus"),
         "saturation_frac_w_minus": last_pert.get("saturation_frac_w_minus"),
+        "clip_frac": last_quant.get("clip_frac"),
         "recon_mse_global": last_quant.get("recon_mse_global"),
+        "weight_recon_mse": last_quant.get("weight_recon_mse", last_quant.get("recon_mse_global")),
+        "weight_recon_rel_mse": last_quant.get("weight_recon_rel_mse"),
+        "weight_recon_sqnr_db": last_quant.get("weight_recon_sqnr_db"),
         "alpha_lt_1_frac": last_quant.get("alpha_lt_1_frac"),
         "num_scale_refreshes": num_refreshes,
         "peak_gpu_mem": peak_mem,
@@ -523,6 +547,11 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
         "seconds_per_step": total_runtime / new_steps,
         "corr_fd_true": None,
         "nMSE_fd_true": None,
+        "fd_true_available": False,
+        "fd_true_mse": None,
+        "fd_true_nmse": None,
+        "fd_true_rmse": None,
+        "fd_true_bias": None,
         "true_grad_diagnostics": "unavailable_not_computed",
         "warnings": "; ".join(warnings),
     }
@@ -574,7 +603,21 @@ def run_probe_grid(args) -> List[Dict[str, object]]:
     if stats_path.exists():
         stats_path.unlink()
     for label, h in H_GRID:
-        acc = {"active_frac": [], "alignment": [], "norm_ratio": [], "fd": [], "finite": [], "loss_plus": [], "loss_minus": []}
+        acc = {
+            "active_frac": [],
+            "alignment": [],
+            "norm_ratio": [],
+            "delta_visibility_mse": [],
+            "delta_visibility_nmse": [],
+            "delta_visibility_rel_l2": [],
+            "code_change_frac": [],
+            "clip_frac": [],
+            "saturation_frac": [],
+            "fd": [],
+            "finite": [],
+            "loss_plus": [],
+            "loss_minus": [],
+        }
         for k in range(int(args.probe_dirs)):
             directions = sample_directions_for_step(master, 16 + k, bitwidth, 1, h, k)
             smoke.copy_master_to_model(params, master, directions, h, +1.0, states)
@@ -590,7 +633,17 @@ def run_probe_grid(args) -> List[Dict[str, object]]:
             finite = math.isfinite(lp) and math.isfinite(lm) and math.isfinite(fd)
             item = {"h": h, "h_label": label, "k_dir": k, "loss_plus": lp, "loss_minus": lm, "fd": fd, "finite": finite, **pert}
             smoke.append_jsonl(stats_path, item)
-            for key in ("active_frac", "alignment", "norm_ratio"):
+            for key in (
+                "active_frac",
+                "alignment",
+                "norm_ratio",
+                "delta_visibility_mse",
+                "delta_visibility_nmse",
+                "delta_visibility_rel_l2",
+                "code_change_frac",
+                "clip_frac",
+                "saturation_frac",
+            ):
                 acc[key].append(float(pert[key]))
             acc["fd"].append(fd)
             acc["finite"].append(1.0 if finite else 0.0)
@@ -606,13 +659,34 @@ def run_probe_grid(args) -> List[Dict[str, object]]:
             "active_frac": sum(acc["active_frac"]) / len(acc["active_frac"]),
             "alignment": sum(acc["alignment"]) / len(acc["alignment"]),
             "norm_ratio": sum(acc["norm_ratio"]) / len(acc["norm_ratio"]),
+            "delta_visibility_mse": sum(acc["delta_visibility_mse"]) / len(acc["delta_visibility_mse"]),
+            "delta_visibility_nmse": sum(acc["delta_visibility_nmse"]) / len(acc["delta_visibility_nmse"]),
+            "delta_visibility_rel_l2": sum(acc["delta_visibility_rel_l2"]) / len(acc["delta_visibility_rel_l2"]),
+            "code_change_frac": sum(acc["code_change_frac"]) / len(acc["code_change_frac"]),
+            "clip_frac": sum(acc["clip_frac"]) / len(acc["clip_frac"]),
+            "saturation_frac": sum(acc["saturation_frac"]) / len(acc["saturation_frac"]),
             "loss_plus_mean": sum(acc["loss_plus"]) / len(acc["loss_plus"]),
             "loss_minus_mean": sum(acc["loss_minus"]) / len(acc["loss_minus"]),
             "fd_mean": sum(acc["fd"]) / len(acc["fd"]),
             "corr_fd_true": None,
             "nMSE_fd_true": None,
+            "fd_true_available": False,
+            "fd_true_mse": None,
+            "fd_true_nmse": None,
+            "fd_true_rmse": None,
+            "fd_true_bias": None,
             "true_grad_diagnostics": "unavailable_not_computed",
-            **{k: quant.get(k) for k in ("saturation_frac_w", "recon_mse_global", "alpha_lt_1_frac")},
+            **{
+                k: quant.get(k)
+                for k in (
+                    "saturation_frac_w",
+                    "recon_mse_global",
+                    "weight_recon_mse",
+                    "weight_recon_rel_mse",
+                    "weight_recon_sqnr_db",
+                    "alpha_lt_1_frac",
+                )
+            },
         }
         rows.append(row)
 
