@@ -1,0 +1,2 @@
+lane_id,gpu_type,precision_mode,h,h_label,run_name,result_root,max_steps,eval_steps,checkpoint_steps,seed,data_seed,batch_size,lr
+0,resume_smoke,fp32,1e-8,1e-8,smoke_resume_fp32_h1e-8_seed16_bs64_ckpt25_to50,/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/smoke_resume/fp32/h_left_tail_checkpointed/results,50,25,25,16,16,64,1e-6

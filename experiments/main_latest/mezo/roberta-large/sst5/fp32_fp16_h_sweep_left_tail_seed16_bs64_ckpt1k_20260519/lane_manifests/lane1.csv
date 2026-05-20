@@ -1,0 +1,4 @@
+lane_id,gpu_type,precision_mode,h,h_label,run_name,result_root,max_steps,eval_steps,checkpoint_steps,seed,data_seed,batch_size,lr
+1,preferred,fp16,1e-08,1e-8,fp16_h1e-8_seed16_bs64_ckpt1k,/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/fp16/h_left_tail_checkpointed/results,20000,1000,1000,16,16,64,1e-06
+1,preferred,fp32,1e-07,1e-7,fp32_h1e-7_seed16_bs64_ckpt1k,/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/fp32/h_left_tail_checkpointed/results,20000,1000,1000,16,16,64,1e-06
+1,preferred,fp16,1e-07,1e-7,fp16_h1e-7_seed16_bs64_ckpt1k,/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/fp16/h_left_tail_checkpointed/results,20000,1000,1000,16,16,64,1e-06

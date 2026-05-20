@@ -1,0 +1,3 @@
+precision_mode,h,probe_nMSE_fd_true,probe_corr_fd_true,best_eval_acc,last_eval_acc,best_eval_loss,last_eval_loss
+fp32,1e-8,,,0.2775175644028103,0.2775175644028103,1.6259791851043701,1.6259791851043701
+fp16,1e-8,,,,,,

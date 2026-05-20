@@ -1,0 +1,3 @@
+precision_mode,h,probe_corr_fd_true,probe_nMSE_fd_true,probe_sign_agreement,probe_alignment,probe_norm_ratio
+fp32,1e-8,,,,0.9885140330042341,1.0100278287038529
+fp16,1e-8,,,,0.9999986366120855,0.9999277864956632

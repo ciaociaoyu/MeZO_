@@ -1,0 +1,61 @@
+{
+  "experiment_id": "latest_main_roberta_sst5_fp32_fp16_left_tail_seed16_bs64_ckpt1k",
+  "parent_experiment": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517",
+  "model": "roberta-large",
+  "task": "SST-5",
+  "method": "mezo",
+  "dataset_mode": "full",
+  "seed": 16,
+  "data_seed": 16,
+  "dataloader_shuffle": true,
+  "batch_size": 64,
+  "gradient_accumulation_steps": 1,
+  "direction_type": "dense",
+  "precisions": [
+    "fp32",
+    "fp16"
+  ],
+  "h_grid": [
+    {
+      "label": "1e-9",
+      "h": 1e-09
+    },
+    {
+      "label": "1e-8",
+      "h": 1e-08
+    },
+    {
+      "label": "1e-7",
+      "h": 1e-07
+    },
+    {
+      "label": "3e-7",
+      "h": 3e-07
+    },
+    {
+      "label": "1e-6",
+      "h": 1e-06
+    },
+    {
+      "label": "3e-6",
+      "h": 3e-06
+    }
+  ],
+  "max_steps": 20000,
+  "eval_steps": 1000,
+  "checkpoint_steps": 1000,
+  "checkpoint_probe_num_directions": 50,
+  "total_runs": 12,
+  "lane_count": 4,
+  "excluded": [
+    "int8",
+    "int4",
+    "sparse",
+    "residual_grid",
+    "lora",
+    "rte",
+    "opt",
+    "mnli",
+    "bf16"
+  ]
+}

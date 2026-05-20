@@ -1,0 +1,15 @@
+submitted_at=2026-05-19T05:03:09-04:00
+experiment_id=latest_main_roberta_sst5_fp32_fp16_left_tail_seed16_bs64_ckpt1k
+exp_root=/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519
+lane0_preferred_job=45449564
+lane0_preferred_pending_after_300s=45449564; cancelling and submitting L4 fallback
+lane0_fallback_l4_job=45449569
+lane1_preferred_job=45449570
+lane1_preferred_pending_after_300s=45449570; cancelling and submitting L4 fallback
+lane1_fallback_l4_job=45449573
+lane2_preferred_job=45449574
+lane2_preferred_pending_after_300s=45449574; cancelling and submitting L4 fallback
+lane2_fallback_l4_job=45449583
+lane3_preferred_job=45449584
+lane3_preferred_pending_after_300s=45449584; cancelling and submitting L4 fallback
+lane3_fallback_l4_job=45450593

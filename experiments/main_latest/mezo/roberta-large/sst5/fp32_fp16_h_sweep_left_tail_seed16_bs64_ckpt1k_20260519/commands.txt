@@ -1,0 +1,5 @@
+# FP32/FP16 left-tail h-sweep commands
+EXP_ROOT='/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519' bash scripts/submit_left_tail_hsweep.sh --dry-run
+EXP_ROOT='/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519' CONFIRM_SUBMIT=1 bash scripts/submit_left_tail_hsweep.sh --smoke-submit
+EXP_ROOT='/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519' CONFIRM_SUBMIT=1 bash scripts/submit_left_tail_hsweep.sh
+python scripts/summarize_left_tail_hsweep.py '/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519'

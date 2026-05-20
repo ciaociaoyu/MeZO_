@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#SBATCH --job-name=lefttail-l0-L4
+#SBATCH --output=/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/jobs/%x_%j.out
+#SBATCH --error=/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/jobs/%x_%j.err
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=96G
+#SBATCH --time=72:00:00
+#SBATCH --partition=gpu_p
+#SBATCH --gres=gpu:L4:1
+set -euo pipefail
+cd "/scratch/jy03364/MeZO_"
+export EXP_ROOT="/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519"
+export EXPERIMENT_ID="latest_main_roberta_sst5_fp32_fp16_left_tail_seed16_bs64_ckpt1k"
+export CONDA_ENV="ciao"
+export DATA_ROOT="data/k-shot-1k-test"
+export PROBE_DIRECTIONS="50"
+export LANE_ID="0"
+export SUMMARIZER="scripts/summarize_left_tail_hsweep.py"
+bash scripts/run_latest_main_lane.sh

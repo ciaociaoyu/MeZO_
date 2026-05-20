@@ -1,0 +1,2 @@
+precision_mode,h,best_eval_loss,last_eval_loss
+fp32,1e-8,1.6235543489456177,1.6235543489456177
