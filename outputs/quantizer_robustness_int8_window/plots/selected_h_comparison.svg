@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="460" viewBox="0 0 900 460">
+<rect width="100%" height="100%" fill="white"/>
+<text x="450.0" y="28" text-anchor="middle" font-size="18" font-family="sans-serif">Selected h comparison</text>
+<line x1="70" y1="348" x2="876" y2="348" stroke="#222"/>
+<line x1="70" y1="48" x2="70" y2="348" stroke="#222"/>
+<rect x="105.3" y="199.2" width="131.0" height="148.8" fill="#1f77b4"/>
+<text x="170.8" y="366" transform="rotate(25 170.8 366)" text-anchor="start" font-size="10" font-family="sans-serif">roberta_large_sst5 rtnclip</text>
+<text x="170.8" y="194.2" text-anchor="middle" font-size="10" font-family="sans-serif">0.005</text>
+<rect x="306.8" y="199.2" width="131.0" height="148.8" fill="#1f77b4"/>
+<text x="372.2" y="366" transform="rotate(25 372.2 366)" text-anchor="start" font-size="10" font-family="sans-serif">roberta_large_sst5 awq</text>
+<text x="372.2" y="194.2" text-anchor="middle" font-size="10" font-family="sans-serif">0.005</text>
+<rect x="508.3" y="199.2" width="131.0" height="148.8" fill="#1f77b4"/>
+<text x="573.8" y="366" transform="rotate(25 573.8 366)" text-anchor="start" font-size="10" font-family="sans-serif">opt_1p3b_sst5 rtnclip</text>
+<text x="573.8" y="194.2" text-anchor="middle" font-size="10" font-family="sans-serif">0.005</text>
+<rect x="709.8" y="199.2" width="131.0" height="148.8" fill="#1f77b4"/>
+<text x="775.2" y="366" transform="rotate(25 775.2 366)" text-anchor="start" font-size="10" font-family="sans-serif">opt_1p3b_sst5 awq</text>
+<text x="775.2" y="194.2" text-anchor="middle" font-size="10" font-family="sans-serif">0.005</text>
+</svg>

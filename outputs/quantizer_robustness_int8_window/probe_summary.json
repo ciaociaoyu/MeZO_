@@ -1,0 +1,68 @@
+{
+  "runs": [
+    {
+      "dataset": "SST-5",
+      "failure_mode": "window_exists",
+      "h_loc_max": 0.005,
+      "h_vis_min": 1e-05,
+      "large_h_locality_failure": true,
+      "model": "opt-1.3b",
+      "quantizer": "awq",
+      "quantizer_backend": "awq_style_g128_fake_quant",
+      "run_dir": "outputs/quantizer_robustness_int8_window/probe/opt_1p3b_sst5/awq",
+      "selected_h": 0.005,
+      "selected_h_label": "5e-3",
+      "setting": "opt_1p3b_sst5",
+      "small_h_visibility_failure": false,
+      "valid_window": true
+    },
+    {
+      "dataset": "SST-5",
+      "failure_mode": "window_exists",
+      "h_loc_max": 0.01,
+      "h_vis_min": 1e-05,
+      "large_h_locality_failure": false,
+      "model": "opt-1.3b",
+      "quantizer": "rtnclip",
+      "quantizer_backend": "G128_RTNClip_shared_grid_fake_quant",
+      "run_dir": "outputs/quantizer_robustness_int8_window/probe/opt_1p3b_sst5/rtnclip",
+      "selected_h": 0.005,
+      "selected_h_label": "5e-3",
+      "setting": "opt_1p3b_sst5",
+      "small_h_visibility_failure": false,
+      "valid_window": true
+    },
+    {
+      "dataset": "SST-5",
+      "failure_mode": "window_exists",
+      "h_loc_max": 0.005,
+      "h_vis_min": 1e-05,
+      "large_h_locality_failure": true,
+      "model": "roberta-large",
+      "quantizer": "awq",
+      "quantizer_backend": "awq_style_g128_fake_quant",
+      "run_dir": "outputs/quantizer_robustness_int8_window/probe/roberta_large_sst5/awq",
+      "selected_h": 0.005,
+      "selected_h_label": "5e-3",
+      "setting": "roberta_large_sst5",
+      "small_h_visibility_failure": false,
+      "valid_window": true
+    },
+    {
+      "dataset": "SST-5",
+      "failure_mode": "window_exists",
+      "h_loc_max": 0.005,
+      "h_vis_min": 1e-05,
+      "large_h_locality_failure": true,
+      "model": "roberta-large",
+      "quantizer": "rtnclip",
+      "quantizer_backend": "G128_RTNClip_shared_grid_fake_quant",
+      "run_dir": "outputs/quantizer_robustness_int8_window/probe/roberta_large_sst5/rtnclip",
+      "selected_h": 0.005,
+      "selected_h_label": "5e-3",
+      "setting": "roberta_large_sst5",
+      "small_h_visibility_failure": false,
+      "valid_window": true
+    }
+  ]
+}

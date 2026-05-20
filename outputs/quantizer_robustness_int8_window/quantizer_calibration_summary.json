@@ -1,0 +1,92 @@
+{
+  "rows": [
+    {
+      "activation_rms_modules": 0,
+      "alpha_grid": [
+        1.0,
+        0.95,
+        0.9,
+        0.85,
+        0.8,
+        0.75,
+        0.7
+      ],
+      "calibration_examples": 0,
+      "dataset": "SST-5",
+      "model": "roberta-large",
+      "objective": "unweighted_weight_mse_clip_search",
+      "quantized_modules": 148,
+      "quantizer": "rtnclip",
+      "quantizer_backend": "G128_RTNClip_shared_grid_fake_quant",
+      "setting": "roberta_large_sst5"
+    },
+    {
+      "activation_rms_modules": 147,
+      "alpha_grid": [
+        1.0,
+        0.95,
+        0.9,
+        0.85,
+        0.8,
+        0.75,
+        0.7,
+        0.65,
+        0.6,
+        0.55,
+        0.5
+      ],
+      "calibration_examples": 128,
+      "dataset": "SST-5",
+      "model": "roberta-large",
+      "objective": "activation_weighted_weight_mse",
+      "quantized_modules": 148,
+      "quantizer": "awq",
+      "quantizer_backend": "awq_style_g128_fake_quant",
+      "setting": "roberta_large_sst5"
+    },
+    {
+      "activation_rms_modules": 0,
+      "alpha_grid": [
+        1.0,
+        0.95,
+        0.9,
+        0.85,
+        0.8,
+        0.75,
+        0.7
+      ],
+      "calibration_examples": 0,
+      "dataset": "SST-5",
+      "model": "opt-1.3b",
+      "objective": "unweighted_weight_mse_clip_search",
+      "quantized_modules": 144,
+      "quantizer": "rtnclip",
+      "quantizer_backend": "G128_RTNClip_shared_grid_fake_quant",
+      "setting": "opt_1p3b_sst5"
+    },
+    {
+      "activation_rms_modules": 144,
+      "alpha_grid": [
+        1.0,
+        0.95,
+        0.9,
+        0.85,
+        0.8,
+        0.75,
+        0.7,
+        0.65,
+        0.6,
+        0.55,
+        0.5
+      ],
+      "calibration_examples": 128,
+      "dataset": "SST-5",
+      "model": "opt-1.3b",
+      "objective": "activation_weighted_weight_mse",
+      "quantized_modules": 144,
+      "quantizer": "awq",
+      "quantizer_backend": "awq_style_g128_fake_quant",
+      "setting": "opt_1p3b_sst5"
+    }
+  ]
+}
