@@ -991,25 +991,23 @@ class Trainer(LinearHeadTrainer):
             "h_schedule",
             "canonical_schedule",
             "raw_h",
-            "clipped_h",
             "final_h",
             "precision_mode",
             "fd_principled",
             "fd_exception_reason",
             "cap_reason",
-            "h0",
-            "gamma",
+            "out_of_window_raw",
+            "out_of_window_reason",
+            "baseline_role",
             "window_min",
             "window_max",
-            "window_clipped",
             "grid_policy",
-            "grid",
             "grid_used",
             "zero_order_eps",
         ]
         write_header = not os.path.exists(path) or os.path.getsize(path) == 0
         with open(path, "a", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer = csv.DictWriter(f, fieldnames=fieldnames, lineterminator="\n")
             if write_header:
                 writer.writeheader()
             writer.writerow({
@@ -1017,19 +1015,17 @@ class Trainer(LinearHeadTrainer):
                 "h_schedule": schedule,
                 "canonical_schedule": canonical,
                 "raw_h": float(meta.get("raw_h", float("nan"))),
-                "clipped_h": float(meta.get("clipped_h", meta.get("raw_h", float("nan")))),
                 "final_h": float(meta.get("final_h", float("nan"))),
                 "precision_mode": str(meta.get("precision_mode", getattr(self.args, "precision_mode", "")) or ""),
                 "fd_principled": bool(meta.get("fd_principled", True)),
                 "fd_exception_reason": str(meta.get("fd_exception_reason", "") or ""),
                 "cap_reason": str(meta.get("cap_reason", "") or ""),
-                "h0": float(meta.get("h0", 0.0) or 0.0),
-                "gamma": float(meta.get("gamma", getattr(self.args, "h_schedule_gamma", 0.101)) or 0.0),
+                "out_of_window_raw": bool(meta.get("out_of_window_raw", False)),
+                "out_of_window_reason": str(meta.get("out_of_window_reason", "") or ""),
+                "baseline_role": str(meta.get("baseline_role", "") or ""),
                 "window_min": float(meta.get("window_min", 0.0) or 0.0),
                 "window_max": float(meta.get("window_max", 0.0) or 0.0),
-                "window_clipped": bool(meta.get("window_clipped", False)),
                 "grid_policy": str(meta.get("grid_policy", getattr(self.args, "h_schedule_grid_policy", "continuous")) or "continuous"),
-                "grid": str(getattr(self.args, "h_schedule_grid", "") or ""),
                 "grid_used": bool(meta.get("grid_used", False)),
                 "zero_order_eps": float(getattr(self.args, "zero_order_eps", 0.0) or 0.0),
             })

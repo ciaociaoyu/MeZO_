@@ -40,8 +40,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--h_schedule_lipschitz_l", type=float, default=0.0)
     parser.add_argument("--h_schedule_c_delta", type=float, default=1.0)
     parser.add_argument("--h_schedule_fd_clip_min", type=float, default=1e-5)
-    parser.add_argument("--h_schedule_fd_clip_max", type=float, default=1e-2)
-    parser.add_argument("--h_schedule_fd_int8_policy", choices=["capped_stress", "skip"], default="capped_stress")
+    parser.add_argument("--h_schedule_fd_clip_policy", choices=["none", "lower_floor_only", "cap", "skip"], default="none")
+    parser.add_argument("--h_schedule_fd_floor_min", type=float, default=1e-5)
+    parser.add_argument("--h_schedule_fd_clip_max", type=float, default=0.0)
+    parser.add_argument("--h_schedule_fd_int8_policy", choices=["fp16_proxy_raw", "capped_stress", "skip"], default="fp16_proxy_raw")
+    parser.add_argument("--h_schedule_allow_out_of_window", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--h_schedule_log_csv", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument(
         "--include_steps",
@@ -74,17 +77,16 @@ def main() -> int:
             "h_schedule": meta["schedule"],
             "canonical_schedule": meta["canonical_schedule"],
             "raw_h": meta["raw_h"],
-            "clipped_h": meta["clipped_h"],
             "final_h": h_value,
             "precision_mode": meta["precision_mode"],
             "fd_principled": meta["fd_principled"],
             "fd_exception_reason": meta["fd_exception_reason"],
             "cap_reason": meta["cap_reason"],
-            "h0": meta["h0"],
-            "gamma": meta["gamma"],
+            "out_of_window_raw": meta["out_of_window_raw"],
+            "out_of_window_reason": meta["out_of_window_reason"],
+            "baseline_role": meta["baseline_role"],
             "window_min": meta["window_min"],
             "window_max": meta["window_max"],
-            "window_clipped": meta["window_clipped"],
             "grid_policy": meta["grid_policy"],
             "grid_used": meta["grid_used"],
             "grid": ns.h_schedule_grid,

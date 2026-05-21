@@ -1,4 +1,3 @@
-import math
 import sys
 import unittest
 from pathlib import Path
@@ -33,8 +32,11 @@ def _args(**overrides):
         h_schedule_lipschitz_l=0.0,
         h_schedule_c_delta=1.0,
         h_schedule_fd_clip_min=1e-5,
-        h_schedule_fd_clip_max=1e-2,
-        h_schedule_fd_int8_policy="capped_stress",
+        h_schedule_fd_clip_policy="none",
+        h_schedule_fd_floor_min=1e-5,
+        h_schedule_fd_clip_max=0.0,
+        h_schedule_fd_int8_policy="fp16_proxy_raw",
+        h_schedule_allow_out_of_window=True,
     )
     base.update(overrides)
     return SimpleNamespace(**base)
@@ -42,60 +44,80 @@ def _args(**overrides):
 
 class HScheduleTest(unittest.TestCase):
     def test_mezo_default_returns_zero_order_eps(self):
-        h, meta = resolve_h_schedule(_args(h_schedule="mezo_default", zero_order_eps=3e-4), step=7)
-        self.assertAlmostEqual(h, 3e-4)
-        self.assertAlmostEqual(meta["raw_h"], 3e-4)
+        h, meta = resolve_h_schedule(_args(h_schedule="mezo_default", zero_order_eps=1e-3), step=7)
+        self.assertAlmostEqual(h, 1e-3)
+        self.assertAlmostEqual(meta["raw_h"], 1e-3)
         self.assertEqual(meta["canonical_schedule"], "mezo_default")
 
-    def test_fd_eps13_fp32_returns_machine_epsilon_third(self):
+    def test_fixed_small_returns_onee_minus_five(self):
+        args = _args(h_schedule="fixed_small")
+        h0, meta0 = resolve_h_schedule(args, step=0)
+        h7, meta7 = resolve_h_schedule(args, step=7)
+        self.assertEqual(h0, 1e-5)
+        self.assertEqual(h7, 1e-5)
+        self.assertEqual(meta0["canonical_schedule"], "fixed_small_1e-5")
+        self.assertEqual(meta7["baseline_role"], "fixed_small_h_1e-5")
+
+    def test_fixed_small_rejects_wrong_h0(self):
+        args = _args(h_schedule="fixed_small", h_schedule_h0=3e-5)
+        with self.assertRaisesRegex(ValueError, "fixed_small"):
+            resolve_h_schedule(args, step=0)
+
+    def test_fd_eps13_raw_fp32_returns_machine_epsilon_third(self):
         expected = float(np.finfo(np.float32).eps ** (1.0 / 3.0))
-        h, meta = resolve_h_schedule(_args(h_schedule="fd_eps13", precision_mode="fp32"), step=0)
+        h, meta = resolve_h_schedule(_args(h_schedule="fd_eps13_raw", precision_mode="fp32"), step=0)
+        self.assertAlmostEqual(expected, 0.004921565763652325)
         self.assertAlmostEqual(meta["raw_h"], expected)
         self.assertAlmostEqual(h, expected)
         self.assertTrue(meta["fd_principled"])
+        self.assertFalse(meta["out_of_window_raw"])
 
-    def test_fd_eps13_fp16_raw_and_capped_final(self):
-        expected_raw = float(np.finfo(np.float16).eps ** (1.0 / 3.0))
-        h, meta = resolve_h_schedule(_args(h_schedule="fd_eps13", precision_mode="fp16"), step=0)
-        self.assertAlmostEqual(meta["raw_h"], expected_raw)
-        self.assertAlmostEqual(h, 1e-2)
+    def test_fd_eps13_raw_fp16_is_not_capped(self):
+        expected = float(np.finfo(np.float16).eps ** (1.0 / 3.0))
+        h, meta = resolve_h_schedule(_args(h_schedule="fd_eps13_raw", precision_mode="fp16"), step=0)
+        self.assertAlmostEqual(expected, 0.0992431640625)
+        self.assertAlmostEqual(meta["raw_h"], expected)
+        self.assertAlmostEqual(h, expected)
         self.assertTrue(meta["fd_principled"])
-        self.assertIn("fp16", meta["cap_reason"])
-        self.assertTrue(meta["window_clipped"])
+        self.assertTrue(meta["out_of_window_raw"])
+        self.assertEqual(meta["cap_reason"], "")
 
-    def test_fd_eps13_int8_capped_stress(self):
-        h, meta = resolve_h_schedule(_args(h_schedule="fd_eps13", precision_mode="int8"), step=0)
-        self.assertAlmostEqual(h, 1e-2)
+    def test_fd_eps13_raw_int8_uses_fp16_proxy_raw(self):
+        expected = float(np.finfo(np.float16).eps ** (1.0 / 3.0))
+        h, meta = resolve_h_schedule(_args(h_schedule="fd_eps13_raw", precision_mode="int8"), step=0)
+        self.assertAlmostEqual(h, expected)
+        self.assertAlmostEqual(meta["raw_h"], expected)
         self.assertFalse(meta["fd_principled"])
         self.assertIn("no machine-epsilon analogue", meta["fd_exception_reason"])
+        self.assertTrue(meta["out_of_window_raw"])
 
-    def test_fd_eps13_int8_skip_raises(self):
-        args = _args(h_schedule="fd_eps13", precision_mode="int8", h_schedule_fd_int8_policy="skip")
+    def test_fd_eps13_raw_int8_skip_raises(self):
+        args = _args(h_schedule="fd_eps13_raw", precision_mode="int8", h_schedule_fd_int8_policy="skip")
         with self.assertRaisesRegex(ValueError, "machine-epsilon analogue"):
             resolve_h_schedule(args, step=0)
 
-    def test_fd_eps13_respects_lower_safety_floor(self):
-        raw = float(np.finfo(np.float32).eps ** (1.0 / 3.0))
+    def test_fd_eps13_raw_capped_stress_int8_is_marked_unprincipled(self):
         args = _args(
-            h_schedule="fd_eps13",
-            precision_mode="fp32",
-            h_schedule_fd_clip_min=1e-2,
-            h_schedule_fd_clip_max=1e-1,
+            h_schedule="fd_eps13_raw",
+            precision_mode="int8",
+            h_schedule_fd_int8_policy="capped_stress",
+            h_schedule_fd_clip_max=1e-2,
         )
         h, meta = resolve_h_schedule(args, step=0)
-        self.assertLess(raw, 1e-2)
         self.assertAlmostEqual(h, 1e-2)
-        self.assertTrue(meta["window_clipped"])
-        self.assertIn("safety min", meta["cap_reason"])
+        self.assertFalse(meta["fd_principled"])
+        self.assertIn("capped stress", meta["fd_exception_reason"])
 
-    def test_spall_ck_decreases_continuously(self):
-        args = _args(h_schedule="spall_ck", h_schedule_h0=1e-3, h_schedule_gamma=0.101)
-        h0, meta0 = resolve_h_schedule(args, step=0)
-        h9, meta9 = resolve_h_schedule(args, step=9)
-        self.assertAlmostEqual(h0, 1e-3)
-        self.assertLess(h9, h0)
-        self.assertFalse(meta0["grid_used"])
-        self.assertFalse(meta9["grid_used"])
+    def test_fd_eps13_lower_floor_policy_can_floor_future_small_values(self):
+        args = _args(
+            h_schedule="fd_eps13_raw",
+            precision_mode="fp32",
+            h_schedule_fd_clip_policy="lower_floor_only",
+            h_schedule_fd_floor_min=1e-2,
+        )
+        h, meta = resolve_h_schedule(args, step=0)
+        self.assertAlmostEqual(h, 1e-2)
+        self.assertEqual(meta["cap_reason"], "raw h below safety min")
 
     def test_continuous_grid_policy_does_not_snap(self):
         args = _args(
@@ -121,18 +143,6 @@ class HScheduleTest(unittest.TestCase):
         h, meta = resolve_h_schedule(args, step=0)
         self.assertAlmostEqual(h, 3e-3)
         self.assertTrue(meta["grid_used"])
-
-    def test_window_clipping_metadata(self):
-        args = _args(
-            h_schedule="spall_ck",
-            h_schedule_h0=1e-1,
-            h_schedule_window_min=1e-5,
-            h_schedule_window_max=1e-2,
-        )
-        h, meta = resolve_h_schedule(args, step=0)
-        self.assertAlmostEqual(h, 1e-2)
-        self.assertTrue(meta["window_clipped"])
-        self.assertIn("safety max", meta["cap_reason"])
 
     def test_legacy_ji_theory_clip_raises_if_lipschitz_l_is_nonpositive(self):
         args = _args(h_schedule="ji_theory_clip", h_schedule_lipschitz_l=0.0)

@@ -13,6 +13,8 @@ import numpy as np
 H_SCHEDULE_CHOICES = {
     "fixed",
     "mezo_default",
+    "fixed_small",
+    "fd_eps13_raw",
     "fd_eps13",
     "spall_ck",
     # Legacy schedule-only baselines kept for old scripts.
@@ -24,7 +26,8 @@ H_SCHEDULE_CHOICES = {
 }
 
 H_GRID_POLICIES = {"continuous", "nearest", "floor", "ceil"}
-H_FD_INT8_POLICIES = {"capped_stress", "skip"}
+H_FD_CLIP_POLICIES = {"none", "lower_floor_only", "cap", "skip"}
+H_FD_INT8_POLICIES = {"fp16_proxy_raw", "capped_stress", "skip"}
 
 
 def parse_h_grid(grid_str: str) -> list[float]:
@@ -108,6 +111,16 @@ def _str_attr(args: Any, name: str, default: str) -> str:
         return str(default)
 
 
+def _bool_attr(args: Any, name: str, default: bool) -> bool:
+    try:
+        value = getattr(args, name, default)
+    except Exception:
+        return bool(default)
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+    return bool(value)
+
+
 def _base_h(args: Any, *, legacy_window_fallback: bool = True) -> float:
     h0 = _float_attr(args, "h_schedule_h0", 0.0)
     if h0 > 0.0:
@@ -136,35 +149,82 @@ def _infer_precision_mode(args: Any) -> str:
     return "fp32"
 
 
-def _fd_eps13_raw(args: Any) -> tuple[float, bool, str, str]:
+def _fd_eps13_value(args: Any) -> tuple[float, bool, str]:
     precision = _infer_precision_mode(args)
     if precision == "fp32":
-        return float(np.finfo(np.float32).eps ** (1.0 / 3.0)), True, "", ""
+        return float(np.finfo(np.float32).eps ** (1.0 / 3.0)), True, ""
     if precision in {"fp16", "float16"}:
         return (
             float(np.finfo(np.float16).eps ** (1.0 / 3.0)),
             True,
             "",
-            "",
         )
     if precision == "int8":
-        policy = _str_attr(args, "h_schedule_fd_int8_policy", "capped_stress").strip().lower()
+        policy = _str_attr(args, "h_schedule_fd_int8_policy", "fp16_proxy_raw").strip().lower()
         if policy not in H_FD_INT8_POLICIES:
             raise ValueError(f"--h_schedule_fd_int8_policy must be one of {sorted(H_FD_INT8_POLICIES)}")
         if policy == "skip":
             raise ValueError(
-                "--h_schedule fd_eps13 with precision_mode=int8 is undefined because INT8 has no "
-                "machine-epsilon analogue; use --h_schedule_fd_int8_policy capped_stress to run the "
-                "capped stress baseline."
+                "--h_schedule fd_eps13_raw with precision_mode=int8 is undefined because INT8 has no "
+                "machine-epsilon analogue; use --h_schedule_fd_int8_policy fp16_proxy_raw or "
+                "capped_stress to run a clearly labeled stress baseline."
             )
-        h_max = _float_attr(args, "h_schedule_fd_clip_max", 1e-2)
+        if policy == "fp16_proxy_raw":
+            return (
+                float(np.finfo(np.float16).eps ** (1.0 / 3.0)),
+                False,
+                "INT8 has no machine-epsilon analogue; using FP16 eps^(1/3) proxy as stress baseline",
+            )
+        h_max = _float_attr(args, "h_schedule_fd_clip_max", 0.0)
+        if h_max <= 0.0:
+            h_max = 1e-2
         return (
             float(h_max),
             False,
             "INT8 has no machine-epsilon analogue; using capped stress baseline",
-            "",
         )
-    return float(np.finfo(np.float32).eps ** (1.0 / 3.0)), True, "", ""
+    return float(np.finfo(np.float32).eps ** (1.0 / 3.0)), True, ""
+
+
+def _fd_clip_policy(args: Any, *, default: str = "none") -> str:
+    policy = _str_attr(args, "h_schedule_fd_clip_policy", default).strip().lower()
+    if policy not in H_FD_CLIP_POLICIES:
+        raise ValueError(f"--h_schedule_fd_clip_policy must be one of {sorted(H_FD_CLIP_POLICIES)}")
+    return policy
+
+
+def _out_of_window(raw_h: float, window_min: float, window_max: float) -> tuple[bool, str]:
+    if window_min > 0.0 and raw_h < window_min:
+        return True, "raw h below metadata safety window"
+    if window_max > 0.0 and raw_h > window_max:
+        return True, "raw h above metadata safety window"
+    return False, ""
+
+
+def _apply_fd_clip_policy(raw_h: float, args: Any, *, default_policy: str = "none") -> tuple[float, str, bool]:
+    policy = _fd_clip_policy(args, default=default_policy)
+    floor_min = _float_attr(args, "h_schedule_fd_floor_min", _float_attr(args, "h_schedule_fd_clip_min", 1e-5))
+    clip_max = _float_attr(args, "h_schedule_fd_clip_max", 0.0)
+    if floor_min < 0.0:
+        raise ValueError("--h_schedule_fd_floor_min must be >= 0")
+    if clip_max < 0.0:
+        raise ValueError("--h_schedule_fd_clip_max must be >= 0")
+    clipped = float(raw_h)
+    cap_reason = ""
+    if policy == "none":
+        return clipped, cap_reason, False
+    if policy == "skip":
+        outside, reason = _out_of_window(raw_h, floor_min, clip_max)
+        if outside:
+            raise ValueError(f"h_schedule fd_eps13_raw raw_h={raw_h} outside FD safety policy: {reason}")
+        return clipped, cap_reason, False
+    if policy in {"lower_floor_only", "cap"} and floor_min > 0.0 and clipped < floor_min:
+        clipped = float(floor_min)
+        cap_reason = "raw h below safety min"
+    if policy == "cap" and clip_max > 0.0 and clipped > clip_max:
+        clipped = float(clip_max)
+        cap_reason = "raw h exceeds safety max"
+    return clipped, cap_reason, not math.isclose(float(clipped), float(raw_h), rel_tol=0.0, abs_tol=0.0)
 
 
 def resolve_h_schedule(args: Any, step: int) -> tuple[float, dict]:
@@ -186,31 +246,69 @@ def resolve_h_schedule(args: Any, step: int) -> tuple[float, dict]:
     fd_principled = True
     fd_exception_reason = ""
     cap_reason = ""
+    baseline_role = "schedule_only"
+    out_of_window_raw = False
+    out_of_window_reason = ""
     h0 = 0.0
     gamma = _float_attr(args, "h_schedule_gamma", 0.101)
 
     canonical_schedule = schedule
     if schedule in {"fixed", "mezo_default"}:
         canonical_schedule = "mezo_default"
+        baseline_role = "mezo_default_h_1e-3"
         raw_h = zero_order_eps
         clip_min = 0.0
         clip_max = 0.0
+        clipped_h = float(raw_h)
+        window_clipped = False
+    elif schedule == "fixed_small":
+        canonical_schedule = "fixed_small_1e-5"
+        baseline_role = "fixed_small_h_1e-5"
+        requested_h0 = _float_attr(args, "h_schedule_h0", 0.0)
+        if requested_h0 > 0.0 and not math.isclose(requested_h0, 1e-5, rel_tol=0.0, abs_tol=1e-12):
+            raise ValueError("--h_schedule fixed_small requires --h_schedule_h0 to be unset or exactly 1e-5")
+        raw_h = 1e-5
+        h0 = 1e-5
+        clip_min = _float_attr(args, "h_schedule_window_min", 1e-5)
+        clip_max = _float_attr(args, "h_schedule_window_max", 1e-2)
+        out_of_window_raw, out_of_window_reason = _out_of_window(raw_h, clip_min, clip_max)
+        clipped_h = float(raw_h)
+        window_clipped = False
+    elif schedule == "fd_eps13_raw":
+        canonical_schedule = "fd_eps13_raw"
+        baseline_role = "classical_fd_eps13_raw"
+        raw_h, fd_principled, fd_exception_reason = _fd_eps13_value(args)
+        clip_min = _float_attr(args, "h_schedule_window_min", 1e-5)
+        clip_max = _float_attr(args, "h_schedule_window_max", 1e-2)
+        out_of_window_raw, out_of_window_reason = _out_of_window(raw_h, clip_min, clip_max)
+        fd_policy = _fd_clip_policy(args, default="none")
+        if out_of_window_raw and fd_policy == "none" and not _bool_attr(args, "h_schedule_allow_out_of_window", True):
+            raise ValueError(f"h_schedule fd_eps13_raw raw_h={raw_h} outside metadata window: {out_of_window_reason}")
+        clipped_h, cap_reason, window_clipped = _apply_fd_clip_policy(raw_h, args, default_policy="none")
     elif schedule == "fd_eps13":
         canonical_schedule = "fd_eps13"
-        raw_h, fd_principled, fd_exception_reason, cap_reason = _fd_eps13_raw(args)
+        baseline_role = "legacy_fd_eps13_capped"
+        raw_h, fd_principled, fd_exception_reason = _fd_eps13_value(args)
         clip_min = _float_attr(args, "h_schedule_fd_clip_min", 1e-5)
         clip_max = _float_attr(args, "h_schedule_fd_clip_max", 1e-2)
+        out_of_window_raw, out_of_window_reason = _out_of_window(raw_h, clip_min, clip_max)
+        clipped_h = clip_to_window(raw_h, clip_min, clip_max)
+        window_clipped = not math.isclose(float(clipped_h), float(raw_h), rel_tol=0.0, abs_tol=0.0)
     elif schedule == "spall_ck":
         canonical_schedule = "spall_ck"
         h0 = _base_h(args, legacy_window_fallback=False)
         raw_h = h0 / (denom ** gamma)
         clip_min = _float_attr(args, "h_schedule_window_min", 1e-5)
         clip_max = _float_attr(args, "h_schedule_window_max", 1e-2)
+        clipped_h = clip_to_window(raw_h, clip_min, clip_max)
+        window_clipped = not math.isclose(float(clipped_h), float(raw_h), rel_tol=0.0, abs_tol=0.0)
     elif schedule == "spall_clip":
         raw_h = _base_h(args) / (denom ** gamma)
         h0 = _base_h(args)
         clip_min = _float_attr(args, "h_schedule_window_min", 0.0)
         clip_max = _float_attr(args, "h_schedule_window_max", 0.0)
+        clipped_h = clip_to_window(raw_h, clip_min, clip_max)
+        window_clipped = not math.isclose(float(clipped_h), float(raw_h), rel_tol=0.0, abs_tol=0.0)
     elif schedule == "shamir_clip":
         total_steps = _int_attr(args, "h_schedule_total_steps", 0)
         if total_steps <= 0:
@@ -224,11 +322,15 @@ def resolve_h_schedule(args: Any, step: int) -> tuple[float, dict]:
         )
         clip_min = _float_attr(args, "h_schedule_window_min", 0.0)
         clip_max = _float_attr(args, "h_schedule_window_max", 0.0)
+        clipped_h = clip_to_window(raw_h, clip_min, clip_max)
+        window_clipped = not math.isclose(float(clipped_h), float(raw_h), rel_tol=0.0, abs_tol=0.0)
     elif schedule == "ji_sqrtk_clip":
         h0 = _base_h(args)
         raw_h = h0 / math.sqrt(denom)
         clip_min = _float_attr(args, "h_schedule_window_min", 0.0)
         clip_max = _float_attr(args, "h_schedule_window_max", 0.0)
+        clipped_h = clip_to_window(raw_h, clip_min, clip_max)
+        window_clipped = not math.isclose(float(clipped_h), float(raw_h), rel_tol=0.0, abs_tol=0.0)
     elif schedule == "ji_theory_clip":
         lipschitz_l = _float_attr(args, "h_schedule_lipschitz_l", 0.0)
         if lipschitz_l <= 0.0:
@@ -239,19 +341,23 @@ def resolve_h_schedule(args: Any, step: int) -> tuple[float, dict]:
         raw_h = 1.0 / (lipschitz_l * math.sqrt(d_eff * denom))
         clip_min = _float_attr(args, "h_schedule_window_min", 0.0)
         clip_max = _float_attr(args, "h_schedule_window_max", 0.0)
+        clipped_h = clip_to_window(raw_h, clip_min, clip_max)
+        window_clipped = not math.isclose(float(clipped_h), float(raw_h), rel_tol=0.0, abs_tol=0.0)
     elif schedule == "pf_vrzo_clip":
         h0 = _base_h(args)
         raw_h = h0 / denom
         clip_min = _float_attr(args, "h_schedule_window_min", 0.0)
         clip_max = _float_attr(args, "h_schedule_window_max", 0.0)
+        clipped_h = clip_to_window(raw_h, clip_min, clip_max)
+        window_clipped = not math.isclose(float(clipped_h), float(raw_h), rel_tol=0.0, abs_tol=0.0)
     else:
         raise AssertionError(f"Unhandled h schedule {schedule!r}")
 
     if (not math.isfinite(raw_h)) or raw_h <= 0.0:
         raise ValueError(f"h_schedule={schedule} produced invalid raw_h={raw_h}")
 
-    clipped_h = clip_to_window(raw_h, clip_min, clip_max)
-    window_clipped = not math.isclose(float(clipped_h), float(raw_h), rel_tol=0.0, abs_tol=0.0)
+    if not out_of_window_raw:
+        out_of_window_raw, out_of_window_reason = _out_of_window(raw_h, clip_min, clip_max)
     if window_clipped and not cap_reason:
         if schedule == "fd_eps13" and precision_mode in {"fp16", "float16"} and clip_max > 0.0 and raw_h > clip_max:
             cap_reason = "fp16 eps^(1/3) exceeds safety max"
@@ -281,6 +387,9 @@ def resolve_h_schedule(args: Any, step: int) -> tuple[float, dict]:
         "fd_principled": bool(fd_principled),
         "fd_exception_reason": fd_exception_reason,
         "cap_reason": cap_reason,
+        "out_of_window_raw": bool(out_of_window_raw),
+        "out_of_window_reason": out_of_window_reason,
+        "baseline_role": baseline_role,
         "h0": float(h0),
         "gamma": float(gamma),
         "window_min": float(clip_min),

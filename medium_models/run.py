@@ -45,7 +45,7 @@ from src.sparse_mezo import (
     sparse_mezo_enabled,
     validate_sparse_ratio,
 )
-from src.h_schedules import H_FD_INT8_POLICIES, H_GRID_POLICIES, H_SCHEDULE_CHOICES, parse_h_grid
+from src.h_schedules import H_FD_CLIP_POLICIES, H_FD_INT8_POLICIES, H_GRID_POLICIES, H_SCHEDULE_CHOICES, parse_h_grid
 from src.trainer import Trainer
 from src.processors import processors_mapping, num_labels_mapping, output_modes_mapping, compute_metrics_mapping, bound_mapping
 
@@ -707,6 +707,8 @@ class DynamicTrainingArguments(TrainingArguments):
             "choices": [
                 "fixed",
                 "mezo_default",
+                "fixed_small",
+                "fd_eps13_raw",
                 "fd_eps13",
                 "spall_ck",
                 "spall_clip",
@@ -735,7 +737,7 @@ class DynamicTrainingArguments(TrainingArguments):
     )
     h_schedule_h0: float = field(
         default=0.0,
-        metadata={"help": "Optional initial/effective radius for schedule-only h. <=0 falls back to zero_order_eps for spall_ck."},
+        metadata={"help": "Optional initial/effective radius for schedule-only h. For fixed_small it must be unset or 1e-5."},
     )
     h_schedule_gamma: float = field(
         default=0.101,
@@ -763,15 +765,27 @@ class DynamicTrainingArguments(TrainingArguments):
     )
     h_schedule_fd_clip_min: float = field(
         default=1e-5,
-        metadata={"help": "Lower safety clipping bound for h_schedule=fd_eps13."},
+        metadata={"help": "Legacy lower safety clipping bound for h_schedule=fd_eps13."},
+    )
+    h_schedule_fd_clip_policy: str = field(
+        default="none",
+        metadata={"help": "FD eps^(1/3) safety policy. Choices: none, lower_floor_only, cap, skip."},
+    )
+    h_schedule_fd_floor_min: float = field(
+        default=1e-5,
+        metadata={"help": "Lower safety floor for FD eps^(1/3) when h_schedule_fd_clip_policy requests flooring."},
     )
     h_schedule_fd_clip_max: float = field(
-        default=1e-2,
-        metadata={"help": "Upper safety clipping bound for h_schedule=fd_eps13."},
+        default=0.0,
+        metadata={"help": "Upper safety cap for FD eps^(1/3). 0 means no upper cap."},
     )
     h_schedule_fd_int8_policy: str = field(
-        default="capped_stress",
-        metadata={"help": "INT8 handling for h_schedule=fd_eps13. Choices: capped_stress, skip."},
+        default="fp16_proxy_raw",
+        metadata={"help": "INT8 handling for h_schedule=fd_eps13_raw. Choices: fp16_proxy_raw, capped_stress, skip."},
+    )
+    h_schedule_allow_out_of_window: bool = field(
+        default=True,
+        metadata={"help": "Allow raw FD h values outside the metadata safety window for documented stress baselines."},
     )
     h_schedule_log_csv: bool = field(
         default=True,
@@ -1545,15 +1559,25 @@ def main():
     if training_args.h_schedule_c_delta <= 0.0:
         raise ValueError("--h_schedule_c_delta must be > 0")
     training_args.h_schedule_fd_clip_min = float(getattr(training_args, "h_schedule_fd_clip_min", 1e-5) or 0.0)
-    training_args.h_schedule_fd_clip_max = float(getattr(training_args, "h_schedule_fd_clip_max", 1e-2) or 0.0)
+    training_args.h_schedule_fd_clip_policy = str(
+        getattr(training_args, "h_schedule_fd_clip_policy", "none") or "none"
+    ).strip().lower()
+    if training_args.h_schedule_fd_clip_policy not in H_FD_CLIP_POLICIES:
+        raise ValueError(f"--h_schedule_fd_clip_policy must be one of {sorted(H_FD_CLIP_POLICIES)}")
+    training_args.h_schedule_fd_floor_min = float(getattr(training_args, "h_schedule_fd_floor_min", 1e-5) or 0.0)
+    training_args.h_schedule_fd_clip_max = float(getattr(training_args, "h_schedule_fd_clip_max", 0.0) or 0.0)
     if training_args.h_schedule_fd_clip_min < 0.0:
         raise ValueError("--h_schedule_fd_clip_min must be >= 0")
-    if training_args.h_schedule_fd_clip_max <= 0.0:
-        raise ValueError("--h_schedule_fd_clip_max must be > 0")
-    if training_args.h_schedule_fd_clip_min > training_args.h_schedule_fd_clip_max:
+    if training_args.h_schedule_fd_floor_min < 0.0:
+        raise ValueError("--h_schedule_fd_floor_min must be >= 0")
+    if training_args.h_schedule_fd_clip_max < 0.0:
+        raise ValueError("--h_schedule_fd_clip_max must be >= 0")
+    if training_args.h_schedule_fd_clip_max > 0.0 and training_args.h_schedule_fd_clip_min > training_args.h_schedule_fd_clip_max:
         raise ValueError("--h_schedule_fd_clip_min must be <= --h_schedule_fd_clip_max")
+    if training_args.h_schedule_fd_clip_max > 0.0 and training_args.h_schedule_fd_floor_min > training_args.h_schedule_fd_clip_max:
+        raise ValueError("--h_schedule_fd_floor_min must be <= --h_schedule_fd_clip_max")
     training_args.h_schedule_fd_int8_policy = str(
-        getattr(training_args, "h_schedule_fd_int8_policy", "capped_stress") or "capped_stress"
+        getattr(training_args, "h_schedule_fd_int8_policy", "fp16_proxy_raw") or "fp16_proxy_raw"
     ).strip().lower()
     if training_args.h_schedule_fd_int8_policy not in H_FD_INT8_POLICIES:
         raise ValueError(f"--h_schedule_fd_int8_policy must be one of {sorted(H_FD_INT8_POLICIES)}")
@@ -1585,13 +1609,13 @@ def main():
     else:
         training_args.zo_quantization_bits = validate_quzo_bits(getattr(training_args, "zo_quantization_bits", 32))
     if (
-        str(getattr(training_args, "h_schedule", "fixed")) == "fd_eps13"
+        str(getattr(training_args, "h_schedule", "fixed")) in {"fd_eps13", "fd_eps13_raw"}
         and int(getattr(training_args, "zo_quantization_bits", 32)) == 8
-        and str(getattr(training_args, "h_schedule_fd_int8_policy", "capped_stress")) == "skip"
+        and str(getattr(training_args, "h_schedule_fd_int8_policy", "fp16_proxy_raw")) == "skip"
     ):
         raise ValueError(
-            "--h_schedule fd_eps13 has no principled INT8 machine-epsilon analogue; "
-            "use --h_schedule_fd_int8_policy capped_stress or skip this run."
+            "--h_schedule fd_eps13_raw has no principled INT8 machine-epsilon analogue; "
+            "use --h_schedule_fd_int8_policy fp16_proxy_raw/capped_stress or skip this run."
         )
     requested_quantization_algorithm = str(getattr(training_args, "quantization_algorithm", "per_tensor_symmetric") or "per_tensor_symmetric").strip().lower().replace("-", "_")
     training_args.quantization_requested_algorithm = requested_quantization_algorithm
@@ -1912,13 +1936,16 @@ def main():
         bool(getattr(training_args, "zo_use_true_directional_derivative", False)),
     )
     logger.info(
-        "[h-schedule-config] h_schedule=%s | window=[%s,%s] | fd_clip=[%s,%s] | fd_int8_policy=%s | h0=%s | gamma=%s | total_steps=%s | d_eff=%s | n_eff=%s | lipschitz_l=%s | c_delta=%s | grid_policy=%s | grid=%s | log_csv=%s",
+        "[h-schedule-config] h_schedule=%s | window=[%s,%s] | fd_clip_policy=%s | fd_floor_min=%s | fd_clip=[%s,%s] | fd_int8_policy=%s | allow_out_of_window=%s | h0=%s | gamma=%s | total_steps=%s | d_eff=%s | n_eff=%s | lipschitz_l=%s | c_delta=%s | grid_policy=%s | grid=%s | log_csv=%s",
         str(getattr(training_args, "h_schedule", "fixed")),
         float(getattr(training_args, "h_schedule_window_min", 0.0) or 0.0),
         float(getattr(training_args, "h_schedule_window_max", 0.0) or 0.0),
+        str(getattr(training_args, "h_schedule_fd_clip_policy", "none")),
+        float(getattr(training_args, "h_schedule_fd_floor_min", 1e-5) or 0.0),
         float(getattr(training_args, "h_schedule_fd_clip_min", 1e-5) or 0.0),
-        float(getattr(training_args, "h_schedule_fd_clip_max", 1e-2) or 0.0),
-        str(getattr(training_args, "h_schedule_fd_int8_policy", "capped_stress")),
+        float(getattr(training_args, "h_schedule_fd_clip_max", 0.0) or 0.0),
+        str(getattr(training_args, "h_schedule_fd_int8_policy", "fp16_proxy_raw")),
+        bool(getattr(training_args, "h_schedule_allow_out_of_window", True)),
         float(getattr(training_args, "h_schedule_h0", 0.0) or 0.0),
         float(getattr(training_args, "h_schedule_gamma", 0.101)),
         int(getattr(training_args, "h_schedule_total_steps", 0) or 0),
