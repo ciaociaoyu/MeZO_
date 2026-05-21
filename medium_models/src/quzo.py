@@ -1,5 +1,6 @@
 import hashlib
 import math
+import re
 from typing import Any, Dict, Optional, Tuple
 
 import torch
@@ -42,7 +43,9 @@ QUANTIZATION_ALGORITHM_ALIASES = {
     "group": "groupwise_symmetric",
     "groupwise": "groupwise_symmetric",
     "groupwise_symmetric": "groupwise_symmetric",
+    "groupwise_int8_block128": "groupwise_symmetric",
     "groupwise_int8_block256": "groupwise_symmetric",
+    "groupwise_int4_block128": "groupwise_symmetric",
     "groupwise_int4_block256": "groupwise_symmetric",
 }
 
@@ -69,9 +72,11 @@ def normalize_quantization_algorithm(value: Optional[str]) -> str:
     key = str(value or "per_tensor_symmetric").strip().lower().replace("-", "_")
     if key in QUANTIZATION_ALGORITHM_ALIASES:
         return QUANTIZATION_ALGORITHM_ALIASES[key]
+    if re.fullmatch(r"groupwise_int[48]_block[1-9][0-9]*", key):
+        return "groupwise_symmetric"
     raise ValueError(
         f"Unsupported quantization_algorithm={value!r}. "
-        "Supported local algorithms: per_tensor_symmetric, groupwise_int8_block256."
+        "Supported local algorithms: per_tensor_symmetric, groupwise_symmetric, groupwise_int{4,8}_blockN."
     )
 
 

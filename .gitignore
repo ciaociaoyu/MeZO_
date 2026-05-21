@@ -145,6 +145,8 @@ cython_debug/
 !medium_models/scripts/exp_sst5_h_precision_sweep.sh
 !medium_models/scripts/smoke_h_schedules.sh
 !medium_models/scripts/submit_iter_h_baselines_3prec.sh
+!medium_models/scripts/smoke_main_mechanism_classical_h_baselines.sh
+!medium_models/scripts/submit_main_mechanism_classical_h_baselines_l4.sh
 !Some_test_exp/sst5_smoke_jobs/*.sh
 !experiments/h_sweep_14h/h_values.sh
 !experiments/h_sweep_14h/jobs/
@@ -170,6 +172,14 @@ log*
 !experiments/h_sweep_14h/logs/.gitkeep
 runs
 result
+outputs/
+medium_models/result/
+medium_models/outputs/
+medium_models/manual_run/
+medium_models/*checkpoint*
+**/checkpoint-*/
+!medium_models/pilot_results/
+!medium_models/pilot_results/**
 wandb
 ensemble_predict_results
 auto*

@@ -45,7 +45,7 @@ from src.sparse_mezo import (
     sparse_mezo_enabled,
     validate_sparse_ratio,
 )
-from src.h_schedules import H_SCHEDULE_CHOICES, parse_h_grid
+from src.h_schedules import H_FD_INT8_POLICIES, H_GRID_POLICIES, H_SCHEDULE_CHOICES, parse_h_grid
 from src.trainer import Trainer
 from src.processors import processors_mapping, num_labels_mapping, output_modes_mapping, compute_metrics_mapping, bound_mapping
 
@@ -706,6 +706,9 @@ class DynamicTrainingArguments(TrainingArguments):
             "help": "Schedule-only finite-difference radius baseline.",
             "choices": [
                 "fixed",
+                "mezo_default",
+                "fd_eps13",
+                "spall_ck",
                 "spall_clip",
                 "shamir_clip",
                 "ji_sqrtk_clip",
@@ -716,23 +719,27 @@ class DynamicTrainingArguments(TrainingArguments):
     )
     h_schedule_grid: str = field(
         default="",
-        metadata={"help": "Optional comma/space-separated h grid. Empty means continuous clipping only."},
+        metadata={"help": "Optional comma/space-separated h grid. Used only when h_schedule_grid_policy is not continuous."},
     )
     h_schedule_window_min: float = field(
-        default=0.0,
-        metadata={"help": "Optional lower clipping bound for schedule-only h. <=0 disables the lower bound."},
+        default=1e-5,
+        metadata={"help": "Lower safety clipping bound for schedule-only h."},
     )
     h_schedule_window_max: float = field(
-        default=0.0,
-        metadata={"help": "Optional upper clipping bound for schedule-only h. <=0 disables the upper bound."},
+        default=1e-2,
+        metadata={"help": "Upper safety clipping bound for schedule-only h."},
+    )
+    h_schedule_grid_policy: str = field(
+        default="continuous",
+        metadata={"help": "How to apply h_schedule_grid. Choices: continuous, nearest, floor, ceil."},
     )
     h_schedule_h0: float = field(
         default=0.0,
-        metadata={"help": "Optional initial/effective radius for schedule-only h. <=0 falls back to window_max, then zero_order_eps."},
+        metadata={"help": "Optional initial/effective radius for schedule-only h. <=0 falls back to zero_order_eps for spall_ck."},
     )
     h_schedule_gamma: float = field(
         default=0.101,
-        metadata={"help": "Decay exponent for h_schedule=spall_clip."},
+        metadata={"help": "Decay exponent for h_schedule=spall_ck/spall_clip."},
     )
     h_schedule_total_steps: int = field(
         default=0,
@@ -753,6 +760,18 @@ class DynamicTrainingArguments(TrainingArguments):
     h_schedule_c_delta: float = field(
         default=1.0,
         metadata={"help": "Constant multiplier for h_schedule=shamir_clip."},
+    )
+    h_schedule_fd_clip_min: float = field(
+        default=1e-5,
+        metadata={"help": "Lower safety clipping bound for h_schedule=fd_eps13."},
+    )
+    h_schedule_fd_clip_max: float = field(
+        default=1e-2,
+        metadata={"help": "Upper safety clipping bound for h_schedule=fd_eps13."},
+    )
+    h_schedule_fd_int8_policy: str = field(
+        default="capped_stress",
+        metadata={"help": "INT8 handling for h_schedule=fd_eps13. Choices: capped_stress, skip."},
     )
     h_schedule_log_csv: bool = field(
         default=True,
@@ -793,7 +812,7 @@ class DynamicTrainingArguments(TrainingArguments):
     quantization_algorithm: str = field(
         default="per_tensor_symmetric",
         metadata={
-            "help": "Low-bit fake-quant algorithm for QuZO. Supported local values: per_tensor_symmetric, groupwise_int8_block256. Passing gptq records an explicit fallback to groupwise_int8_block256 because exact GPTQ is not implemented here."
+            "help": "Low-bit fake-quant algorithm for QuZO. Supported local values: per_tensor_symmetric, groupwise_symmetric, groupwise_int{4,8}_blockN. Passing gptq records an explicit fallback to groupwise_int8_block256 because exact GPTQ is not implemented here."
         }
     )
     quantization_group_size: int = field(
@@ -1487,6 +1506,11 @@ def main():
         raise ValueError(f"--h_schedule must be one of {sorted(H_SCHEDULE_CHOICES)}")
     training_args.h_schedule_grid = str(getattr(training_args, "h_schedule_grid", "") or "")
     parse_h_grid(training_args.h_schedule_grid)
+    training_args.h_schedule_grid_policy = str(getattr(training_args, "h_schedule_grid_policy", "continuous") or "continuous").strip().lower()
+    if training_args.h_schedule_grid_policy not in H_GRID_POLICIES:
+        raise ValueError(f"--h_schedule_grid_policy must be one of {sorted(H_GRID_POLICIES)}")
+    if training_args.h_schedule_grid_policy != "continuous" and not parse_h_grid(training_args.h_schedule_grid):
+        raise ValueError("--h_schedule_grid_policy nearest/floor/ceil requires nonempty --h_schedule_grid")
     training_args.h_schedule_window_min = float(getattr(training_args, "h_schedule_window_min", 0.0) or 0.0)
     training_args.h_schedule_window_max = float(getattr(training_args, "h_schedule_window_max", 0.0) or 0.0)
     if training_args.h_schedule_window_min < 0.0:
@@ -1520,6 +1544,19 @@ def main():
     training_args.h_schedule_c_delta = float(getattr(training_args, "h_schedule_c_delta", 1.0))
     if training_args.h_schedule_c_delta <= 0.0:
         raise ValueError("--h_schedule_c_delta must be > 0")
+    training_args.h_schedule_fd_clip_min = float(getattr(training_args, "h_schedule_fd_clip_min", 1e-5) or 0.0)
+    training_args.h_schedule_fd_clip_max = float(getattr(training_args, "h_schedule_fd_clip_max", 1e-2) or 0.0)
+    if training_args.h_schedule_fd_clip_min < 0.0:
+        raise ValueError("--h_schedule_fd_clip_min must be >= 0")
+    if training_args.h_schedule_fd_clip_max <= 0.0:
+        raise ValueError("--h_schedule_fd_clip_max must be > 0")
+    if training_args.h_schedule_fd_clip_min > training_args.h_schedule_fd_clip_max:
+        raise ValueError("--h_schedule_fd_clip_min must be <= --h_schedule_fd_clip_max")
+    training_args.h_schedule_fd_int8_policy = str(
+        getattr(training_args, "h_schedule_fd_int8_policy", "capped_stress") or "capped_stress"
+    ).strip().lower()
+    if training_args.h_schedule_fd_int8_policy not in H_FD_INT8_POLICIES:
+        raise ValueError(f"--h_schedule_fd_int8_policy must be one of {sorted(H_FD_INT8_POLICIES)}")
     precision_mode = str(getattr(training_args, "precision_mode", "") or "").strip().lower()
     if precision_mode:
         if precision_mode not in {"fp32", "fp16", "bf16", "int8"}:
@@ -1547,6 +1584,15 @@ def main():
         training_args.zo_quantization_bits = validate_quzo_bits(zo_quantization_alias)
     else:
         training_args.zo_quantization_bits = validate_quzo_bits(getattr(training_args, "zo_quantization_bits", 32))
+    if (
+        str(getattr(training_args, "h_schedule", "fixed")) == "fd_eps13"
+        and int(getattr(training_args, "zo_quantization_bits", 32)) == 8
+        and str(getattr(training_args, "h_schedule_fd_int8_policy", "capped_stress")) == "skip"
+    ):
+        raise ValueError(
+            "--h_schedule fd_eps13 has no principled INT8 machine-epsilon analogue; "
+            "use --h_schedule_fd_int8_policy capped_stress or skip this run."
+        )
     requested_quantization_algorithm = str(getattr(training_args, "quantization_algorithm", "per_tensor_symmetric") or "per_tensor_symmetric").strip().lower().replace("-", "_")
     training_args.quantization_requested_algorithm = requested_quantization_algorithm
     quantization_fallback_reason = ""
@@ -1866,10 +1912,13 @@ def main():
         bool(getattr(training_args, "zo_use_true_directional_derivative", False)),
     )
     logger.info(
-        "[h-schedule-config] h_schedule=%s | window=[%s,%s] | h0=%s | gamma=%s | total_steps=%s | d_eff=%s | n_eff=%s | lipschitz_l=%s | c_delta=%s | grid=%s | log_csv=%s",
+        "[h-schedule-config] h_schedule=%s | window=[%s,%s] | fd_clip=[%s,%s] | fd_int8_policy=%s | h0=%s | gamma=%s | total_steps=%s | d_eff=%s | n_eff=%s | lipschitz_l=%s | c_delta=%s | grid_policy=%s | grid=%s | log_csv=%s",
         str(getattr(training_args, "h_schedule", "fixed")),
         float(getattr(training_args, "h_schedule_window_min", 0.0) or 0.0),
         float(getattr(training_args, "h_schedule_window_max", 0.0) or 0.0),
+        float(getattr(training_args, "h_schedule_fd_clip_min", 1e-5) or 0.0),
+        float(getattr(training_args, "h_schedule_fd_clip_max", 1e-2) or 0.0),
+        str(getattr(training_args, "h_schedule_fd_int8_policy", "capped_stress")),
         float(getattr(training_args, "h_schedule_h0", 0.0) or 0.0),
         float(getattr(training_args, "h_schedule_gamma", 0.101)),
         int(getattr(training_args, "h_schedule_total_steps", 0) or 0),
@@ -1877,6 +1926,7 @@ def main():
         float(getattr(training_args, "h_schedule_n_eff", 1.0)),
         float(getattr(training_args, "h_schedule_lipschitz_l", 0.0) or 0.0),
         float(getattr(training_args, "h_schedule_c_delta", 1.0)),
+        str(getattr(training_args, "h_schedule_grid_policy", "continuous") or "continuous"),
         str(getattr(training_args, "h_schedule_grid", "") or ""),
         bool(getattr(training_args, "h_schedule_log_csv", True)),
     )

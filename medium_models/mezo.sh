@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Use Slurm job name as output directory (fallback if not under Slurm)
-JOB_NAME=${SLURM_JOB_NAME:-manual_run}
+# Use explicit local job name first, then Slurm job name, then fallback.
+JOB_NAME=${JOB_NAME:-${SLURM_JOB_NAME:-manual_run}}
 OUT_DIR=$(pwd)/${JOB_NAME}
 
 mkdir -p ${OUT_DIR}

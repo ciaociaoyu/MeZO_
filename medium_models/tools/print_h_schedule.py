@@ -25,8 +25,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--zero_order_eps", type=float, default=1e-3)
     parser.add_argument("--max_steps", type=int, default=0)
     parser.add_argument("--precision_mode", default="")
+    parser.add_argument("--zo_two_point_precision", default="fp32")
+    parser.add_argument("--zo_quantization_bits", type=int, default=32)
     parser.add_argument("--h_schedule", choices=sorted(H_SCHEDULE_CHOICES), default="fixed")
     parser.add_argument("--h_schedule_grid", default="")
+    parser.add_argument("--h_schedule_grid_policy", choices=["continuous", "nearest", "floor", "ceil"], default="continuous")
     parser.add_argument("--h_schedule_window_min", type=float, default=0.0)
     parser.add_argument("--h_schedule_window_max", type=float, default=0.0)
     parser.add_argument("--h_schedule_h0", type=float, default=0.0)
@@ -36,7 +39,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--h_schedule_n_eff", type=float, default=1.0)
     parser.add_argument("--h_schedule_lipschitz_l", type=float, default=0.0)
     parser.add_argument("--h_schedule_c_delta", type=float, default=1.0)
+    parser.add_argument("--h_schedule_fd_clip_min", type=float, default=1e-5)
+    parser.add_argument("--h_schedule_fd_clip_max", type=float, default=1e-2)
+    parser.add_argument("--h_schedule_fd_int8_policy", choices=["capped_stress", "skip"], default="capped_stress")
     parser.add_argument("--h_schedule_log_csv", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument(
+        "--include_steps",
+        default="",
+        help="Optional comma/space-separated extra zero-based steps to print, e.g. 20000.",
+    )
     return parser
 
 
@@ -47,19 +58,36 @@ def main() -> int:
         raise ValueError("--steps must be > 0")
     args = SimpleNamespace(**vars(ns))
 
+    steps = list(range(int(ns.steps)))
+    if ns.include_steps:
+        for token in ns.include_steps.replace(",", " ").split():
+            step = int(token)
+            if step < 0:
+                raise ValueError("--include_steps must be >= 0")
+            if step not in steps:
+                steps.append(step)
     rows = []
-    for step in range(int(ns.steps)):
+    for step in steps:
         h_value, meta = resolve_h_schedule(args, step)
         rows.append({
             "step": step,
             "h_schedule": meta["schedule"],
+            "canonical_schedule": meta["canonical_schedule"],
             "raw_h": meta["raw_h"],
+            "clipped_h": meta["clipped_h"],
             "final_h": h_value,
+            "precision_mode": meta["precision_mode"],
+            "fd_principled": meta["fd_principled"],
+            "fd_exception_reason": meta["fd_exception_reason"],
+            "cap_reason": meta["cap_reason"],
+            "h0": meta["h0"],
+            "gamma": meta["gamma"],
             "window_min": meta["window_min"],
             "window_max": meta["window_max"],
+            "window_clipped": meta["window_clipped"],
+            "grid_policy": meta["grid_policy"],
             "grid_used": meta["grid_used"],
             "grid": ns.h_schedule_grid,
-            "precision_mode": ns.precision_mode,
             "zero_order_eps": ns.zero_order_eps,
         })
 

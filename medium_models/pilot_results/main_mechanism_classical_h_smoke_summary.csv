@@ -1,0 +1,7 @@
+policy,precision,status,result_dir,final_step_seen,first_h,last_h,raw_h,final_h,fd_principled,fd_exception_reason,cap_reason,h_schedule_csv_exists,notes
+fd_eps13,fp32,completed,/scratch/jy03364/MeZO_/outputs/smoke_main_mechanism_classical_h/mainmech-classicalh-fd_eps13-fp32/seed16,2,0.004921565763652325,0.004921565763652325,0.004921565763652325,0.004921565763652325,True,,,True,
+fd_eps13,fp16,completed,/scratch/jy03364/MeZO_/outputs/smoke_main_mechanism_classical_h/mainmech-classicalh-fd_eps13-fp16/seed16,2,0.01,0.01,0.0992431640625,0.01,True,,fp16 eps^(1/3) exceeds safety max,True,
+fd_eps13,int8,completed,/scratch/jy03364/MeZO_/outputs/smoke_main_mechanism_classical_h/mainmech-classicalh-fd_eps13-int8/seed16,2,0.01,0.01,0.01,0.01,False,INT8 has no machine-epsilon analogue; using capped stress baseline,,True,
+spall_ck,fp32,completed,/scratch/jy03364/MeZO_/outputs/smoke_main_mechanism_classical_h/mainmech-classicalh-spall_ck-fp32/seed16,2,0.001,0.0008949746893567633,0.001,0.001,True,,,True,
+spall_ck,fp16,completed,/scratch/jy03364/MeZO_/outputs/smoke_main_mechanism_classical_h/mainmech-classicalh-spall_ck-fp16/seed16,2,0.001,0.0008949746893567633,0.001,0.001,True,,,True,
+spall_ck,int8,completed,/scratch/jy03364/MeZO_/outputs/smoke_main_mechanism_classical_h/mainmech-classicalh-spall_ck-int8/seed16,2,0.001,0.0008949746893567633,0.001,0.001,True,,,True,

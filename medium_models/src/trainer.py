@@ -964,13 +964,14 @@ class Trainer(LinearHeadTrainer):
         return str(getattr(self.args, "h_schedule", "fixed") or "fixed").strip().lower()
 
     def _h_schedule_enabled(self) -> bool:
-        return self._h_schedule_name() != "fixed"
+        return self._h_schedule_name() not in {"fixed", "mezo_default"}
 
     def _write_h_schedule_row(self, meta: Dict[str, Any]) -> None:
         if not bool(getattr(self.args, "h_schedule_log_csv", True)):
             return
         schedule = str(meta.get("schedule", "fixed"))
-        if schedule == "fixed":
+        canonical = str(meta.get("canonical_schedule", schedule))
+        if canonical == "mezo_default":
             return
         global_step = int(meta.get("step", getattr(self.state, "global_step", 0)) or 0)
         logged_steps = getattr(self, "_h_schedule_logged_steps", None)
@@ -988,12 +989,22 @@ class Trainer(LinearHeadTrainer):
         fieldnames = [
             "global_step",
             "h_schedule",
+            "canonical_schedule",
             "raw_h",
+            "clipped_h",
             "final_h",
+            "precision_mode",
+            "fd_principled",
+            "fd_exception_reason",
+            "cap_reason",
+            "h0",
+            "gamma",
             "window_min",
             "window_max",
+            "window_clipped",
+            "grid_policy",
             "grid",
-            "precision_mode",
+            "grid_used",
             "zero_order_eps",
         ]
         write_header = not os.path.exists(path) or os.path.getsize(path) == 0
@@ -1004,12 +1015,22 @@ class Trainer(LinearHeadTrainer):
             writer.writerow({
                 "global_step": global_step,
                 "h_schedule": schedule,
+                "canonical_schedule": canonical,
                 "raw_h": float(meta.get("raw_h", float("nan"))),
+                "clipped_h": float(meta.get("clipped_h", meta.get("raw_h", float("nan")))),
                 "final_h": float(meta.get("final_h", float("nan"))),
+                "precision_mode": str(meta.get("precision_mode", getattr(self.args, "precision_mode", "")) or ""),
+                "fd_principled": bool(meta.get("fd_principled", True)),
+                "fd_exception_reason": str(meta.get("fd_exception_reason", "") or ""),
+                "cap_reason": str(meta.get("cap_reason", "") or ""),
+                "h0": float(meta.get("h0", 0.0) or 0.0),
+                "gamma": float(meta.get("gamma", getattr(self.args, "h_schedule_gamma", 0.101)) or 0.0),
                 "window_min": float(meta.get("window_min", 0.0) or 0.0),
                 "window_max": float(meta.get("window_max", 0.0) or 0.0),
+                "window_clipped": bool(meta.get("window_clipped", False)),
+                "grid_policy": str(meta.get("grid_policy", getattr(self.args, "h_schedule_grid_policy", "continuous")) or "continuous"),
                 "grid": str(getattr(self.args, "h_schedule_grid", "") or ""),
-                "precision_mode": str(getattr(self.args, "precision_mode", "") or ""),
+                "grid_used": bool(meta.get("grid_used", False)),
                 "zero_order_eps": float(getattr(self.args, "zero_order_eps", 0.0) or 0.0),
             })
         logged_steps.add(log_key)
@@ -1018,8 +1039,12 @@ class Trainer(LinearHeadTrainer):
         if not self._h_schedule_enabled():
             return float(getattr(self.args, "zero_order_eps", 1e-3))
         step = int(getattr(self.state, "global_step", 0) or 0)
+        cached = getattr(self, "_h_schedule_cache", None)
+        if isinstance(cached, dict) and cached.get("step") == step and cached.get("schedule") == self._h_schedule_name():
+            return float(cached["h_value"])
         h_value, meta = resolve_h_schedule(self.args, step)
         self._latest_h_schedule_meta = meta
+        self._h_schedule_cache = {"step": step, "schedule": self._h_schedule_name(), "h_value": float(h_value), "meta": meta}
         self._write_h_schedule_row(meta)
         return float(h_value)
 
