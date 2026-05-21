@@ -1,0 +1,3 @@
+lane_id,gpu_type,phase,bitwidth,h,h_label,run_name,run_dir,max_steps,eval_every,checkpoint_steps,scale_refresh_k,seed,data_seed,batch_size,lr
+2,L4,int4_hsearch,4,0.0001,1e-4,int4_g128_rtnclip_k1_h1e-4_seed16_bs64_ckpt1k,/scratch/jy03364/MeZO_/outputs/rtnclip_int4_g128_rtnclip_roberta_sst5_seed16_20260521/int4_hsearch/int4_g128_rtnclip_k1_h1e-4_seed16_bs64_ckpt1k,20000,1000,1000,1,16,16,64,1e-06
+2,L4,int4_hsearch,4,0.002,2e-3,int4_g128_rtnclip_k1_h2e-3_seed16_bs64_ckpt1k,/scratch/jy03364/MeZO_/outputs/rtnclip_int4_g128_rtnclip_roberta_sst5_seed16_20260521/int4_hsearch/int4_g128_rtnclip_k1_h2e-3_seed16_bs64_ckpt1k,20000,1000,1000,1,16,16,64,1e-06

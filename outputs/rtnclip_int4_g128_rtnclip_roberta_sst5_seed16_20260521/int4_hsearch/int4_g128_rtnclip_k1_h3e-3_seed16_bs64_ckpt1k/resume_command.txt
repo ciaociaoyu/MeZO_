@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0 DATALOADER_SHUFFLE=True python tools/rtnclip_roberta_sst5_batch.py run-manifest --manifest /scratch/jy03364/MeZO_/outputs/rtnclip_int4_g128_rtnclip_roberta_sst5_seed16_20260521/lane_manifests/lane3.csv --only-run-name int4_g128_rtnclip_k1_h3e-3_seed16_bs64_ckpt1k
