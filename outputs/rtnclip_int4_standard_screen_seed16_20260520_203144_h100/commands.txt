@@ -1,0 +1,1 @@
+tools/rtnclip_int4_standard_screen.py --output_root outputs/rtnclip_int4_standard_screen_seed16_20260520_203144_h100 --include_anchors run

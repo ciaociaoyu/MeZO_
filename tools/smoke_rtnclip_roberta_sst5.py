@@ -537,6 +537,8 @@ def perturbation_metrics(
         legal = legal and minus_stats["code_min"] >= -state.qmax and minus_stats["code_max"] <= state.qmax
     eps = 1e-12
     active_frac = active / max(total, 1)
+    delta_q_norm = float(delta_sq.sqrt().detach().cpu())
+    ideal_displacement_norm = float(intended_sq.sqrt().detach().cpu())
     alignment = float((dot / (delta_sq.sqrt() * intended_sq.sqrt() + eps)).detach().cpu())
     norm_ratio = float((delta_sq.sqrt() / (intended_sq.sqrt() + eps)).detach().cpu())
     delta_visibility_mse = float((delta_err_sq / max(total, 1)).detach().cpu())
@@ -545,6 +547,10 @@ def perturbation_metrics(
     avg_clip = (clip_plus_num + clip_minus_num) / max(2 * value_num, 1)
     return {
         "active_frac": active_frac,
+        "active_count": active,
+        "total_count": total,
+        "delta_q_norm": delta_q_norm,
+        "ideal_displacement_norm": ideal_displacement_norm,
         "alignment": alignment,
         "norm_ratio": norm_ratio,
         "delta_visibility_mse": delta_visibility_mse,

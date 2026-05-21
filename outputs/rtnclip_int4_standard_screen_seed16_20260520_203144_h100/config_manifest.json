@@ -1,0 +1,69 @@
+{
+  "batch_size": 64,
+  "bitwidth": 4,
+  "checkpoint_steps": 500,
+  "cuda_visible_devices": "0",
+  "data_seed": 16,
+  "dataset": "SST-5",
+  "date": "2026-05-20T20:33:59.451611",
+  "direction": "dense",
+  "eval_every": 500,
+  "experiment": "int4_standard_dense_preliminary_h_screen",
+  "fresh_round_codes": true,
+  "git_commit": "7763664c897d47c812138c422a009b86842f65e3",
+  "grid_source": "unperturbed_fp16_master_weight",
+  "group_size": 128,
+  "h_grid": [
+    {
+      "h": 0.0002,
+      "h_label": "2e-4"
+    },
+    {
+      "h": 0.0003,
+      "h_label": "3e-4"
+    },
+    {
+      "h": 0.0005,
+      "h_label": "5e-4"
+    },
+    {
+      "h": 0.0007,
+      "h_label": "7e-4"
+    },
+    {
+      "h": 0.001,
+      "h_label": "1e-3"
+    },
+    {
+      "h": 0.0015,
+      "h_label": "1p5e-3"
+    },
+    {
+      "h": 0.002,
+      "h_label": "2e-3"
+    },
+    {
+      "h": 0.003,
+      "h_label": "3e-3"
+    },
+    {
+      "h": 0.005,
+      "h_label": "5e-3"
+    }
+  ],
+  "hostname": "ra7-3",
+  "lr": 1e-06,
+  "master_dtype": "fp16",
+  "model": "roberta-large",
+  "nvidia_smi": "Wed May 20 20:33:59 2026       \n+-----------------------------------------------------------------------------------------+\n| NVIDIA-SMI 570.124.06             Driver Version: 570.124.06     CUDA Version: 12.8     |\n|-----------------------------------------+------------------------+----------------------+\n| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\n| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |\n|                                         |                        |               MIG M. |\n|=========================================+========================+======================|\n|   0  NVIDIA H100 80GB HBM3          Off |   00000000:4E:00.0 Off |                    0 |\n| N/A   44C    P0             72W /  700W |       5MiB /  81559MiB |      0%      Default |\n|                                         |                        |             Disabled |\n+-----------------------------------------+------------------------+----------------------+\n                                                                                         \n+-----------------------------------------------------------------------------------------+\n| Processes:                                                                              |\n|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |\n|        ID   ID                                                               Usage      |\n|=========================================================================================|\n|  No running processes found                                                             |\n+-----------------------------------------------------------------------------------------+",
+  "pair_shared_grid": true,
+  "perturbed_parameter_scope": "full_dense_all_trainable",
+  "quantized_forward_scope": "Linear.weight_only",
+  "quantizer": "G128_groupwise_RTNClip_fake_quant",
+  "sampler": "RandomSampler",
+  "scale_refresh_k": 1,
+  "seed": 16,
+  "shuffle": true,
+  "update_backend": "fp16_master",
+  "update_variant": "standard"
+}

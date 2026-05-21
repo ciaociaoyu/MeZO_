@@ -110,9 +110,14 @@ HSEARCH_SUMMARY_COLUMNS = [
     "last_eval_loss",
     "last_eval_loss_step",
     "final_train_loss",
+    "update_variant",
+    "perturbed_parameter_scope",
+    "quantized_forward_scope",
     "active_frac",
     "alignment",
     "norm_ratio",
+    "delta_q_norm",
+    "ideal_displacement_norm",
     "code_change_frac",
     "delta_visibility_mse",
     "delta_visibility_nmse",
@@ -215,7 +220,9 @@ def write_resume_command(run_dir: Path, config: Dict[str, object], manifest_path
             f"CUDA_VISIBLE_DEVICES=0 DATALOADER_SHUFFLE=True python tools/rtnclip_roberta_sst5_batch.py train-one "
             f"--run_dir {run_dir} --run_name {config['run_name']} --bitwidth {config['bitwidth']} "
             f"--h {config['h']} --h_label {config.get('h_label', '')} --steps {config['max_steps']} "
-            f"--scale_refresh_k {config['scale_refresh_k']}"
+            f"--scale_refresh_k {config['scale_refresh_k']} --lr {config['lr']} "
+            f"--eval_every {config['eval_every']} --checkpoint_steps {config['checkpoint_steps']} "
+            f"--eval_batch_size {config['eval_batch_size']} --eval_batches {config['eval_batches']}"
         )
     (run_dir / "resume_command.txt").write_text(cmd + "\n", encoding="utf-8")
 
@@ -234,15 +241,21 @@ def make_train_config(args, run_dir: Path, run_name: str, bitwidth: int, h: floa
         "shuffle": True,
         "DATALOADER_SHUFFLE": os.environ.get("DATALOADER_SHUFFLE", ""),
         "direction": "dense",
+        "update_variant": "standard",
         "estimator": "two_point_symmetric_mezo",
         "h": float(h),
         "h_label": h_label,
         "max_steps": int(steps),
         "eval_every": int(args.eval_every),
         "checkpoint_steps": int(args.checkpoint_steps),
+        "eval_batch_size": int(args.eval_batch_size),
+        "eval_batches": int(args.eval_batches),
         "lr": float(args.lr),
         "update_backend": "fp16_master",
         "master_dtype": "fp16",
+        "perturbed_parameter_scope": "full_dense_all_trainable",
+        "quantized_forward_scope": "Linear.weight_only",
+        "perturbation_diagnostics_scope": "quantized_linear_weights_only",
         "direct_int_update": False,
         "quantizer_backend": "G128_groupwise_RTNClip_fake_quant",
         "quantizer": "group_rtn_clip",
@@ -268,13 +281,18 @@ def make_train_config(args, run_dir: Path, run_name: str, bitwidth: int, h: floa
     }
 
 
-def should_skip_complete(run_dir: Path) -> bool:
+def should_skip_complete(run_dir: Path, target_steps: Optional[int] = None) -> bool:
     summary = run_dir / "run_summary.json"
     final = run_dir / "checkpoints" / "final" / "state.pt"
     if not summary.exists() or not final.exists():
         return False
     try:
-        return read_json(summary).get("status") == "complete"
+        data = read_json(summary)
+        if data.get("status") != "complete":
+            return False
+        if target_steps is None:
+            return True
+        return int(data.get("steps_completed", 0) or 0) >= int(target_steps)
     except Exception:
         return False
 
@@ -308,7 +326,7 @@ def advance_batch_iter(batch_iter, n: int) -> None:
 
 def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_label: str, steps: int, scale_refresh_k: int, phase: str, manifest_path: Optional[str] = None) -> Dict[str, object]:
     run_dir.mkdir(parents=True, exist_ok=True)
-    if should_skip_complete(run_dir):
+    if should_skip_complete(run_dir, steps):
         log_to(run_dir, f"skip complete run {run_name}")
         return read_json(run_dir / "run_summary.json")
 
@@ -344,7 +362,15 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
     start_step = 0
     best = {"best_eval_acc": None, "best_eval_step": None, "best_eval_loss": None, "best_eval_loss_step": None}
     ckpt = latest_step_checkpoint(run_dir)
-    if ckpt is not None and not (run_dir / "checkpoints" / "final" / "state.pt").exists():
+    previous_steps = 0
+    summary_path = run_dir / "run_summary.json"
+    if summary_path.exists():
+        try:
+            previous_steps = int(read_json(summary_path).get("steps_completed", 0) or 0)
+        except Exception:
+            previous_steps = 0
+    should_resume = ckpt is not None and (previous_steps < int(steps) or not (run_dir / "checkpoints" / "final" / "state.pt").exists())
+    if should_resume:
         start_step, master, best_loaded = load_checkpoint(ckpt, device)
         best.update(best_loaded or {})
         smoke.restore_master(params, master)
@@ -525,9 +551,14 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
         "final_train_loss": last_train_loss,
         "d_h_finite_rate": finite_count / max(steps_completed - start_step, 1),
         "update_norm_last": update_norm_last,
+        "update_variant": config.get("update_variant"),
+        "perturbed_parameter_scope": config.get("perturbed_parameter_scope"),
+        "quantized_forward_scope": config.get("quantized_forward_scope"),
         "active_frac": last_pert.get("active_frac"),
         "alignment": last_pert.get("alignment"),
         "norm_ratio": last_pert.get("norm_ratio"),
+        "delta_q_norm": last_pert.get("delta_q_norm"),
+        "ideal_displacement_norm": last_pert.get("ideal_displacement_norm"),
         "code_change_frac": last_pert.get("code_change_frac"),
         "delta_visibility_mse": last_pert.get("delta_visibility_mse"),
         "delta_visibility_nmse": last_pert.get("delta_visibility_nmse"),
