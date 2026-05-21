@@ -1,7 +1,7 @@
 # Main Mechanism Classical h Baselines Long Manifest
 
 - Submission state: `submitted`
-- Slurm job id: `45534681`
+- Slurm job id: `45536860`
 - GPU request: `gpu:L4:1`
 - Array concurrency: `3`
 - Commands file: `/scratch/jy03364/MeZO_/medium_models/scripts/main_mechanism_classical_h_commands.sh`

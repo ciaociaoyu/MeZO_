@@ -41,6 +41,7 @@ TIME="${TIME:-48:00:00}"
 CPUS="${CPUS:-8}"
 SBATCH_NTASKS="${SBATCH_NTASKS:-1}"
 MEM="${MEM:-32G}"
+CONDA_ENV="${CONDA_ENV:-mezo-mistral}"
 
 run_py_has() {
     grep -q "$1" "${MEDIUM_DIR}/run.py"
@@ -56,10 +57,12 @@ quote_cmd() {
 }
 
 mkdir -p "$(dirname "${COMMANDS_FILE}")" "${LOG_DIR}" "${SUMMARY_DIR}"
-{
-    echo "#!/usr/bin/env bash"
-    echo "set -euo pipefail"
-} >"${COMMANDS_FILE}"
+: >"${COMMANDS_FILE}"
+
+run_prefix=()
+if [[ -n "${CONDA_ENV}" && "${CONDA_ENV}" != "none" ]]; then
+    run_prefix=(conda run -n "${CONDA_ENV}")
+fi
 
 policies=(fd_eps13 spall_ck)
 precisions=(fp32 fp16 int8)
@@ -81,6 +84,7 @@ for policy in "${policies[@]}"; do
             )
         fi
         cmd=(
+            "${run_prefix[@]}"
             env
             JOB_NAME="${tag}"
             RESULT_ROOT="${RESULT_ROOT}"
@@ -127,7 +131,8 @@ if [[ -z "${COMMANDS_FILE:-}" ]]; then
     exit 2
 fi
 task_id="${SLURM_ARRAY_TASK_ID:-0}"
-cmd="$(sed -n "$((task_id + 1))p" "${COMMANDS_FILE}")"
+mapfile -t commands < <(grep -vE '^[[:space:]]*(#|set[[:space:]]|$)' "${COMMANDS_FILE}")
+cmd="${commands[${task_id}]:-}"
 if [[ -z "${cmd}" ]]; then
     echo "No command for SLURM_ARRAY_TASK_ID=${task_id}" >&2
     exit 2
@@ -194,7 +199,11 @@ model = sys.argv[15]
 dataset = sys.argv[16]
 dataset_mode = sys.argv[17]
 
-commands = [line.strip() for line in commands_file.read_text().splitlines() if line.strip() and not line.startswith("#") and not line.startswith("set ")]
+commands = [
+    line.strip()
+    for line in commands_file.read_text().splitlines()
+    if line.strip() and not line.lstrip().startswith("#") and not line.lstrip().startswith("set ")
+]
 rows = []
 for command in commands:
     policy = "fd_eps13" if "--h_schedule fd_eps13" in command else "spall_ck"
