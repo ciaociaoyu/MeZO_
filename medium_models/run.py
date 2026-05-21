@@ -11,7 +11,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, Optional, Union, List
 
-from accelerate.utils import ParallelismConfig
+try:
+    from accelerate.utils import ParallelismConfig
+except Exception:
+    class ParallelismConfig:
+        pass
 
 import torch
 import torch.nn.functional as F

@@ -14,13 +14,28 @@ SMOKE_STEP="${STEP:-2}"
 SMOKE_EVAL_STEP="${EVAL_STEP:-1}"
 SMOKE_RESULT_ROOT="${SMOKE_RESULT_ROOT:-${REPO_ROOT}/outputs/smoke_h_schedules}"
 
+RUN_PREFIX=()
+if [[ -n "${SMOKE_CONDA_ENV:-}" ]]; then
+    RUN_PREFIX=(conda run -n "${SMOKE_CONDA_ENV}")
+fi
+PYTHON_BIN="${PYTHON_BIN:-python}"
+ENV_LABEL="${SMOKE_CONDA_ENV:-current environment}"
+
 echo "[1/3] pytest: medium_models/tests/test_h_schedules.py"
 cd "${REPO_ROOT}"
-if ! python -c "import pytest" >/dev/null 2>&1; then
-    echo "ERROR: pytest is not installed in $(command -v python). Install pytest or run the unit tests with: python -m unittest medium_models.tests.test_h_schedules" >&2
+if "${RUN_PREFIX[@]}" "${PYTHON_BIN}" -c "import pytest" >/dev/null 2>&1; then
+    "${RUN_PREFIX[@]}" "${PYTHON_BIN}" -m pytest medium_models/tests/test_h_schedules.py
+else
+    echo "pytest is not installed for ${ENV_LABEL}; using unittest fallback for test_h_schedules." >&2
+    "${RUN_PREFIX[@]}" "${PYTHON_BIN}" -m unittest medium_models.tests.test_h_schedules
+fi
+
+echo "[env] validating torch/transformers imports in ${ENV_LABEL}"
+if ! "${RUN_PREFIX[@]}" "${PYTHON_BIN}" -c "import torch, transformers, transformers.utils" >/dev/null 2>&1; then
+    echo "ERROR: ${ENV_LABEL} cannot import torch and transformers.utils. Try SMOKE_CONDA_ENV=mezo-mistral or repair the selected conda env." >&2
+    "${RUN_PREFIX[@]}" "${PYTHON_BIN}" -c "import sys; print(sys.executable); import torch; print('torch ok'); import transformers; print(transformers.__file__); import transformers.utils" >&2
     exit 1
 fi
-python -m pytest medium_models/tests/test_h_schedules.py
 
 echo "[2/3] print_h_schedule diagnostics"
 for schedule in fixed spall_clip shamir_clip ji_sqrtk_clip ji_theory_clip pf_vrzo_clip; do
@@ -28,7 +43,7 @@ for schedule in fixed spall_clip shamir_clip ji_sqrtk_clip ji_theory_clip pf_vrz
     if [[ "${schedule}" == "ji_theory_clip" ]]; then
         extra_args+=(--h_schedule_lipschitz_l "${H_LIPSCHITZ_L:-10.0}")
     fi
-    python medium_models/tools/print_h_schedule.py \
+    "${RUN_PREFIX[@]}" "${PYTHON_BIN}" medium_models/tools/print_h_schedule.py \
         --format csv \
         --steps 5 \
         --zero_order_eps "${EPS:-1e-3}" \
@@ -61,7 +76,7 @@ for precision in fp32 fp16 int8; do
         MODEL=roberta-large \
         EXTRA_TAG="iterh-${schedule}-${precision}" \
         TAG="iterh-${schedule}-${precision}" \
-        bash mezo.sh \
+        "${RUN_PREFIX[@]}" bash mezo.sh \
             --precision_mode "${precision}" \
             --h_schedule "${schedule}" \
             --h_schedule_window_min "${H_WINDOW_MIN}" \
