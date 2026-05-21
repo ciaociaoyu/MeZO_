@@ -41,6 +41,7 @@ from src.sparse_mezo import (
     sparse_mezo_enabled,
     validate_sparse_ratio,
 )
+from src.h_schedules import H_SCHEDULE_CHOICES, parse_h_grid
 from src.trainer import Trainer
 from src.processors import processors_mapping, num_labels_mapping, output_modes_mapping, compute_metrics_mapping, bound_mapping
 
@@ -694,6 +695,64 @@ class DynamicTrainingArguments(TrainingArguments):
     zero_order_eps: float = field(
         default=1e-3,
         metadata={'help': 'eps for zero order optim'}
+    )
+    h_schedule: str = field(
+        default="fixed",
+        metadata={
+            "help": "Schedule-only finite-difference radius baseline.",
+            "choices": [
+                "fixed",
+                "spall_clip",
+                "shamir_clip",
+                "ji_sqrtk_clip",
+                "ji_theory_clip",
+                "pf_vrzo_clip",
+            ],
+        },
+    )
+    h_schedule_grid: str = field(
+        default="",
+        metadata={"help": "Optional comma/space-separated h grid. Empty means continuous clipping only."},
+    )
+    h_schedule_window_min: float = field(
+        default=0.0,
+        metadata={"help": "Optional lower clipping bound for schedule-only h. <=0 disables the lower bound."},
+    )
+    h_schedule_window_max: float = field(
+        default=0.0,
+        metadata={"help": "Optional upper clipping bound for schedule-only h. <=0 disables the upper bound."},
+    )
+    h_schedule_h0: float = field(
+        default=0.0,
+        metadata={"help": "Optional initial/effective radius for schedule-only h. <=0 falls back to window_max, then zero_order_eps."},
+    )
+    h_schedule_gamma: float = field(
+        default=0.101,
+        metadata={"help": "Decay exponent for h_schedule=spall_clip."},
+    )
+    h_schedule_total_steps: int = field(
+        default=0,
+        metadata={"help": "Horizon T for static horizon-based h schedules. <=0 falls back to max_steps where applicable."},
+    )
+    h_schedule_d_eff: float = field(
+        default=1.0,
+        metadata={"help": "Effective dimension used by h_schedule formulas that require d."},
+    )
+    h_schedule_n_eff: float = field(
+        default=1.0,
+        metadata={"help": "Effective sample count reserved for schedule baselines that require n."},
+    )
+    h_schedule_lipschitz_l: float = field(
+        default=0.0,
+        metadata={"help": "Lipschitz L used by h_schedule=ji_theory_clip. Must be >0 for that schedule."},
+    )
+    h_schedule_c_delta: float = field(
+        default=1.0,
+        metadata={"help": "Constant multiplier for h_schedule=shamir_clip."},
+    )
+    h_schedule_log_csv: bool = field(
+        default=True,
+        metadata={"help": "Log resolved non-fixed h schedule values to output_dir/metrics_logs/h_schedule.csv."},
     )
     zo_use_true_directional_derivative: bool = field(
         default=False,
@@ -1419,6 +1478,44 @@ def main():
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
     data_args.task_name = normalize_medium_task_name(getattr(data_args, "task_name", ""))
+    training_args.h_schedule = str(getattr(training_args, "h_schedule", "fixed") or "fixed").strip().lower()
+    if training_args.h_schedule not in H_SCHEDULE_CHOICES:
+        raise ValueError(f"--h_schedule must be one of {sorted(H_SCHEDULE_CHOICES)}")
+    training_args.h_schedule_grid = str(getattr(training_args, "h_schedule_grid", "") or "")
+    parse_h_grid(training_args.h_schedule_grid)
+    training_args.h_schedule_window_min = float(getattr(training_args, "h_schedule_window_min", 0.0) or 0.0)
+    training_args.h_schedule_window_max = float(getattr(training_args, "h_schedule_window_max", 0.0) or 0.0)
+    if training_args.h_schedule_window_min < 0.0:
+        raise ValueError("--h_schedule_window_min must be >= 0")
+    if training_args.h_schedule_window_max < 0.0:
+        raise ValueError("--h_schedule_window_max must be >= 0")
+    if (
+        training_args.h_schedule_window_min > 0.0
+        and training_args.h_schedule_window_max > 0.0
+        and training_args.h_schedule_window_min > training_args.h_schedule_window_max
+    ):
+        raise ValueError("--h_schedule_window_min must be <= --h_schedule_window_max")
+    training_args.h_schedule_h0 = float(getattr(training_args, "h_schedule_h0", 0.0) or 0.0)
+    if training_args.h_schedule_h0 < 0.0:
+        raise ValueError("--h_schedule_h0 must be >= 0")
+    training_args.h_schedule_gamma = float(getattr(training_args, "h_schedule_gamma", 0.101))
+    if training_args.h_schedule_gamma <= 0.0:
+        raise ValueError("--h_schedule_gamma must be > 0")
+    training_args.h_schedule_total_steps = int(getattr(training_args, "h_schedule_total_steps", 0) or 0)
+    if training_args.h_schedule_total_steps < 0:
+        raise ValueError("--h_schedule_total_steps must be >= 0")
+    training_args.h_schedule_d_eff = float(getattr(training_args, "h_schedule_d_eff", 1.0))
+    if training_args.h_schedule_d_eff <= 0.0:
+        raise ValueError("--h_schedule_d_eff must be > 0")
+    training_args.h_schedule_n_eff = float(getattr(training_args, "h_schedule_n_eff", 1.0))
+    if training_args.h_schedule_n_eff <= 0.0:
+        raise ValueError("--h_schedule_n_eff must be > 0")
+    training_args.h_schedule_lipschitz_l = float(getattr(training_args, "h_schedule_lipschitz_l", 0.0) or 0.0)
+    if training_args.h_schedule == "ji_theory_clip" and training_args.h_schedule_lipschitz_l <= 0.0:
+        raise ValueError("--h_schedule_lipschitz_l must be > 0 for --h_schedule ji_theory_clip")
+    training_args.h_schedule_c_delta = float(getattr(training_args, "h_schedule_c_delta", 1.0))
+    if training_args.h_schedule_c_delta <= 0.0:
+        raise ValueError("--h_schedule_c_delta must be > 0")
     precision_mode = str(getattr(training_args, "precision_mode", "") or "").strip().lower()
     if precision_mode:
         if precision_mode not in {"fp32", "fp16", "bf16", "int8"}:
@@ -1763,6 +1860,21 @@ def main():
         training_args.zo_two_point_precision,
         training_args.zero_order_eps,
         bool(getattr(training_args, "zo_use_true_directional_derivative", False)),
+    )
+    logger.info(
+        "[h-schedule-config] h_schedule=%s | window=[%s,%s] | h0=%s | gamma=%s | total_steps=%s | d_eff=%s | n_eff=%s | lipschitz_l=%s | c_delta=%s | grid=%s | log_csv=%s",
+        str(getattr(training_args, "h_schedule", "fixed")),
+        float(getattr(training_args, "h_schedule_window_min", 0.0) or 0.0),
+        float(getattr(training_args, "h_schedule_window_max", 0.0) or 0.0),
+        float(getattr(training_args, "h_schedule_h0", 0.0) or 0.0),
+        float(getattr(training_args, "h_schedule_gamma", 0.101)),
+        int(getattr(training_args, "h_schedule_total_steps", 0) or 0),
+        float(getattr(training_args, "h_schedule_d_eff", 1.0)),
+        float(getattr(training_args, "h_schedule_n_eff", 1.0)),
+        float(getattr(training_args, "h_schedule_lipschitz_l", 0.0) or 0.0),
+        float(getattr(training_args, "h_schedule_c_delta", 1.0)),
+        str(getattr(training_args, "h_schedule_grid", "") or ""),
+        bool(getattr(training_args, "h_schedule_log_csv", True)),
     )
     logger.info(
         "[quzo-config] zo_quantization_bits=%s | quzo_lowbit_enabled=%s | quzo_lowbit_probe_impl=%s | quantization_algorithm=%s | quantization_algorithm_impl=%s | requested_quantization_algorithm=%s | group_size=%s | block_size=%s | exact_gptq=%s | calibration_samples=%s | fallback_reason=%s",

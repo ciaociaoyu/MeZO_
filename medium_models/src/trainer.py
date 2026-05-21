@@ -53,6 +53,7 @@ import math
 import time
 
 import transformers
+from src.h_schedules import resolve_h_schedule
 from transformers.file_utils import is_datasets_available, is_in_notebook
 # 兼容性处理：新版本 Transformers 可能已移除 utils.is_torch_tpu_available
 try:
@@ -959,6 +960,69 @@ class Trainer(LinearHeadTrainer):
             val = self._get_init_h()
         return float(val)
 
+    def _h_schedule_name(self) -> str:
+        return str(getattr(self.args, "h_schedule", "fixed") or "fixed").strip().lower()
+
+    def _h_schedule_enabled(self) -> bool:
+        return self._h_schedule_name() != "fixed"
+
+    def _write_h_schedule_row(self, meta: Dict[str, Any]) -> None:
+        if not bool(getattr(self.args, "h_schedule_log_csv", True)):
+            return
+        schedule = str(meta.get("schedule", "fixed"))
+        if schedule == "fixed":
+            return
+        global_step = int(meta.get("step", getattr(self.state, "global_step", 0)) or 0)
+        logged_steps = getattr(self, "_h_schedule_logged_steps", None)
+        if not isinstance(logged_steps, set):
+            logged_steps = set()
+            self._h_schedule_logged_steps = logged_steps
+        log_key = (global_step, schedule)
+        if log_key in logged_steps:
+            return
+
+        base_dir = getattr(self.args, "output_dir", None) or "."
+        log_dir = os.path.join(base_dir, "metrics_logs")
+        os.makedirs(log_dir, exist_ok=True)
+        path = os.path.join(log_dir, "h_schedule.csv")
+        fieldnames = [
+            "global_step",
+            "h_schedule",
+            "raw_h",
+            "final_h",
+            "window_min",
+            "window_max",
+            "grid",
+            "precision_mode",
+            "zero_order_eps",
+        ]
+        write_header = not os.path.exists(path) or os.path.getsize(path) == 0
+        with open(path, "a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            if write_header:
+                writer.writeheader()
+            writer.writerow({
+                "global_step": global_step,
+                "h_schedule": schedule,
+                "raw_h": float(meta.get("raw_h", float("nan"))),
+                "final_h": float(meta.get("final_h", float("nan"))),
+                "window_min": float(meta.get("window_min", 0.0) or 0.0),
+                "window_max": float(meta.get("window_max", 0.0) or 0.0),
+                "grid": str(getattr(self.args, "h_schedule_grid", "") or ""),
+                "precision_mode": str(getattr(self.args, "precision_mode", "") or ""),
+                "zero_order_eps": float(getattr(self.args, "zero_order_eps", 0.0) or 0.0),
+            })
+        logged_steps.add(log_key)
+
+    def _get_current_zero_order_eps(self) -> float:
+        if not self._h_schedule_enabled():
+            return float(getattr(self.args, "zero_order_eps", 1e-3))
+        step = int(getattr(self.state, "global_step", 0) or 0)
+        h_value, meta = resolve_h_schedule(self.args, step)
+        self._latest_h_schedule_meta = meta
+        self._write_h_schedule_row(meta)
+        return float(h_value)
+
     def _get_training_step_size(self) -> float:
         override = getattr(self, "_zo_training_step_size_override", None)
         if override is not None:
@@ -968,12 +1032,14 @@ class Trainer(LinearHeadTrainer):
                     return val
             except Exception:
                 pass
+        if self._h_schedule_enabled():
+            return self._get_current_zero_order_eps()
         src = self._get_active_h_source()
         if src == "additive" and self._should_compute_additive_h():
             return self._get_current_additive_h()
         if src == "two_point" and self._should_compute_two_point_h():
             return self._get_current_two_point_h()
-        return float(getattr(self.args, "zero_order_eps", 1e-3))
+        return self._get_current_zero_order_eps()
 
     def _should_quantize_training_perturbation(self) -> bool:
         return (

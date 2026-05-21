@@ -143,6 +143,8 @@ cython_debug/
 !large_models/train_opt_2p7b_mnli.sh
 !large_models/sh_file/MNLI/*.sh
 !medium_models/scripts/exp_sst5_h_precision_sweep.sh
+!medium_models/scripts/smoke_h_schedules.sh
+!medium_models/scripts/submit_iter_h_baselines_3prec.sh
 !Some_test_exp/sst5_smoke_jobs/*.sh
 !experiments/h_sweep_14h/h_values.sh
 !experiments/h_sweep_14h/jobs/
