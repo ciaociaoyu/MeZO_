@@ -243,9 +243,9 @@ def compute_quantizer_state(
     group_size: int,
     activation_rms: Optional[torch.Tensor],
 ) -> Tuple[QuantizerState, Dict[str, object]]:
-    if bitwidth != 8:
-        raise ValueError("this robustness runner only supports INT8")
-    qmax = 127
+    if bitwidth not in {4, 8}:
+        raise ValueError(f"this robustness runner only supports INT4/INT8, got INT{bitwidth}")
+    qmax = 127 if bitwidth == 8 else 7
     groups, lengths, valid = group_view_2d(weight, group_size)
     alpha_values = AWQ_ALPHA_GRID if quantizer == "awq" else RTN_ALPHA_GRID
     alpha_grid = torch.tensor(alpha_values, device=weight.device, dtype=torch.float32)
@@ -703,11 +703,15 @@ class RobertaHarness(BaseHarness):
                 return head_mask.to(dtype=self.dtype)
 
             RobertaModel.get_head_mask = _compat_get_head_mask
+        task_name = getattr(args, "roberta_task_name", getattr(args, "task_name", "sst-5"))
         load_args = argparse.Namespace(
             repo_root=REPO_ROOT,
             model_id="roberta-large",
+            task_name=task_name,
+            dataset_mode=getattr(args, "dataset_mode", "full"),
+            num_k=int(getattr(args, "num_k", 16)),
             seed=16,
-            data_seed=16,
+            data_seed=int(getattr(args, "data_seed", 16)),
             batch_size=self.batch_size,
             eval_batch_size=self.eval_batch_size,
         )

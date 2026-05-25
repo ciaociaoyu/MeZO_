@@ -1,0 +1,1 @@
+group,model,dataset,seed,formula_name,Delta_mode,Delta_value,G_mode,G_value,S3_sq,rho3_value,L_value_if_used,hstar_cont,empirical_min_nmse_h,h_over_oracle,oracle_over_h,empirical_min_nmse,empirical_max_corr_h,empirical_max_corr,mse,nmse,corr,bias,mae,median_abs_error,nmse_ratio,corr_gap,alignment_eff,norm_ratio_eff,zero_coord_frac_eff,rms_snap_error,pass,strict_pass,notes

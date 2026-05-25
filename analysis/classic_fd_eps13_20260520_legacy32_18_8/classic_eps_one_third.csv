@@ -1,0 +1,9 @@
+setting,epsilon_or_delta,eps_one_third,source,note
+unit_fp32_machine_eps,1.1920928955078125e-07,0.00492156660115185,IEEE float32 machine epsilon,central-FD textbook unit-scale h
+unit_fp16_machine_eps,0.0009765625,0.09921256574801247,IEEE float16 machine epsilon,central-FD textbook unit-scale h
+unit_bf16_machine_eps,0.0078125,0.19842513149602495,bfloat16 machine epsilon; also close to 1/128 INT8 code unit,included because INT8 code-step unit scale is often approximated this way
+unit_int8_symmetric_code_eps_1_over_127,0.007874015748031496,0.19894457138304456,symmetric signed INT8 normalized code step proxy,not the RTNClip dequantized groupwise scale
+roberta_sst5_fp32_ulp_rms_delta,6.588711557838451e-09,0.0018747074205722734,analysis/hstar_fp32_fp16_20260519_044942/hstar_estimates.csv,effective parameter snapping RMS from prior hstar package
+roberta_sst5_fp16_ulp_rms_delta,5.114135575248819e-05,0.03711852803988738,analysis/hstar_fp32_fp16_20260519_044942/hstar_estimates.csv,effective parameter snapping RMS from prior hstar package
+roberta_sst5_fp16_strict_delta_ulp_rms,4.466073069942735e-05,0.03547931895990097,analysis/fp16_strict_twopoint_directG_T3_20260520_200238/strict_twopoint_hstar_eval.csv,"strict FP16 package Delta; eps^(1/3) only, not h4/h6 formula"
+roberta_sst5_int8_rtnclip_g128_dequant_delta,0.0009349233635846558,0.0977819448433172,analysis/int8_hstar_dequant_estimate_20260520_202220/int8_hstar_estimates.csv,RTNClip G128 dequant reconstruction-derived Delta; eps^(1/3) only

@@ -1,0 +1,1 @@
+group,model,dataset,seed,h3,m_T3,S3_sq,S3_rms,T3_abs_mean,T3_abs_median,rho3_q50,rho3_q90,rho3_q95,finite_rate,zero_T3_frac,sign_negative_frac,S3_sq_stability_2x,S3_sq_stability_next,rho3_q90_stability_2x,rho3_q90_stability_next,log_slope_S3_next,log_slope_rho_next,low_h3_noise_suspected,large_h3_nonlocal_suspected

@@ -1,0 +1,2 @@
+{"epoch": "0.1652892561983471", "global_step": "20", "train_loss": "1.789642333984375", "train_acc": "0.25", "eval_ran": "YES", "eval_loss": "1.7705078125", "eval_acc": "0.24824355971896955", "eval_loss_avg5": "1.7705078125"}
+{"epoch": "0.3305785123966942", "global_step": "40", "train_loss": "1.8456802368164062", "train_acc": "0.203125", "eval_ran": "YES", "eval_loss": "1.7646484375", "eval_acc": "0.24824355971896955", "eval_loss_avg5": "1.767578125"}

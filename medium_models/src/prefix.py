@@ -80,7 +80,9 @@ class PrefixTuning:
 
             # Move the model to GPU first?
             model = model.cuda()
-            input_tokens = torch.randint(low=0, high=model.config.vocab_size, size=(1, num_prefix), dtype=torch.long).cuda()
+            input_embeddings = model.get_input_embeddings() if hasattr(model, "get_input_embeddings") else None
+            vocab_size = int(getattr(input_embeddings, "num_embeddings", model.config.vocab_size))
+            input_tokens = torch.randint(low=0, high=vocab_size, size=(1, num_prefix), dtype=torch.long).cuda()
             if model.config.model_type == "roberta":
                 with torch.no_grad():
                     # real_key_values = model(input_ids=input_tokens, use_cache=True).past_key_values

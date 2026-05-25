@@ -1,0 +1,12 @@
+[
+  {
+    "candidate_h": [
+      3e-05,
+      0.0003,
+      0.001
+    ],
+    "dataset": "sst-5",
+    "model": "roberta-large",
+    "seed": 16
+  }
+]

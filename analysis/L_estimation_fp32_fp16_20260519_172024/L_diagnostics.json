@@ -1,0 +1,456 @@
+{
+  "analysis_output_dir": "/scratch/jy03364/MeZO_/analysis/L_estimation_fp32_fp16_20260519_172024",
+  "code_inspection": {
+    "eval_dropout_existing": "zo_forward and probe_window call model.eval(), disabling dropout during probes",
+    "existing_L_estimator": "medium_models/src/trainer.py:2066 _estimate_two_point_l_raw implements shared-step L at one Delta-derived h2",
+    "fp16_forward_uses": "zo_two_point_precision=fp16 maps to CUDA autocast float16; BF16 only if precision_mode=bf16",
+    "main_tex": "No main.tex/*.tex found outside generated experiment/package directories during inspection",
+    "parameter_restore_existing": "training probe applies additive perturbations then inverse additive perturbations; this analyzer snapshots and copies parameters back exactly after each direction",
+    "perturbation_application_code": "medium_models/src/trainer.py:5383 efficient_perturb_parameters; 1958 _sample_direction_and_delta; 1972 _apply_delta_list",
+    "precision_handling_code": "medium_models/run.py:1421-1438 precision_mode mapping; medium_models/src/trainer.py:4236 _zo_two_point_autocast_context"
+  },
+  "compute_environment": {
+    "cuda_available": false,
+    "cuda_device_count": 1,
+    "hostname": "ra7-1",
+    "platform": "Linux-5.14.0-503.31.1.el9_5.x86_64-x86_64-with-glibc2.34",
+    "python": "3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:09:02) [GCC 11.2.0]",
+    "torch_version": "2.11.0+cu130"
+  },
+  "direction_normalization": "raw Gaussian unnormalized; matches training dense direction convention",
+  "direction_seed_base": 16,
+  "direction_seeds": [
+    1611624448,
+    1130678224,
+    674770829,
+    1374608009,
+    54998815,
+    1227552143,
+    1931691231,
+    1939102765,
+    963358247,
+    1824949126,
+    1769183279,
+    488954224,
+    35453153,
+    920106026,
+    187391173,
+    1245441021,
+    1443279201,
+    1293965307,
+    564774591,
+    223267081,
+    1470050196,
+    1022378834,
+    1224503030,
+    1278090378,
+    394197577,
+    1536039008,
+    548697308,
+    679930086,
+    968621649,
+    1518619272,
+    236365993,
+    1019513223
+  ],
+  "directions_identical_across_h2": true,
+  "end_time": "2026-05-19T17:20:26.180974",
+  "git_commit": "fc0aa112893756c2e494a7d2c52744da94f4f729",
+  "m_L": 32,
+  "run_config_paths_seen": 61,
+  "runs_discovered": [
+    {
+      "compute_dtype": "fp16",
+      "h": 1e-09,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/fp16/h_left_tail_checkpointed/results/fp16_h1e-9_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h1e-9_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 1e-08,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/fp16/h_left_tail_checkpointed/results/fp16_h1e-8_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h1e-8_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 1e-07,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/fp16/h_left_tail_checkpointed/results/fp16_h1e-7_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h1e-7_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 3e-07,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/fp16/h_left_tail_checkpointed/results/fp16_h3e-7_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h3e-7_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 1e-06,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/fp16/h_left_tail_checkpointed/results/fp16_h1e-6_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h1e-6_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 3e-06,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/fp16/h_left_tail_checkpointed/results/fp16_h3e-6_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h3e-6_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 1e-05,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp16/h_sweep_11h_checkpointed/results/fp16_h1e-5_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h1e-5_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 3e-05,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp16/h_sweep_11h_checkpointed/results/fp16_h3e-5_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h3e-5_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 0.0001,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp16/h_sweep_11h_checkpointed/results/fp16_h1e-4_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h1e-4_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 0.0003,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp16/h_sweep_11h_checkpointed/results/fp16_h3e-4_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h3e-4_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 0.001,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp16/h_sweep_11h_checkpointed/results/fp16_h1e-3_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h1e-3_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 0.0015,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp16/h_sweep_11h_checkpointed/results/fp16_h1p5e-3_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h1p5e-3_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 0.002,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp16/h_sweep_11h_checkpointed/results/fp16_h2e-3_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h2e-3_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 0.003,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp16/h_sweep_11h_checkpointed/results/fp16_h3e-3_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h3e-3_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 0.004,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp16/h_sweep_11h_checkpointed/results/fp16_h4e-3_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h4e-3_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 0.005,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp16/h_sweep_11h_checkpointed/results/fp16_h5e-3_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h5e-3_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp16",
+      "h": 0.01,
+      "has_run_summary_raw": true,
+      "precision": "fp16",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp16/h_sweep_11h_checkpointed/results/fp16_h1e-2_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp16_h1e-2_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp16",
+      "zo_quantization": "fp16"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 1e-09,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/fp32/h_left_tail_checkpointed/results/fp32_h1e-9_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h1e-9_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 1e-08,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/smoke_resume/fp32/h_left_tail_checkpointed/results/smoke_resume_fp32_h1e-8_seed16_bs64_ckpt25_to50/seed16",
+      "run_name": "smoke_resume_fp32_h1e-8_seed16_bs64_ckpt25_to50",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 1e-07,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/fp32/h_left_tail_checkpointed/results/fp32_h1e-7_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h1e-7_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 3e-07,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/fp32/h_left_tail_checkpointed/results/fp32_h3e-7_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h3e-7_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 1e-06,
+      "has_run_summary_raw": false,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/fp32/h_left_tail_checkpointed/results/fp32_h1e-6_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h1e-6_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 3e-06,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_left_tail_seed16_bs64_ckpt1k_20260519/fp32/h_left_tail_checkpointed/results/fp32_h3e-6_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h3e-6_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 1e-05,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h1e-5_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h1e-5_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 3e-05,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h3e-5_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h3e-5_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 0.0001,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h1e-4_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h1e-4_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 0.0003,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h3e-4_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h3e-4_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 0.001,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h1e-3_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h1e-3_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 0.0015,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h1p5e-3_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h1p5e-3_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 0.002,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h2e-3_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h2e-3_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 0.003,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h3e-3_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h3e-3_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 0.004,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h4e-3_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h4e-3_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 0.005,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h5e-3_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h5e-3_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    },
+    {
+      "compute_dtype": "fp32",
+      "h": 0.01,
+      "has_run_summary_raw": true,
+      "precision": "fp32",
+      "run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h1e-2_seed16_bs64_ckpt1k/seed16",
+      "run_name": "fp32_h1e-2_seed16_bs64_ckpt1k",
+      "storage_dtype": "fp32",
+      "zo_quantization": "none"
+    }
+  ],
+  "search_roots": [
+    "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5"
+  ],
+  "selected_checkpoints": [
+    {
+      "checkpoint_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp16/h_sweep_11h_checkpointed/results/fp16_h1e-3_seed16_bs64_ckpt1k/seed16/checkpoints/step_1000",
+      "checkpoint_name": "step_1000",
+      "precision": "fp16",
+      "reference_run": "fp16_h1e-3_seed16_bs64_ckpt1k",
+      "reference_run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp16/h_sweep_11h_checkpointed/results/fp16_h1e-3_seed16_bs64_ckpt1k/seed16",
+      "target_run_h": 0.001
+    },
+    {
+      "checkpoint_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp16/h_sweep_11h_checkpointed/results/fp16_h1e-3_seed16_bs64_ckpt1k/seed16/checkpoints/final",
+      "checkpoint_name": "final",
+      "precision": "fp16",
+      "reference_run": "fp16_h1e-3_seed16_bs64_ckpt1k",
+      "reference_run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp16/h_sweep_11h_checkpointed/results/fp16_h1e-3_seed16_bs64_ckpt1k/seed16",
+      "target_run_h": 0.001
+    },
+    {
+      "checkpoint_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h1e-3_seed16_bs64_ckpt1k/seed16/checkpoints/step_1000",
+      "checkpoint_name": "step_1000",
+      "precision": "fp32",
+      "reference_run": "fp32_h1e-3_seed16_bs64_ckpt1k",
+      "reference_run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h1e-3_seed16_bs64_ckpt1k/seed16",
+      "target_run_h": 0.001
+    },
+    {
+      "checkpoint_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h1e-3_seed16_bs64_ckpt1k/seed16/checkpoints/final",
+      "checkpoint_name": "final",
+      "precision": "fp32",
+      "reference_run": "fp32_h1e-3_seed16_bs64_ckpt1k",
+      "reference_run_dir": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h1e-3_seed16_bs64_ckpt1k/seed16",
+      "target_run_h": 0.001
+    }
+  ],
+  "skipped_checkpoints": [
+    {
+      "checkpoint": "initial",
+      "precision": "fp16",
+      "reason": "no initial/step_0 checkpoint directory with model weights"
+    },
+    {
+      "checkpoint": "initial",
+      "precision": "fp32",
+      "reason": "no initial/step_0 checkpoint directory with model weights"
+    }
+  ],
+  "start_time": "2026-05-19T17:20:24.509509",
+  "warnings": [
+    "dry_run requested; model forwards were not executed"
+  ]
+}

@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import os
+import random
 import re
 import shutil
 import sys
@@ -44,6 +46,9 @@ H_GRID: List[Tuple[str, float]] = [
     ("5e-3", 5e-3),
     ("1e-2", 1e-2),
 ]
+
+CURRENT_SPARSE_MASK_STRATEGY = "task_grad_static"
+LEGACY_ABS_SPARSE_MASK_STRATEGIES = {"highest_abs", "lowest_abs"}
 
 SMOKE_SUMMARY_COLUMNS = [
     "bitwidth",
@@ -81,6 +86,14 @@ SMOKE_SUMMARY_COLUMNS = [
     "delta_visibility_mse",
     "delta_visibility_nmse",
     "delta_visibility_rel_l2",
+    "lowbit_true_nmse",
+    "lowbit_true_corr",
+    "nMSE_metric_version",
+    "true_dir_lowbit",
+    "true_dir_lowbit_field_name",
+    "legacy_nMSE_fd_true",
+    "legacy_nMSE_computed",
+    "legacy_nMSE_excluded_from_main_selection",
     "alpha_lt_1_frac",
     "num_scale_refreshes",
     "status",
@@ -89,9 +102,32 @@ SMOKE_SUMMARY_COLUMNS = [
 
 HSEARCH_SUMMARY_COLUMNS = [
     "run_name",
+    "dataset",
+    "task_name",
     "bitwidth",
     "h",
     "h_label",
+    "h_policy",
+    "hstar_cont",
+    "hstar_nearest_grid",
+    "Delta_mode",
+    "Delta_value",
+    "G_mode",
+    "G_value",
+    "L_mode",
+    "L_hat",
+    "d_trainable",
+    "direction_mode",
+    "sparse_ratio",
+    "sparse_mask_strategy",
+    "sparse_mask_source",
+    "sparse_mask_hash",
+    "sparse_mask_restored_from_checkpoint",
+    "sparse_rescale",
+    "active_params_all",
+    "mask_active_frac_all",
+    "active_params_quantized_linear",
+    "mask_active_frac_quantized_linear",
     "scale_refresh_k",
     "status",
     "steps_completed",
@@ -110,6 +146,10 @@ HSEARCH_SUMMARY_COLUMNS = [
     "last_eval_loss",
     "last_eval_loss_step",
     "final_train_loss",
+    "update_scalar_source",
+    "d_h_last",
+    "d_g_last",
+    "fd_true_error_last",
     "update_variant",
     "perturbed_parameter_scope",
     "quantized_forward_scope",
@@ -122,6 +162,14 @@ HSEARCH_SUMMARY_COLUMNS = [
     "delta_visibility_mse",
     "delta_visibility_nmse",
     "delta_visibility_rel_l2",
+    "lowbit_true_nmse",
+    "lowbit_true_corr",
+    "nMSE_metric_version",
+    "true_dir_lowbit",
+    "true_dir_lowbit_field_name",
+    "legacy_nMSE_fd_true",
+    "legacy_nMSE_computed",
+    "legacy_nMSE_excluded_from_main_selection",
     "saturation_frac_w",
     "saturation_frac_w_plus",
     "saturation_frac_w_minus",
@@ -170,6 +218,398 @@ def sample_directions_for_step(master: Dict[str, torch.Tensor], seed: int, bitwi
     return smoke.sample_directions(master, gen)
 
 
+def _empty_sparse_mask_stats(
+    *,
+    sparse_ratio: float,
+    quantized_names: Iterable[str],
+    strategy: str,
+    active_all: int,
+    total_all: int,
+    active_quantized: int,
+    total_quantized: int,
+    sparse_selection: str,
+    extra: Optional[Dict[str, object]] = None,
+) -> Dict[str, object]:
+    stats = {
+        "direction_mode": "sparse",
+        "sparse_ratio": float(sparse_ratio),
+        "sparse_p": float(sparse_ratio),
+        "sparse_mask_strategy": strategy,
+        "mask_strategy": strategy,
+        "sparse_selection": sparse_selection,
+        "sparse_rescale": "none",
+        "sparse_scaled_by_inv_sqrt_p": False,
+        "active_params_all": active_all,
+        "total_params_all": total_all,
+        "mask_active_frac_all": active_all / max(total_all, 1),
+        "active_params_quantized_linear": active_quantized,
+        "total_params_quantized_linear": total_quantized,
+        "mask_active_frac_quantized_linear": active_quantized / max(total_quantized, 1),
+    }
+    if extra:
+        stats.update(extra)
+    return stats
+
+
+def build_magnitude_sparse_masks(
+    master: Dict[str, torch.Tensor],
+    *,
+    sparse_ratio: float,
+    quantized_names: Iterable[str],
+    mask_strategy: str,
+) -> Tuple[Dict[str, torch.Tensor], Dict[str, object]]:
+    ratio = float(sparse_ratio)
+    if ratio <= 0.0 or ratio > 1.0 or not math.isfinite(ratio):
+        raise ValueError(f"sparse_ratio must be in (0, 1], got {sparse_ratio}")
+    strategy = str(mask_strategy).strip().lower()
+    if strategy not in {"highest_abs", "lowest_abs"}:
+        raise ValueError(f"sparse_mask_strategy must be highest_abs or lowest_abs, got {mask_strategy!r}")
+    quantized_set = set(quantized_names)
+    masks: Dict[str, torch.Tensor] = {}
+    active_all = 0
+    total_all = 0
+    active_quantized = 0
+    total_quantized = 0
+    for name, tensor in master.items():
+        if not tensor.is_floating_point():
+            continue
+        total = int(tensor.numel())
+        total_all += total
+        if name in quantized_set:
+            total_quantized += total
+        if ratio >= 1.0:
+            mask = torch.ones_like(tensor, dtype=torch.bool)
+        else:
+            k = max(int(math.floor(ratio * total)), 1)
+            flat_abs = tensor.detach().abs().reshape(-1).float()
+            if k >= total:
+                threshold = flat_abs.min() if strategy == "highest_abs" else flat_abs.max()
+            elif strategy == "highest_abs":
+                threshold = torch.kthvalue(flat_abs, total - k + 1).values.to(device=tensor.device, dtype=tensor.dtype)
+            else:
+                threshold = torch.kthvalue(flat_abs, k).values.to(device=tensor.device, dtype=tensor.dtype)
+            if strategy == "highest_abs":
+                mask = tensor.detach().abs() >= threshold
+            else:
+                mask = tensor.detach().abs() <= threshold
+        active = int(mask.sum().item())
+        active_all += active
+        if name in quantized_set:
+            active_quantized += active
+        masks[name] = mask
+    return masks, _empty_sparse_mask_stats(
+        sparse_ratio=ratio,
+        quantized_names=quantized_names,
+        strategy=strategy,
+        active_all=active_all,
+        total_all=total_all,
+        active_quantized=active_quantized,
+        total_quantized=total_quantized,
+        sparse_selection=f"percentile_per_tensor_{strategy}_weight",
+    )
+
+
+def forward_loss_for_grad(model, batch: Dict[str, torch.Tensor]):
+    batch = dict(batch)
+    batch["token_type_ids"] = torch.zeros_like(batch["input_ids"])
+    outputs = model(**batch)
+    return outputs[0]
+
+
+def build_task_grad_sparse_masks(
+    model,
+    params: Dict[str, torch.nn.Parameter],
+    master: Dict[str, torch.Tensor],
+    train_loader,
+    device: torch.device,
+    *,
+    sparse_ratio: float,
+    quantized_names: Iterable[str],
+    mask_batches: int,
+    mask_scope: str,
+) -> Tuple[Dict[str, torch.Tensor], Dict[str, object]]:
+    ratio = float(sparse_ratio)
+    if ratio <= 0.0 or ratio > 1.0 or not math.isfinite(ratio):
+        raise ValueError(f"sparse_ratio must be in (0, 1], got {sparse_ratio}")
+    scope = str(mask_scope).strip().lower()
+    if scope not in {"linear_weight", "all_floating"}:
+        raise ValueError(f"sparse_mask_scope must be linear_weight or all_floating, got {mask_scope!r}")
+    q_set = set(quantized_names)
+    if scope == "linear_weight":
+        eligible = [name for name in master if name in q_set]
+    else:
+        eligible = [name for name, tensor in master.items() if tensor.is_floating_point()]
+    eligible_set = set(eligible)
+    if not eligible:
+        raise RuntimeError(f"task_grad_static sparse mask has no eligible parameters for scope={scope}")
+
+    smoke.restore_master(params, master)
+    for p in params.values():
+        p.requires_grad_(p.is_floating_point())
+    model.zero_grad(set_to_none=True)
+
+    batch_iter = iter(train_loader)
+    used_batches = 0
+    score_chunks: List[torch.Tensor] = []
+    score_names: List[str] = []
+    score_numels: List[int] = []
+    try:
+        for _ in range(max(int(mask_batches), 1)):
+            try:
+                batch = next(batch_iter)
+            except StopIteration:
+                break
+            batch = smoke.move_batch(batch, device)
+            loss = forward_loss_for_grad(model, batch) / float(max(int(mask_batches), 1))
+            loss.backward()
+            used_batches += 1
+    finally:
+        # Leave the model in eval/no-grad training mode used by the ZO runner.
+        model.eval()
+
+    if used_batches <= 0:
+        raise RuntimeError("task_grad_static sparse mask could not read any training batch")
+
+    total_all = 0
+    total_quantized = 0
+    for name, tensor in master.items():
+        if not tensor.is_floating_point():
+            continue
+        total_all += int(tensor.numel())
+        if name in q_set:
+            total_quantized += int(tensor.numel())
+        if name in eligible_set:
+            grad = params[name].grad
+            if grad is None:
+                score = torch.zeros(int(tensor.numel()), device=device, dtype=torch.float32)
+            else:
+                score = grad.detach().float().square().reshape(-1)
+            score_chunks.append(score)
+            score_names.append(name)
+            score_numels.append(int(tensor.numel()))
+
+    all_scores = torch.cat(score_chunks)
+    eligible_total = int(all_scores.numel())
+    k = max(int(math.floor(ratio * eligible_total)), 1)
+    k = min(k, eligible_total)
+    if k >= eligible_total:
+        threshold = all_scores.min()
+    else:
+        threshold = torch.kthvalue(all_scores, eligible_total - k + 1).values
+
+    masks: Dict[str, torch.Tensor] = {
+        name: torch.zeros_like(tensor, dtype=torch.bool)
+        for name, tensor in master.items()
+        if tensor.is_floating_point()
+    }
+    active_all = 0
+    active_quantized = 0
+    offset = 0
+    for name, numel in zip(score_names, score_numels):
+        score = all_scores[offset : offset + numel]
+        offset += numel
+        mask = (score >= threshold).reshape(master[name].shape).to(device=master[name].device)
+        masks[name] = mask
+        active = int(mask.sum().item())
+        active_all += active
+        if name in q_set:
+            active_quantized += active
+
+    for p in params.values():
+        p.grad = None
+    smoke.restore_master(params, master)
+
+    return masks, _empty_sparse_mask_stats(
+        sparse_ratio=ratio,
+        quantized_names=quantized_names,
+        strategy="task_grad_static",
+        active_all=active_all,
+        total_all=total_all,
+        active_quantized=active_quantized,
+        total_quantized=total_quantized,
+        sparse_selection=f"global_topk_grad_square_{scope}",
+        extra={
+            "mask_source": "static_task_gradient_square_before_zo_training",
+            "sparse_mask_scope": scope,
+            "sparse_mask_batches": used_batches,
+            "sparse_mask_score": "first_order_grad_square",
+            "sparse_mask_threshold": float(threshold.detach().cpu()),
+            "eligible_params_for_mask": eligible_total,
+        },
+    )
+
+
+def build_sparse_masks(
+    master: Dict[str, torch.Tensor],
+    *,
+    sparse_ratio: float,
+    quantized_names: Iterable[str],
+    mask_strategy: str,
+) -> Tuple[Dict[str, torch.Tensor], Dict[str, object]]:
+    return build_magnitude_sparse_masks(
+        master,
+        sparse_ratio=sparse_ratio,
+        quantized_names=quantized_names,
+        mask_strategy=mask_strategy,
+    )
+
+
+def reset_run_seed(seed: int) -> None:
+    random.seed(int(seed))
+    torch.manual_seed(int(seed))
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(int(seed))
+
+
+def sparse_mask_hash(masks: Dict[str, torch.Tensor]) -> str:
+    digest = hashlib.sha256()
+    for name in sorted(masks):
+        mask = masks[name].detach().to(device="cpu", dtype=torch.bool).contiguous()
+        digest.update(name.encode("utf-8"))
+        digest.update(str(tuple(mask.shape)).encode("utf-8"))
+        digest.update(mask.numpy().tobytes())
+    return digest.hexdigest()
+
+
+def sparse_mask_stats_from_masks(
+    masks: Dict[str, torch.Tensor],
+    master: Dict[str, torch.Tensor],
+    *,
+    sparse_ratio: float,
+    quantized_names: Iterable[str],
+    strategy: str,
+    sparse_selection: str,
+    extra: Optional[Dict[str, object]] = None,
+) -> Dict[str, object]:
+    quantized_set = set(quantized_names)
+    active_all = 0
+    total_all = 0
+    active_quantized = 0
+    total_quantized = 0
+    for name, mask in masks.items():
+        if name not in master or not master[name].is_floating_point():
+            continue
+        active = int(mask.sum().item())
+        total = int(master[name].numel())
+        active_all += active
+        total_all += total
+        if name in quantized_set:
+            active_quantized += active
+            total_quantized += total
+    return _empty_sparse_mask_stats(
+        sparse_ratio=float(sparse_ratio),
+        quantized_names=quantized_names,
+        strategy=strategy,
+        active_all=active_all,
+        total_all=total_all,
+        active_quantized=active_quantized,
+        total_quantized=total_quantized,
+        sparse_selection=sparse_selection,
+        extra=extra,
+    )
+
+
+def sparse_masks_to_device(masks: Dict[str, torch.Tensor], device: torch.device) -> Dict[str, torch.Tensor]:
+    return {name: mask.to(device=device, dtype=torch.bool) for name, mask in masks.items()}
+
+
+def sparse_masks_to_cpu(masks: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    return {name: mask.detach().to(device="cpu", dtype=torch.bool) for name, mask in masks.items()}
+
+
+def sample_sparse_directions_for_step(
+    master: Dict[str, torch.Tensor],
+    masks: Dict[str, torch.Tensor],
+    seed: int,
+    bitwidth: int,
+    scale_refresh_k: int,
+    h: float,
+    step: int,
+) -> Dict[str, torch.Tensor]:
+    directions = sample_directions_for_step(master, seed, bitwidth, scale_refresh_k, h, step)
+    for name, mask in masks.items():
+        if name in directions:
+            directions[name] = directions[name] * mask.to(device=directions[name].device, dtype=directions[name].dtype)
+    return directions
+
+
+def inject_prefix_for_training(
+    model,
+    num_prefix: int = 5,
+    *,
+    prefix_precision: str = "fp16",
+    init_strategy: str = "random",
+) -> Tuple[List[str], str]:
+    smoke.add_medium_models_to_path(REPO_ROOT)
+    from src.prefix import PrefixTuning  # noqa: E402
+
+    precision = str(prefix_precision).strip().lower()
+    if precision not in {"fp16", "fp32"}:
+        raise ValueError(f"prefix_precision must be fp16 or fp32, got {prefix_precision!r}")
+    strategy = str(init_strategy).strip().lower()
+    if strategy not in {"random", "real_act", "real_act_with_random_fallback"}:
+        raise ValueError(f"prefix_init_strategy must be random, real_act, or real_act_with_random_fallback; got {init_strategy!r}")
+
+    if precision == "fp32":
+        model.float()
+
+    init_by_real_act = strategy in {"real_act", "real_act_with_random_fallback"}
+    try:
+        PrefixTuning(
+            model,
+            num_prefix=int(num_prefix),
+            reparam=False,
+            float16=(precision == "fp16"),
+            init_by_real_act=init_by_real_act,
+        )
+        status = f"prefix_{strategy}_init_{precision}"
+    except Exception as exc:
+        if strategy != "real_act_with_random_fallback":
+            raise
+        PrefixTuning(
+            model,
+            num_prefix=int(num_prefix),
+            reparam=False,
+            float16=(precision == "fp16"),
+            init_by_real_act=False,
+        )
+        status = f"prefix_random_fallback_after_real_act_error_{type(exc).__name__}_{precision}"
+
+    if precision == "fp32":
+        for name, param in model.named_parameters():
+            if "prefix" in name and param.is_floating_point():
+                param.data = param.data.float()
+    names = [name for name, _ in model.named_parameters() if "prefix" in name]
+    if not names:
+        raise RuntimeError("Prefix mode requested but no prefix parameters were created.")
+    return names, status
+
+
+def sample_prefix_directions_for_step(
+    master: Dict[str, torch.Tensor],
+    prefix_names: Iterable[str],
+    seed: int,
+    bitwidth: int,
+    scale_refresh_k: int,
+    h: float,
+    step: int,
+) -> Dict[str, torch.Tensor]:
+    prefix_set = set(prefix_names)
+    directions = sample_directions_for_step(master, seed, bitwidth, scale_refresh_k, h, step)
+    for name, tensor in master.items():
+        if name not in prefix_set:
+            directions[name] = torch.zeros_like(tensor)
+    return directions
+
+
+def truthy(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
 def latest_step_checkpoint(run_dir: Path) -> Optional[Path]:
     ckpt_root = run_dir / "checkpoints"
     if not ckpt_root.exists():
@@ -184,17 +624,55 @@ def latest_step_checkpoint(run_dir: Path) -> Optional[Path]:
     return None if best is None else best[1]
 
 
-def load_checkpoint(path: Path, device: torch.device):
-    payload = torch.load(path / "state.pt", map_location=device)
-    master = {k: v.to(device=device, dtype=torch.float16) for k, v in payload["master"].items()}
-    return int(payload["step"]), master, payload.get("best", {})
+def _dtype_from_name(name: str) -> torch.dtype:
+    lowered = str(name or "fp16").strip().lower()
+    if lowered in {"fp32", "float32", "32"}:
+        return torch.float32
+    if lowered in {"fp16", "float16", "16"}:
+        return torch.float16
+    raise ValueError(f"Unsupported master dtype {name!r}")
 
 
-def save_checkpoint(path: Path, step: int, master: Dict[str, torch.Tensor], best: Dict[str, object], config: Dict[str, object]) -> None:
+def load_checkpoint(path: Path, device: torch.device, master_dtype: Optional[torch.dtype] = None):
+    payload = torch.load(path / "state.pt", map_location=device, weights_only=False)
+    master = {
+        k: v.to(device=device, dtype=(master_dtype if master_dtype is not None else v.dtype))
+        for k, v in payload["master"].items()
+    }
+    sparse_masks = payload.get("sparse_masks")
+    if isinstance(sparse_masks, dict):
+        sparse_masks = sparse_masks_to_device(sparse_masks, device)
+    else:
+        sparse_masks = None
+    return int(payload["step"]), master, payload.get("best", {}), sparse_masks
+
+
+def save_checkpoint(
+    path: Path,
+    step: int,
+    master: Dict[str, torch.Tensor],
+    best: Dict[str, object],
+    config: Dict[str, object],
+    sparse_masks: Optional[Dict[str, torch.Tensor]] = None,
+) -> None:
     path.mkdir(parents=True, exist_ok=True)
-    cpu_master = {k: v.detach().cpu().to(dtype=torch.float16) for k, v in master.items()}
-    torch.save({"step": step, "master": cpu_master, "best": best, "config": config}, path / "state.pt")
-    smoke.write_json(path / "checkpoint_manifest.json", {"step": step, "created_at": datetime.now().isoformat(), "keys": len(cpu_master)})
+    cpu_master = {k: v.detach().cpu() for k, v in master.items()}
+    payload = {"step": step, "master": cpu_master, "best": best, "config": config}
+    manifest = {"step": step, "created_at": datetime.now().isoformat(), "keys": len(cpu_master)}
+    if sparse_masks is not None:
+        cpu_sparse_masks = sparse_masks_to_cpu(sparse_masks)
+        payload["sparse_masks"] = cpu_sparse_masks
+        manifest.update(
+            {
+                "has_sparse_masks": True,
+                "sparse_mask_keys": len(cpu_sparse_masks),
+                "sparse_mask_hash": sparse_mask_hash(cpu_sparse_masks),
+            }
+        )
+    else:
+        manifest.update({"has_sparse_masks": False, "sparse_mask_keys": 0, "sparse_mask_hash": None})
+    torch.save(payload, path / "state.pt")
+    smoke.write_json(path / "checkpoint_manifest.json", manifest)
 
 
 def copy_checkpoint(src: Path, dst: Path) -> None:
@@ -210,19 +688,36 @@ def log_to(run_dir: Path, message: str) -> None:
 
 
 def write_resume_command(run_dir: Path, config: Dict[str, object], manifest_path: Optional[str] = None) -> None:
+    data_dir_arg = f" --data_dir {config['data_dir']}" if config.get("data_dir") else ""
+    direction_args = (
+        f" --direction_mode {config.get('direction_mode', 'dense')}"
+        f" --sparse_ratio {config.get('sparse_ratio', 0.1)}"
+        f" --sparse_mask_strategy {config.get('sparse_mask_strategy', CURRENT_SPARSE_MASK_STRATEGY)}"
+        f" --sparse_mask_batches {config.get('sparse_mask_batches', 1)}"
+        f" --sparse_mask_scope {config.get('sparse_mask_scope', 'linear_weight')}"
+        f" --sparse_rescale {config.get('sparse_rescale', 'none')}"
+        f" --prefix_precision {config.get('prefix_precision', 'fp16')}"
+        f" --prefix_init_strategy {config.get('prefix_init_strategy', 'random')}"
+        f" --master_dtype {config.get('master_dtype', 'fp16')}"
+    )
+    if truthy(config.get("prefix_quantize", False)):
+        direction_args += " --prefix_quantize"
     if manifest_path:
         cmd = (
             f"CUDA_VISIBLE_DEVICES=0 DATALOADER_SHUFFLE=True python tools/rtnclip_roberta_sst5_batch.py "
-            f"run-manifest --manifest {manifest_path} --only-run-name {config['run_name']}"
+            f"--manifest {manifest_path} --only-run-name {config['run_name']} run-manifest"
         )
     else:
         cmd = (
-            f"CUDA_VISIBLE_DEVICES=0 DATALOADER_SHUFFLE=True python tools/rtnclip_roberta_sst5_batch.py train-one "
+            f"CUDA_VISIBLE_DEVICES=0 DATALOADER_SHUFFLE=True python tools/rtnclip_roberta_sst5_batch.py "
             f"--run_dir {run_dir} --run_name {config['run_name']} --bitwidth {config['bitwidth']} "
             f"--h {config['h']} --h_label {config.get('h_label', '')} --steps {config['max_steps']} "
             f"--scale_refresh_k {config['scale_refresh_k']} --lr {config['lr']} "
             f"--eval_every {config['eval_every']} --checkpoint_steps {config['checkpoint_steps']} "
-            f"--eval_batch_size {config['eval_batch_size']} --eval_batches {config['eval_batches']}"
+            f"--eval_batch_size {config['eval_batch_size']} --eval_batches {config['eval_batches']} "
+            f"--batch_size {config['batch_size']} --task_name {config.get('task_name', 'sst-5')} "
+            f"--dataset_mode {config['dataset_mode']} "
+            f"--num_k {config['num_k']} --data_seed {config['data_seed']}{data_dir_arg}{direction_args} train-one"
         )
     (run_dir / "resume_command.txt").write_text(cmd + "\n", encoding="utf-8")
 
@@ -233,14 +728,26 @@ def make_train_config(args, run_dir: Path, run_name: str, bitwidth: int, h: floa
         "run_name": run_name,
         "phase": phase,
         "model": "roberta-large",
-        "dataset": "SST-5",
-        "dataset_mode": "full",
-        "seed": 16,
-        "data_seed": 16,
-        "batch_size": 64,
+        "dataset": smoke.normalize_task_name(getattr(args, "task_name", "sst-5")),
+        "task_name": smoke.normalize_task_name(getattr(args, "task_name", "sst-5")),
+        "dataset_mode": args.dataset_mode,
+        "data_dir": args.data_dir or "",
+        "num_k": int(args.num_k),
+        "seed": int(args.seed),
+        "data_seed": int(args.data_seed),
+        "batch_size": int(args.batch_size),
         "shuffle": True,
         "DATALOADER_SHUFFLE": os.environ.get("DATALOADER_SHUFFLE", ""),
-        "direction": "dense",
+        "direction": str(getattr(args, "direction_mode", "dense")),
+        "direction_mode": str(getattr(args, "direction_mode", "dense")),
+        "sparse_ratio": float(getattr(args, "sparse_ratio", 0.1)),
+        "sparse_p": float(getattr(args, "sparse_ratio", 0.1)),
+        "sparse_mask_strategy": str(getattr(args, "sparse_mask_strategy", CURRENT_SPARSE_MASK_STRATEGY)),
+        "mask_strategy": str(getattr(args, "sparse_mask_strategy", CURRENT_SPARSE_MASK_STRATEGY)),
+        "sparse_mask_batches": int(getattr(args, "sparse_mask_batches", 1)),
+        "sparse_mask_scope": str(getattr(args, "sparse_mask_scope", "linear_weight")),
+        "sparse_rescale": str(getattr(args, "sparse_rescale", "none")),
+        "update_scalar_source": "finite_difference",
         "update_variant": "standard",
         "estimator": "two_point_symmetric_mezo",
         "h": float(h),
@@ -252,9 +759,12 @@ def make_train_config(args, run_dir: Path, run_name: str, bitwidth: int, h: floa
         "eval_batches": int(args.eval_batches),
         "lr": float(args.lr),
         "update_backend": "fp16_master",
-        "master_dtype": "fp16",
+        "master_dtype": str(getattr(args, "master_dtype", "fp16")),
         "perturbed_parameter_scope": "full_dense_all_trainable",
         "quantized_forward_scope": "Linear.weight_only",
+        "prefix_precision": str(getattr(args, "prefix_precision", "fp16")),
+        "prefix_init_strategy": str(getattr(args, "prefix_init_strategy", "random")),
+        "prefix_quantize": bool(getattr(args, "prefix_quantize", False)),
         "perturbation_diagnostics_scope": "quantized_linear_weights_only",
         "direct_int_update": False,
         "quantizer_backend": "G128_groupwise_RTNClip_fake_quant",
@@ -272,7 +782,7 @@ def make_train_config(args, run_dir: Path, run_name: str, bitwidth: int, h: floa
         "real_int_packing": False,
         "zero_point": "none",
         "rounding": "deterministic_round_to_nearest",
-        "excluded_methods": ["GPTQ", "residual_grid", "direct_int_update", "sparse", "LoRA", "RTE", "MNLI", "OPT", "Mistral"],
+        "excluded_methods": ["GPTQ", "residual_grid", "direct_int_update", "LoRA", "OPT", "Mistral"],
         "run_dir": str(run_dir),
         "gpu_name": env.get("gpu_name", ""),
         "gpu_type_requested": os.environ.get("REQUESTED_GPU_TYPE", "local"),
@@ -319,12 +829,57 @@ def evaluate_full(model, params, master, states, dev_loader, device, max_batches
     return total_loss / total_items, total_correct / total_items
 
 
+def true_directional_scalar_for_update(
+    model,
+    params: Dict[str, torch.nn.Parameter],
+    master: Dict[str, torch.Tensor],
+    directions: Dict[str, torch.Tensor],
+    batch: Dict[str, torch.Tensor],
+) -> Tuple[float, float]:
+    """Return full-precision current-batch loss and d_g=<grad, direction>.
+
+    This is an oracle diagnostic path for checking whether the sampled update
+    direction can train when the noisy quantized finite-difference scalar is
+    replaced by the true directional derivative used by the dg-dh probes.
+    """
+    smoke.restore_master(params, master)
+    model.zero_grad(set_to_none=True)
+    for param in params.values():
+        param.requires_grad_(param.is_floating_point())
+    loss = forward_loss_for_grad(model, batch)
+    loss.backward()
+    total = torch.zeros((), device=next(iter(master.values())).device, dtype=torch.float64)
+    for name, direction in directions.items():
+        grad = params[name].grad
+        if grad is not None:
+            total += (grad.detach().double() * direction.detach().double()).sum()
+    d_g = float(total.detach().cpu())
+    loss_f = float(loss.detach().cpu())
+    for param in params.values():
+        param.grad = None
+    smoke.restore_master(params, master)
+    model.eval()
+    return loss_f, d_g
+
+
 def advance_batch_iter(batch_iter, n: int) -> None:
     for _ in range(max(0, n)):
         next(batch_iter)
 
 
-def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_label: str, steps: int, scale_refresh_k: int, phase: str, manifest_path: Optional[str] = None) -> Dict[str, object]:
+def train_one(
+    args,
+    run_dir: Path,
+    run_name: str,
+    bitwidth: int,
+    h: float,
+    h_label: str,
+    steps: int,
+    scale_refresh_k: int,
+    phase: str,
+    manifest_path: Optional[str] = None,
+    manifest_row: Optional[Dict[str, object]] = None,
+) -> Dict[str, object]:
     run_dir.mkdir(parents=True, exist_ok=True)
     if should_skip_complete(run_dir, steps):
         log_to(run_dir, f"skip complete run {run_name}")
@@ -335,6 +890,71 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
             (run_dir / file_name).touch()
 
     config = make_train_config(args, run_dir, run_name, bitwidth, h, h_label, steps, scale_refresh_k, phase)
+    if manifest_row:
+        protected = {"run_dir", "run_name", "bitwidth", "h", "h_label", "max_steps", "scale_refresh_k"}
+        for key, value in manifest_row.items():
+            if key not in protected and value not in (None, ""):
+                config[key] = value
+    config["direction_mode"] = str(config.get("direction_mode", "dense")).strip().lower()
+    config["direction"] = config["direction_mode"]
+    config["sparse_ratio"] = float(config.get("sparse_ratio", config.get("sparse_p", 0.1)) or 0.1)
+    config["sparse_p"] = float(config["sparse_ratio"])
+    config["sparse_mask_strategy"] = str(config.get("sparse_mask_strategy", config.get("mask_strategy", CURRENT_SPARSE_MASK_STRATEGY))).strip().lower()
+    if config["direction_mode"] == "sparse" and config["sparse_mask_strategy"] in LEGACY_ABS_SPARSE_MASK_STRATEGIES:
+        config["legacy_sparse_mask_strategy_requested"] = config["sparse_mask_strategy"]
+        config["legacy_abs_sparse_mask_disabled"] = True
+        config["sparse_mask_strategy"] = CURRENT_SPARSE_MASK_STRATEGY
+    config["mask_strategy"] = config["sparse_mask_strategy"]
+    config["sparse_mask_batches"] = int(float(config.get("sparse_mask_batches", getattr(args, "sparse_mask_batches", 1))))
+    config["sparse_mask_scope"] = str(config.get("sparse_mask_scope", getattr(args, "sparse_mask_scope", "linear_weight"))).strip().lower()
+    config["sparse_rescale"] = str(config.get("sparse_rescale", "none")).strip().lower()
+    config["update_scalar_source"] = str(config.get("update_scalar_source", "finite_difference")).strip().lower()
+    if config["update_scalar_source"] in {"dg", "g_t_u", "gtu"}:
+        config["update_scalar_source"] = "true_grad_directional"
+    if config["update_scalar_source"] not in {"finite_difference", "true_grad_directional"}:
+        raise ValueError(f"Unsupported update_scalar_source={config['update_scalar_source']!r}")
+    if config["update_scalar_source"] == "true_grad_directional":
+        config["update_variant"] = "true_grad_scalar_same_direction"
+        config["estimator"] = "true_gradient_directional_oracle_same_direction"
+    config["lr"] = float(config.get("lr", args.lr))
+    config["eval_every"] = int(float(config.get("eval_every", args.eval_every)))
+    config["checkpoint_steps"] = int(float(config.get("checkpoint_steps", args.checkpoint_steps)))
+    config["eval_batch_size"] = int(float(config.get("eval_batch_size", args.eval_batch_size)))
+    config["eval_batches"] = int(float(config.get("eval_batches", args.eval_batches)))
+    config["diag_every"] = int(float(config.get("diag_every", args.diag_every)))
+    config["quant_log_every"] = int(float(config.get("quant_log_every", args.quant_log_every)))
+    config["log_every"] = int(float(config.get("log_every", args.log_every)))
+    if config["direction_mode"] == "sparse":
+        config["perturbed_parameter_scope"] = f"sparse_{config['sparse_mask_strategy']}_p{config['sparse_ratio']}_all_trainable"
+        config["excluded_methods"] = ["GPTQ", "residual_grid", "direct_int_update", "LoRA", "OPT", "Mistral"]
+    elif config["direction_mode"] == "prefix":
+        config["perturbed_parameter_scope"] = "prefix_parameters_only"
+        config["prefix_precision"] = str(config.get("prefix_precision", getattr(args, "prefix_precision", "fp16"))).strip().lower()
+        config["prefix_init_strategy"] = str(config.get("prefix_init_strategy", getattr(args, "prefix_init_strategy", "random"))).strip().lower()
+        config["prefix_quantize"] = truthy(config.get("prefix_quantize", getattr(args, "prefix_quantize", False)))
+        if config["prefix_precision"] not in {"fp16", "fp32"}:
+            raise ValueError(f"Unsupported prefix_precision={config['prefix_precision']!r}")
+        if config["prefix_init_strategy"] not in {"random", "real_act", "real_act_with_random_fallback"}:
+            raise ValueError(f"Unsupported prefix_init_strategy={config['prefix_init_strategy']!r}")
+        config["master_dtype"] = str(config.get("master_dtype", "fp32" if config["prefix_precision"] == "fp32" else "fp16")).strip().lower()
+        if config["prefix_quantize"]:
+            config["quantized_forward_scope"] = f"base_Linear.weight_plus_prefix_params_int{bitwidth}"
+            config["prefix_forward_quantized"] = True
+            config["prefix_grid_source"] = "unperturbed_prefix_master_weight"
+            config["prefix_pair_shared_grid"] = True
+            config["prefix_fresh_round_codes"] = True
+        else:
+            config["quantized_forward_scope"] = f"base_Linear.weight_only_prefix_{config['prefix_precision']}"
+            config["prefix_forward_quantized"] = False
+        config["prefix_num"] = int(float(config.get("prefix_num", 5)))
+        config["prefix_original_mezo_setting"] = (
+            config["prefix_num"] == 5
+            and config["prefix_init_strategy"] in {"real_act", "real_act_with_random_fallback"}
+        )
+        config["excluded_methods"] = ["GPTQ", "residual_grid", "direct_int_update", "sparse", "LoRA", "OPT", "Mistral"]
+    else:
+        config["perturbed_parameter_scope"] = "full_dense_all_trainable"
+        config["excluded_methods"] = ["GPTQ", "residual_grid", "direct_int_update", "sparse", "LoRA", "OPT", "Mistral"]
     smoke.write_json(run_dir / "run_config.json", config)
     smoke.write_json(run_dir / "run_manifest_row.json", config)
     write_resume_command(run_dir, config, manifest_path)
@@ -344,11 +964,59 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
         smoke.write_json(run_dir / "run_summary.json", summary)
         return summary
 
+    seed_for_run = int(config.get("seed", args.seed))
+    reset_run_seed(seed_for_run)
+    config["seed_reset_before_model_load"] = True
+    config["seed_reset_value"] = seed_for_run
+    smoke.write_json(run_dir / "run_config.json", config)
+    smoke.write_json(run_dir / "run_manifest_row.json", config)
+
     device = torch.device("cuda")
-    model, train_loader, dev_loader, _, train_sampler = smoke.load_prompt_model_and_data(argparse.Namespace(repo_root=REPO_ROOT, model_id="roberta-large", seed=16, data_seed=16, batch_size=64, eval_batch_size=args.eval_batch_size), device)
+    orig_torch_load = torch.load
+
+    def _compat_torch_load(*load_args, **load_kwargs):
+        load_kwargs.setdefault("weights_only", False)
+        return orig_torch_load(*load_args, **load_kwargs)
+
+    torch.load = _compat_torch_load
+    try:
+        model, train_loader, dev_loader, data_args, train_sampler = smoke.load_prompt_model_and_data(
+            argparse.Namespace(
+                repo_root=REPO_ROOT,
+                model_id="roberta-large",
+                task_name=config.get("task_name", getattr(args, "task_name", "sst-5")),
+                seed=int(config.get("seed", args.seed)),
+                data_seed=int(config.get("data_seed", args.data_seed)),
+                batch_size=int(config.get("batch_size", args.batch_size)),
+                eval_batch_size=int(config.get("eval_batch_size", args.eval_batch_size)),
+                dataset_mode=str(config.get("dataset_mode", args.dataset_mode)),
+                data_dir=str(config.get("data_dir") or "") or None,
+                num_k=int(config.get("num_k", args.num_k)),
+            ),
+            device,
+        )
+    finally:
+        torch.load = orig_torch_load
+    prefix_names: List[str] = []
+    if config["direction_mode"] == "prefix":
+        reset_run_seed(seed_for_run)
+        config["seed_reset_before_prefix_init"] = True
+        prefix_names, prefix_status = inject_prefix_for_training(
+            model,
+            int(config.get("prefix_num", 5)),
+            prefix_precision=str(config.get("prefix_precision", "fp16")),
+            init_strategy=str(config.get("prefix_init_strategy", "random")),
+        )
+        config["prefix_status"] = prefix_status
+        config["prefix_param_names"] = prefix_names
+        config["prefix_param_count"] = sum(int(p.numel()) for name, p in model.named_parameters() if name in set(prefix_names))
     params = smoke.named_parameter_map(model)
-    q_names = smoke.linear_weight_names(model)
+    q_names = [name for name in smoke.linear_weight_names(model) if name in params and "prefix" not in name]
+    if config["direction_mode"] == "prefix" and truthy(config.get("prefix_quantize", False)):
+        q_names.extend([name for name in prefix_names if name in params])
     numel_by_name = {name: params[name].numel() for name in q_names}
+    master_dtype = _dtype_from_name(str(config.get("master_dtype", "fp16")))
+    config["data_dir_resolved"] = getattr(data_args, "data_dir", "")
     config["sampler_name"] = type(train_sampler).__name__
     config["quantized_modules"] = q_names
     smoke.write_json(run_dir / "run_config.json", config)
@@ -370,15 +1038,121 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
         except Exception:
             previous_steps = 0
     should_resume = ckpt is not None and (previous_steps < int(steps) or not (run_dir / "checkpoints" / "final" / "state.pt").exists())
+    loaded_sparse_masks: Optional[Dict[str, torch.Tensor]] = None
     if should_resume:
-        start_step, master, best_loaded = load_checkpoint(ckpt, device)
+        start_step, master, best_loaded, loaded_sparse_masks = load_checkpoint(ckpt, device, master_dtype=master_dtype)
         best.update(best_loaded or {})
         smoke.restore_master(params, master)
         log_to(run_dir, f"resuming {run_name} from {ckpt} at step {start_step}")
     else:
-        master = {name: p.detach().clone().to(device=device, dtype=torch.float16) for name, p in params.items() if p.detach().is_floating_point()}
+        master = {name: p.detach().clone().to(device=device, dtype=master_dtype) for name, p in params.items() if p.detach().is_floating_point()}
         smoke.restore_master(params, master)
         log_to(run_dir, f"starting {run_name}")
+
+    sparse_masks: Optional[Dict[str, torch.Tensor]] = None
+    warnings: List[str] = []
+    direction_mode = str(config.get("direction_mode", "dense")).strip().lower()
+    if direction_mode == "sparse":
+        if config.get("sparse_rescale", "none") != "none":
+            raise ValueError("This runner only supports unscaled sparse masks for RTNClip sparse experiments.")
+        sparse_strategy = str(config.get("sparse_mask_strategy", CURRENT_SPARSE_MASK_STRATEGY)).strip().lower()
+        if loaded_sparse_masks is not None:
+            sparse_masks = loaded_sparse_masks
+            sparse_stats = sparse_mask_stats_from_masks(
+                sparse_masks,
+                master,
+                sparse_ratio=float(config.get("sparse_ratio", 0.1)),
+                quantized_names=q_names,
+                strategy=sparse_strategy,
+                sparse_selection=str(config.get("sparse_selection", "checkpoint_restored_sparse_mask")),
+                extra={
+                    "mask_source": "checkpoint_restored_sparse_mask",
+                    "sparse_mask_source": "checkpoint_restored_sparse_mask",
+                    "sparse_mask_restored_from_checkpoint": True,
+                },
+            )
+        else:
+            if should_resume:
+                warnings.append("resume_checkpoint_missing_sparse_masks_rebuilt_from_resumed_master")
+                log_to(run_dir, "warning: checkpoint has no sparse_masks; rebuilding mask from resumed master")
+            if sparse_strategy == "task_grad_static":
+                sparse_masks, sparse_stats = build_task_grad_sparse_masks(
+                    model,
+                    params,
+                    master,
+                    train_loader,
+                    device,
+                    sparse_ratio=float(config.get("sparse_ratio", 0.1)),
+                    quantized_names=q_names,
+                    mask_batches=int(config.get("sparse_mask_batches", getattr(args, "sparse_mask_batches", 1))),
+                    mask_scope=str(config.get("sparse_mask_scope", getattr(args, "sparse_mask_scope", "linear_weight"))),
+                )
+            else:
+                sparse_masks, sparse_stats = build_sparse_masks(
+                    master,
+                    sparse_ratio=float(config.get("sparse_ratio", 0.1)),
+                    quantized_names=q_names,
+                    mask_strategy=sparse_strategy,
+                )
+            sparse_stats["sparse_mask_source"] = str(sparse_stats.get("mask_source", "fresh_sparse_mask_from_current_master"))
+            sparse_stats["sparse_mask_restored_from_checkpoint"] = False
+        mask_hash = sparse_mask_hash(sparse_masks)
+        sparse_stats["sparse_mask_hash"] = mask_hash
+        sparse_stats["sparse_mask_saved_in_checkpoint"] = True
+        sparse_stats["sparse_mask_num_tensors"] = len(sparse_masks)
+        config.update(sparse_stats)
+        config.setdefault("mask_source", str(config.get("sparse_mask_source", "current_unperturbed_fp16_master_weight")))
+        config.setdefault("sparse_mask_source", str(config.get("mask_source", "current_unperturbed_fp16_master_weight")))
+        smoke.write_json(run_dir / "run_config.json", config)
+        smoke.write_json(run_dir / "run_manifest_row.json", config)
+        smoke.write_json(
+            run_dir / "sparse_mask_manifest.json",
+            {
+                "sparse_mask_hash": mask_hash,
+                "sparse_mask_num_tensors": len(sparse_masks),
+                "sparse_mask_restored_from_checkpoint": bool(config.get("sparse_mask_restored_from_checkpoint", False)),
+                "active_params_all": config.get("active_params_all"),
+                "total_params_all": config.get("total_params_all"),
+                "mask_active_frac_all": config.get("mask_active_frac_all"),
+                "active_params_quantized_linear": config.get("active_params_quantized_linear"),
+                "total_params_quantized_linear": config.get("total_params_quantized_linear"),
+                "mask_active_frac_quantized_linear": config.get("mask_active_frac_quantized_linear"),
+            },
+        )
+        log_to(
+            run_dir,
+            "sparse mask "
+            f"strategy={config['sparse_mask_strategy']} p={config['sparse_ratio']} "
+            f"source={config.get('sparse_mask_source')} "
+            f"hash={mask_hash[:12]} "
+            f"selection={config.get('sparse_selection')} "
+            f"active_all={sparse_stats['mask_active_frac_all']:.6g} "
+            f"active_quantized_linear={sparse_stats['mask_active_frac_quantized_linear']:.6g}",
+        )
+    elif direction_mode == "prefix":
+        if not prefix_names:
+            raise RuntimeError("Prefix direction mode has no prefix parameter names.")
+        config["active_params_all"] = sum(int(master[name].numel()) for name in prefix_names if name in master)
+        config["total_params_all"] = sum(int(t.numel()) for t in master.values())
+        config["mask_active_frac_all"] = config["active_params_all"] / max(int(config["total_params_all"]), 1)
+        if truthy(config.get("prefix_quantize", False)):
+            config["active_params_quantized_prefix"] = sum(int(master[name].numel()) for name in prefix_names if name in master)
+            config["mask_active_frac_quantized_prefix"] = 1.0
+            config["active_params_quantized_linear"] = 0
+            config["mask_active_frac_quantized_linear"] = 0.0
+            config["quantized_prefix_param_names"] = prefix_names
+        else:
+            config["active_params_quantized_linear"] = 0
+            config["mask_active_frac_quantized_linear"] = 0.0
+        smoke.write_json(run_dir / "run_config.json", config)
+        smoke.write_json(run_dir / "run_manifest_row.json", config)
+        log_to(
+            run_dir,
+            f"prefix mode prefix_params={len(prefix_names)} active_params={config['active_params_all']} "
+            f"prefix_quantize={truthy(config.get('prefix_quantize', False))}",
+        )
+    elif direction_mode != "dense":
+        raise ValueError(f"Unsupported direction_mode={direction_mode!r}")
 
     batch_iter = smoke.cycle(train_loader)
     if start_step:
@@ -390,11 +1164,14 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
     last_pert: Dict[str, object] = {}
     last_train_loss = None
     update_norm_last = None
+    d_h_last = None
+    d_g_last = None
+    update_scalar_last = None
+    fd_true_error_last = None
     finite_count = 0
     num_refreshes = 0
     status = "running"
     error_message = ""
-    warnings: List[str] = []
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
 
@@ -410,6 +1187,10 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
                 "loss_minus",
                 "train_loss",
                 "d_h",
+                "d_g",
+                "update_scalar",
+                "update_scalar_source",
+                "fd_true_error",
                 "d_h_finite",
                 "update_norm",
                 "seconds",
@@ -428,13 +1209,22 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
                 states, last_refresh_stats = smoke.refresh_quantizer_states(master, q_names, bitwidth, 128)
                 num_refreshes += 1
                 last_quant = smoke.aggregate_quantizer_stats(last_refresh_stats, numel_by_name)
-                if step_idx % args.quant_log_every == 0:
+                if step_idx % int(config.get("quant_log_every", args.quant_log_every)) == 0:
                     smoke.append_jsonl(run_dir / "quantizer_diagnostics.jsonl", {"step": step_idx, "record_type": "refresh_summary", "grid_id": num_refreshes, "scale_id": num_refreshes, "scale_refresh_k": scale_refresh_k, **last_quant})
                     for row in last_refresh_stats:
                         smoke.append_jsonl(run_dir / "quantizer_diagnostics.jsonl", {"step": step_idx, "record_type": "per_module_refresh", "grid_id": num_refreshes, "scale_id": num_refreshes, **row})
 
-            directions = sample_directions_for_step(master, 16, bitwidth, scale_refresh_k, h, step_idx)
+            if direction_mode == "prefix":
+                directions = sample_prefix_directions_for_step(master, prefix_names, int(config.get("seed", args.seed)), bitwidth, scale_refresh_k, h, step_idx)
+            elif sparse_masks is None:
+                directions = sample_directions_for_step(master, int(config.get("seed", args.seed)), bitwidth, scale_refresh_k, h, step_idx)
+            else:
+                directions = sample_sparse_directions_for_step(master, sparse_masks, int(config.get("seed", args.seed)), bitwidth, scale_refresh_k, h, step_idx)
             batch = smoke.move_batch(next(batch_iter), device)
+            d_g = None
+            true_grad_loss_f = None
+            if config["update_scalar_source"] == "true_grad_directional":
+                true_grad_loss_f, d_g = true_directional_scalar_for_update(model, params, master, directions, batch)
             smoke.copy_master_to_model(params, master, directions, h, +1.0, states)
             loss_plus, _ = smoke.forward_loss_and_logits(model, batch)
             smoke.copy_master_to_model(params, master, directions, h, -1.0, states)
@@ -443,16 +1233,31 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
             loss_plus_f = float(loss_plus.detach().cpu())
             loss_minus_f = float(loss_minus.detach().cpu())
             d_h = (loss_plus_f - loss_minus_f) / (2.0 * h)
-            finite = math.isfinite(loss_plus_f) and math.isfinite(loss_minus_f) and math.isfinite(d_h)
+            update_scalar = d_h if config["update_scalar_source"] == "finite_difference" else float(d_g)
+            finite = (
+                math.isfinite(loss_plus_f)
+                and math.isfinite(loss_minus_f)
+                and math.isfinite(d_h)
+                and math.isfinite(float(update_scalar))
+            )
             if finite:
                 finite_count += 1
-                update_norm_last = smoke.update_master(master, directions, float(args.lr), d_h)
+                update_norm_last = smoke.update_master(master, directions, float(config.get("lr", args.lr)), float(update_scalar))
                 smoke.restore_master(params, master)
-            last_train_loss = (loss_plus_f + loss_minus_f) / 2.0
+            last_train_loss = true_grad_loss_f if true_grad_loss_f is not None else (loss_plus_f + loss_minus_f) / 2.0
+            d_h_last = d_h
+            d_g_last = d_g
+            update_scalar_last = float(update_scalar)
+            fd_true_error_last = None if d_g is None else d_h - float(d_g)
 
-            if step_idx % args.diag_every == 0 or step_idx == steps - 1:
-                last_pert = smoke.perturbation_metrics(master, directions, states, h)
+            if step_idx % int(config.get("diag_every", args.diag_every)) == 0 or step_idx == steps - 1:
+                metric_states = states
+                if direction_mode == "prefix" and truthy(config.get("prefix_quantize", False)):
+                    metric_states = {name: states[name] for name in prefix_names if name in states}
+                last_pert = smoke.perturbation_metrics(master, directions, metric_states, h)
                 last_pert["code_change_frac"] = last_pert["active_frac"]
+                if direction_mode == "prefix" and truthy(config.get("prefix_quantize", False)):
+                    last_pert["perturbation_diagnostics_scope"] = "quantized_prefix_params_only"
                 last_pert["grid_id_plus"] = num_refreshes
                 last_pert["grid_id_minus"] = num_refreshes
                 last_pert["scale_id_plus"] = num_refreshes
@@ -462,23 +1267,23 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
             eval_loss = None
             eval_acc = None
             completed_step = step_idx + 1
-            if completed_step % int(args.eval_every) == 0 or completed_step == steps:
-                eval_loss, eval_acc = evaluate_full(model, params, master, states, dev_loader, device, int(args.eval_batches))
+            if completed_step % int(config.get("eval_every", args.eval_every)) == 0 or completed_step == steps:
+                eval_loss, eval_acc = evaluate_full(model, params, master, states, dev_loader, device, int(config.get("eval_batches", args.eval_batches)))
                 eval_row = {"step": completed_step, "eval_loss": eval_loss, "eval_acc": eval_acc}
                 smoke.append_jsonl(run_dir / "eval_metrics.jsonl", eval_row)
                 if eval_acc is not None and (best["best_eval_acc"] is None or eval_acc > best["best_eval_acc"]):
                     best["best_eval_acc"] = eval_acc
                     best["best_eval_step"] = completed_step
-                    save_checkpoint(run_dir / "checkpoints" / f"step_{completed_step}", completed_step, master, best, config)
+                    save_checkpoint(run_dir / "checkpoints" / f"step_{completed_step}", completed_step, master, best, config, sparse_masks=sparse_masks)
                     copy_checkpoint(run_dir / "checkpoints" / f"step_{completed_step}", run_dir / "checkpoints" / "best_acc")
                 if eval_loss is not None and (best["best_eval_loss"] is None or eval_loss < best["best_eval_loss"]):
                     best["best_eval_loss"] = eval_loss
                     best["best_eval_loss_step"] = completed_step
-                    save_checkpoint(run_dir / "checkpoints" / f"step_{completed_step}", completed_step, master, best, config)
+                    save_checkpoint(run_dir / "checkpoints" / f"step_{completed_step}", completed_step, master, best, config, sparse_masks=sparse_masks)
                     copy_checkpoint(run_dir / "checkpoints" / f"step_{completed_step}", run_dir / "checkpoints" / "best_loss")
 
-            if completed_step % int(args.checkpoint_steps) == 0 or completed_step == steps:
-                save_checkpoint(run_dir / "checkpoints" / f"step_{completed_step}", completed_step, master, best, config)
+            if completed_step % int(config.get("checkpoint_steps", args.checkpoint_steps)) == 0 or completed_step == steps:
+                save_checkpoint(run_dir / "checkpoints" / f"step_{completed_step}", completed_step, master, best, config, sparse_masks=sparse_masks)
 
             nan_flag = not finite or restore_diff > 1e-3 or (update_norm_last is not None and not math.isfinite(float(update_norm_last)))
             writer.writerow(
@@ -488,6 +1293,10 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
                     "loss_minus": loss_minus_f,
                     "train_loss": last_train_loss,
                     "d_h": d_h,
+                    "d_g": d_g,
+                    "update_scalar": update_scalar,
+                    "update_scalar_source": config["update_scalar_source"],
+                    "fd_true_error": fd_true_error_last,
                     "d_h_finite": finite,
                     "update_norm": update_norm_last,
                     "seconds": time.time() - step_start,
@@ -502,8 +1311,16 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
                 status = "failed"
                 error_message = f"non-finite or restore violation at step {completed_step}"
                 break
-            if completed_step % int(args.log_every) == 0 or completed_step == 1:
-                log_to(run_dir, f"step={completed_step}/{steps} loss={last_train_loss:.6g} d_h={d_h:.6g} eval_acc={eval_acc} active={last_pert.get('active_frac')}")
+            if completed_step % int(config.get("log_every", args.log_every)) == 0 or completed_step == 1:
+                if config["update_scalar_source"] == "true_grad_directional":
+                    log_to(
+                        run_dir,
+                        f"step={completed_step}/{steps} loss={last_train_loss:.6g} d_h={d_h:.6g} "
+                        f"d_g={float(d_g):.6g} update_scalar={float(update_scalar):.6g} "
+                        f"eval_acc={eval_acc} active={last_pert.get('active_frac')}",
+                    )
+                else:
+                    log_to(run_dir, f"step={completed_step}/{steps} loss={last_train_loss:.6g} d_h={d_h:.6g} eval_acc={eval_acc} active={last_pert.get('active_frac')}")
 
     steps_completed = 0
     try:
@@ -515,7 +1332,7 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
         last_eval_rows = []
         steps_completed = start_step
 
-    save_checkpoint(run_dir / "checkpoints" / "final", steps_completed, master, best, config)
+    save_checkpoint(run_dir / "checkpoints" / "final", steps_completed, master, best, config, sparse_masks=sparse_masks)
     if not (run_dir / "checkpoints" / "best_acc").exists():
         copy_checkpoint(run_dir / "checkpoints" / "final", run_dir / "checkpoints" / "best_acc")
     if not (run_dir / "checkpoints" / "best_loss").exists():
@@ -549,6 +1366,11 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
         "last_eval_loss": last_eval_loss,
         "last_eval_loss_step": last_eval_step,
         "final_train_loss": last_train_loss,
+        "update_scalar_source": config.get("update_scalar_source"),
+        "d_h_last": d_h_last,
+        "d_g_last": d_g_last,
+        "update_scalar_last": update_scalar_last,
+        "fd_true_error_last": fd_true_error_last,
         "d_h_finite_rate": finite_count / max(steps_completed - start_step, 1),
         "update_norm_last": update_norm_last,
         "update_variant": config.get("update_variant"),
@@ -563,6 +1385,14 @@ def train_one(args, run_dir: Path, run_name: str, bitwidth: int, h: float, h_lab
         "delta_visibility_mse": last_pert.get("delta_visibility_mse"),
         "delta_visibility_nmse": last_pert.get("delta_visibility_nmse"),
         "delta_visibility_rel_l2": last_pert.get("delta_visibility_rel_l2"),
+        "lowbit_true_nmse": last_pert.get("lowbit_true_nmse", last_pert.get("delta_visibility_nmse")),
+        "lowbit_true_corr": last_pert.get("lowbit_true_corr", last_pert.get("alignment")),
+        "nMSE_metric_version": last_pert.get("nMSE_metric_version", smoke.LOWBIT_NMSE_METRIC_VERSION),
+        "true_dir_lowbit": last_pert.get("true_dir_lowbit", smoke.LOWBIT_TRUE_DIR_FIELD_NAME),
+        "true_dir_lowbit_field_name": last_pert.get("true_dir_lowbit_field_name", smoke.LOWBIT_TRUE_DIR_FIELD_NAME),
+        "legacy_nMSE_fd_true": None,
+        "legacy_nMSE_computed": False,
+        "legacy_nMSE_excluded_from_main_selection": True,
         "saturation_frac_w": last_quant.get("saturation_frac_w"),
         "saturation_frac_w_plus": last_pert.get("saturation_frac_w_plus"),
         "saturation_frac_w_minus": last_pert.get("saturation_frac_w_minus"),
@@ -604,11 +1434,14 @@ def run_probe_grid(args) -> List[Dict[str, object]]:
     smoke.write_json(probe_dir / "run_config.json", {
         "phase": probe_name,
         "model": "roberta-large",
-        "dataset": "SST-5",
-        "dataset_mode": "full",
-        "seed": 16,
-        "data_seed": 16,
-        "batch_size": 64,
+        "dataset": smoke.normalize_task_name(getattr(args, "task_name", "sst-5")),
+        "task_name": smoke.normalize_task_name(getattr(args, "task_name", "sst-5")),
+        "dataset_mode": args.dataset_mode,
+        "data_dir": args.data_dir or "",
+        "num_k": int(args.num_k),
+        "seed": int(args.seed),
+        "data_seed": int(args.data_seed),
+        "batch_size": int(args.batch_size),
         "DATALOADER_SHUFFLE": os.environ.get("DATALOADER_SHUFFLE", ""),
         "bitwidth": bitwidth,
         "group_size": 128,
@@ -621,7 +1454,21 @@ def run_probe_grid(args) -> List[Dict[str, object]]:
     })
 
     device = torch.device("cuda")
-    model, train_loader, _, _, train_sampler = smoke.load_prompt_model_and_data(argparse.Namespace(repo_root=REPO_ROOT, model_id="roberta-large", seed=16, data_seed=16, batch_size=64, eval_batch_size=args.eval_batch_size), device)
+    model, train_loader, _, data_args, train_sampler = smoke.load_prompt_model_and_data(
+        argparse.Namespace(
+            repo_root=REPO_ROOT,
+            model_id="roberta-large",
+            task_name=getattr(args, "task_name", "sst-5"),
+            seed=int(args.seed),
+            data_seed=int(args.data_seed),
+            batch_size=int(args.batch_size),
+            eval_batch_size=int(args.eval_batch_size),
+            dataset_mode=args.dataset_mode,
+            data_dir=args.data_dir or None,
+            num_k=int(args.num_k),
+        ),
+        device,
+    )
     params = smoke.named_parameter_map(model)
     q_names = smoke.linear_weight_names(model)
     numel_by_name = {name: params[name].numel() for name in q_names}
@@ -650,7 +1497,7 @@ def run_probe_grid(args) -> List[Dict[str, object]]:
             "loss_minus": [],
         }
         for k in range(int(args.probe_dirs)):
-            directions = sample_directions_for_step(master, 16 + k, bitwidth, 1, h, k)
+            directions = sample_directions_for_step(master, int(args.seed) + k, bitwidth, 1, h, k)
             smoke.copy_master_to_model(params, master, directions, h, +1.0, states)
             loss_plus, _ = smoke.forward_loss_and_logits(model, batch)
             smoke.copy_master_to_model(params, master, directions, h, -1.0, states)
@@ -693,6 +1540,14 @@ def run_probe_grid(args) -> List[Dict[str, object]]:
             "delta_visibility_mse": sum(acc["delta_visibility_mse"]) / len(acc["delta_visibility_mse"]),
             "delta_visibility_nmse": sum(acc["delta_visibility_nmse"]) / len(acc["delta_visibility_nmse"]),
             "delta_visibility_rel_l2": sum(acc["delta_visibility_rel_l2"]) / len(acc["delta_visibility_rel_l2"]),
+            "lowbit_true_nmse": sum(acc["delta_visibility_nmse"]) / len(acc["delta_visibility_nmse"]),
+            "lowbit_true_corr": sum(acc["alignment"]) / len(acc["alignment"]),
+            "nMSE_metric_version": smoke.LOWBIT_NMSE_METRIC_VERSION,
+            "true_dir_lowbit": smoke.LOWBIT_TRUE_DIR_FIELD_NAME,
+            "true_dir_lowbit_field_name": smoke.LOWBIT_TRUE_DIR_FIELD_NAME,
+            "legacy_nMSE_fd_true": None,
+            "legacy_nMSE_computed": False,
+            "legacy_nMSE_excluded_from_main_selection": True,
             "code_change_frac": sum(acc["code_change_frac"]) / len(acc["code_change_frac"]),
             "clip_frac": sum(acc["clip_frac"]) / len(acc["clip_frac"]),
             "saturation_frac": sum(acc["saturation_frac"]) / len(acc["saturation_frac"]),
@@ -825,6 +1680,7 @@ def run_manifest(args) -> List[Dict[str, object]]:
                 int(row["scale_refresh_k"]),
                 row.get("phase", "int8_hsearch"),
                 str(manifest),
+                row,
             )
         )
     summarize(args.output_root)
@@ -833,65 +1689,69 @@ def run_manifest(args) -> List[Dict[str, object]]:
 
 def summarize(output_root: str) -> None:
     root = Path(output_root)
-    rows = []
-    manifest_path = root / "int8_hsearch_manifest.csv"
-    manifest_rows = []
-    if manifest_path.exists():
-        manifest_rows = list(csv.DictReader(manifest_path.open(newline="", encoding="utf-8")))
-    summary_by_dir = {str(path.parent): read_json(path) for path in root.glob("int8_hsearch/**/run_summary.json")}
-    if manifest_rows:
-        for mrow in manifest_rows:
-            run_dir = Path(mrow["run_dir"])
-            item = dict(summary_by_dir.get(str(run_dir), {}))
-            item.setdefault("run_name", mrow["run_name"])
-            item.setdefault("bitwidth", int(mrow["bitwidth"]))
-            item.setdefault("h", float(mrow["h"]))
-            item.setdefault("h_label", mrow["h_label"])
-            item.setdefault("scale_refresh_k", int(mrow["scale_refresh_k"]))
-            item.setdefault("seed", int(mrow["seed"]))
-            item.setdefault("data_seed", int(mrow["data_seed"]))
-            item.setdefault("batch_size", int(mrow["batch_size"]))
-            item.setdefault("status", "pending")
-            item.setdefault("steps_completed", 0)
-            metrics_path = run_dir / "metrics.csv"
-            if metrics_path.exists() and metrics_path.stat().st_size > 0 and "run_summary.json" not in {p.name for p in run_dir.glob("run_summary.json")}:
-                try:
-                    metrics = list(csv.DictReader(metrics_path.open(newline="", encoding="utf-8")))
-                    if metrics:
-                        item["steps_completed"] = int(float(metrics[-1]["step"]))
-                        item["final_train_loss"] = float(metrics[-1]["train_loss"]) if metrics[-1].get("train_loss") else None
-                        eval_rows = [r for r in metrics if r.get("eval_acc") not in (None, "")]
-                        if eval_rows:
-                            item["last_eval_acc"] = float(eval_rows[-1]["eval_acc"])
-                            item["last_eval_loss"] = float(eval_rows[-1]["eval_loss"])
-                            item["last_eval_step"] = int(float(eval_rows[-1]["step"]))
-                        item["status"] = "running"
-                except Exception as exc:
-                    item["warnings"] = f"summary metrics parse failed: {exc}"
-            if (run_dir / "run_summary.json").exists():
-                item["status"] = item.get("status", "complete")
-            item["run_dir"] = str(run_dir)
-            resume = run_dir / "resume_command.txt"
-            item["resume_command"] = resume.read_text(encoding="utf-8").strip() if resume.exists() else ""
-            rows.append(item)
-    else:
-        for path in sorted(root.glob("int8_hsearch/**/run_summary.json")):
-            item = read_json(path)
-            item["run_dir"] = str(path.parent)
-            resume = path.parent / "resume_command.txt"
-            item["resume_command"] = resume.read_text(encoding="utf-8").strip() if resume.exists() else ""
-            rows.append(item)
-    if rows:
-        write_csv(root / "int8_hsearch_summary.csv", rows, HSEARCH_SUMMARY_COLUMNS)
+    for phase_name, title in (("int8_hsearch", "INT8"), ("int4_hsearch", "INT4")):
+        rows = []
+        manifest_path = root / f"{phase_name}_manifest.csv"
+        manifest_rows = []
+        if manifest_path.exists():
+            manifest_rows = list(csv.DictReader(manifest_path.open(newline="", encoding="utf-8")))
+        summary_by_dir = {str(path.parent): read_json(path) for path in root.glob(f"{phase_name}/**/run_summary.json")}
+        if manifest_rows:
+            for mrow in manifest_rows:
+                run_dir = Path(mrow["run_dir"])
+                item = dict(summary_by_dir.get(str(run_dir), {}))
+                item.setdefault("run_name", mrow["run_name"])
+                item.setdefault("bitwidth", int(mrow["bitwidth"]))
+                item.setdefault("h", float(mrow["h"]))
+                item.setdefault("h_label", mrow["h_label"])
+                item.setdefault("scale_refresh_k", int(mrow["scale_refresh_k"]))
+                item.setdefault("seed", int(mrow["seed"]))
+                item.setdefault("data_seed", int(mrow["data_seed"]))
+                item.setdefault("batch_size", int(mrow["batch_size"]))
+                item.setdefault("status", "pending")
+                item.setdefault("steps_completed", 0)
+                metrics_path = run_dir / "metrics.csv"
+                if metrics_path.exists() and metrics_path.stat().st_size > 0 and "run_summary.json" not in {p.name for p in run_dir.glob("run_summary.json")}:
+                    try:
+                        metrics = list(csv.DictReader(metrics_path.open(newline="", encoding="utf-8")))
+                        if metrics:
+                            item["steps_completed"] = int(float(metrics[-1]["step"]))
+                            item["final_train_loss"] = float(metrics[-1]["train_loss"]) if metrics[-1].get("train_loss") else None
+                            eval_rows = [r for r in metrics if r.get("eval_acc") not in (None, "")]
+                            if eval_rows:
+                                item["last_eval_acc"] = float(eval_rows[-1]["eval_acc"])
+                                item["last_eval_loss"] = float(eval_rows[-1]["eval_loss"])
+                                item["last_eval_step"] = int(float(eval_rows[-1]["step"]))
+                            item["status"] = "running"
+                    except Exception as exc:
+                        item["warnings"] = f"summary metrics parse failed: {exc}"
+                if (run_dir / "run_summary.json").exists():
+                    item["status"] = item.get("status", "complete")
+                item["run_dir"] = str(run_dir)
+                resume = run_dir / "resume_command.txt"
+                item["resume_command"] = resume.read_text(encoding="utf-8").strip() if resume.exists() else ""
+                rows.append(item)
+        else:
+            for path in sorted(root.glob(f"{phase_name}/**/run_summary.json")):
+                item = read_json(path)
+                item["run_dir"] = str(path.parent)
+                resume = path.parent / "resume_command.txt"
+                item["resume_command"] = resume.read_text(encoding="utf-8").strip() if resume.exists() else ""
+                rows.append(item)
+        if not rows:
+            continue
+        write_csv(root / f"{phase_name}_summary.csv", rows, HSEARCH_SUMMARY_COLUMNS)
         md = [
-            "# INT8 RTNClip H-Search Summary",
+            f"# {title} RTNClip H-Search Summary",
+            "",
+            "For low-bit settings, the canonical nMSE in this runner is `lowbit_true_nmse`, an alias of the dequantized effective-displacement nMSE `delta_visibility_nmse`: MSE of `Q_t(w_t+h u)-Q_t(w_t-h u)` against `2h u` after dequantization to floating point. Legacy `nMSE_fd_true`, if present, is reported only for reference and is not used for selecting h.",
             "",
             "| h | status | steps | best_acc | last_acc | best_loss | last_loss | run_dir |",
             "| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |",
         ]
         for r in rows:
             md.append(f"| {r.get('h_label')} | {r.get('status')} | {r.get('steps_completed')} | {r.get('best_eval_acc')} | {r.get('last_eval_acc')} | {r.get('best_eval_loss')} | {r.get('last_eval_loss')} | `{r.get('run_dir')}` |")
-        (root / "int8_hsearch_summary.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+        (root / f"{phase_name}_summary.md").write_text("\n".join(md) + "\n", encoding="utf-8")
 
     verdict_path = root / "int4_probe_verdict.json"
     if verdict_path.exists():
@@ -918,6 +1778,13 @@ def summarize(output_root: str) -> None:
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output_root", default=str(REPO_ROOT / "outputs" / "rtnclip_lowbit_roberta_sst5_seed16"))
+    parser.add_argument("--task_name", default="sst-5")
+    parser.add_argument("--seed", type=int, default=16)
+    parser.add_argument("--data_seed", type=int, default=16)
+    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--dataset_mode", choices=["full", "fewshot"], default="full")
+    parser.add_argument("--data_dir", default="")
+    parser.add_argument("--num_k", type=int, default=16)
     parser.add_argument("--lr", type=float, default=1e-6)
     parser.add_argument("--eval_every", type=int, default=1000)
     parser.add_argument("--checkpoint_steps", type=int, default=1000)
@@ -927,6 +1794,16 @@ def parse_args():
     parser.add_argument("--quant_log_every", type=int, default=1000)
     parser.add_argument("--log_every", type=int, default=100)
     parser.add_argument("--probe_dirs", type=int, default=8)
+    parser.add_argument("--direction_mode", choices=["dense", "sparse", "prefix"], default="dense")
+    parser.add_argument("--sparse_ratio", type=float, default=0.1)
+    parser.add_argument("--sparse_mask_strategy", choices=["highest_abs", "lowest_abs", "task_grad_static"], default=CURRENT_SPARSE_MASK_STRATEGY)
+    parser.add_argument("--sparse_mask_batches", type=int, default=1)
+    parser.add_argument("--sparse_mask_scope", choices=["linear_weight", "all_floating"], default="linear_weight")
+    parser.add_argument("--sparse_rescale", choices=["none"], default="none")
+    parser.add_argument("--prefix_precision", choices=["fp16", "fp32"], default="fp16")
+    parser.add_argument("--prefix_init_strategy", choices=["random", "real_act", "real_act_with_random_fallback"], default="random")
+    parser.add_argument("--prefix_quantize", action="store_true")
+    parser.add_argument("--master_dtype", choices=["fp16", "fp32"], default="fp16")
     parser.add_argument("--manifest")
     parser.add_argument("--only-run-name", default="")
     parser.add_argument("--run_dir")

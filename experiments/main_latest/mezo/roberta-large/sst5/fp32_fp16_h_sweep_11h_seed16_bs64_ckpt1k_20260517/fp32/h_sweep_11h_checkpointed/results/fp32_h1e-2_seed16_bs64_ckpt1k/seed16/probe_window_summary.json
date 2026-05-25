@@ -1,0 +1,15 @@
+{
+  "compute_true_grad_directional": true,
+  "direction_type": "dense",
+  "h_values": [
+    0.01
+  ],
+  "jsonl_path": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/fp32/h_sweep_11h_checkpointed/results/fp32_h1e-2_seed16_bs64_ckpt1k/seed16/checkpoint_probe_stats.jsonl",
+  "num_probe_batches": 1,
+  "num_probe_directions": 50,
+  "precision_mode": "fp32",
+  "rows_written": 50,
+  "sparse_mode": "none",
+  "sparse_rate": 1.0,
+  "sparse_rescale": "none"
+}

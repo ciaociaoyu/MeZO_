@@ -1,0 +1,41 @@
+{
+  "env": {
+    "conda_default_env": "ciao",
+    "cuda_available": true,
+    "cuda_visible_devices": "0",
+    "device_count": 1,
+    "device_name": "NVIDIA H100 80GB HBM3",
+    "git_commit": "1c15f8d14c5d77fad889a53741b6220b73d44c82",
+    "hostname": "ra7-2",
+    "pwd": "/scratch/jy03364/MeZO_",
+    "python": "/home/jy03364/.conda/envs/ciao/bin/python",
+    "python_version": "3.12.0 | packaged by Anaconda, Inc. | (main, Oct  2 2023, 17:29:18) [GCC 11.2.0]",
+    "timestamp": "2026-05-21T20:00:09",
+    "torch_cuda": "12.1",
+    "torch_version": "2.5.1+cu121"
+  },
+  "lowbit_window_visibility_candidates": [
+    0.001,
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.01
+  ],
+  "notes": [
+    "Analysis-only; no training launched.",
+    "INT4 Delta is RTNClip group-scale RMS, not FP16 dtype ULP.",
+    "Strict FP16 visibility gate is reported separately because INT4 displacement geometry is intentionally quantized."
+  ],
+  "strict_fp16_visibility_candidates": [],
+  "sweep_summary": {
+    "best_acc": 0.47892271662763464,
+    "best_acc_h": 0.001,
+    "best_last_acc": 0.47892271662763464,
+    "best_last_h": 0.001,
+    "best_visibility_h": 0.01,
+    "best_visibility_lowbit_true_nmse": 0.10023144399169709,
+    "sweep_path": "/scratch/jy03364/MeZO_/outputs/rtnclip_int4_g128_rtnclip_roberta_sst5_seed16_20260521/int4_hsearch_summary.csv"
+  }
+}

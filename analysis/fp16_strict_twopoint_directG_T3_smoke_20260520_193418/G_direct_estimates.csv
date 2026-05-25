@@ -1,0 +1,2 @@
+group,model,dataset,seed,G_true,G_true_available,grad_norm_dtype,d_trainable,all_trainable_params_included,G_fd_multi,G_fd_at_3e-4,G_fd_at_1e-3,G_fd_smallest_stable,G_fd_over_true,relative_error_G_fd,selected_hG_values,fallback_flags
+A_seed,roberta-large,sst-5,16,13.359580337699002,True,fp32,407938142,True,25.4995382361306,26.13620993547338,25.83420921701166,26.13620993547338,1.9087080276146327,0.9087080276147076,0.0003;0.001;0.0015;0.002;0.003;0.004;0.01,

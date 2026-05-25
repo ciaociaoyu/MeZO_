@@ -2039,6 +2039,7 @@ class OurTrainer(Trainer):
             for i in range(len(outputs)):
                 output_text.append(self.tokenizer.decode(outputs[i][inputs["input_ids"].size(1):], skip_special_tokens=True).strip())
             f1s = [f1(output_text[i], inputs['gold'][i]) for i in range(len(output_text))]
+            mean_f1 = float(np.mean(f1s))
 
         # # ===== DEBUG 2025-11-08: 记录 zo_forward_nondiff mean F1 开始 =====
         # debug_mean_f1 = np.mean(f1s)
@@ -2049,7 +2050,7 @@ class OurTrainer(Trainer):
         #         logger.warning(f"[DEBUG] 记录 zo_forward_nondiff mean F1 失败: err={e}")
         # # ===== DEBUG 2025-11-08: 记录 zo_forward_nondiff mean F1 结束 =====
 
-        return -torch.tensor(debug_mean_f1, dtype=torch.float32)
+        return -torch.tensor(mean_f1, dtype=torch.float32)
 
 
     def zo_step(self, model, inputs):

@@ -1,0 +1,14 @@
+third_stencil_expected: -5.5
+third_stencil_observed: -5.499999999999617
+third_stencil_abs_error: 3.82804898890754e-13
+third_stencil_pass: True
+generic_envelope_A: 2.3
+generic_envelope_B: 7.1
+generic_minimizer: 0.7383119797320716
+h6_formula: 0.44916481133195896
+h6_from_envelope: 0.44916481133195896
+h6_abs_error: 0.0
+h6_minimizer_pass: True
+h6_constant: ((9/2) * Delta^2 * G^2 / S3_sq)^(1/6)
+rho3_constant: (9 * Delta^2 * G^2 / (2 * rho3_q90^2 * d*(d+2)*(d+4)))^(1/6)
+rho3_gate_constant: (9 * Delta^2 * G^2 / (128 * rho3_q90^2 * d*(d+2)*(d+4)))^(1/6)

@@ -1,0 +1,2 @@
+group,model,dataset,seed,h4_fdG,h6_fdG_S3,h6_trueG_S3,h_oracle,oracle_over_h4,oracle_over_h6_fdG,oracle_over_h6_trueG,nmse_ratio_h4,nmse_ratio_h6_fdG,nmse_ratio_h6_trueG
+A_seed,roberta-large,sst-5,16,0.0001410765884974579,0.0010977812477582507,0.0008849851321459353,0.0003,2.1265044979834182,0.2732784884170884,0.3389887458024883,19.173712466463883,9.58911501014683,3.2434609506984

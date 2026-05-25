@@ -1,0 +1,1 @@
+precision,checkpoint_name,checkpoint_path,L_mode,selector_name,selected_h2,selected_L_q,selected_L_value,selected_L_q50,selected_L_q90,selected_L_q95,SNR2,stability_q90_2x,stability_q90_next,stability_q90_prev,low_h2_noise_suspected,large_h2_nonlocal_suspected,selection_status,fallback_flags,notes

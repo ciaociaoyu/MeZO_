@@ -1,0 +1,65 @@
+{
+  "default_selector": {
+    "Delta_mode": "raw_scale_rms",
+    "Delta_value": 0.0009382299944565019,
+    "G_mode": "clean32_absG",
+    "G_value": 21.41894277638794,
+    "L_hat": 1.1690182732000014e-05,
+    "L_mode": "L_clean32",
+    "L_q": "q90",
+    "hstar_cont": 0.0010263981695916302,
+    "hstar_nearest_grid": 0.001,
+    "notes": "INT8: RTNClip scale RMS Delta; clean/stable G",
+    "precision": "int8",
+    "selector_name": "simple2pt_corrected"
+  },
+  "env": {
+    "conda_default_env": "ciao",
+    "cuda_available": true,
+    "cuda_visible_devices": "0",
+    "device_count": 1,
+    "device_name": "NVIDIA H100 80GB HBM3",
+    "git_commit": "1c15f8d14c5d77fad889a53741b6220b73d44c82",
+    "hostname": "ra7-2",
+    "pwd": "/scratch/jy03364/MeZO_",
+    "python": "/home/jy03364/.conda/envs/ciao/bin/python",
+    "python_version": "3.12.0 | packaged by Anaconda, Inc. | (main, Oct  2 2023, 17:29:18) [GCC 11.2.0]",
+    "timestamp": "2026-05-21T20:33:14",
+    "torch_cuda": "12.1",
+    "torch_version": "2.5.1+cu121"
+  },
+  "legacy_variants_written": false,
+  "lowbit_window_visibility_candidates": [
+    0.0001,
+    0.0003,
+    0.001,
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.01
+  ],
+  "notes": [
+    "Analysis-only; no training launched.",
+    "Default selector is simple2pt_corrected.",
+    "Legacy exploratory Delta/G variants are disabled by default; pass --write_legacy_variants to write them.",
+    "Strict FP16 visibility gate is reported separately because low-bit displacement geometry is intentionally quantized."
+  ],
+  "strict_fp16_visibility_candidates": [
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.01
+  ],
+  "sweep_summary": {
+    "best_acc": 0.4765807962529274,
+    "best_acc_h": 0.001,
+    "best_last_acc": 0.4765807962529274,
+    "best_last_h": 0.001,
+    "best_visibility_h": 0.01,
+    "best_visibility_lowbit_true_nmse": NaN,
+    "sweep_path": "outputs/rtnclip_lowbit_roberta_sst5_seed16_20260519_batch/int8_hsearch_summary.csv"
+  }
+}

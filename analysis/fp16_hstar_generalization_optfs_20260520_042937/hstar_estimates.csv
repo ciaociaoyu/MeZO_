@@ -1,0 +1,1 @@
+group,model,dataset,seed,selector,Delta_mode,Delta_value,G_method,G_hat,G_h_used,L_mode,L_q,L_hat,L_h2_used,d_trainable,hstar_cont,hstar_nearest_grid,nmse_at_selected_h,corr_at_selected_h,empirical_min_nmse_h,empirical_min_nmse,empirical_max_corr_h,empirical_max_corr,nmse_ratio,corr_gap,success_pass,strict_success_pass,notes

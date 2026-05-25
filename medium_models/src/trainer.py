@@ -2386,6 +2386,8 @@ class Trainer(LinearHeadTrainer):
     #   H_PROBE_UNIT_U=1               (normalize direction to unit norm across all params)
     #   H_PROBE_SAVE_PARAMS=1          (best-effort snapshot/restore theta_t; fallback to exact undo)
     # Output: <output_dir>/hprobe.jsonl
+    #   Per-h rows include finite-difference error metrics against true grad-dot-u:
+    #   mse = mean((d_fd - d_true)^2), g2 = mean(d_true^2), nmse = mse / g2.
     # =============================
 
     def _hprobe_enabled(self) -> bool:
@@ -2824,10 +2826,37 @@ class Trainer(LinearHeadTrainer):
                 e_abs_mean, e_abs_std = _mean_std(np.abs(e_arr) if e_arr is not None else None)
                 dtrue_mean, dtrue_std = _mean_std(dtrue_arr)
                 dfd_mean, dfd_std = _mean_std(dfd_arr)
-
-                # Direction consistency + correlation (between true and FD directional derivatives)
                 dir_sign_match = None
                 dir_corr = None
+
+                metric_stats = None
+                try:
+                    if dtrue_arr is not None and dfd_arr is not None and dtrue_arr.size > 0 and dfd_arr.size > 0:
+                        n = min(int(dtrue_arr.size), int(dfd_arr.size))
+                        dtrue_metric = dtrue_arr[:n]
+                        dfd_metric = dfd_arr[:n]
+                        valid = np.isfinite(dtrue_metric) & np.isfinite(dfd_metric)
+                        if valid.any():
+                            metric_stats = self._zo_probe_metric_summary(dfd_metric[valid], dtrue_metric[valid])
+                except Exception:
+                    metric_stats = None
+                if metric_stats is None:
+                    metric_stats = {
+                        "fd_mean": dfd_mean,
+                        "td_mean": dtrue_mean,
+                        "mae": e_abs_mean,
+                        "mse": None,
+                        "g2": None,
+                        "nmse": None,
+                        "rmse": None,
+                        "sign_acc": None,
+                        "corr": dir_corr,
+                        "fd_zero_ratio": None,
+                        "fd_abs_median": None,
+                        "td_abs_median": None,
+                    }
+
+                # Direction consistency + correlation (between true and FD directional derivatives)
                 try:
                     if dtrue_arr is not None and dfd_arr is not None and dtrue_arr.size > 0 and dfd_arr.size > 0:
                         st = np.sign(dtrue_arr)
@@ -2891,6 +2920,25 @@ class Trainer(LinearHeadTrainer):
                     "d_true_std": dtrue_std,
                     "d_fd_mean": dfd_mean,
                     "d_fd_std": dfd_std,
+                    "td_mean": metric_stats["td_mean"],
+                    "fd_mean": metric_stats["fd_mean"],
+                    "mae": metric_stats["mae"],
+                    "mse": metric_stats["mse"],
+                    "g2": metric_stats["g2"],
+                    "nmse": metric_stats["nmse"],
+                    "rmse": metric_stats["rmse"],
+                    "sign_acc": metric_stats["sign_acc"],
+                    "corr": metric_stats["corr"],
+                    "fd_zero_ratio": metric_stats["fd_zero_ratio"],
+                    "fd_abs_median": metric_stats["fd_abs_median"],
+                    "td_abs_median": metric_stats["td_abs_median"],
+                    "fd_true_mae": metric_stats["mae"],
+                    "fd_true_mse": metric_stats["mse"],
+                    "fd_true_g2": metric_stats["g2"],
+                    "fd_true_nmse": metric_stats["nmse"],
+                    "fd_true_rmse": metric_stats["rmse"],
+                    "fd_true_corr": metric_stats["corr"],
+                    "fd_true_sign_acc": metric_stats["sign_acc"],
                     "e_d_mean": e_mean,
                     "e_d_std": e_std,
                     "e_d_abs_mean": e_abs_mean,
@@ -2923,6 +2971,9 @@ class Trainer(LinearHeadTrainer):
                         logger.info(
                             f"[hprobe] step={gs} h={float(h):.3e} "
                             f"probe_loss={base_probe_loss:.6e} eval_loss={base_eval_loss:.6e} "
+                            f"mse={metric_stats['mse'] if metric_stats['mse'] is not None else float('nan'):.6e} "
+                            f"nmse={metric_stats['nmse'] if metric_stats['nmse'] is not None else float('nan'):.6e} "
+                            f"corr={metric_stats['corr'] if metric_stats['corr'] is not None else float('nan'):.6f} "
                             f"e_abs_mean={e_abs_mean if e_abs_mean is not None else float('nan'):.6e} "
                             f"deltaL={deltaL:.6e} "
                             f"h_eff_mean={h_eff_mean if h_eff_mean is not None else float('nan'):.3e} "

@@ -1,0 +1,15 @@
+{
+  "conda_default_env": "ciao",
+  "cuda_available": true,
+  "cuda_visible_devices": "0",
+  "device_count": 1,
+  "device_name": "NVIDIA H100 80GB HBM3",
+  "git_commit": "1c15f8d14c5d77fad889a53741b6220b73d44c82",
+  "hostname": "ra7-2",
+  "pwd": "/scratch/jy03364/MeZO_",
+  "python": "/home/jy03364/.conda/envs/ciao/bin/python",
+  "python_version": "3.12.0 | packaged by Anaconda, Inc. | (main, Oct  2 2023, 17:29:18) [GCC 11.2.0]",
+  "timestamp": "2026-05-21T20:22:25",
+  "torch_cuda": "12.1",
+  "torch_version": "2.5.1+cu121"
+}

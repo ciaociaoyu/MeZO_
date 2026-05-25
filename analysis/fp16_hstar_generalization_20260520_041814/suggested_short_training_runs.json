@@ -1,0 +1,77 @@
+[
+  {
+    "candidate_h": [
+      3e-05,
+      0.0001,
+      0.0003,
+      0.001
+    ],
+    "dataset": "sst-5",
+    "model": "roberta-large",
+    "seed": 16
+  },
+  {
+    "candidate_h": [
+      3e-05,
+      0.0001,
+      0.0003,
+      0.001
+    ],
+    "dataset": "sst-5",
+    "model": "roberta-large",
+    "seed": 17
+  },
+  {
+    "candidate_h": [
+      3e-05,
+      0.0001,
+      0.0003,
+      0.001
+    ],
+    "dataset": "sst-5",
+    "model": "roberta-large",
+    "seed": 18
+  },
+  {
+    "candidate_h": [
+      3e-05,
+      0.0001,
+      0.0003,
+      0.001
+    ],
+    "dataset": "sst-5",
+    "model": "roberta-large",
+    "seed": 19
+  },
+  {
+    "candidate_h": [
+      3e-05,
+      0.0003,
+      0.001
+    ],
+    "dataset": "rte",
+    "model": "roberta-large",
+    "seed": 16
+  },
+  {
+    "candidate_h": [
+      3e-05,
+      0.0001,
+      0.0003,
+      0.001
+    ],
+    "dataset": "rte",
+    "model": "roberta-large",
+    "seed": 17
+  },
+  {
+    "candidate_h": [
+      3e-05,
+      0.0001,
+      0.001
+    ],
+    "dataset": "rte",
+    "model": "roberta-large",
+    "seed": 18
+  }
+]

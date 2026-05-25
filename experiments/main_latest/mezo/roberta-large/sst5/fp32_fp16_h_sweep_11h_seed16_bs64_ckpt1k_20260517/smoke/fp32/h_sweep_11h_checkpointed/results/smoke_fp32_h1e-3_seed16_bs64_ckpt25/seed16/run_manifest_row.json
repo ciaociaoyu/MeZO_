@@ -1,0 +1,22 @@
+{
+  "lane_id": 0,
+  "gpu_type": "local",
+  "precision_mode": "fp32",
+  "h": 0.001,
+  "h_label": "1e-3",
+  "run_name": "smoke_fp32_h1e-3_seed16_bs64_ckpt25",
+  "result_root": "/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/smoke/fp32/h_sweep_11h_checkpointed/results",
+  "max_steps": 50,
+  "eval_steps": 25,
+  "checkpoint_steps": 25,
+  "seed": 16,
+  "data_seed": 16,
+  "batch_size": 64,
+  "lr": 1e-06,
+  "dataset": "SST-5",
+  "dataset_mode": "full",
+  "dataloader_shuffle": true,
+  "model": "roberta-large",
+  "method": "mezo",
+  "direction_type": "dense"
+}

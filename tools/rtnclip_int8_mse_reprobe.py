@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Reliable INT8 RTNClip MSE/visibility reprobe for RoBERTa-large / SST-5.
+"""Reliable low-bit RTNClip MSE/visibility reprobe for RoBERTa-large / SST-5.
 
 This is a probe-only harness. It keeps the existing shared-grid RTNClip
 fake-quant semantics and separates reconstruction, visibility, true-gradient,
@@ -44,7 +44,10 @@ H_GRID: List[Tuple[str, float]] = [
 ]
 
 EPS = 1e-30
-TRAINING_SUMMARY = REPO_ROOT / "outputs" / "rtnclip_lowbit_roberta_sst5_seed16_20260519_batch" / "int8_hsearch_summary.csv"
+DEFAULT_TRAINING_SUMMARIES = {
+    8: REPO_ROOT / "outputs" / "rtnclip_lowbit_roberta_sst5_seed16_20260519_batch" / "int8_hsearch_summary.csv",
+    4: REPO_ROOT / "outputs" / "rtnclip_int4_g128_rtnclip_roberta_sst5_seed16_20260521" / "int4_hsearch_summary.csv",
+}
 
 
 SUMMARY_COLUMNS = [
@@ -449,8 +452,13 @@ def summarize_records(records: List[Dict[str, object]]) -> List[Dict[str, object
     return rows
 
 
-def make_training_merge(summary_rows: List[Dict[str, object]], output_root: Path) -> List[Dict[str, object]]:
-    training = read_training_by_h(TRAINING_SUMMARY)
+def make_training_merge(
+    summary_rows: List[Dict[str, object]],
+    output_root: Path,
+    bitwidth: int,
+    training_summary: Path,
+) -> List[Dict[str, object]]:
+    training = read_training_by_h(training_summary)
     merged: List[Dict[str, object]] = []
     for row in summary_rows:
         train = training.get(h_key(row["h"]), {})
@@ -468,12 +476,12 @@ def make_training_merge(summary_rows: List[Dict[str, object]], output_root: Path
                 "corr_fd_true": row.get("corr_fd_true"),
             }
         )
-    write_csv(output_root / "int8_mse_vs_training.csv", merged, MERGE_COLUMNS)
+    write_csv(output_root / f"int{bitwidth}_mse_vs_training.csv", merged, MERGE_COLUMNS)
     return merged
 
 
-def plot_summary(summary_rows: List[Dict[str, object]], merged_rows: List[Dict[str, object]], output_root: Path) -> List[str]:
-    plot_dir = output_root / "int8_mse_probe_plots"
+def plot_summary(summary_rows: List[Dict[str, object]], merged_rows: List[Dict[str, object]], output_root: Path, bitwidth: int) -> List[str]:
+    plot_dir = output_root / f"int{bitwidth}_mse_probe_plots"
     plot_dir.mkdir(parents=True, exist_ok=True)
     h_vals = [float(r["h"]) for r in summary_rows]
     paths: List[str] = []
@@ -484,14 +492,14 @@ def plot_summary(summary_rows: List[Dict[str, object]], merged_rows: List[Dict[s
         qrw.write_svg_line_chart(path, title=title, x_label="h", y_label=metric, series=[(metric, h_vals, ys)], x_log=True, y_log=y_log)
         paths.append(str(path))
 
-    line("delta_visibility_nmse_mean", "delta_visibility_nmse_vs_h.svg", "INT8 RTNClip delta visibility nMSE vs h", y_log=True)
-    line("alignment_mean", "alignment_vs_h.svg", "INT8 RTNClip alignment vs h")
-    line("norm_ratio_mean", "norm_ratio_vs_h.svg", "INT8 RTNClip norm ratio vs h", y_log=True)
-    line("richardson_rmse_rel", "richardson_rmse_rel_vs_h.svg", "INT8 RTNClip Richardson locality vs h", y_log=True)
+    line("delta_visibility_nmse_mean", "delta_visibility_nmse_vs_h.svg", f"INT{bitwidth} RTNClip delta visibility nMSE vs h", y_log=True)
+    line("alignment_mean", "alignment_vs_h.svg", f"INT{bitwidth} RTNClip alignment vs h")
+    line("norm_ratio_mean", "norm_ratio_vs_h.svg", f"INT{bitwidth} RTNClip norm ratio vs h", y_log=True)
+    line("richardson_rmse_rel", "richardson_rmse_rel_vs_h.svg", f"INT{bitwidth} RTNClip Richardson locality vs h", y_log=True)
     if any(finite_float(r.get("fd_true_nmse")) is not None for r in summary_rows):
-        line("fd_true_nmse", "fd_true_nmse_vs_h.svg", "INT8 RTNClip true-gradient nMSE vs h", y_log=True)
+        line("fd_true_nmse", "fd_true_nmse_vs_h.svg", f"INT{bitwidth} RTNClip true-gradient nMSE vs h", y_log=True)
     if any(finite_float(r.get("corr_fd_true")) is not None for r in summary_rows):
-        line("corr_fd_true", "corr_fd_true_vs_h.svg", "INT8 RTNClip corr(fd,true) vs h")
+        line("corr_fd_true", "corr_fd_true_vs_h.svg", f"INT{bitwidth} RTNClip corr(fd,true) vs h")
 
     if any(finite_float(r.get("best_eval_acc")) is not None or finite_float(r.get("last_eval_acc")) is not None for r in merged_rows):
         train_h = [float(r["h"]) for r in merged_rows]
@@ -501,7 +509,7 @@ def plot_summary(summary_rows: List[Dict[str, object]], merged_rows: List[Dict[s
         if any(finite_float(r.get("last_eval_acc")) is not None for r in merged_rows):
             series.append(("last_eval_acc", train_h, [r.get("last_eval_acc") for r in merged_rows]))
         path = plot_dir / "training_acc_overlay.svg"
-        qrw.write_svg_line_chart(path, title="Existing INT8 h-search accuracy overlay", x_label="h", y_label="accuracy", series=series, x_log=True, y_log=False)
+        qrw.write_svg_line_chart(path, title=f"Existing INT{bitwidth} h-search accuracy overlay", x_label="h", y_label="accuracy", series=series, x_log=True, y_log=False)
         paths.append(str(path))
     return paths
 
@@ -526,6 +534,8 @@ def make_markdown_summary(
     merged_rows: List[Dict[str, object]],
     plot_paths: List[str],
     output_root: Path,
+    bitwidth: int,
+    training_summary: Path,
     fd_true_available: bool,
     true_grad_note: str,
 ) -> None:
@@ -570,7 +580,7 @@ def make_markdown_summary(
         default_locality_good = bool(d_rich is not None and l_rich is not None and d_rich < l_rich)
 
     lines = [
-        "# INT8 RTNClip MSE Reprobe Summary",
+        f"# INT{bitwidth} RTNClip MSE Reprobe Summary",
         "",
         "This run separates quantizer reconstruction, perturbation visibility, true finite-difference error, and Richardson locality. Reconstruction MSE is not finite-difference MSE.",
         "",
@@ -605,10 +615,10 @@ def make_markdown_summary(
     for path in plot_paths:
         lines.append(f"- `{Path(path).relative_to(output_root)}`")
     if merged_rows and any(finite_float(r.get("best_eval_acc")) is not None for r in merged_rows):
-        lines.extend(["", f"Existing training overlay source: `{TRAINING_SUMMARY}`."])
+        lines.extend(["", f"Existing training overlay source: `{training_summary}`."])
     else:
-        lines.extend(["", "Existing INT8 training overlay was not found or had no matching accuracy rows."])
-    (output_root / "int8_mse_probe_summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+        lines.extend(["", f"Existing INT{bitwidth} training overlay was not found or had no matching accuracy rows."])
+    (output_root / f"int{bitwidth}_mse_probe_summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def write_diagnostic_spec(output_root: Path) -> None:
@@ -684,7 +694,9 @@ def build_args(batch_size: int, eval_batch_size: int, probe_dirs: int) -> argpar
 def run_probe_once(args: argparse.Namespace, batch_size: int, true_grad_enabled: bool) -> Tuple[List[Dict[str, object]], List[Dict[str, object]], bool, str]:
     output_root = Path(args.output_root)
     output_root.mkdir(parents=True, exist_ok=True)
-    records_path = output_root / "int8_mse_probe_records.jsonl"
+    bitwidth = int(args.bitwidth)
+    training_summary = Path(args.training_summary)
+    records_path = output_root / f"int{bitwidth}_mse_probe_records.jsonl"
     if records_path.exists():
         records_path.unlink()
     os.environ["DATALOADER_SHUFFLE"] = "true"
@@ -700,7 +712,7 @@ def run_probe_once(args: argparse.Namespace, batch_size: int, true_grad_enabled:
         harness.quantized_module_names,
         quantizer="rtnclip",
         activation_rms={},
-        bitwidth=8,
+        bitwidth=bitwidth,
         group_size=128,
     )
     quant = qrw.aggregate_quantizer_stats(refresh_rows, harness.numel_by_quantized_name())
@@ -718,9 +730,9 @@ def run_probe_once(args: argparse.Namespace, batch_size: int, true_grad_enabled:
         "dataloader_shuffle": True,
         "sampler": harness.train_sampler_name,
         "direction": "dense",
-        "quant_bits": 8,
+        "quant_bits": bitwidth,
         "group_size": 128,
-        "quantizer": "G128_RTNClip_shared_grid_fake_quant",
+        "quantizer": f"INT{bitwidth}_G128_RTNClip_shared_grid_fake_quant",
         "quantizer_backend": qrw.QUANTIZER_BACKENDS["rtnclip"],
         "K": 1,
         "scale_refresh_k": 1,
@@ -781,9 +793,9 @@ def run_probe_once(args: argparse.Namespace, batch_size: int, true_grad_enabled:
                     "batch_id": batch_id,
                     "direction_id": direction_id,
                     "direction_seed": seed,
-                    "quant_bits": 8,
+                    "quant_bits": bitwidth,
                     "group_size": 128,
-                    "quantizer": "G128_RTNClip_shared_grid_fake_quant",
+                    "quantizer": f"INT{bitwidth}_G128_RTNClip_shared_grid_fake_quant",
                     "K": 1,
                     "pair_shared_grid": True,
                     "fresh_round_codes": True,
@@ -806,10 +818,10 @@ def run_probe_once(args: argparse.Namespace, batch_size: int, true_grad_enabled:
         qrw.restore_master(params, master)
 
     summary_rows = summarize_records(records)
-    write_csv(output_root / "int8_mse_probe_summary.csv", summary_rows, SUMMARY_COLUMNS)
-    merged = make_training_merge(summary_rows, output_root)
-    plots = plot_summary(summary_rows, merged, output_root)
-    make_markdown_summary(summary_rows, merged, plots, output_root, fd_true_available, true_grad_note)
+    write_csv(output_root / f"int{bitwidth}_mse_probe_summary.csv", summary_rows, SUMMARY_COLUMNS)
+    merged = make_training_merge(summary_rows, output_root, bitwidth, training_summary)
+    plots = plot_summary(summary_rows, merged, output_root, bitwidth)
+    make_markdown_summary(summary_rows, merged, plots, output_root, bitwidth, training_summary, fd_true_available, true_grad_note)
     write_diagnostic_spec(output_root)
     write_json(
         output_root / "run_summary.json",
@@ -828,8 +840,10 @@ def run_probe_once(args: argparse.Namespace, batch_size: int, true_grad_enabled:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Probe-only INT8 RTNClip MSE diagnostics for RoBERTa-large/SST-5")
-    parser.add_argument("--output_root", type=str, default=str(REPO_ROOT / "outputs" / "rtnclip_int8_mse_reprobe"))
+    parser = argparse.ArgumentParser(description="Probe-only low-bit RTNClip MSE diagnostics for RoBERTa-large/SST-5")
+    parser.add_argument("--bitwidth", type=int, choices=sorted(DEFAULT_TRAINING_SUMMARIES), default=8)
+    parser.add_argument("--output_root", type=str, default=None)
+    parser.add_argument("--training_summary", type=str, default=None)
     parser.add_argument("--probe_batches", type=int, default=3)
     parser.add_argument("--directions", type=int, default=16)
     parser.add_argument("--batch_size", type=int, default=64)
@@ -840,6 +854,10 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    if args.output_root is None:
+        args.output_root = str(REPO_ROOT / "outputs" / f"rtnclip_int{int(args.bitwidth)}_mse_reprobe")
+    if args.training_summary is None:
+        args.training_summary = str(DEFAULT_TRAINING_SUMMARIES[int(args.bitwidth)])
     requested = int(args.batch_size)
     batch_sizes = []
     for candidate in (requested, 32, 16, 8):

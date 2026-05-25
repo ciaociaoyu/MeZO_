@@ -1,0 +1,1 @@
+group,model,dataset,seed,G_method,h_G,G_hat,alignment_eff,norm_ratio_eff,zero_coord_frac_eff,corr_h_2h,sign_flip_rate_h_2h,stability_score,fallback_flags

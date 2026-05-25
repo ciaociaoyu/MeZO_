@@ -198,3 +198,11 @@ llm_eval/data
 *.output
 *.pdf
 large_models/.hf_token.local
+
+# Large experiment model artifacts exceed normal GitHub file limits.
+experiments/**/pytorch_model.bin
+experiments/**/model.safetensors
+experiments/**/checkpoints/
+
+# Empty launcher-log placeholder produced by a failed shell expansion.
+${launcher_log}

@@ -1,0 +1,13 @@
+timestamp: 2026-05-21T21:24:19
+hostname: ra7-2
+pwd: /scratch/jy03364/MeZO_
+python: /home/jy03364/miniconda3/bin/python
+python_version: 3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:09:02) [GCC 11.2.0]
+cuda_visible_devices: 0
+conda_default_env: base
+torch_version: 2.11.0+cu130
+torch_cuda: 13.0
+cuda_available: True
+git_commit: 1c15f8d14c5d77fad889a53741b6220b73d44c82
+device_name: NVIDIA H100 80GB HBM3
+device_count: 1

@@ -1,0 +1,37 @@
+{
+  "end_time": "2026-05-20T04:31:43.025799",
+  "env": "hostname: ra7-1\ndate: 2026-05-20T04:31:36.577550\npwd: /scratch/jy03364/MeZO_\nCUDA_VISIBLE_DEVICES: 0\nCONDA_DEFAULT_ENV: fs\nwhich python: /home/jy03364/.conda/envs/fs/bin/python\npython --version: Python 3.9.21\nnvidia-smi:\nWed May 20 04:31:36 2026       \n+-----------------------------------------------------------------------------------------+\n| NVIDIA-SMI 570.124.06             Driver Version: 570.124.06     CUDA Version: 12.8     |\n|-----------------------------------------+------------------------+----------------------+\n| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\n| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |\n|                                         |                        |               MIG M. |\n|=========================================+========================+======================|\n|   0  NVIDIA H100 80GB HBM3          Off |   00000000:4E:00.0 Off |                    0 |\n| N/A   46C    P0             74W /  700W |       5MiB /  81559MiB |      0%      Default |\n|                                         |                        |             Disabled |\n+-----------------------------------------+------------------------+----------------------+\n                                                                                         \n+-----------------------------------------------------------------------------------------+\n| Processes:                                                                              |\n|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |\n|        ID   ID                                                               Usage      |\n|=========================================================================================|\n|  No running processes found                                                             |\n+-----------------------------------------------------------------------------------------+\ntorch.__version__: 2.6.0+cu124\ntorch.version.cuda: 12.4\ntorch.cuda.is_available(): True\ntorch.cuda.get_device_name(0): NVIDIA H100 80GB HBM3\n",
+  "git_commit": "89418412ca79dbe233178a7d88fba88de3ecb8f2",
+  "h_grid": [
+    1e-05,
+    3e-05,
+    0.0001,
+    0.0003,
+    0.001,
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.01
+  ],
+  "num_L_dirs": 1,
+  "num_probe_dirs": 2,
+  "settings_attempted": 1,
+  "settings_completed": 0,
+  "skipped_settings": [
+    {
+      "dataset": "sst-2",
+      "group": "C_model",
+      "model": "OPT-1.3B",
+      "reason": "ValueError(\"type of None unknown: <class 'NoneType'>. Should be one of a python, numpy, pytorch or tensorflow object.\")",
+      "seed": 16,
+      "traceback": "Traceback (most recent call last):\n  File \"/scratch/jy03364/MeZO_/scripts/run_fp16_hstar_generalization.py\", line 1414, in main\n    probe_rows, g_rows, l_rows, l_sel, hstar_rows = analyze_setting(setting, args, out_dir, diagnostics)\n  File \"/scratch/jy03364/MeZO_/scripts/run_fp16_hstar_generalization.py\", line 1300, in analyze_setting\n    ctx = load_context(setting, device, args.batch_size)\n  File \"/scratch/jy03364/MeZO_/scripts/run_fp16_hstar_generalization.py\", line 448, in load_context\n    batch = collate_with_padding(tokenizer, [dataset[int(i)] for i in idxs])\n  File \"/scratch/jy03364/MeZO_/scripts/run_fp16_hstar_generalization.py\", line 360, in collate_with_padding\n    batch = tokenizer.pad(items, padding=True, return_tensors=\"pt\")\n  File \"/home/jy03364/.conda/envs/fs/lib/python3.9/site-packages/transformers/tokenization_utils_base.py\", line 3337, in pad\n    raise ValueError(\nValueError: type of None unknown: <class 'NoneType'>. Should be one of a python, numpy, pytorch or tensorflow object.\n"
+    }
+  ],
+  "start_time": "2026-05-20T04:31:37.849768",
+  "warnings": [
+    "m_probe reduced to 2 for runtime; requested rule allows reduction when 64 is not feasible.",
+    "m_L reduced to 1 for runtime."
+  ]
+}

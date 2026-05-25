@@ -1,0 +1,1 @@
+group,model,dataset,seed,L_mode,h2,m_L,lambda_q50,lambda_q90,lambda_q95,median_abs_K,MAD_K,SNR2,finite_rate,zero_K_frac,stability_q90_2x,stability_q90_next,stability_q90_prev,log_slope_q90_next,log_slope_q90_prev,low_h2_noise_suspected,large_h2_nonlocal_suspected,alignment_eff,norm_ratio_eff,zero_coord_frac_eff,rms_snap_error

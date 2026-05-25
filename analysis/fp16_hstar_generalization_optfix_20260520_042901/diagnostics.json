@@ -1,0 +1,43 @@
+{
+  "end_time": "2026-05-20T04:29:09.046503",
+  "env": "hostname: ra7-1\ndate: 2026-05-20T04:29:03.253267\npwd: /scratch/jy03364/MeZO_\nCUDA_VISIBLE_DEVICES: 0\nCONDA_DEFAULT_ENV: ciao\nwhich python: /home/jy03364/.conda/envs/ciao/bin/python\npython --version: Python 3.12.0\nnvidia-smi:\nWed May 20 04:29:03 2026       \n+-----------------------------------------------------------------------------------------+\n| NVIDIA-SMI 570.124.06             Driver Version: 570.124.06     CUDA Version: 12.8     |\n|-----------------------------------------+------------------------+----------------------+\n| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\n| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |\n|                                         |                        |               MIG M. |\n|=========================================+========================+======================|\n|   0  NVIDIA H100 80GB HBM3          Off |   00000000:4E:00.0 Off |                    0 |\n| N/A   47C    P0             74W /  700W |       5MiB /  81559MiB |      0%      Default |\n|                                         |                        |             Disabled |\n+-----------------------------------------+------------------------+----------------------+\n                                                                                         \n+-----------------------------------------------------------------------------------------+\n| Processes:                                                                              |\n|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |\n|        ID   ID                                                               Usage      |\n|=========================================================================================|\n|  No running processes found                                                             |\n+-----------------------------------------------------------------------------------------+\ntorch.__version__: 2.5.1+cu121\ntorch.version.cuda: 12.1\ntorch.cuda.is_available(): True\ntorch.cuda.get_device_name(0): NVIDIA H100 80GB HBM3\n",
+  "git_commit": "89418412ca79dbe233178a7d88fba88de3ecb8f2",
+  "h_grid": [
+    1e-05,
+    3e-05,
+    0.0001,
+    0.0003,
+    0.001,
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.01
+  ],
+  "num_L_dirs": 8,
+  "num_probe_dirs": 32,
+  "settings_attempted": 2,
+  "settings_completed": 0,
+  "skipped_settings": [
+    {
+      "dataset": "sst-2",
+      "group": "C_model",
+      "model": "OPT-1.3B",
+      "reason": "ValueError('Due to a serious vulnerability issue in `torch.load`, even with `weights_only=True`, we now require users to upgrade torch to at least v2.6 in order to use the function. This version restriction does not apply when loading files with safetensors.\\nSee the vulnerability report here https://nvd.nist.gov/vuln/detail/CVE-2025-32434')",
+      "seed": 16
+    },
+    {
+      "dataset": "sst-2",
+      "group": "C_model",
+      "model": "OPT-1.3B",
+      "reason": "ValueError('Due to a serious vulnerability issue in `torch.load`, even with `weights_only=True`, we now require users to upgrade torch to at least v2.6 in order to use the function. This version restriction does not apply when loading files with safetensors.\\nSee the vulnerability report here https://nvd.nist.gov/vuln/detail/CVE-2025-32434')",
+      "seed": 17
+    }
+  ],
+  "start_time": "2026-05-20T04:29:04.496890",
+  "warnings": [
+    "m_probe reduced to 32 for runtime; requested rule allows reduction when 64 is not feasible.",
+    "m_L reduced to 8 for runtime."
+  ]
+}

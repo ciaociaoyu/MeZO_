@@ -1,0 +1,7 @@
+group,model,dataset,seed,L_mode,selector,selected_h2,selected_L_q50,selected_L_q90,selected_L_q95,selection_status,flags
+C_model,OPT-1.3B,sst-2,16,L_clean32,plateau_q90_primary,3e-05,0.00010905149446924025,0.00014293973158293146,0.00014734910874309319,selected,
+C_model,OPT-1.3B,sst-2,16,L_oracle_precision,plateau_q90_primary,0.002,3.7970798204261663e-05,0.00014626572668987808,0.000166562988392025,fallback_unreliable,fallback_plateau
+C_model,OPT-1.3B,sst-2,16,L_oracle_precision,old_snr_max_fallback_ablation,3e-05,0.002708021912692718,0.0028571025219365394,0.0028737552390584497,selected,ablation_only
+C_model,OPT-1.3B,sst-2,17,L_clean32,plateau_q90_primary,3e-05,8.395452192493775e-05,0.0001840807800535694,0.00019897873907061075,selected,
+C_model,OPT-1.3B,sst-2,17,L_oracle_precision,plateau_q90_primary,0.0003,4.790895296899052e-05,8.073381884997665e-05,8.287849210604686e-05,selected,
+C_model,OPT-1.3B,sst-2,17,L_oracle_precision,old_snr_max_fallback_ablation,1e-05,0.0053065873810605735,0.007093892367976192,0.00715908303741712,selected,ablation_only;fallback_max_snr

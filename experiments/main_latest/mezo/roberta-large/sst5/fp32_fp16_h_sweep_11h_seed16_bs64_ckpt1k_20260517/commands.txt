@@ -1,0 +1,4 @@
+# Latest main FP32/FP16 h-sweep commands
+EXP_ROOT='/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517' bash scripts/submit_latest_main_7lanes.sh --smoke
+EXP_ROOT='/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517' CONFIRM_SUBMIT=1 bash scripts/submit_latest_main_7lanes.sh
+python scripts/summarize_latest_main_hsweep.py '/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517'

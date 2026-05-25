@@ -31,6 +31,55 @@ from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 
 
 ALPHA_GRID_VALUES = (1.0, 0.95, 0.90, 0.85, 0.80, 0.75, 0.70)
+LOWBIT_NMSE_METRIC_VERSION = "dequantized_effective_displacement_nmse_v1"
+LOWBIT_TRUE_DIR_FIELD_NAME = "delta_q_dequantized_fp32_over_2h"
+TASK_CONFIGS = {
+    "sst-5": {
+        "aliases": ("sst-5", "SST-5"),
+        "template": "*cls**sent_0*_It_was*mask*.*sep+*",
+        "mapping": "{0:'terrible',1:'bad',2:'okay',3:'good',4:'great'}",
+        "max_seq_length": 128,
+        "first_sent_limit": 110,
+        "other_sent_limit": 20,
+        "double_demo": True,
+    },
+    "sst-2": {
+        "aliases": ("sst-2", "SST-2"),
+        "template": "*cls**sent_0*_It_was*mask*.*sep+*",
+        "mapping": "{'0':'terrible','1':'great'}",
+        "max_seq_length": 128,
+        "first_sent_limit": 110,
+        "other_sent_limit": 20,
+        "double_demo": True,
+    },
+    "rte": {
+        "aliases": ("rte", "RTE"),
+        "template": "*cls**sent-_0*?*mask*,*+sentl_1**sep+*",
+        "mapping": "{'not_entailment':'No','entailment':'Yes'}",
+        "max_seq_length": 256,
+        "first_sent_limit": 240,
+        "other_sent_limit": 20,
+        "double_demo": True,
+    },
+    "mnli": {
+        "aliases": ("mnli", "MNLI"),
+        "template": "*cls**sent-_0*?*mask*,*+sentl_1**sep+*",
+        "mapping": "{'contradiction':'No','entailment':'Yes','neutral':'Maybe'}",
+        "max_seq_length": 256,
+        "first_sent_limit": 240,
+        "other_sent_limit": 20,
+        "double_demo": False,
+    },
+    "trec": {
+        "aliases": ("trec", "TREC"),
+        "template": "*cls**sent_0*_It_was*mask*.*sep+*",
+        "mapping": "{0:'Description',1:'Entity',2:'Expression',3:'Human',4:'Location',5:'Number'}",
+        "max_seq_length": 128,
+        "first_sent_limit": 110,
+        "other_sent_limit": 20,
+        "double_demo": True,
+    },
+}
 SUMMARY_COLUMNS = [
     "bitwidth",
     "h",
@@ -67,6 +116,14 @@ SUMMARY_COLUMNS = [
     "delta_visibility_mse",
     "delta_visibility_nmse",
     "delta_visibility_rel_l2",
+    "lowbit_true_nmse",
+    "lowbit_true_corr",
+    "nMSE_metric_version",
+    "true_dir_lowbit",
+    "true_dir_lowbit_field_name",
+    "legacy_nMSE_fd_true",
+    "legacy_nMSE_computed",
+    "legacy_nMSE_excluded_from_main_selection",
     "alpha_lt_1_frac",
     "num_scale_refreshes",
     "status",
@@ -301,29 +358,62 @@ def add_medium_models_to_path(repo_root: Path) -> None:
         sys.path.insert(0, str(medium))
 
 
-def make_dataset_args(repo_root: Path) -> SimpleNamespace:
+def normalize_task_name(task_name: str) -> str:
+    task = str(task_name or "sst-5").strip().lower()
+    if task == "sst2":
+        task = "sst-2"
+    if task not in TASK_CONFIGS:
+        raise ValueError(f"Unsupported RTNClip task_name={task_name!r}. Supported: {sorted(TASK_CONFIGS)}")
+    return task
+
+
+def resolve_task_data_dir(repo_root: Path, task_name: str, dataset_mode: str, data_seed: int, num_k: int) -> Path:
+    task = normalize_task_name(task_name)
+    data_root = repo_root / "medium_models" / "data" / "k-shot-1k-test"
+    leaf = f"{num_k}-{data_seed}" if dataset_mode == "fewshot" else f"full-{data_seed}"
+    for alias in TASK_CONFIGS[task]["aliases"]:
+        path = data_root / alias / leaf
+        if path.exists():
+            return path
+    return data_root / TASK_CONFIGS[task]["aliases"][0] / leaf
+
+
+def make_dataset_args(
+    repo_root: Path,
+    task_name: str = "sst-5",
+    dataset_mode: str = "full",
+    data_seed: int = 16,
+    num_k: int = 16,
+    data_dir: Optional[str] = None,
+) -> SimpleNamespace:
+    task = normalize_task_name(task_name)
+    task_cfg = TASK_CONFIGS[task]
+    if data_dir:
+        resolved_data_dir = Path(data_dir)
+    else:
+        resolved_data_dir = resolve_task_data_dir(repo_root, task, dataset_mode, data_seed, num_k)
     return SimpleNamespace(
-        task_name="sst-5",
-        data_dir=str(repo_root / "medium_models" / "data" / "k-shot-1k-test" / "SST-5" / "full-16"),
+        task_name=task,
+        data_dir=str(resolved_data_dir),
         data_root=str(repo_root / "medium_models" / "data" / "k-shot-1k-test"),
-        dataset_mode="full",
-        max_seq_length=128,
-        num_k=16,
+        dataset_mode=dataset_mode,
+        max_seq_length=int(task_cfg["max_seq_length"]),
+        num_k=num_k,
         num_sample=16,
         num_demo=1,
         auto_demo=True,
         prompt=True,
-        template="*cls**sent_0*_It_was*mask*.*sep+*",
-        mapping="{0:'terrible',1:'bad',2:'okay',3:'good',4:'great'}",
+        template=task_cfg["template"],
+        mapping=task_cfg["mapping"],
         template_list=None,
         overwrite_cache=False,
         demo_filter=False,
         demo_filter_rate=0.5,
         demo_filter_model=None,
         debug_mode=False,
-        first_sent_limit=110,
-        other_sent_limit=20,
-        double_demo=True,
+        first_sent_limit=task_cfg["first_sent_limit"],
+        other_sent_limit=task_cfg["other_sent_limit"],
+        double_demo=bool(task_cfg["double_demo"]),
         gpt3_in_context_head=False,
         gpt3_in_context_tail=False,
         gpt3_in_context_num=32,
@@ -363,13 +453,41 @@ def load_prompt_model_and_data(args, device: torch.device):
     add_medium_models_to_path(args.repo_root)
     from src.dataset import FewShotDataset
     from src.models import RobertaModelForPromptFinetuning
+    from src.modeling_roberta import RobertaModel
+    from src.processors import num_labels_mapping
     from transformers import AutoConfig, AutoTokenizer
+
+    if not hasattr(RobertaModelForPromptFinetuning, "all_tied_weights_keys"):
+        RobertaModelForPromptFinetuning.all_tied_weights_keys = {}
+    if not hasattr(RobertaModel, "get_head_mask"):
+        def _compat_get_head_mask(self, head_mask, num_hidden_layers, is_attention_chunked=False):
+            if head_mask is None:
+                return [None] * num_hidden_layers
+            if head_mask.dim() == 1:
+                head_mask = head_mask.unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+                head_mask = head_mask.expand(num_hidden_layers, -1, -1, -1, -1)
+            elif head_mask.dim() == 2:
+                head_mask = head_mask.unsqueeze(1).unsqueeze(-1).unsqueeze(-1)
+            return head_mask.to(dtype=self.dtype)
+
+        RobertaModel.get_head_mask = _compat_get_head_mask
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_id)
     if not hasattr(tokenizer, "model_type"):
         tokenizer.model_type = "roberta"
-    data_args = make_dataset_args(args.repo_root)
-    config = AutoConfig.from_pretrained(args.model_id, num_labels=5, finetuning_task="sst-5")
+    data_args = make_dataset_args(
+        args.repo_root,
+        task_name=getattr(args, "task_name", "sst-5"),
+        dataset_mode=getattr(args, "dataset_mode", "full"),
+        data_seed=int(getattr(args, "data_seed", 16)),
+        num_k=int(getattr(args, "num_k", 16)),
+        data_dir=getattr(args, "data_dir", None),
+    )
+    config = AutoConfig.from_pretrained(
+        args.model_id,
+        num_labels=int(num_labels_mapping[data_args.task_name]),
+        finetuning_task=data_args.task_name,
+    )
     model = RobertaModelForPromptFinetuning.from_pretrained(args.model_id, config=config)
     model.model_args = SimpleNamespace(use_task_word=False, l2_loss=False, sfc=False)
     model.data_args = data_args
@@ -396,6 +514,8 @@ def move_batch(batch: Dict[str, torch.Tensor], device: torch.device) -> Dict[str
 
 
 def forward_loss_and_logits(model, batch: Dict[str, torch.Tensor]):
+    batch = dict(batch)
+    batch["token_type_ids"] = torch.zeros_like(batch["input_ids"])
     with torch.no_grad():
         outputs = model(**batch)
         loss = outputs[0]
@@ -498,7 +618,7 @@ def sample_directions(master: Dict[str, torch.Tensor], generator: torch.Generato
     directions = {}
     for name, tensor in master.items():
         if tensor.is_floating_point():
-            directions[name] = torch.randn(tensor.shape, device=tensor.device, generator=generator, dtype=torch.float16)
+            directions[name] = torch.randn(tensor.shape, device=tensor.device, generator=generator, dtype=tensor.dtype)
     return directions
 
 
@@ -556,6 +676,14 @@ def perturbation_metrics(
         "delta_visibility_mse": delta_visibility_mse,
         "delta_visibility_nmse": delta_visibility_nmse,
         "delta_visibility_rel_l2": delta_visibility_rel_l2,
+        "lowbit_true_nmse": delta_visibility_nmse,
+        "lowbit_true_corr": alignment,
+        "nMSE_metric_version": LOWBIT_NMSE_METRIC_VERSION,
+        "true_dir_lowbit": LOWBIT_TRUE_DIR_FIELD_NAME,
+        "true_dir_lowbit_field_name": LOWBIT_TRUE_DIR_FIELD_NAME,
+        "legacy_nMSE_fd_true": None,
+        "legacy_nMSE_computed": False,
+        "legacy_nMSE_excluded_from_main_selection": True,
         "zero_effective_displacement_frac": 1.0 - active_frac,
         "clip_frac": avg_clip,
         "saturation_frac": avg_clip,
@@ -653,7 +781,7 @@ def run_one_config(args, base_context: Dict[str, object], config: Dict[str, obje
     run_config = {
         **config,
         "model": args.model_id,
-        "dataset": "SST-5",
+        "dataset": normalize_task_name(getattr(args, "task_name", "sst-5")),
         "dataset_mode": "full",
         "seed": args.seed,
         "data_seed": args.data_seed,
@@ -893,6 +1021,14 @@ def run_one_config(args, base_context: Dict[str, object], config: Dict[str, obje
         "delta_visibility_mse": last_pert.get("delta_visibility_mse"),
         "delta_visibility_nmse": last_pert.get("delta_visibility_nmse"),
         "delta_visibility_rel_l2": last_pert.get("delta_visibility_rel_l2"),
+        "lowbit_true_nmse": last_pert.get("lowbit_true_nmse"),
+        "lowbit_true_corr": last_pert.get("lowbit_true_corr"),
+        "nMSE_metric_version": last_pert.get("nMSE_metric_version"),
+        "true_dir_lowbit": last_pert.get("true_dir_lowbit"),
+        "true_dir_lowbit_field_name": last_pert.get("true_dir_lowbit_field_name"),
+        "legacy_nMSE_fd_true": None,
+        "legacy_nMSE_computed": False,
+        "legacy_nMSE_excluded_from_main_selection": True,
         "alpha_lt_1_frac": last_quant.get("alpha_lt_1_frac"),
         "num_scale_refreshes": num_refreshes,
         "status": status,
@@ -987,6 +1123,7 @@ def write_top_level_outputs(output_dir: Path, summaries: List[Dict[str, object]]
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_id", default="roberta-large")
+    parser.add_argument("--task_name", default="sst-5")
     parser.add_argument("--output_dir", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=16)
     parser.add_argument("--data_seed", type=int, default=16)

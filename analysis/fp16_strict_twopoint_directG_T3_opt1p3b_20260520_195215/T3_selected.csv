@@ -1,0 +1,3 @@
+group,model,dataset,seed,selected_h3_values,S3_sq_multi,S3_rms_multi,rho3_q90_selected,selection_status,fallback_flags
+C_model,OPT-1.3B,sst-2,16,0.004,18866945071665.543,4343609.682241896,1.411856723755492e-07,fallback_unreliable,fallback_T3
+C_model,OPT-1.3B,sst-2,17,0.001;0.004,329720261554897.4,18158200.94488706,5.217289215190029e-07,selected,

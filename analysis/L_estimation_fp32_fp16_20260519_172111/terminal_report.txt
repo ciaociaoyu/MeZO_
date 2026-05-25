@@ -1,0 +1,17 @@
+Analysis output directory: /scratch/jy03364/MeZO_/analysis/L_estimation_fp32_fp16_20260519_172111
+
+FP32:
+  checkpoint: 
+  L_clean32 plateau_q90: unavailable
+  L_oracle plateau_q90: unavailable
+  L_oracle oldSNR ablation: unavailable
+
+FP16:
+  checkpoint: 
+  L_clean32 plateau_q90: unavailable
+  L_oracle plateau_q90: unavailable
+  L_oracle oldSNR ablation: unavailable
+
+Warnings:
+  - m_L reduced from recommended 32 to 1
+  - CUDA is unavailable and --allow-cpu-forward was not set; full RoBERTa-large forward probes were skipped

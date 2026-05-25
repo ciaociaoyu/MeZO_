@@ -1,0 +1,1 @@
+group,model,dataset,seed,G_true,G_true_available,grad_norm_dtype,d_trainable,all_trainable_params_included,G_fd_multi,G_fd_at_3e-4,G_fd_at_1e-3,G_fd_smallest_stable,G_fd_over_true,relative_error_G_fd,selected_hG_values,fallback_flags

@@ -1,0 +1,7 @@
+group,model,dataset,seed,L_mode,selector,selected_h2,selected_L_q50,selected_L_q90,selected_L_q95,selection_status,flags
+C_model,OPT-1.3B,sst-2,16,L_clean32,plateau_q90_primary,3e-05,7.990450680848187e-05,0.00013799255274920066,0.00017214305466078388,selected,
+C_model,OPT-1.3B,sst-2,16,L_oracle_precision,plateau_q90_primary,0.0003,2.1764892997905257e-05,4.394434418548034e-05,4.683175657498838e-05,selected,
+C_model,OPT-1.3B,sst-2,16,L_oracle_precision,old_snr_max_fallback_ablation,0.0003,2.1764892997905257e-05,4.394434418548034e-05,4.683175657498838e-05,selected,ablation_only;fallback_max_snr
+C_model,OPT-1.3B,sst-2,17,L_clean32,plateau_q90_primary,3e-05,5.916655572636547e-05,0.00014168766431908088,0.00017630860665116883,selected,
+C_model,OPT-1.3B,sst-2,17,L_oracle_precision,plateau_q90_primary,0.0003,4.137112363446793e-05,8.069032496273867e-05,8.981006426389197e-05,selected,
+C_model,OPT-1.3B,sst-2,17,L_oracle_precision,old_snr_max_fallback_ablation,0.0003,4.137112363446793e-05,8.069032496273867e-05,8.981006426389197e-05,selected,ablation_only;fallback_max_snr

@@ -1,0 +1,18 @@
+{
+  "created_at": "2026-05-20T20:24:09.786488",
+  "sources": {
+    "rtnclip_summary": "outputs/rtnclip_int8_mse_reprobe/int8_mse_probe_summary.csv",
+    "rtnclip_records": "outputs/rtnclip_int8_mse_reprobe/int8_mse_probe_records.jsonl",
+    "rtnclip_quantizer_summary": "outputs/rtnclip_int8_mse_reprobe/quantizer_refresh_summary.json",
+    "groupwise256_summary": "experiments/main_latest/roberta-large/sst5/groupwise_int8_block256_window_continuation_seed16_20260517/02_dense_probe_window/groupwise256_dense_probe_summary.csv",
+    "older_probe": "experiments/int8_update_sparse_plan/probe_window_h100_20260512/dense_probe_summary.csv",
+    "clean_geometry_L": "analysis/fp16_direct_hstar_mse_20260520_183229_combined/L_selected.csv",
+    "clean_geometry_S3": "analysis/fp16_strict_twopoint_directG_T3_20260520_200238/T3_selected.csv"
+  },
+  "assumptions": [
+    "Delta is quantization grid-step RMS estimated from dequantized reconstruction MSE via sqrt(12*MSE).",
+    "For RTNClip, only Linear weights are quantized; h4/rho h6 are reported with all-trainable d and exact RTNClip quantized-value d from quantizer_refresh_summary.json.",
+    "L and S3 use clean FP32 geometry proxies from RoBERTa-large/SST-5 seed16 initial state rather than a newly recomputed full dequantized INT8 base.",
+    "No new training was launched."
+  ]
+}

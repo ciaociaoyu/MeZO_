@@ -1,0 +1,10 @@
+group,model,dataset,seed,selected_h3_values,S3_sq_multi,S3_rms_multi,rho3_q90_selected,selection_status,fallback_flags,source_output_dir
+A_seed,roberta-large,sst-5,16,0.0015;0.003;0.004,1110851602258.6301,1053969.4503440934,2.123549676555676e-07,selected,,analysis/fp16_strict_twopoint_directG_T3_roberta_20260520_193448
+A_seed,roberta-large,sst-5,17,0.001;0.0015;0.002;0.003,4352718170455.1855,2086316.8911877184,3.7247977880855626e-07,selected,,analysis/fp16_strict_twopoint_directG_T3_roberta_20260520_193448
+A_seed,roberta-large,sst-5,18,0.001;0.0015;0.002;0.003;0.004,3994215095053.1,1998553.2504922405,3.991090177610614e-07,selected,,analysis/fp16_strict_twopoint_directG_T3_roberta_20260520_193448
+A_seed,roberta-large,sst-5,19,0.001;0.0015;0.002;0.003;0.004,3790921944319.5415,1947029.004488516,3.610907641555994e-07,selected,,analysis/fp16_strict_twopoint_directG_T3_roberta_20260520_193448
+B_task,roberta-large,rte,16,0.001;0.0015;0.002;0.004,1349845224103.7349,1161828.3970121124,2.0922717206863708e-07,selected,,analysis/fp16_strict_twopoint_directG_T3_roberta_20260520_193448
+B_task,roberta-large,rte,17,0.001;0.0015;0.002;0.003;0.004,930999730791.7554,964883.2731433142,1.7265371527936823e-07,selected,,analysis/fp16_strict_twopoint_directG_T3_roberta_20260520_193448
+B_task,roberta-large,rte,18,0.001;0.0015;0.002;0.003;0.004,1388457580971.9814,1178328.299317292,2.376565848122081e-07,selected,,analysis/fp16_strict_twopoint_directG_T3_roberta_20260520_193448
+C_model,OPT-1.3B,sst-2,16,0.004,18866945071665.543,4343609.682241896,1.411856723755492e-07,fallback_unreliable,fallback_T3,analysis/fp16_strict_twopoint_directG_T3_opt1p3b_20260520_195215
+C_model,OPT-1.3B,sst-2,17,0.001;0.004,329720261554897.4,18158200.94488706,5.217289215190029e-07,selected,,analysis/fp16_strict_twopoint_directG_T3_opt1p3b_20260520_195215

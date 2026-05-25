@@ -1,0 +1,32 @@
+hostname: ra7-1
+date: 2026-05-20T04:29:03.253267
+pwd: /scratch/jy03364/MeZO_
+CUDA_VISIBLE_DEVICES: 0
+CONDA_DEFAULT_ENV: ciao
+which python: /home/jy03364/.conda/envs/ciao/bin/python
+python --version: Python 3.12.0
+nvidia-smi:
+Wed May 20 04:29:03 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.124.06             Driver Version: 570.124.06     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA H100 80GB HBM3          Off |   00000000:4E:00.0 Off |                    0 |
+| N/A   47C    P0             74W /  700W |       5MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+torch.__version__: 2.5.1+cu121
+torch.version.cuda: 12.1
+torch.cuda.is_available(): True
+torch.cuda.get_device_name(0): NVIDIA H100 80GB HBM3

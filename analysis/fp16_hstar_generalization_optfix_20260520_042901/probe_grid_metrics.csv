@@ -1,0 +1,1 @@
+group,model,dataset,seed,data_seed,checkpoint,h,num_probe_dirs,mse,nmse,corr,bias,mae,median_abs_error,alignment_eff,norm_ratio_eff,zero_coord_frac_eff,rms_snap_error,fd_mean,fd_std,true_mean,true_std,truth_kind

@@ -1,0 +1,13 @@
+timestamp: 2026-05-21T19:59:40
+hostname: ra7-2
+pwd: /scratch/jy03364/MeZO_
+python: /home/jy03364/.conda/envs/ciao/bin/python
+python_version: 3.12.0 | packaged by Anaconda, Inc. | (main, Oct  2 2023, 17:29:18) [GCC 11.2.0]
+cuda_visible_devices: 0
+conda_default_env: ciao
+torch_version: 2.5.1+cu121
+torch_cuda: 12.1
+cuda_available: True
+git_commit: 1c15f8d14c5d77fad889a53741b6220b73d44c82
+device_name: NVIDIA H100 80GB HBM3
+device_count: 1

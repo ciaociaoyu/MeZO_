@@ -11,6 +11,7 @@ LANE_MANIFEST="${LANE_MANIFEST:-${EXP_ROOT}/lane_manifests/lane${LANE_ID}.csv}"
 CONDA_ENV="${CONDA_ENV:-ciao}"
 DATA_ROOT="${DATA_ROOT:-data/k-shot-1k-test}"
 PROBE_DIRECTIONS="${PROBE_DIRECTIONS:-50}"
+SUMMARIZER="${SUMMARIZER:-scripts/summarize_latest_main_hsweep.py}"
 
 if [[ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]]; then
   # shellcheck disable=SC1091
@@ -90,6 +91,21 @@ for row in eval_rows:
         best_loss_row = row
 last_eval_row = eval_rows[-1] if eval_rows else None
 last_train_row = rows[-1] if rows else None
+last5_eval_rows = eval_rows[-5:]
+
+def mean_std(values):
+    values = [v for v in values if v is not None]
+    if not values:
+        return None, None
+    avg = sum(values) / len(values)
+    if len(values) == 1:
+        return avg, 0.0
+    var = sum((v - avg) ** 2 for v in values) / len(values)
+    return avg, math.sqrt(var)
+
+last5_eval_acc_mean, last5_eval_acc_std = mean_std([safe_float(r.get("eval_acc")) for r in last5_eval_rows])
+last5_eval_loss_mean, last5_eval_loss_std = mean_std([safe_float(r.get("eval_loss")) for r in last5_eval_rows])
+last5_train_acc_mean, last5_train_acc_std = mean_std([safe_float(r.get("train_acc")) for r in rows[-5:]])
 
 ckpt_root = run_dir / "checkpoints"
 step_ckpts = sorted(ckpt_root.glob("step_*")) if ckpt_root.exists() else []
@@ -117,6 +133,7 @@ def row_step(row):
     return None if val is None else int(val)
 
 nan_occurred = False
+first_nan_step = None
 for row in rows:
     for key in ("train_loss", "eval_loss", "train_acc", "eval_acc"):
         raw = row.get(key)
@@ -125,6 +142,8 @@ for row in rows:
                 x = float(raw)
                 if math.isnan(x) or math.isinf(x):
                     nan_occurred = True
+                    if first_nan_step is None:
+                        first_nan_step = row_step(row)
             except Exception:
                 pass
 
@@ -148,15 +167,23 @@ summary = {
     "best_eval_loss_step": row_step(best_loss_row),
     "last_eval_loss": safe_float((last_eval_row or {}).get("eval_loss")),
     "last_eval_loss_step": row_step(last_eval_row),
+    "last5_eval_acc_mean": last5_eval_acc_mean,
+    "last5_eval_acc_std": last5_eval_acc_std,
+    "last5_eval_loss_mean": last5_eval_loss_mean,
+    "last5_eval_loss_std": last5_eval_loss_std,
     "final_train_loss": safe_float((last_train_row or {}).get("train_loss")),
     "final_train_acc": safe_float((last_train_row or {}).get("train_acc")),
+    "last5_train_acc_mean": last5_train_acc_mean,
+    "last5_train_acc_std": last5_train_acc_std,
     "nan_occurred": bool(nan_occurred),
+    "first_nan_step": first_nan_step,
     "checkpoint_count": int(checkpoint_count),
     "final_checkpoint_path": str(final_ckpt) if final_ckpt.exists() else None,
     "best_acc_checkpoint_path": str(best_acc_ckpt) if best_acc_ckpt.exists() else None,
     "best_loss_checkpoint_path": str(best_loss_ckpt) if best_loss_ckpt.exists() else None,
     "probe_corr_fd_true": probe.get("corr_fd_true"),
     "probe_nMSE_fd_true": probe.get("nMSE_fd_true"),
+    "probe_sign_agreement": probe.get("sign_agreement"),
     "probe_alignment": probe.get("probe_alignment") or probe.get("probe_alignment_mean"),
     "probe_norm_ratio": probe.get("probe_norm_ratio") or probe.get("probe_norm_ratio_mean"),
     "status": status,
@@ -289,4 +316,4 @@ PY
   fi
 done
 
-python scripts/summarize_latest_main_hsweep.py "${EXP_ROOT}" || true
+python "${SUMMARIZER}" "${EXP_ROOT}" || true

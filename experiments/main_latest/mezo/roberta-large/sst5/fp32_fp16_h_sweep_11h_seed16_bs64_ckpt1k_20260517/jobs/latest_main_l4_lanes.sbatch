@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#SBATCH --job-name=latest-main-l4
+#SBATCH --output=/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/jobs/%x_%A_%a.out
+#SBATCH --error=/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517/jobs/%x_%A_%a.err
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=96G
+#SBATCH --time=72:00:00
+#SBATCH --partition=gpu_p
+#SBATCH --gres=gpu:L4:1
+set -euo pipefail
+cd /scratch/jy03364/MeZO_
+export EXP_ROOT=/scratch/jy03364/MeZO_/experiments/main_latest/mezo/roberta-large/sst5/fp32_fp16_h_sweep_11h_seed16_bs64_ckpt1k_20260517
+export EXPERIMENT_ID=latest_main_roberta_sst5_fp32_fp16_hsweep_seed16_bs64_ckpt1k
+export CONDA_ENV=ciao
+export DATA_ROOT=data/k-shot-1k-test
+export LANE_ID="${SLURM_ARRAY_TASK_ID}"
+bash scripts/run_latest_main_lane.sh

@@ -1,0 +1,59 @@
+{
+  "default_selector": {
+    "Delta_mode": "scale_rms_over_sqrt6",
+    "Delta_value": 0.002885492935211584,
+    "G_mode": "clean32_absG_median_1e-4_3e-4_1e-3",
+    "G_value": 31.013840272897667,
+    "L_hat": 4.675494106134234e-05,
+    "L_mode": "L_clean32",
+    "L_q": "q90",
+    "hstar_cont": 0.0010829792013713681,
+    "hstar_nearest_grid": 0.001,
+    "notes": "single selector: scale RMS / sqrt(6) Delta; clean32 absG median; L_clean32 q90",
+    "precision": "int4",
+    "selector_name": "simple2pt_corrected"
+  },
+  "env": {
+    "conda_default_env": "base",
+    "cuda_available": true,
+    "cuda_visible_devices": "0",
+    "device_count": 1,
+    "device_name": "NVIDIA H100 80GB HBM3",
+    "git_commit": "1c15f8d14c5d77fad889a53741b6220b73d44c82",
+    "hostname": "ra7-2",
+    "pwd": "/scratch/jy03364/MeZO_",
+    "python": "/home/jy03364/miniconda3/bin/python",
+    "python_version": "3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:09:02) [GCC 11.2.0]",
+    "timestamp": "2026-05-21T21:24:31",
+    "torch_cuda": "13.0",
+    "torch_version": "2.11.0+cu130"
+  },
+  "legacy_variants_written": false,
+  "lowbit_window_visibility_candidates": [
+    0.0003,
+    0.001,
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.01
+  ],
+  "notes": [
+    "Analysis-only; no training launched.",
+    "Default selector is simple2pt_corrected.",
+    "Only one Delta/G/L path is enabled: scale RMS / sqrt(6), clean32 absG median, L_clean32 q90.",
+    "Legacy exploratory Delta/G/L variants are commented out and are not written.",
+    "Strict FP16 visibility gate is reported separately because low-bit displacement geometry is intentionally quantized."
+  ],
+  "strict_fp16_visibility_candidates": [],
+  "sweep_summary": {
+    "best_acc": 0.47892271662763464,
+    "best_acc_h": 0.001,
+    "best_last_acc": 0.47892271662763464,
+    "best_last_h": 0.001,
+    "best_visibility_h": 0.01,
+    "best_visibility_lowbit_true_nmse": 0.10023144399169709,
+    "sweep_path": "/scratch/jy03364/MeZO_/outputs/rtnclip_int4_g128_rtnclip_roberta_sst5_seed16_20260521/int4_hsearch_summary.csv"
+  }
+}
