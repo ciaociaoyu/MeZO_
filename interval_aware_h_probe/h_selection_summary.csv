@@ -1,0 +1,5 @@
+model,task,precision,perturbation_mode,h_vis,h_loc,h_geom,h_cons,h_loss_star,h_loss_cons,default_h,default_in_window,window_exists,window_width_log10,notes
+roberta-large,sst-5,int4,dense,nan,nan,nan,nan,,,0.001,False,False,nan,no_interval_window_under_default_thresholds;visibility_lower_bound_not_satisfied;locality_upper_bound_not_satisfied
+roberta-large,sst-5,int4,sparse_p0p1,nan,nan,nan,nan,,,0.001,False,False,nan,no_interval_window_under_default_thresholds;visibility_lower_bound_not_satisfied;locality_upper_bound_not_satisfied
+roberta-large,sst-5,int8,dense,0.0003,0.0001,nan,nan,,,0.001,False,False,nan,no_interval_window_under_default_thresholds
+roberta-large,sst-5,int8,sparse_p0p1,0.001,0.001,0.001,0.001,,,0.001,True,True,0.0,

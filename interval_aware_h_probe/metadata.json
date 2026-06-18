@@ -1,0 +1,82 @@
+{
+  "args": {
+    "allow_download": false,
+    "auto_extend_large_h": true,
+    "coords_per_tensor": 50000,
+    "device": "auto",
+    "group_size": 128,
+    "h_grid": [
+      1e-08,
+      3e-08,
+      1e-07,
+      3e-07,
+      1e-06,
+      3e-06,
+      1e-05,
+      3e-05,
+      0.0001,
+      0.0003,
+      0.001,
+      0.003,
+      0.01,
+      0.03,
+      0.1
+    ],
+    "max_coords": 100000,
+    "models": [
+      "roberta-large"
+    ],
+    "modes": [
+      "dense",
+      "sparse_p0p1"
+    ],
+    "n_dirs": 64,
+    "no_zip": false,
+    "output_dir": "interval_aware_h_probe",
+    "overwrite": true,
+    "precisions": [
+      "int4",
+      "int8"
+    ],
+    "seed": 16,
+    "smoke": false,
+    "tasks": [
+      "sst-5"
+    ]
+  },
+  "env": {
+    "accelerate_version": "1.13.0",
+    "cuda_available": true,
+    "cuda_version": "13.0",
+    "cuda_visible_devices": "0",
+    "datasets_version": "4.8.4",
+    "git_commit": "7ed92f435c02cf685455472c3ce9dd1691532a8b",
+    "gpu_count": 1,
+    "gpu_name": "NVIDIA A100-SXM4-80GB",
+    "gpu_total_memory_mb": 81152,
+    "hostname": "b7-2",
+    "platform": "Linux-5.14.0-503.31.1.el9_5.x86_64-x86_64-with-glibc2.34",
+    "python": "/home/jy03364/miniconda3/bin/python",
+    "python_version": "3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:09:02) [GCC 11.2.0]",
+    "timestamp": "2026-06-18T00:55:59",
+    "torch_version": "2.11.0+cu130",
+    "transformers_version": "5.6.2"
+  },
+  "h_grid": [
+    1e-08,
+    3e-08,
+    1e-07,
+    3e-07,
+    1e-06,
+    3e-06,
+    1e-05,
+    3e-05,
+    0.0001,
+    0.0003,
+    0.001,
+    0.003,
+    0.01,
+    0.03,
+    0.1
+  ]
+}
