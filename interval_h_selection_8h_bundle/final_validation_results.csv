@@ -1,0 +1,7 @@
+model,task,precision,perturbation_mode,h_policy,h_value,seed,run_type,steps,best_dev_acc,final_dev_acc,default_acc,delta_vs_default,reached_or_exceeded_default,source_path
+facebook/opt-1.3b,sst-5,int8,dense,probe_only_default_aware,0.001,16,existing_full_or_medium,500.0,0.375,0.375,0.375,0.0,True,/scratch/jy03364/MeZO_/outputs/quantizer_robustness_int8_window/h_acc_results.csv
+facebook/opt-1.3b,sst-5,int8,sparse_p0p1,probe_only_default_aware,0.001,16,not_run,,,,,,False,
+roberta-large,sst-5,int4,dense,probe_only_default_aware,0.002,16,existing_full_or_medium,20000.0,0.455503512880562,0.455503512880562,0.4789227166276346,-0.02341920374707257,False,/scratch/jy03364/MeZO_/outputs/rtnclip_int4_g128_rtnclip_roberta_sst5_seed16_20260521/int4_hsearch_summary.csv
+roberta-large,sst-5,int4,sparse_p0p1,probe_only_default_aware,0.01,16,not_run,,,,,,False,
+roberta-large,sst-5,int8,dense,probe_only_default_aware,0.0015,16,existing_full_or_medium,20000.0,0.4578454332552693,0.4578454332552693,0.4765807962529274,-0.0187353629976581,False,/scratch/jy03364/MeZO_/outputs/rtnclip_lowbit_roberta_sst5_seed16_20260519_batch/int8_hsearch_summary.csv
+roberta-large,sst-5,int8,sparse_p0p1,probe_only_default_aware,0.001,16,not_run,,,,,,False,

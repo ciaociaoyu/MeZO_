@@ -1,0 +1,13 @@
+selector_version,model,precision,perturbation_mode,h_model_log_median,tasks_used,single_h_pass,notes
+pilot_calibrated,facebook/opt-1.3b,int8,dense,0.0010000000000000002,sst-5,False,not validated across tasks; use per-config unless pilot/final rows prove >= default - 1 point
+pilot_calibrated,facebook/opt-1.3b,int8,sparse_p0p1,0.0010000000000000002,sst-5,False,not validated across tasks; use per-config unless pilot/final rows prove >= default - 1 point
+pilot_calibrated,roberta-large,int4,dense,0.0010000000000000002,sst-5,False,not validated across tasks; use per-config unless pilot/final rows prove >= default - 1 point
+pilot_calibrated,roberta-large,int4,sparse_p0p1,0.010000000000000004,sst-5,False,not validated across tasks; use per-config unless pilot/final rows prove >= default - 1 point
+pilot_calibrated,roberta-large,int8,dense,0.0010000000000000002,sst-5,False,not validated across tasks; use per-config unless pilot/final rows prove >= default - 1 point
+pilot_calibrated,roberta-large,int8,sparse_p0p1,0.0010000000000000002,sst-5,False,not validated across tasks; use per-config unless pilot/final rows prove >= default - 1 point
+probe_only,facebook/opt-1.3b,int8,dense,0.0010000000000000002,sst-5,False,not validated across tasks; use per-config unless pilot/final rows prove >= default - 1 point
+probe_only,facebook/opt-1.3b,int8,sparse_p0p1,0.0010000000000000002,sst-5,False,not validated across tasks; use per-config unless pilot/final rows prove >= default - 1 point
+probe_only,roberta-large,int4,dense,0.0020000000000000005,sst-5,False,not validated across tasks; use per-config unless pilot/final rows prove >= default - 1 point
+probe_only,roberta-large,int4,sparse_p0p1,0.010000000000000004,sst-5,False,not validated across tasks; use per-config unless pilot/final rows prove >= default - 1 point
+probe_only,roberta-large,int8,dense,0.0015000000000000007,sst-5,False,not validated across tasks; use per-config unless pilot/final rows prove >= default - 1 point
+probe_only,roberta-large,int8,sparse_p0p1,0.0010000000000000002,sst-5,False,not validated across tasks; use per-config unless pilot/final rows prove >= default - 1 point

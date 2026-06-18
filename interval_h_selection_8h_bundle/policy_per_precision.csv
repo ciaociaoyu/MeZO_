@@ -1,0 +1,5 @@
+selector_version,precision,h_precision_log_median,global_precision_h_usable,success_rate_estimate,notes
+pilot_calibrated,int4,0.003162277660168382,False,,no universal h claimed without multi-model validation
+pilot_calibrated,int8,0.0010000000000000002,False,,no universal h claimed without multi-model validation
+probe_only,int4,0.004472135954999579,False,,no universal h claimed without multi-model validation
+probe_only,int8,0.0011066819197003217,False,,no universal h claimed without multi-model validation

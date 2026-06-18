@@ -1,0 +1,13 @@
+model,task,precision,perturbation_mode,h_per_config,selector_version,fallback_to_default,reason
+facebook/opt-1.3b,sst-5,int8,dense,0.001,probe_only,True,safe_candidate
+facebook/opt-1.3b,sst-5,int8,dense,0.001,pilot_calibrated,True,existing_training_validates_or_ties_probe_selected
+facebook/opt-1.3b,sst-5,int8,sparse_p0p1,0.001,probe_only,True,safe_candidate
+facebook/opt-1.3b,sst-5,int8,sparse_p0p1,0.001,pilot_calibrated,True,no_training_validation_use_probe_only_candidate
+roberta-large,sst-5,int4,dense,0.002,probe_only,False,safe_candidate
+roberta-large,sst-5,int4,dense,0.001,pilot_calibrated,True,existing_training_selected_lost_fallback_to_default
+roberta-large,sst-5,int4,sparse_p0p1,0.01,probe_only,False,safe_candidate
+roberta-large,sst-5,int4,sparse_p0p1,0.01,pilot_calibrated,False,no_training_validation_use_probe_only_candidate
+roberta-large,sst-5,int8,dense,0.0015,probe_only,False,safe_candidate
+roberta-large,sst-5,int8,dense,0.001,pilot_calibrated,True,existing_training_selected_lost_fallback_to_default
+roberta-large,sst-5,int8,sparse_p0p1,0.001,probe_only,True,safe_candidate
+roberta-large,sst-5,int8,sparse_p0p1,0.001,pilot_calibrated,True,no_training_validation_use_probe_only_candidate
