@@ -1,0 +1,4 @@
+setting,h,steps,best_eval_acc,best_eval_step,last_eval_acc,last_eval_step,last_eval_loss,status,source_path,notes
+opt13b_int4_mnli_dense_large_5e-3_local,0.005,2000,0.3578196637799287,0,0.35140091696383086,2000,1.1604974106779316,complete,outputs/opt13b_int4_mnli_largeh_local_20260623/mnli/mnli_dense_int4_large_5e-3_step2000,higher-h local 2k check; best remains step0 and final stays below start
+opt13b_int4_mnli_dense_default_1e-3_reference,0.001,20000,0.3904228222109017,20000,0.3904228222109017,20000,1.086005095938518,complete,outputs/opt13b_int4_roberta_matched_seed16_20260613_182816/full/mnli/mnli_dense_int4_standard_1e-3_step20000,reference full run
+opt13b_int4_mnli_dense_hstar_1.731e-4_reference,0.0001731491820902662,20000,0.378604177279674,2000,0.346001018848701,20000,1.1030957349348534,complete,outputs/opt13b_int4_roberta_matched_seed16_20260613_182816/full/mnli/mnli_dense_int4_hstar_cont_step20000,reference hstar_cont full run
