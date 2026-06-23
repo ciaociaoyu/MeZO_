@@ -1,0 +1,12 @@
+torch
+transformers>=4.48
+accelerate
+datasets
+optimum
+gptqmodel
+pandas
+numpy
+tqdm
+matplotlib
+safetensors
+pytest

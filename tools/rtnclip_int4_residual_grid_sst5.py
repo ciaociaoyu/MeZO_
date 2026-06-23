@@ -265,6 +265,25 @@ def state_to_cpu_dict(state: smoke.RTNClipState) -> Dict[str, object]:
     }
 
 
+def state_from_checkpoint(payload: Dict[str, object], device: torch.device) -> smoke.RTNClipState:
+    shape = tuple(payload["shape"])
+    group_size = int(payload["group_size"])
+    lengths = payload["lengths"].to(device=device)
+    valid = torch.arange(group_size, device=device).view(1, 1, -1) < lengths.view(1, -1, 1)
+    return smoke.RTNClipState(
+        name=str(payload["name"]),
+        shape=shape,
+        group_size=group_size,
+        bitwidth=int(payload["bitwidth"]),
+        qmax=int(payload["qmax"]),
+        scales=payload["scales"].to(device=device, dtype=torch.float32),
+        alpha_idx=payload["alpha_idx"].to(device=device),
+        alpha_values=payload["alpha_values"].to(device=device, dtype=torch.float32),
+        lengths=lengths,
+        valid=valid,
+    )
+
+
 def save_checkpoint(
     path: Path,
     *,
@@ -377,10 +396,41 @@ def run(args: argparse.Namespace) -> Dict[str, object]:
         for name, p in params.items()
         if p.detach().is_floating_point()
     }
-    states, refresh_rows, codes, residuals = init_fixed_int4_grid(master, q_names, bitwidth=4, group_size=args.group_size)
+    start_step = 0
+    resume_path = Path(args.resume_from_checkpoint) if args.resume_from_checkpoint else None
+    if resume_path is not None:
+        ckpt_path = resume_path / "state.pt" if resume_path.is_dir() else resume_path
+        checkpoint = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+        start_step = int(checkpoint.get("step", 0))
+        for name, tensor in checkpoint["master"].items():
+            if name in master:
+                dtype = torch.float32 if name in q_name_set else torch.float16
+                master[name] = tensor.to(device=device, dtype=dtype)
+        states = {name: state_from_checkpoint(payload, device) for name, payload in checkpoint["fixed_rtnclip_states"].items()}
+        codes = {name: tensor.to(device=device, dtype=torch.int8) for name, tensor in checkpoint["int4_codes"].items()}
+        residuals = {name: tensor.to(device=device, dtype=torch.float32) for name, tensor in checkpoint["residuals"].items()}
+        best = dict(checkpoint.get("best", {}) or {})
+        refresh_rows = []
+    else:
+        states, refresh_rows, codes, residuals = init_fixed_int4_grid(master, q_names, bitwidth=4, group_size=args.group_size)
+        best = {
+            "best_eval_acc": None,
+            "best_eval_step": None,
+            "best_eval_loss": None,
+            "best_eval_loss_step": None,
+        }
     smoke.restore_master(params, master)
-    quant_agg = smoke.aggregate_quantizer_stats(refresh_rows, numel_by_name)
-    append_jsonl(run_dir / "quantizer_diagnostics.jsonl", {"step": 0, "record_type": "fixed_initial_grid", "num_scale_refreshes": 1, **quant_agg})
+    quant_agg = smoke.aggregate_quantizer_stats(refresh_rows, numel_by_name) if refresh_rows else {}
+    append_jsonl(
+        run_dir / "quantizer_diagnostics.jsonl",
+        {
+            "step": start_step,
+            "record_type": "resume_fixed_grid" if resume_path is not None else "fixed_initial_grid",
+            "resume_from_checkpoint": str(resume_path) if resume_path is not None else "",
+            "num_scale_refreshes": 0 if resume_path is not None else 1,
+            **quant_agg,
+        },
+    )
 
     config = {
         "run_name": args.run_name,
@@ -415,6 +465,8 @@ def run(args: argparse.Namespace) -> Dict[str, object]:
         "direction_seed_formula": "seed + bitwidth*1009 + stable_h_key(h) + step*1000003",
         "error_feedback_reference": "Karimireddy et al. 2019 EF-SGD / Stich & Karimireddy 2020 EF framework",
         "command": " ".join(sys.argv),
+        "resume_from_checkpoint": str(resume_path) if resume_path is not None else "",
+        "resume_start_step": start_step,
     }
     write_json(run_dir / "run_config.json", config)
     write_json(run_dir / "run_manifest_row.json", config)
@@ -425,12 +477,6 @@ def run(args: argparse.Namespace) -> Dict[str, object]:
         encoding="utf-8",
     )
 
-    best: Dict[str, object] = {
-        "best_eval_acc": None,
-        "best_eval_step": None,
-        "best_eval_loss": None,
-        "best_eval_loss_step": None,
-    }
     last_eval_acc = None
     last_eval_loss = None
     last_eval_step = None
@@ -474,7 +520,7 @@ def run(args: argparse.Namespace) -> Dict[str, object]:
     with metrics_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fields)
         writer.writeheader()
-        for step_idx in range(args.steps):
+        for step_idx in range(start_step, args.steps):
             step_start = time.time()
             directions = sample_linear_only_directions(master, q_names, seed=args.seed, h=args.h, step=step_idx)
             batch = smoke.move_batch(next(batch_iter), device)
@@ -600,6 +646,7 @@ def run(args: argparse.Namespace) -> Dict[str, object]:
     if status != "failed":
         status = "complete" if steps_completed >= args.steps else "partial"
     total_runtime = time.time() - total_start
+    executed_steps = max(steps_completed - start_step, 1)
     peak_mem = float(torch.cuda.max_memory_allocated() / 1024 / 1024) if torch.cuda.is_available() else 0.0
     summary = {
         **config,
@@ -614,10 +661,10 @@ def run(args: argparse.Namespace) -> Dict[str, object]:
         "last_eval_loss": last_eval_loss,
         "last_eval_step": last_eval_step,
         "final_train_loss": train_loss,
-        "d_h_finite_rate": finite_count / max(steps_completed, 1),
+        "d_h_finite_rate": finite_count / executed_steps,
         "num_scale_refreshes": 1,
         "scale_drift_max": 0.0,
-        "seconds_per_step": total_runtime / max(steps_completed, 1),
+        "seconds_per_step": total_runtime / executed_steps,
         "total_runtime": total_runtime,
         "peak_gpu_mem": peak_mem,
         "quantizer_initial": quant_agg,
@@ -688,6 +735,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checkpoint_steps", type=int, default=100)
     parser.add_argument("--diag_every", type=int, default=25)
     parser.add_argument("--log_every", type=int, default=25)
+    parser.add_argument("--resume_from_checkpoint", default="")
     return parser.parse_args()
 
 
