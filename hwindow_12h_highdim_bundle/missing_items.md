@@ -1,0 +1,2 @@
+- No new long training was launched; targeted training is aggregated from existing logs and job list only.
+- Real-model layer scale outlier figure uses p_clip as a proxy; per-layer scale distribution was not recomputed in this finalizer.

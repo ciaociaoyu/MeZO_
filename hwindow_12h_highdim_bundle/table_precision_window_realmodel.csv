@@ -1,0 +1,7 @@
+model,task,precision,mode,h_star,h_vis,h_loc,window_width_log10,default_h,default_in_window,d_train,d_eff_at_default,p_active_default,V_align_default,nMSE_default,nMSE_hstar
+facebook/opt-1.3b,sst-5,int8,dense,,,,,0.001,True,,,0.9024019693709024,0.993124338759812,,
+facebook/opt-1.3b,sst-5,int8,sparse_p0p1,,,,,0.001,True,,,0.090169098143236,0.9931147873770824,,
+roberta-large,sst-5,int4,dense,,,,,0.001,False,,,,0.5808326718661048,,
+roberta-large,sst-5,int4,sparse_p0p1,,,,,0.001,False,,,,0.3911416897882049,,
+roberta-large,sst-5,int8,dense,,,,,0.001,True,,,0.8132222322358408,0.9783429875619614,,
+roberta-large,sst-5,int8,sparse_p0p1,,,,,0.001,True,,,0.0813199701594168,0.9783685225710188,,

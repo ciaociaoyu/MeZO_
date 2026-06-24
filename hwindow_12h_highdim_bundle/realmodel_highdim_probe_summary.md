@@ -1,0 +1,11 @@
+# Real-Model High-Dimensional Probe Summary
+
+model,task,precision,mode,rows,h_min,h_max,default_h,p_active_default,V_align_default,A_uniform_default,relative_disp_default
+facebook/opt-1.3b,sst-5,int8,dense,1774,1e-07,0.03,0.001,0.9024019693709024,0.993124338759812,0.0137913275313396,0.0488612668499959
+facebook/opt-1.3b,sst-5,int8,sparse_p0p1,1726,1e-07,0.03,0.001,0.090169098143236,0.9931147873770824,0.0138153908754479,0.0154701620431324
+roberta-large,sst-5,int4,dense,1618,1e-08,0.1,0.001,,0.5808326718661048,1.6853983786267572,
+roberta-large,sst-5,int4,sparse_p0p1,1448,1e-08,0.1,0.001,,0.3911416897882049,4.4291791174081725,0.0238151411759559
+roberta-large,sst-5,int8,dense,2018,1e-08,0.1,0.001,0.8132222322358408,0.9783429875619614,0.0444334195264744,0.0251458587040245
+roberta-large,sst-5,int8,sparse_p0p1,1883,1e-08,0.1,0.001,0.0813199701594168,0.9783685225710188,0.0443723403380138,0.0079595820476603
+
+Default h=1e-3 is marked via the nearest available h row. Missing loss-level nMSE is not fabricated.

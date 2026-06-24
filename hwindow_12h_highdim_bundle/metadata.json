@@ -1,0 +1,85 @@
+{
+  "args": {
+    "cpu": false,
+    "h_grid": [
+      1e-08,
+      3e-08,
+      1e-07,
+      3e-07,
+      1e-06,
+      3e-06,
+      1e-05,
+      3e-05,
+      0.0001,
+      0.0003,
+      0.001,
+      0.003,
+      0.01,
+      0.03,
+      0.1
+    ],
+    "launch_training": false,
+    "output_dir": "hwindow_12h_highdim_bundle",
+    "seed": 16,
+    "synthetic_checkpoint_every": 8,
+    "synthetic_chunk_dirs": 6,
+    "synthetic_deltas": [
+      1e-05,
+      0.0001,
+      0.001,
+      0.01
+    ],
+    "synthetic_dims": [
+      1000,
+      10000,
+      100000,
+      1000000
+    ],
+    "synthetic_dirs_large": 12,
+    "synthetic_dirs_medium": 24,
+    "synthetic_dirs_small": 64,
+    "synthetic_families": [
+      "lin",
+      "nl"
+    ],
+    "synthetic_group_size": 128,
+    "synthetic_p": [
+      1.0,
+      0.1,
+      0.01
+    ],
+    "synthetic_qbits": [
+      8,
+      4
+    ],
+    "synthetic_scale_sigmas": [
+      0.0,
+      1.0
+    ]
+  },
+  "env": {
+    "created_at": "2026-06-23T23:05:48",
+    "cuda_available": true,
+    "cuda_version": "12.1",
+    "cuda_visible_devices": "0",
+    "git_commit": "4107bd6049c419c185b191d41f7884f33a6e3d2d",
+    "gpu_count": 1,
+    "gpu_name": "NVIDIA H100 80GB HBM3",
+    "gpu_total_memory_mb": 81090,
+    "hostname": "ra7-3",
+    "nvidia_smi": "Tue Jun 23 23:05:48 2026       \n+-----------------------------------------------------------------------------------------+\n| NVIDIA-SMI 570.124.06             Driver Version: 570.124.06     CUDA Version: 12.8     |\n|-----------------------------------------+------------------------+----------------------+\n| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\n| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |\n|                                         |                        |               MIG M. |\n|=========================================+========================+======================|\n|   0  NVIDIA H100 80GB HBM3          Off |   00000000:5F:00.0 Off |                    0 |\n| N/A   30C    P0             71W /  700W |       5MiB /  81559MiB |      0%      Default |\n|                                         |                        |             Disabled |\n+-----------------------------------------+------------------------+----------------------+\n                                                                                         \n+-----------------------------------------------------------------------------------------+\n| Processes:                                                                              |\n|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |\n|        ID   ID                                                               Usage      |\n|=========================================================================================|\n|  No running processes found                                                             |\n+-----------------------------------------------------------------------------------------+\n",
+    "platform": "Linux-5.14.0-503.31.1.el9_5.x86_64-x86_64-with-glibc2.34",
+    "python": "/home/jy03364/miniconda3/envs/mezo-env/bin/python",
+    "python_version": "3.10.19",
+    "torch_version": "2.5.1"
+  },
+  "finalized_at": "2026-06-23T23:11:55",
+  "extra_synthetic_dirs": [
+    "hwindow_12h_highdim_extra_midp",
+    "hwindow_12h_highdim_extra_g64",
+    "hwindow_12h_highdim_extra_g256"
+  ],
+  "new_realmodel_probe": "hwindow_12h_highdim_bundle/realmodel_probe_new",
+  "final_raw_rows": 6840,
+  "finalizer": "manual merge script executed from Codex"
+}

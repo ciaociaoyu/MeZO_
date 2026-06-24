@@ -1,0 +1,2 @@
+precision,h_vis_global,h_loc_global,h_precision_global,h_precision_cons,global_window_exists,configs_used,configs_failed
+int8,0.001,0.001,0.001,0.001,True,2,6
