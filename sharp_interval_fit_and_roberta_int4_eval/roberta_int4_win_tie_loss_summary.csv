@@ -1,5 +1,5 @@
 policy,num_win,num_tie,num_loss,avg_delta_vs_default,num_compared
-sharp,3,3,6,-0.04908722931996706,12
-sharp_cons,3,3,6,-0.04908722931996706,12
-safe,3,3,6,-0.04908722931996706,12
-old_env,10,2,3,0.10704567694978445,15
+sharp,0,0,0,,0
+sharp_cons,0,0,0,,0
+safe,0,0,0,,0
+old_env,0,0,0,,0

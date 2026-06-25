@@ -1,10 +1,1 @@
-priority,task,mode,policy,h,suggested_command
-P1,mnli,sparse_p0p1,sharp,0.01,manual_or_existing_mode_wrapper_required
-P1,mnli,sparse_p0p1,sharp_cons,0.01,manual_or_existing_mode_wrapper_required
-P1,mnli,sparse_p0p1,safe,0.01,manual_or_existing_mode_wrapper_required
-P1,rte,sparse_p0p1,sharp,0.01,manual_or_existing_mode_wrapper_required
-P1,rte,sparse_p0p1,sharp_cons,0.01,manual_or_existing_mode_wrapper_required
-P1,rte,sparse_p0p1,safe,0.01,manual_or_existing_mode_wrapper_required
-P1,sst-2,sparse_p0p1,sharp,0.003,manual_or_existing_mode_wrapper_required
-P1,sst-2,sparse_p0p1,sharp_cons,0.003,manual_or_existing_mode_wrapper_required
-P1,sst-2,sparse_p0p1,safe,0.003,manual_or_existing_mode_wrapper_required
+

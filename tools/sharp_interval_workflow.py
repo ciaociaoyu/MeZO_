@@ -74,6 +74,47 @@ def as_float(x, default=np.nan) -> float:
         return default
 
 
+def canonical_directional_target(row: pd.Series) -> Tuple[float, str, bool]:
+    """Return a paper-compatible directional MSE target when present.
+
+    The paper target is based on loss-level two-point finite differences:
+
+        d_Q(h, u) = [L(Q(w+h u)) - L(Q(w-h u))] / (2h)
+        d_ref(u) = <grad L(w), u>
+
+    Some project summaries contain `lowbit_true_nmse`, but that field may refer
+    to effective-displacement geometry, e.g. Delta_Q/(2h), rather than the
+    loss-level directional derivative.  Those rows are intentionally rejected as
+    fit targets and can only be used as interval/geometry covariates.
+    """
+
+    fd_available = str(first_present(row, ["fd_true_available"], "")).strip().lower()
+    fd_explicitly_false = fd_available in {"false", "0", "no"}
+    if not fd_explicitly_false:
+        raw_mse = as_float(first_present(row, ["fd_true_mse"]))
+        if np.isfinite(raw_mse):
+            return raw_mse, "paper_directional_mse:fd_true_mse", True
+        for name in ["fd_true_nmse", "nMSE_fd_true", "fd_true_nmse_default"]:
+            val = as_float(first_present(row, [name]))
+            if np.isfinite(val):
+                return val, f"paper_directional_nmse:{name}", True
+
+    # Explicitly do not accept lowbit_true_nmse unless a future run labels it as
+    # a loss-level directional metric.  The current known version is
+    # dequantized_effective_displacement_nmse_v1, i.e. geometry only.
+    version = str(first_present(row, ["nMSE_metric_version"], "")).lower()
+    lowbit_val = as_float(first_present(row, ["lowbit_true_nmse"]))
+    if np.isfinite(lowbit_val):
+        if "directional_loss" in version or "loss_directional" in version:
+            return lowbit_val, f"paper_directional_nmse:lowbit_true_nmse:{version}", True
+        return np.nan, f"geometry_only_not_target:lowbit_true_nmse:{version or 'unknown_version'}", False
+
+    legacy_val = as_float(first_present(row, ["default_nmse"]))
+    if np.isfinite(legacy_val):
+        return np.nan, "legacy_or_ambiguous_not_target:default_nmse", False
+    return np.nan, "missing_directional_mse_target", False
+
+
 def norm_task(x, source: str = "") -> str:
     s = str(x).lower().strip() if x is not None and not pd.isna(x) else ""
     src = source.lower()
@@ -369,6 +410,8 @@ def load_fit_inputs(repo: Path) -> pd.DataFrame:
                     "run_type": "probe",
                     "seed": 0,
                     "config_key": str(r.get("config_id", "synthetic")),
+                    "target_kind": "paper_directional_nmse:synthetic_A_true",
+                    "target_is_paper_directional_mse": True,
                 }
             )
     # Interval-aware real geometry.
@@ -411,6 +454,8 @@ def load_fit_inputs(repo: Path) -> pd.DataFrame:
                     "run_type": "probe",
                     "seed": 16,
                     "config_key": f"{first_present(r, ['model'], 'roberta-large')}|{task}|{first_present(r, ['precision'], 'unknown')}|{mode}",
+                    "target_kind": "geometry_only_no_loss_directional_mse",
+                    "target_is_paper_directional_mse": False,
                 }
             )
     # Training/loss-probe summaries often contain lowbit true nMSE and visibility metrics.
@@ -442,7 +487,7 @@ def load_fit_inputs(repo: Path) -> pd.DataFrame:
                 task = norm_task(first_present(r, ["task", "dataset", "task_name"]), str(p))
                 mode = norm_mode(r, str(p))
                 precision = "int4" if "int4" in str(p).lower() or as_float(r.get("bitwidth")) == 4 else str(first_present(r, ["precision"], "int4")).lower()
-                a_fit = as_float(first_present(r, ["lowbit_true_nmse", "fd_true_nmse", "nMSE_fd_true", "default_nmse", "fd_true_nmse_default"]))
+                a_fit, target_kind, target_ok = canonical_directional_target(r)
                 rows.append(
                     {
                         "source_path": str(p.relative_to(repo)),
@@ -455,8 +500,8 @@ def load_fit_inputs(repo: Path) -> pd.DataFrame:
                         "h": h,
                         "A_true": a_fit,
                         "nMSE_loss": a_fit,
-                        "A_cross_uniform": as_float(first_present(r, ["delta_visibility_nmse", "active_frac", "A_uniform"])),
-                        "A_cross_grad": as_float(first_present(r, ["lowbit_true_nmse", "fd_true_nmse"])),
+                        "A_cross_uniform": as_float(first_present(r, ["delta_visibility_nmse", "delta_visibility_nmse_mean", "lowbit_true_nmse", "active_frac", "A_uniform"])),
+                        "A_cross_grad": np.nan,
                         "sigma_raw2": np.nan,
                         "p_active": as_float(first_present(r, ["active_frac", "code_change_frac"])),
                         "V_align": as_float(first_present(r, ["alignment", "corr_fd_true", "lowbit_true_corr"])),
@@ -473,6 +518,8 @@ def load_fit_inputs(repo: Path) -> pd.DataFrame:
                         "run_type": infer_run_type(as_float(first_present(r, ["steps_completed", "steps", "last_eval_step"])), str(r.get("status", ""))),
                         "seed": as_float(first_present(r, ["seed"], 16), 16),
                         "config_key": f"roberta-large|{task}|{precision}|{mode}",
+                        "target_kind": target_kind,
+                        "target_is_paper_directional_mse": target_ok,
                     }
                 )
     out = pd.DataFrame(rows)
@@ -535,8 +582,13 @@ def load_training_index(repo: Path) -> pd.DataFrame:
 
 def prepare_fit_frame(fit_input: pd.DataFrame) -> pd.DataFrame:
     df = fit_input.copy()
+    if "target_is_paper_directional_mse" not in df.columns:
+        df["target_is_paper_directional_mse"] = False
+    target_ok = df["target_is_paper_directional_mse"].astype(bool)
     df["A_fit"] = df["A_true"]
-    df.loc[~np.isfinite(df["A_fit"].astype(float)), "A_fit"] = df["nMSE_loss"]
+    fill_mask = target_ok & ~np.isfinite(df["A_fit"].astype(float))
+    df.loc[fill_mask, "A_fit"] = df.loc[fill_mask, "nMSE_loss"]
+    df.loc[~target_ok, "A_fit"] = np.nan
     df["A_cross"] = df["A_cross_grad"]
     df.loc[~np.isfinite(df["A_cross"].astype(float)), "A_cross"] = df["A_cross_uniform"]
     df.loc[~np.isfinite(df["A_cross"].astype(float)), "A_cross"] = df["p_active"]
@@ -932,6 +984,14 @@ def main() -> None:
         "## Available A_true / nMSE sources",
         fit_input.groupby(["experiment_type"]).size().to_string() if not fit_input.empty else "none",
         "",
+        "## Fit target policy",
+        "- Fit target `A_fit` is restricted to paper-compatible loss-level directional MSE/NMSE rows.",
+        "- Geometry-only fields such as `A_cross`, `A_interval`, `sigma_raw2`, `delta_visibility_nmse`, and current `lowbit_true_nmse=dequantized_effective_displacement_nmse_v1` are not used as the fit target.",
+        "- They can only enter sharp/interval-aware models as covariates.",
+        "",
+        "## Target kind counts",
+        fit_input.groupby(["target_kind"]).size().to_string() if "target_kind" in fit_input.columns and not fit_input.empty else "none",
+        "",
         "## RoBERTa INT4 training rows by task/mode/run_type",
         training.groupby(["task", "mode", "run_type"]).size().to_string() if not training.empty else "none",
     ]
@@ -941,6 +1001,8 @@ def main() -> None:
         "# Sharp fit takeaways",
         "",
         "- M2, M4, Mp, M_sharp_norm, M_sharp_constrained, and MIA_loc were fit with nonnegative coefficients.",
+        "- Fit target is paper-compatible loss-level directional MSE/NMSE only: `(d_Q(h,u)-d_ref(u))^2`, optionally normalized by `E[d_ref^2]`.",
+        "- Interval geometry metrics (`A_cross`, `A_interval`, effective-displacement lowbit nMSE) are explanatory covariates, not the target.",
         "- Main ranking uses log-space RMSE; rows with clipping >5% are excluded when enough clean points exist.",
         "- h_sharp is probe-only: it is selected from fitted/probe metrics, not from training accuracy.",
         "- h_safe keeps h=1e-3 whenever default lies inside the sharp window and passes visibility/locality checks.",
