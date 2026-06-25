@@ -1,0 +1,10 @@
+task,mode,policy,h_value,reason
+mnli,sparse_p0p1,sharp,0.01,no_existing_training_at_selected_h
+mnli,sparse_p0p1,sharp_cons,0.01,no_existing_training_at_selected_h
+mnli,sparse_p0p1,safe,0.01,no_existing_training_at_selected_h
+rte,sparse_p0p1,sharp,0.01,no_existing_training_at_selected_h
+rte,sparse_p0p1,sharp_cons,0.01,no_existing_training_at_selected_h
+rte,sparse_p0p1,safe,0.01,no_existing_training_at_selected_h
+sst-2,sparse_p0p1,sharp,0.003,no_existing_training_at_selected_h
+sst-2,sparse_p0p1,sharp_cons,0.003,no_existing_training_at_selected_h
+sst-2,sparse_p0p1,safe,0.003,no_existing_training_at_selected_h

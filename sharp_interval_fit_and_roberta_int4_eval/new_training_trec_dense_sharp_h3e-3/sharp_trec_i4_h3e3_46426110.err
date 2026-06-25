@@ -1,0 +1,15 @@
+By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Loading weights:   0%|          | 0/395 [00:00<?, ?it/s]Loading weights:  90%|████████▉ | 354/395 [00:00<00:00, 3533.26it/s]Loading weights: 100%|██████████| 395/395 [00:00<00:00, 3736.53it/s]
+[transformers] [1mRobertaModelForPromptFinetuning LOAD REPORT[0m from: roberta-large
+Key                         | Status  |
+----------------------------+---------+-
+classifier.weight           | MISSING |
+roberta.pooler.dense.bias   | MISSING |
+lm_head.decoder.weight      | MISSING |
+lm_head.decoder.bias        | MISSING |
+classifier.bias             | MISSING |
+roberta.pooler.dense.weight | MISSING |
+
+Notes:
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!

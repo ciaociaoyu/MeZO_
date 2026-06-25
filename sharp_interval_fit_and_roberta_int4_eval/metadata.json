@@ -1,0 +1,34 @@
+{
+  "hostname": "b6-4",
+  "git_commit": "6ca1083d77a0c809f15bf6ee260268f5b1425171",
+  "python": "Python 3.13.5",
+  "output_dir": "sharp_interval_fit_and_roberta_int4_eval",
+  "h_grid": [
+    1e-07,
+    3e-07,
+    1e-06,
+    3e-06,
+    1e-05,
+    3e-05,
+    0.0001,
+    0.0003,
+    0.001,
+    0.003,
+    0.01,
+    0.03,
+    0.1
+  ],
+  "launched_jobs": [
+    {
+      "job_id": "46426110",
+      "task": "trec",
+      "mode": "dense",
+      "policy": "sharp",
+      "h": 0.003,
+      "status": "complete",
+      "steps_completed": 20000,
+      "best_eval_acc": 0.2564102564102564,
+      "last_eval_acc": 0.22344322344322345
+    }
+  ]
+}

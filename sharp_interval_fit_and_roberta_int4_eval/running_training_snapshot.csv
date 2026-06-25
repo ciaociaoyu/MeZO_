@@ -1,0 +1,2 @@
+model,task,precision,quantizer,mode,h_policy,h_value,seed,run_type,steps,best_dev_acc,final_dev_acc,source_path,job_id,status,notes
+roberta-large,trec,int4,G128_RTNClip_fake_quant,dense,sharp,0.003,16,full,20000,0.2564102564102564,0.22344322344322345,outputs/sharp_interval_roberta_int4_eval/int4_hsearch/dense/int4_dense_trec_sharp_h3e-3_seed16_full_bs64_step20k,46426110,complete,completed_full_slurm_run
