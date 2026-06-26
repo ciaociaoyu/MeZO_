@@ -1,0 +1,27 @@
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lllllllllll}
+\toprule
+task & precision & mode & h\_policy & h\_value & seed & run\_type & steps & best\_dev\_acc & default\_best\_acc & delta\_vs\_default \\
+\midrule
+mnli & int4 & dense & small\_1e-5 & 1.000e-05 & 16 & full & 20000 & 0.358 & 0.39 & -0.0326 \\
+mnli & int4 & dense & hstar\_cont & 1.731e-04 & 16 & full & 20000 & 0.379 & 0.39 & -0.0118 \\
+mnli & int4 & dense & standard\_1e-3 & 0.001 & 16 & full & 20000 & 0.39 & 0.39 & 0 \\
+rte & int4 & dense & small\_1e-5 & 1.000e-05 & 16 & full & 20000 & 0.56 & 0.599 & -0.0397 \\
+rte & int4 & dense & hstar\_cont & 2.941e-04 & 16 & full & 20000 & 0.556 & 0.599 & -0.0433 \\
+rte & int4 & dense & standard\_1e-3 & 0.001 & 16 & full & 20000 & 0.599 & 0.599 & 0 \\
+sst-2 & int4 & dense & small\_1e-5 & 1.000e-05 & 16 & full & 20000 & 0.561 & 0.897 & -0.336 \\
+sst-2 & int4 & dense & hstar\_cont & 5.056e-04 & 16 & full & 20000 & 0.876 & 0.897 & -0.0206 \\
+sst-2 & int4 & dense & standard\_1e-3 & 0.001 & 16 & full & 20000 & 0.897 & 0.897 & 0 \\
+sst-5 & int4 & dense & small\_1e-5 & 1.000e-05 & 16 & full & 20000 & 0.252 & 0.462 & -0.21 \\
+sst-5 & int4 & dense & hstar\_cont & 6.543e-04 & 16 & full & 20000 & 0.441 & 0.462 & -0.0209 \\
+sst-5 & int4 & dense & standard\_1e-3 & 0.001 & 16 & full & 20000 & 0.462 & 0.462 & 0 \\
+trec & int4 & dense & small\_1e-5 & 1.000e-05 & 16 & full & 20000 & 0.292 & 0.66 & -0.368 \\
+trec & int4 & dense & hstar\_cont & 3.444e-04 & 16 & full & 20000 & 0.334 & 0.66 & -0.326 \\
+trec & int4 & dense & standard\_1e-3 & 0.001 & 16 & full & 20000 & 0.66 & 0.66 & 0 \\
+\bottomrule
+\end{tabular}
+\caption{OPT-1.3B cross-architecture sanity check.}
+\label{tab:opt_cross_arch}
+\end{table}

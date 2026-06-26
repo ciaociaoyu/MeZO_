@@ -1,0 +1,33 @@
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{llllllll}
+\toprule
+model & task & precision & forward\_evals\_G & forward\_evals\_L\_loc & backward\_passes & runtime\_sec & log10\_h\_ref \\
+\midrule
+roberta-large & sst-5 & int4 & 16 & 9 & 0 &  & -2.39 \\
+roberta-large & sst-5 & int8 & 16 & 9 & 0 &  & -3.23 \\
+roberta-large & SST-2 & int4 & 8 & 9 & 0 & 3.03 & -1.25 \\
+roberta-large & RTE & int4 & 8 & 9 & 0 & 2.56 & -1.29 \\
+roberta-large & MNLI & int4 & 8 & 9 & 0 & 5.82 & -1.23 \\
+roberta-large & TREC & int4 & 8 & 9 & 0 & 2.09 & -1.21 \\
+roberta-large & sst-2 & int4 &  &  & 0 & 24.4 & -2.83 \\
+roberta-large & sst-2 & int4 &  &  & 0 & 23.9 & -2.71 \\
+roberta-large & sst-5 & int4 &  &  & 0 & 19.6 & -2.81 \\
+roberta-large & sst-5 & int4 &  &  & 0 & 22.5 & -2.64 \\
+roberta-large & rte & int4 &  &  & 0 & 50.1 & -2.77 \\
+roberta-large & rte & int4 &  &  & 0 & 53.2 & -2.91 \\
+roberta-large & mnli & int4 &  &  & 0 & 40.7 & -2.88 \\
+roberta-large & mnli & int4 &  &  & 0 & 43.2 & -2.78 \\
+roberta-large & trec & int4 &  &  & 0 & 18 & -3.16 \\
+roberta-large & trec & int4 &  &  & 0 & 20.9 & -2.02 \\
+roberta-large & sst-2 & int4 &  &  & 0 & 41.4 & -2.85 \\
+roberta-large & sst-5 & int4 &  &  & 0 & 36.8 & -2.55 \\
+roberta-large & rte & int4 &  &  & 0 & 73.1 & -2.93 \\
+roberta-large & mnli & int4 &  &  & 0 & 56.2 & -2.99 \\
+roberta-large & trec & int4 &  &  & 0 & 35 & -2.76 \\
+\bottomrule
+\end{tabular}
+\caption{Probe cost and h-reference stability from existing logs.}
+\label{tab:cost_stability}
+\end{table}

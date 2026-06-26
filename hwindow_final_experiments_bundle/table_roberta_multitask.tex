@@ -1,0 +1,64 @@
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lllllllll}
+\toprule
+task & mode & h\_policy & h\_value & seed & run\_type & steps & best\_dev\_acc & final\_dev\_acc \\
+\midrule
+mnli & dense & hstar\_lowbitL\_continuous & 5.098e-05 & 16 & full & 20000 & 0.345 & 0.333 \\
+rte & dense & hstar\_lowbitL\_continuous & 9.131e-05 & 16 & full & 20000 & 0.566 & 0.51 \\
+sst-2 & dense & hstar\_lowbitL\_continuous & 6.215e-04 & 16 & full & 20000 & 0.882 & 0.873 \\
+sst-5 & dense & hstar\_lowbitL\_continuous & 6.145e-04 & 16 & full & 20000 & 0.477 & 0.461 \\
+trec & dense & hstar\_lowbitL\_continuous & 0.00162 & 16 & full & 20000 & 0.714 & 0.667 \\
+trec & dense &  & 0.003 & 16 & full & 20000 & 0.256 & 0.223 \\
+mnli & prefix & fixed\_small & 1.000e-05 & 16 & full & 20000 & 0.336 & 0.333 \\
+mnli & prefix & hstar\_cleanGL & 0.106 & 16 & full & 20000 & 0.421 & 0.421 \\
+mnli & prefix & mezo\_default & 0.001 & 16 & full & 20000 & 0.394 & 0.333 \\
+rte & prefix & fixed\_small & 1.000e-05 & 16 & medium & 9685 & 0.562 & 0.526 \\
+rte & prefix & hstar\_cleanGL & 0.0728 & 16 & full & 20000 & 0.562 & 0.562 \\
+rte & prefix & mezo\_default & 0.001 & 16 & full & 20000 & 0.534 & 0.498 \\
+sst-2 & prefix & fixed\_small & 1.000e-05 & 16 & full & 20000 & 0.553 & 0.449 \\
+sst-2 & prefix & hstar\_cleanGL & 0.0886 & 16 & full & 20000 & 0.891 & 0.891 \\
+sst-2 & prefix & mezo\_default & 0.001 & 16 & full & 20000 & 0.612 & 0.561 \\
+sst-5 & prefix & fixed\_small & 1.000e-05 & 16 & full & 20000 & 0.275 & 0.222 \\
+sst-5 & prefix & hstar\_cleanGL & 0.0805 & 16 & full & 20000 & 0.425 & 0.425 \\
+sst-5 & prefix & mezo\_default & 0.001 & 16 & full & 20000 & 0.32 & 0.26 \\
+trec & prefix & fixed\_small & 1.000e-05 & 16 & full & 20000 & 0.223 & 0.223 \\
+trec & prefix & hstar\_cleanGL & 0.095 & 16 & full & 20000 & 0.723 & 0.723 \\
+trec & prefix & mezo\_default & 0.001 & 16 & full & 20000 & 0.242 & 0.156 \\
+mnli & sparse\_p0p1 & cleanGL\_hstar\_continuous & 0.00131 & 16 & full & 20000 & 0.473 & 0.473 \\
+mnli & sparse\_p0p1 & fixed\_small & 1.000e-05 & 16 & full & 20000 & 0.335 & 0.333 \\
+mnli & sparse\_p0p1 & hstar\_cleanGL & 8.531e-04 & 16 & full & 20000 & 0.476 & 0.476 \\
+mnli & sparse\_p0p1 & hstar\_lowbitL & 4.373e-04 & 16 & full & 20000 & 0.505 & 0.487 \\
+mnli & sparse\_p0p1 & hstar\_lowbitL\_continuous & 4.373e-04 & 16 & full & 20000 & 0.577 & 0.577 \\
+mnli & sparse\_p0p1 & mezo\_default & 0.001 & 16 & full & 20000 & 0.471 & 0.448 \\
+rte & sparse\_p0p1 & cleanGL\_hstar\_continuous & 0.00171 & 16 & full & 20000 & 0.602 & 0.602 \\
+rte & sparse\_p0p1 & fixed\_small & 1.000e-05 & 16 & full & 20000 & 0.51 & 0.498 \\
+rte & sparse\_p0p1 & hstar\_cleanGL & 4.353e-04 & 16 & full & 20000 & 0.651 & 0.558 \\
+rte & sparse\_p0p1 & hstar\_lowbitL & 3.592e-04 & 16 & full & 20000 & 0.639 & 0.622 \\
+rte & sparse\_p0p1 & hstar\_lowbitL\_continuous & 3.592e-04 & 16 & full & 20000 & 0.618 & 0.554 \\
+rte & sparse\_p0p1 & mezo\_default & 0.001 & 16 & full & 20000 & 0.627 & 0.627 \\
+sst-2 & sparse\_p0p1 & cleanGL\_hstar\_continuous & 4.583e-04 & 16 & full & 20000 & 0.896 & 0.892 \\
+sst-2 & sparse\_p0p1 & cleanGL\_hstar\_continuous & 0.00148 & 16 & full & 20000 & 0.809 & 0.809 \\
+sst-2 & sparse\_p0p1 & fixed\_small & 1.000e-05 & 16 & full & 20000 & 0.565 & 0.558 \\
+sst-2 & sparse\_p0p1 & hstar\_cleanGL & 4.583e-04 & 16 & full & 20000 & 0.902 & 0.894 \\
+sst-2 & sparse\_p0p1 & hstar\_lowbitL & 0.00104 & 16 & full & 20000 & 0.904 & 0.897 \\
+sst-2 & sparse\_p0p1 & hstar\_lowbitL\_continuous & 0.00104 & 16 & full & 20000 & 0.891 & 0.891 \\
+sst-2 & sparse\_p0p1 & mezo\_default & 0.001 & 16 & full & 20000 & 0.904 & 0.904 \\
+sst-5 & sparse\_p0p1 & cleanGL\_hstar\_continuous & 0.00155 & 16 & full & 20000 & 0.426 & 0.335 \\
+sst-5 & sparse\_p0p1 & fixed\_small & 1.000e-05 & 16 & full & 20000 & 0.273 & 0.273 \\
+sst-5 & sparse\_p0p1 & hstar\_cleanGL & 0.00134 & 16 & full & 20000 & 0.441 & 0.441 \\
+sst-5 & sparse\_p0p1 & hstar\_lowbitL & 0.00137 & 16 & full & 20000 & 0.475 & 0.467 \\
+sst-5 & sparse\_p0p1 & hstar\_lowbitL\_continuous & 0.00137 & 16 & full & 20000 & 0.295 & 0.268 \\
+sst-5 & sparse\_p0p1 & mezo\_default & 0.001 & 16 & full & 20000 & 0.481 & 0.481 \\
+trec & sparse\_p0p1 & cleanGL\_hstar\_continuous & 6.976e-04 & 16 & full & 20000 & 0.828 & 0.811 \\
+trec & sparse\_p0p1 & fixed\_small & 1.000e-05 & 16 & medium & 18434 & 0.231 & 0.231 \\
+trec & sparse\_p0p1 & hstar\_cleanGL & 0.00121 & 16 & full & 20000 & 0.69 & 0.674 \\
+trec & sparse\_p0p1 & hstar\_lowbitL & 6.826e-04 & 16 & full & 20000 & 0.789 & 0.789 \\
+trec & sparse\_p0p1 & hstar\_lowbitL\_continuous & 6.826e-04 & 16 & full & 20000 & 0.839 & 0.826 \\
+trec & sparse\_p0p1 & mezo\_default & 0.001 & 16 & full & 20000 & 0.788 & 0.788 \\
+\bottomrule
+\end{tabular}
+\caption{Verified RoBERTa INT4 multi-task results.}
+\label{tab:roberta_multitask}
+\end{table}
