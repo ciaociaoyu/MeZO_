@@ -1,0 +1,36 @@
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{llllllll}
+\toprule
+task & mode & policy & h\_value & seed & run\_type & best\_dev\_acc & source\_path \\
+\midrule
+mnli & prefix & MeZO default & 0.001 & 16 & full & 0.394 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+mnli & prefix & fixed-small & 1.000e-05 & 16 & full & 0.336 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+mnli & prefix & frozen reference & 0.106 & 16 & full & 0.421 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-2 & prefix & MeZO default & 0.001 & 16 & full & 0.612 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-2 & prefix & fixed-small & 1.000e-05 & 16 & full & 0.553 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-2 & prefix & frozen reference & 0.0886 & 16 & full & 0.891 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-5 & prefix & MeZO default & 0.001 & 16 & full & 0.32 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-5 & prefix & fixed-small & 1.000e-05 & 16 & full & 0.275 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-5 & prefix & frozen reference & 0.0805 & 16 & full & 0.425 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+trec & prefix & MeZO default & 0.001 & 16 & full & 0.242 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+trec & prefix & fixed-small & 1.000e-05 & 16 & full & 0.223 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+trec & prefix & frozen reference & 0.095 & 16 & full & 0.723 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+mnli & sparse\_p0p1 & MeZO default & 0.001 & 16 & full & 0.471 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+mnli & sparse\_p0p1 & fixed-small & 1.000e-05 & 16 & full & 0.335 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+mnli & sparse\_p0p1 & frozen reference & 4.373e-04 & 16 & full & 0.505 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+rte & sparse\_p0p1 & MeZO default & 0.001 & 16 & full & 0.627 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+rte & sparse\_p0p1 & fixed-small & 1.000e-05 & 16 & full & 0.51 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+rte & sparse\_p0p1 & frozen reference & 3.592e-04 & 16 & full & 0.639 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-2 & sparse\_p0p1 & MeZO default & 0.001 & 16 & full & 0.904 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-2 & sparse\_p0p1 & fixed-small & 1.000e-05 & 16 & full & 0.565 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-2 & sparse\_p0p1 & frozen reference & 0.00104 & 16 & full & 0.904 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-5 & sparse\_p0p1 & MeZO default & 0.001 & 16 & full & 0.481 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-5 & sparse\_p0p1 & fixed-small & 1.000e-05 & 16 & full & 0.273 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-5 & sparse\_p0p1 & frozen reference & 0.00137 & 16 & full & 0.475 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+\bottomrule
+\end{tabular}
+\caption{RoBERTa INT4 multi-task comparison. Single-seed results (seed 16) unless otherwise noted; entries are full runs and report best dev accuracy.}
+\label{tab:roberta_multitask_main}
+\end{table}

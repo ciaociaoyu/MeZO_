@@ -1,0 +1,17 @@
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{llllllll}
+\toprule
+task & default\_h & default\_accuracy & reference\_h & reference\_accuracy & delta & status & run\_type \\
+\midrule
+sst-2 & 0.001 & 0.897 & 5.056e-04 & 0.876 & -0.0206 & moderate gap & full \\
+sst-5 & 0.001 & 0.462 & 6.543e-04 & 0.441 & -0.0209 & moderate gap & full \\
+mnli & 0.001 & 0.39 & 1.731e-04 & 0.379 & -0.0118 & moderate gap & full \\
+rte & 0.001 & 0.599 & 2.941e-04 & 0.556 & -0.0433 & moderate gap & full \\
+trec & 0.001 & 0.66 & 3.444e-04 & 0.334 & -0.326 & failure / substantial gap & full \\
+\bottomrule
+\end{tabular}
+\caption{OPT-1.3B cross-architecture sanity check. This is not a direct MeZO benchmark reproduction; TREC failure is retained.}
+\label{tab:opt_cross_arch}
+\end{table}

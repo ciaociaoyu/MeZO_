@@ -1,0 +1,64 @@
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{llllllllll}
+\toprule
+task & mode & raw\_h\_policy & h\_value & seed & run\_type & steps & best\_dev\_acc & final\_dev\_acc & source\_path \\
+\midrule
+mnli & dense & hstar\_lowbitL\_continuous & 5.098e-05 & 16 & full & 2.000e+04 & 0.345 & 0.333 & outputs/int4\_lowbitL\_hstar\_dense\_sparse\_20260522\_20260522\_223513/int4\_hsearch\_summary.csv \\
+rte & dense & hstar\_lowbitL\_continuous & 9.131e-05 & 16 & full & 2.000e+04 & 0.566 & 0.51 & outputs/int4\_lowbitL\_hstar\_dense\_sparse\_20260522\_20260522\_223513/int4\_hsearch\_summary.csv \\
+sst-2 & dense & hstar\_lowbitL\_continuous & 6.215e-04 & 16 & full & 2.000e+04 & 0.882 & 0.873 & outputs/int4\_lowbitL\_hstar\_dense\_sparse\_20260522\_20260522\_223513/int4\_hsearch\_summary.csv \\
+sst-5 & dense & hstar\_lowbitL\_continuous & 6.145e-04 & 16 & full & 2.000e+04 & 0.477 & 0.461 & outputs/int4\_lowbitL\_hstar\_dense\_sparse\_20260522\_20260522\_223513/int4\_hsearch\_summary.csv \\
+trec & dense & hstar\_lowbitL\_continuous & 0.00162 & 16 & full & 2.000e+04 & 0.714 & 0.667 & outputs/int4\_lowbitL\_hstar\_dense\_sparse\_20260522\_20260522\_223513/int4\_hsearch\_summary.csv \\
+trec & dense &  & 0.003 & 16 & full & 2.000e+04 & 0.256 & 0.223 & outputs/sharp\_interval\_roberta\_int4\_eval/int4\_hsearch\_summary.csv \\
+mnli & prefix & fixed\_small & 1.000e-05 & 16 & full & 2.000e+04 & 0.336 & 0.333 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+mnli & prefix & hstar\_cleanGL & 0.106 & 16 & full & 2.000e+04 & 0.421 & 0.421 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+mnli & prefix & mezo\_default & 0.001 & 16 & full & 2.000e+04 & 0.394 & 0.333 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+rte & prefix & fixed\_small & 1.000e-05 & 16 & medium & 9.68e+03 & 0.562 & 0.526 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+rte & prefix & hstar\_cleanGL & 0.0728 & 16 & full & 2.000e+04 & 0.562 & 0.562 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+rte & prefix & mezo\_default & 0.001 & 16 & full & 2.000e+04 & 0.534 & 0.498 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-2 & prefix & fixed\_small & 1.000e-05 & 16 & full & 2.000e+04 & 0.553 & 0.449 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-2 & prefix & hstar\_cleanGL & 0.0886 & 16 & full & 2.000e+04 & 0.891 & 0.891 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-2 & prefix & mezo\_default & 0.001 & 16 & full & 2.000e+04 & 0.612 & 0.561 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-5 & prefix & fixed\_small & 1.000e-05 & 16 & full & 2.000e+04 & 0.275 & 0.222 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-5 & prefix & hstar\_cleanGL & 0.0805 & 16 & full & 2.000e+04 & 0.425 & 0.425 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-5 & prefix & mezo\_default & 0.001 & 16 & full & 2.000e+04 & 0.32 & 0.26 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+trec & prefix & fixed\_small & 1.000e-05 & 16 & full & 2.000e+04 & 0.223 & 0.223 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+trec & prefix & hstar\_cleanGL & 0.095 & 16 & full & 2.000e+04 & 0.723 & 0.723 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+trec & prefix & mezo\_default & 0.001 & 16 & full & 2.000e+04 & 0.242 & 0.156 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+mnli & sparse\_p0p1 & cleanGL\_hstar\_continuous & 0.00131 & 16 & full & 2.000e+04 & 0.473 & 0.473 & outputs/int4\_cleanGL\_hstar\_dense\_sparsep0p1\_20k\_20260523\_142501/int4\_hsearch\_summary.csv \\
+mnli & sparse\_p0p1 & fixed\_small & 1.000e-05 & 16 & full & 2.000e+04 & 0.335 & 0.333 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+mnli & sparse\_p0p1 & hstar\_cleanGL & 8.531e-04 & 16 & full & 2.000e+04 & 0.476 & 0.476 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+mnli & sparse\_p0p1 & hstar\_lowbitL & 4.373e-04 & 16 & full & 2.000e+04 & 0.505 & 0.487 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+mnli & sparse\_p0p1 & hstar\_lowbitL\_continuous & 4.373e-04 & 16 & full & 2.000e+04 & 0.577 & 0.577 & outputs/int4\_lowbitL\_hstar\_dense\_sparse\_20260522\_20260522\_223513/int4\_hsearch\_summary.csv \\
+mnli & sparse\_p0p1 & mezo\_default & 0.001 & 16 & full & 2.000e+04 & 0.471 & 0.448 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+rte & sparse\_p0p1 & cleanGL\_hstar\_continuous & 0.00171 & 16 & full & 2.000e+04 & 0.602 & 0.602 & outputs/int4\_cleanGL\_hstar\_dense\_sparsep0p1\_20k\_20260523\_142501/int4\_hsearch\_summary.csv \\
+rte & sparse\_p0p1 & fixed\_small & 1.000e-05 & 16 & full & 2.000e+04 & 0.51 & 0.498 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+rte & sparse\_p0p1 & hstar\_cleanGL & 4.353e-04 & 16 & full & 2.000e+04 & 0.651 & 0.558 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+rte & sparse\_p0p1 & hstar\_lowbitL & 3.592e-04 & 16 & full & 2.000e+04 & 0.639 & 0.622 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+rte & sparse\_p0p1 & hstar\_lowbitL\_continuous & 3.592e-04 & 16 & full & 2.000e+04 & 0.618 & 0.554 & outputs/int4\_lowbitL\_hstar\_dense\_sparse\_20260522\_20260522\_223513/int4\_hsearch\_summary.csv \\
+rte & sparse\_p0p1 & mezo\_default & 0.001 & 16 & full & 2.000e+04 & 0.627 & 0.627 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-2 & sparse\_p0p1 & cleanGL\_hstar\_continuous & 4.583e-04 & 16 & full & 2.000e+04 & 0.896 & 0.892 & outputs/int4\_cleanGL\_hstar\_dense\_sparsep0p1\_20k\_20260523\_142501/int4\_hsearch\_summary.csv \\
+sst-2 & sparse\_p0p1 & cleanGL\_hstar\_continuous & 0.00148 & 16 & full & 2.000e+04 & 0.809 & 0.809 & outputs/int4\_cleanGL\_hstar\_dense\_sparsep0p1\_20k\_20260523\_142501/int4\_hsearch\_summary.csv \\
+sst-2 & sparse\_p0p1 & fixed\_small & 1.000e-05 & 16 & full & 2.000e+04 & 0.565 & 0.558 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-2 & sparse\_p0p1 & hstar\_cleanGL & 4.583e-04 & 16 & full & 2.000e+04 & 0.902 & 0.894 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-2 & sparse\_p0p1 & hstar\_lowbitL & 0.00104 & 16 & full & 2.000e+04 & 0.904 & 0.897 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-2 & sparse\_p0p1 & hstar\_lowbitL\_continuous & 0.00104 & 16 & full & 2.000e+04 & 0.891 & 0.891 & outputs/int4\_lowbitL\_hstar\_dense\_sparse\_20260522\_20260522\_223513/int4\_hsearch\_summary.csv \\
+sst-2 & sparse\_p0p1 & mezo\_default & 0.001 & 16 & full & 2.000e+04 & 0.904 & 0.904 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-5 & sparse\_p0p1 & cleanGL\_hstar\_continuous & 0.00155 & 16 & full & 2.000e+04 & 0.426 & 0.335 & outputs/int4\_cleanGL\_hstar\_dense\_sparsep0p1\_20k\_20260523\_142501/int4\_hsearch\_summary.csv \\
+sst-5 & sparse\_p0p1 & fixed\_small & 1.000e-05 & 16 & full & 2.000e+04 & 0.273 & 0.273 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-5 & sparse\_p0p1 & hstar\_cleanGL & 0.00134 & 16 & full & 2.000e+04 & 0.441 & 0.441 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-5 & sparse\_p0p1 & hstar\_lowbitL & 0.00137 & 16 & full & 2.000e+04 & 0.475 & 0.467 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+sst-5 & sparse\_p0p1 & hstar\_lowbitL\_continuous & 0.00137 & 16 & full & 2.000e+04 & 0.295 & 0.268 & outputs/int4\_lowbitL\_hstar\_dense\_sparse\_20260522\_20260522\_223513/int4\_hsearch\_summary.csv \\
+sst-5 & sparse\_p0p1 & mezo\_default & 0.001 & 16 & full & 2.000e+04 & 0.481 & 0.481 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+trec & sparse\_p0p1 & cleanGL\_hstar\_continuous & 6.976e-04 & 16 & full & 2.000e+04 & 0.828 & 0.811 & outputs/int4\_cleanGL\_hstar\_dense\_sparsep0p1\_20k\_20260523\_142501/int4\_hsearch\_summary.csv \\
+trec & sparse\_p0p1 & fixed\_small & 1.000e-05 & 16 & medium & 1.843e+04 & 0.231 & 0.231 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+trec & sparse\_p0p1 & hstar\_cleanGL & 0.00121 & 16 & full & 2.000e+04 & 0.69 & 0.674 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+trec & sparse\_p0p1 & hstar\_lowbitL & 6.826e-04 & 16 & full & 2.000e+04 & 0.789 & 0.789 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+trec & sparse\_p0p1 & hstar\_lowbitL\_continuous & 6.826e-04 & 16 & full & 2.000e+04 & 0.839 & 0.826 & outputs/int4\_lowbitL\_hstar\_dense\_sparse\_20260522\_20260522\_223513/int4\_hsearch\_summary.csv \\
+trec & sparse\_p0p1 & mezo\_default & 0.001 & 16 & full & 2.000e+04 & 0.788 & 0.788 & outputs/int4\_sparse\_prefix\_seedfixed\_int4fd\_20k\_20260523\_171841/int4\_hsearch\_summary.csv \\
+\bottomrule
+\end{tabular}
+\caption{Appendix: full verified RoBERTa INT4 rows, including medium/pilot and legacy variants.}
+\label{tab:roberta_multitask_appendix}
+\end{table}

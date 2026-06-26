@@ -1,0 +1,44 @@
+% Paper insertion snippets for the frozen-window experiment package.
+% Theory sections should remain unchanged.
+
+\paragraph{Analytical one-sided surrogate.}
+We validate the frozen envelope on the controlled one-sided quadratic
+$f(x)=g^\top x + \frac{L}{2}\|x\|^2$ at $x=0$ with perturbation-space
+mid-tread quantization. The theoretical curve is used as an upper envelope,
+not as a fitted model. Figure~\ref{fig:analytic-window} compares measured
+$A_{\rm true}(h)$ to the analytical envelope, predicted and empirical
+$\rho\le 1$ window endpoints, and empirical log--log scaling slopes from the
+measured rho-window center and empirical optimum.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{paper_fig_analytic_window.pdf}
+  \caption{Analytical one-sided surrogate with perturbation-space mid-tread
+  quantization. Theory parameters are not refit from measured MSE. Panel C uses
+  empirical rho-window centers and empirical optima, not theoretical $h_{\rm ref}$.}
+  \label{fig:analytic-window}
+\end{figure}
+
+\paragraph{Precision windows on RoBERTa/SST-5.}
+For each precision we report the frozen theoretical window when
+$\rho_{\min}\le 1$ and a separate empirical accuracy interval
+$\{h:\mathrm{Acc}(h)\ge \max_h \mathrm{Acc}(h)-0.01\}$. FP32 and FP16 are
+reported as empirical-only because complete $\Delta_{\rm eff},G,L_{\rm loc}$
+provenance is unavailable. INT4 has no certified $\tau=1$ window under the
+frozen formula and is not described as theoretically predicted.
+
+\input{table_precision_window.tex}
+
+\paragraph{RoBERTa INT4 multi-task results.}
+Table~\ref{tab:roberta_multitask_main} uses only full seed-16 rows and the
+pre-declared policies: fixed-small, MeZO default $h=10^{-3}$, and the frozen
+analytical reference radius used by the corresponding experiment path.
+Rows are not selected by accuracy.
+
+\input{table_roberta_multitask_main.tex}
+
+\paragraph{OPT sanity check.}
+OPT-1.3B results are reported only as cross-architecture sanity checks, not as
+a reproduction of the original MeZO benchmark. The TREC failure is retained.
+
+\input{table_opt_cross_arch.tex}

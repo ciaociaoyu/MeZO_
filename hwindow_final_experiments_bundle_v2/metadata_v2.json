@@ -1,0 +1,30 @@
+{
+  "accuracy_interval_definition": "W_acc(delta)={h: best_dev_acc(h) >= max_h best_dev_acc - delta}, delta=0.01",
+  "created_at": "2026-06-26 01:29:41 EDT",
+  "elapsed_sec": 5.721847057342529,
+  "frozen_formulas": {
+    "h_ref": "(alpha/beta)^(1/4)=sqrt(h_q h_loc)",
+    "primary_tau": 1.0,
+    "rho": "(d+4)/(d+1)*((h_q/h)^2+(h/h_loc)^2)",
+    "rho_min": "2*(d+4)/(d+1)*h_q/h_loc",
+    "strict_tau": 0.1
+  },
+  "git_commit": "46a8f78",
+  "main_tex_found": false,
+  "output_dir": "hwindow_final_experiments_bundle_v2",
+  "rows": {
+    "final_existing_results_index": 18458,
+    "opt_cross_arch_verified": 5,
+    "precision_window_theory_vs_empirical": 4,
+    "probe_cost_stability": 21,
+    "radius_provenance": 85,
+    "roberta_multitask_main": 24
+  },
+  "v2_corrections": [
+    "analytic scaling slopes use empirical rho-window centers and empirical MSE optima",
+    "precision main table separates theoretical and empirical windows",
+    "roberta main table is policy-mapped, full-run only, and not accuracy-selected",
+    "OPT table is cross-architecture sanity with TREC failure retained",
+    "radius provenance separates frozen_h_ref, legacy_hstar, and training_h"
+  ]
+}

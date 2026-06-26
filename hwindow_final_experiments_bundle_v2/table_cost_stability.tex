@@ -1,0 +1,23 @@
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{llllll}
+\toprule
+model & task & precision & forward\_probes\_for\_G & forward\_probes\_for\_L\_loc & backward\_passes \\
+\midrule
+roberta-large & sst-5 & int4 & 16 & 9 & 0 \\
+roberta-large & sst-5 & int8 & 16 & 9 & 0 \\
+roberta-large & SST-2 & int4 & 8 & 9 & 0 \\
+roberta-large & RTE & int4 & 8 & 9 & 0 \\
+roberta-large & MNLI & int4 & 8 & 9 & 0 \\
+roberta-large & TREC & int4 & 8 & 9 & 0 \\
+roberta-large & sst-2 & int4 &  &  & 0 \\
+roberta-large & sst-5 & int4 &  &  & 0 \\
+roberta-large & rte & int4 &  &  & 0 \\
+roberta-large & mnli & int4 &  &  & 0 \\
+roberta-large & trec & int4 &  &  & 0 \\
+\bottomrule
+\end{tabular}
+\caption{Calibration cost from existing logs. Runtime and memory are omitted from the main table unless measured consistently.}
+\label{tab:cost_stability}
+\end{table}
