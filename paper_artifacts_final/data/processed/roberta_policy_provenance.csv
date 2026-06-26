@@ -1,0 +1,25 @@
+task,mode,policy,h_value,seed,run_type,metric,source_log,legacy_name,canonical_name
+mnli,prefix,MeZO default,0.001,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,mezo_default,MeZO default
+mnli,prefix,fixed-small,1e-05,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,fixed_small,fixed-small
+mnli,prefix,precomputed analytical radius,0.1059865385430891,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,hstar_cleanGL,precomputed analytical radius
+sst-2,prefix,MeZO default,0.001,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,mezo_default,MeZO default
+sst-2,prefix,fixed-small,1e-05,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,fixed_small,fixed-small
+sst-2,prefix,precomputed analytical radius,0.0886419832658425,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,hstar_cleanGL,precomputed analytical radius
+sst-5,prefix,MeZO default,0.001,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,mezo_default,MeZO default
+sst-5,prefix,fixed-small,1e-05,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,fixed_small,fixed-small
+sst-5,prefix,precomputed analytical radius,0.0804720147886286,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,hstar_cleanGL,precomputed analytical radius
+trec,prefix,MeZO default,0.001,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,mezo_default,MeZO default
+trec,prefix,fixed-small,1e-05,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,fixed_small,fixed-small
+trec,prefix,precomputed analytical radius,0.0949896412434653,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,hstar_cleanGL,precomputed analytical radius
+mnli,sparse_p0p1,MeZO default,0.001,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,mezo_default,MeZO default
+mnli,sparse_p0p1,fixed-small,1e-05,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,fixed_small,fixed-small
+mnli,sparse_p0p1,precomputed analytical radius,0.000437324731266,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,hstar_lowbitL,precomputed analytical radius
+rte,sparse_p0p1,MeZO default,0.001,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,mezo_default,MeZO default
+rte,sparse_p0p1,fixed-small,1e-05,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,fixed_small,fixed-small
+rte,sparse_p0p1,precomputed analytical radius,0.0003591546781873,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,hstar_lowbitL,precomputed analytical radius
+sst-2,sparse_p0p1,MeZO default,0.001,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,mezo_default,MeZO default
+sst-2,sparse_p0p1,fixed-small,1e-05,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,fixed_small,fixed-small
+sst-2,sparse_p0p1,precomputed analytical radius,0.0010440057466626,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,hstar_lowbitL,precomputed analytical radius
+sst-5,sparse_p0p1,MeZO default,0.001,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,mezo_default,MeZO default
+sst-5,sparse_p0p1,fixed-small,1e-05,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,fixed_small,fixed-small
+sst-5,sparse_p0p1,precomputed analytical radius,0.0013665044203238,16,full,best_dev_acc,outputs/int4_sparse_prefix_seedfixed_int4fd_20k_20260523_171841/int4_hsearch_summary.csv,hstar_lowbitL,precomputed analytical radius

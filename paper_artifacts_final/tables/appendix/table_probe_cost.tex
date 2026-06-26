@@ -1,0 +1,33 @@
+\begin{table}[t]
+\centering
+\begin{tabular}{llllrrrr}
+\toprule
+source\_path & model & task & precision & forward\_probes\_for\_G & forward\_probes\_for\_L\_loc & backward\_passes & runtime\_sec\_if\_logged \\
+\midrule
+analysis/int4\_sst5\_calibrated\_hstar\_20260521\_202225/hstar\_components.csv & roberta-large & sst-5 & int4 & 16 & 9 & 0 & NaN \\
+analysis/int8\_sst5\_calibrated\_hstar\_20260521\_newmethod/hstar\_components.csv & roberta-large & sst-5 & int8 & 16 & 9 & 0 & NaN \\
+outputs/rtnclip\_int4\_roberta\_full\_dataset\_formula\_hstar\_20260521/formula\_hstar\_summary.csv & roberta-large & SST-2 & int4 & 8 & 9 & 0 & 3.0308 \\
+outputs/rtnclip\_int4\_roberta\_full\_dataset\_formula\_hstar\_20260521/formula\_hstar\_summary.csv & roberta-large & RTE & int4 & 8 & 9 & 0 & 2.5563 \\
+outputs/rtnclip\_int4\_roberta\_full\_dataset\_formula\_hstar\_20260521/formula\_hstar\_summary.csv & roberta-large & MNLI & int4 & 8 & 9 & 0 & 5.8183 \\
+outputs/rtnclip\_int4\_roberta\_full\_dataset\_formula\_hstar\_20260521/formula\_hstar\_summary.csv & roberta-large & TREC & int4 & 8 & 9 & 0 & 2.089 \\
+outputs/int4\_full\_data\_hstar\_dense\_sparse\_20260522\_113710/hstar/hstar\_full\_data\_summary.csv & roberta-large & sst-2 & int4 & NaN & NaN & 0 & 24.3872 \\
+outputs/int4\_full\_data\_hstar\_dense\_sparse\_20260522\_113710/hstar/hstar\_full\_data\_summary.csv & roberta-large & sst-2 & int4 & NaN & NaN & 0 & 23.9273 \\
+outputs/int4\_full\_data\_hstar\_dense\_sparse\_20260522\_113710/hstar/hstar\_full\_data\_summary.csv & roberta-large & sst-5 & int4 & NaN & NaN & 0 & 19.6283 \\
+outputs/int4\_full\_data\_hstar\_dense\_sparse\_20260522\_113710/hstar/hstar\_full\_data\_summary.csv & roberta-large & sst-5 & int4 & NaN & NaN & 0 & 22.4997 \\
+outputs/int4\_full\_data\_hstar\_dense\_sparse\_20260522\_113710/hstar/hstar\_full\_data\_summary.csv & roberta-large & rte & int4 & NaN & NaN & 0 & 50.0538 \\
+outputs/int4\_full\_data\_hstar\_dense\_sparse\_20260522\_113710/hstar/hstar\_full\_data\_summary.csv & roberta-large & rte & int4 & NaN & NaN & 0 & 53.1818 \\
+outputs/int4\_full\_data\_hstar\_dense\_sparse\_20260522\_113710/hstar/hstar\_full\_data\_summary.csv & roberta-large & mnli & int4 & NaN & NaN & 0 & 40.6534 \\
+outputs/int4\_full\_data\_hstar\_dense\_sparse\_20260522\_113710/hstar/hstar\_full\_data\_summary.csv & roberta-large & mnli & int4 & NaN & NaN & 0 & 43.2408 \\
+outputs/int4\_full\_data\_hstar\_dense\_sparse\_20260522\_113710/hstar/hstar\_full\_data\_summary.csv & roberta-large & trec & int4 & NaN & NaN & 0 & 18.0135 \\
+outputs/int4\_full\_data\_hstar\_dense\_sparse\_20260522\_113710/hstar/hstar\_full\_data\_summary.csv & roberta-large & trec & int4 & NaN & NaN & 0 & 20.9232 \\
+outputs/int4\_full\_data\_hstar\_dense\_sparse\_20260522\_113710/hstar\_sparse\_p0p1\_taskgrad\_lowbitG\_20260522\_162254/hstar\_full\_data\_summary.csv & roberta-large & sst-2 & int4 & NaN & NaN & 0 & 41.3693 \\
+outputs/int4\_full\_data\_hstar\_dense\_sparse\_20260522\_113710/hstar\_sparse\_p0p1\_taskgrad\_lowbitG\_20260522\_162254/hstar\_full\_data\_summary.csv & roberta-large & sst-5 & int4 & NaN & NaN & 0 & 36.8119 \\
+outputs/int4\_full\_data\_hstar\_dense\_sparse\_20260522\_113710/hstar\_sparse\_p0p1\_taskgrad\_lowbitG\_20260522\_162254/hstar\_full\_data\_summary.csv & roberta-large & rte & int4 & NaN & NaN & 0 & 73.1417 \\
+outputs/int4\_full\_data\_hstar\_dense\_sparse\_20260522\_113710/hstar\_sparse\_p0p1\_taskgrad\_lowbitG\_20260522\_162254/hstar\_full\_data\_summary.csv & roberta-large & mnli & int4 & NaN & NaN & 0 & 56.2092 \\
+outputs/int4\_full\_data\_hstar\_dense\_sparse\_20260522\_113710/hstar\_sparse\_p0p1\_taskgrad\_lowbitG\_20260522\_162254/hstar\_full\_data\_summary.csv & roberta-large & trec & int4 & NaN & NaN & 0 & 34.9804 \\
+\bottomrule
+\end{tabular}
+
+\caption{Probe cost and stability provenance. Memory is omitted where not measured.}
+\label{tab:probe_cost}
+\end{table}

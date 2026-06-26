@@ -1,0 +1,17 @@
+\begin{table}[t]
+\centering
+\begin{tabular}{llllrrrrrlrll}
+\toprule
+model & task & precision & mode & default\_h & default\_accuracy & reference\_h & reference\_accuracy & delta & status & seed & run\_type & source\_path \\
+\midrule
+facebook/opt-1.3b & sst-2 & int4 & dense & 0.001 & 0.8968 & 5.0562e-04 & 0.8761 & -0.0206 & moderate gap & 16 & full & outputs/opt13b\_int4\_roberta\_matched\_seed16\_20260613\_182816/full/summary\_mezo\_option.csv \\
+facebook/opt-1.3b & sst-5 & int4 & dense & 0.001 & 0.4623 & 6.5435e-04 & 0.4414 & -0.0209 & moderate gap & 16 & full & outputs/opt13b\_int4\_roberta\_matched\_seed16\_20260613\_182816/full/summary\_mezo\_option.csv \\
+facebook/opt-1.3b & mnli & int4 & dense & 0.001 & 0.3904 & 1.7315e-04 & 0.3786 & -0.0118 & moderate gap & 16 & full & outputs/opt13b\_int4\_roberta\_matched\_seed16\_20260613\_182816/full/summary\_mezo\_option.csv \\
+facebook/opt-1.3b & rte & int4 & dense & 0.001 & 0.5993 & 2.9408e-04 & 0.556 & -0.0433 & moderate gap & 16 & full & outputs/opt13b\_int4\_roberta\_matched\_seed16\_20260613\_182816/full/summary\_mezo\_option.csv \\
+facebook/opt-1.3b & trec & int4 & dense & 0.001 & 0.66 & 3.4440e-04 & 0.334 & -0.326 & failure / substantial gap & 16 & full & outputs/opt13b\_int4\_roberta\_matched\_seed16\_20260613\_182816/full/summary\_mezo\_option.csv \\
+\bottomrule
+\end{tabular}
+
+\caption{OPT-1.3B cross-architecture sanity check. This is not a direct original MeZO benchmark reproduction.}
+\label{tab:opt_cross_arch}
+\end{table}

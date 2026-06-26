@@ -1,0 +1,22 @@
+{
+  "created_at": "2026-06-26 02:19:30 EDT",
+  "elapsed_sec": 4.676454544067383,
+  "frozen_definitions": {
+    "W_tau_primary": "tau=1",
+    "accuracy_good_set": "best_dev_acc >= max_h best_dev_acc - 0.01",
+    "h_ref": "(alpha/beta)^(1/4)=sqrt(h_q h_loc)",
+    "rho": "(d+4)/(d+1)*((h_q/h)^2+(h/h_loc)^2)",
+    "true_directional_nmse": "E[(d_Q(h,u)-<grad F(w),u>)^2]/(E[<grad F(w),u>^2]+eps)"
+  },
+  "git_commit": "bf7f0d667f893f5a8697208aa550e501afeab5da",
+  "rows": {
+    "artifact_inventory": 17,
+    "figures": 6,
+    "int4_reconciliation": 104,
+    "opt": 5,
+    "roberta_main": 24,
+    "tables": 7,
+    "true_mse": 22
+  },
+  "script": "tools/build_paper_artifacts_final.py"
+}

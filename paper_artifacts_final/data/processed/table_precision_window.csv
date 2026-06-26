@@ -1,0 +1,5 @@
+precision,h_ref,rho_min,theoretical_window,empirical_accuracy_interval,default_in_theoretical_window,default_in_empirical_interval,status
+int8,0.0003923381435826,0.4765586066142465,"[1.976e-04, 7.791e-04]","[3.000e-05, 0.001]",False,True,certified theoretical window
+int4,0.0015509397815746,7.447064634598435,none,"[0.001, 0.001]",,True,no tau=1 certificate
+fp32,,,not computed,"[1.000e-07, 0.003]",,True,empirical-only
+fp16,,,not computed,"[3.000e-06, 0.0015]",,True,empirical-only

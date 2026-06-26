@@ -1,0 +1,6 @@
+model,task,precision,mode,default_h,default_accuracy,reference_h,reference_accuracy,delta,status,seed,run_type,source_path
+facebook/opt-1.3b,sst-2,int4,dense,0.001,0.8967889908256881,0.0005056172823939,0.8761467889908257,-0.0206422018348624,moderate gap,16,full,outputs/opt13b_int4_roberta_matched_seed16_20260613_182816/full/summary_mezo_option.csv
+facebook/opt-1.3b,sst-5,int4,dense,0.001,0.4623069936421435,0.0006543479591531,0.44141689373297,-0.0208900999091735,moderate gap,16,full,outputs/opt13b_int4_roberta_matched_seed16_20260613_182816/full/summary_mezo_option.csv
+facebook/opt-1.3b,mnli,int4,dense,0.001,0.3904228222109017,0.0001731491820902,0.378604177279674,-0.0118186449312276,moderate gap,16,full,outputs/opt13b_int4_roberta_matched_seed16_20260613_182816/full/summary_mezo_option.csv
+facebook/opt-1.3b,rte,int4,dense,0.001,0.5992779783393501,0.0002940821846582,0.555956678700361,-0.0433212996389891,moderate gap,16,full,outputs/opt13b_int4_roberta_matched_seed16_20260613_182816/full/summary_mezo_option.csv
+facebook/opt-1.3b,trec,int4,dense,0.001,0.66,0.0003443971570045,0.334,-0.326,failure / substantial gap,16,full,outputs/opt13b_int4_roberta_matched_seed16_20260613_182816/full/summary_mezo_option.csv

@@ -1,0 +1,16 @@
+\begin{table}[t]
+\centering
+\begin{tabular}{lrrlllrl}
+\toprule
+precision & h\_ref & rho\_min & theoretical\_window & empirical\_accuracy\_interval & default\_in\_theoretical\_window & default\_in\_empirical\_interval & status \\
+\midrule
+int8 & 3.9234e-04 & 0.4766 & [1.976e-04, 7.791e-04] & [3.000e-05, 0.001] & False & True & certified theoretical window \\
+int4 & 0.0016 & 7.4471 & none & [0.001, 0.001] & NaN & True & no tau=1 certificate \\
+fp32 & NaN & NaN & not computed & [1.000e-07, 0.003] & NaN & True & empirical-only \\
+fp16 & NaN & NaN & not computed & [3.000e-06, 0.0015] & NaN & True & empirical-only \\
+\bottomrule
+\end{tabular}
+
+\caption{RoBERTa/SST-5 precision windows. Empirical accuracy interval is best dev accuracy minus 1 percentage point.}
+\label{tab:precision_window_final}
+\end{table}

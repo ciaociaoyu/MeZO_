@@ -1,0 +1,15 @@
+\begin{table}[t]
+\centering
+\begin{tabular}{lrrrrr}
+\toprule
+Method / h policy & sst-2 & sst-5 & rte & mnli & trec \\
+\midrule
+MeZO default & 0.9042 & 0.4813 & 0.6265 & 0.4708 & NaN \\
+fixed-small & 0.5648 & 0.2728 & 0.51 & 0.3348 & NaN \\
+precomputed analytical radius & 0.9038 & 0.4754 & 0.6386 & 0.5048 & NaN \\
+\bottomrule
+\end{tabular}
+
+\caption{RoBERTa INT4 sparse_p0p1 full-run best dev accuracy. Single-seed results (seed 16) unless otherwise noted.}
+\label{tab:roberta_int4_sparse_p0p1}
+\end{table}

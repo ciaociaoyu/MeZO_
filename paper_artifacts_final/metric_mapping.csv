@@ -1,0 +1,20 @@
+legacy_field,canonical_field,definition,status
+fd_true_nmse,true_directional_nmse,Only after code audit verifies d_Q versus grad^T u.,VALIDATED_FOR_FINAL_INT4_INT8_PROBES
+fd_true_mse,true_directional_mse,Unnormalized MSE of d_Q - grad^T u.,VALIDATED_FOR_FINAL_INT4_INT8_PROBES
+corr_fd_true,directional_correlation,Correlation between d_Q and true directional derivative.,VALID
+nMSE_fd_true,true_directional_nmse,Valid only if source script computes d_Q vs grad^T u.,AMBIGUOUS_UNLESS_AUDITED
+lowbit_true_nmse,interval_geometry_error,"In rtnclip batch runner this aliases dequantized effective displacement nMSE, not loss-level true MSE.",RELABEL_AS_PROXY
+delta_visibility_nmse,interval_geometry_error,MSE of Delta_Q/(2h) against u.,RELABEL_AS_PROXY
+delta_visibility_nmse_mean,interval_geometry_error,MSE of Delta_Q/(2h) against u.,RELABEL_AS_PROXY
+A_uniform,interval_geometry_error_uniform,Geometry-only coordinate distortion.,RELABEL_AS_PROXY
+A_interval_grad,interval_geometry_error_grad,Gradient-weighted geometry-only coordinate distortion.,RELABEL_AS_PROXY
+sigma_raw2,interval_geometry_raw_variance,Raw interval displacement statistic.,RELABEL_AS_PROXY
+alignment,displacement_alignment,Cosine between Delta_Q and 2hu.,VALID_DIAGNOSTIC
+alignment_mean,displacement_alignment,Cosine between Delta_Q and 2hu.,VALID_DIAGNOSTIC
+norm_ratio,displacement_norm_ratio,||Delta_Q|| / ||2hu||.,VALID_DIAGNOSTIC
+norm_ratio_mean,displacement_norm_ratio,||Delta_Q|| / ||2hu||.,VALID_DIAGNOSTIC
+active_frac,crossing_active_fraction,Fraction of coordinates whose quantized code changes.,VALID_DIAGNOSTIC
+active_frac_mean,crossing_active_fraction,Fraction of coordinates whose quantized code changes.,VALID_DIAGNOSTIC
+code_change_frac,crossing_active_fraction,Fraction of coordinates whose quantized code changes.,VALID_DIAGNOSTIC
+clip_frac,clipping_fraction,Quantizer saturation/clipping fraction.,VALID_DIAGNOSTIC
+p_clip,clipping_fraction,Quantizer saturation/clipping fraction.,VALID_DIAGNOSTIC

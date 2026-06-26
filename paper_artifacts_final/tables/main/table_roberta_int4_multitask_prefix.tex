@@ -1,0 +1,15 @@
+\begin{table}[t]
+\centering
+\begin{tabular}{lrrrrr}
+\toprule
+Method / h policy & sst-2 & sst-5 & rte & mnli & trec \\
+\midrule
+MeZO default & 0.612 & 0.3197 & NaN & 0.3943 & 0.2418 \\
+fixed-small & 0.5529 & 0.2752 & NaN & 0.3359 & 0.2234 \\
+precomputed analytical radius & 0.8912 & 0.4251 & NaN & 0.421 & 0.7234 \\
+\bottomrule
+\end{tabular}
+
+\caption{RoBERTa INT4 prefix full-run best dev accuracy. Single-seed results (seed 16) unless otherwise noted.}
+\label{tab:roberta_int4_prefix}
+\end{table}
