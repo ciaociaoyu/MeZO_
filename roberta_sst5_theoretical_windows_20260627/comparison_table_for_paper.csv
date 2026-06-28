@@ -1,0 +1,5 @@
+precision,checkpoint_id,theoretical_h_ref,theoretical_W1_low,theoretical_W1_high,default_in_W1,empirical_good_low,empirical_good_high,h_best_acc,interpretation
+fp32,task_start_seed16_deterministic,9.365570620627088e-06,8.744382759860472e-09,0.010030840348155068,True,1e-07,0.003,3e-05,broad default-safe
+fp16,,,,,,3e-06,0.0015,1e-05,no stable fit
+int8,task_start_seed16_deterministic,0.0013557131858420257,0.00012166549546810816,0.015106651521817732,True,3e-05,0.001,0.001,broad default-safe
+int4,,,,,,0.001,0.001,0.001,no stable fit

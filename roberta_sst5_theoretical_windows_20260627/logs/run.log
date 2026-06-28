@@ -1,0 +1,341 @@
+WARNING:src.models:By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode train: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:[FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+INFO:src.dataset:Creating features from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode dev: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+/scratch/jy03364/MeZO_/medium_models/src/dataset.py:363: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  self.support_examples, self.query_examples = torch.load(cached_features_file)
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16/cached_dev_RobertaTokenizerFast-roberta_128_sst-5 [took 0.013 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: dev-0
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 627, 936, 19, 4133, 59, 30859, 16, 51, 33, 10, 16699, 7, 9215, 88, 1368, 1638, 783, 479, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=1, mask_pos=[21], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>the problem with movies about angels is they have a tendency to slip into hokum . It was<mask>.</s>
+RobertaConfig {
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "dtype": "float32",
+  "eos_token_id": 2,
+  "finetuning_task": "sst-5",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "id2label": {
+    "0": "LABEL_0",
+    "1": "LABEL_1",
+    "2": "LABEL_2",
+    "3": "LABEL_3",
+    "4": "LABEL_4"
+  },
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "label2id": {
+    "LABEL_0": 0,
+    "LABEL_1": 1,
+    "LABEL_2": 2,
+    "LABEL_3": 3,
+    "LABEL_4": 4
+  },
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "transformers_version": "4.56.0",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+
+[fp32] batch 1/1 direction 4/64
+[fp32] batch 1/1 direction 8/64
+[fp32] batch 1/1 direction 12/64
+[fp32] batch 1/1 direction 16/64
+[fp32] batch 1/1 direction 20/64
+[fp32] batch 1/1 direction 24/64
+[fp32] batch 1/1 direction 28/64
+[fp32] batch 1/1 direction 32/64
+[fp32] batch 1/1 direction 36/64
+[fp32] batch 1/1 direction 40/64
+[fp32] batch 1/1 direction 44/64
+[fp32] batch 1/1 direction 48/64
+[fp32] batch 1/1 direction 52/64
+[fp32] batch 1/1 direction 56/64
+[fp32] batch 1/1 direction 60/64
+[fp32] batch 1/1 direction 64/64
+[fp32] done in 167.5s
+WARNING:src.models:By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode train: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:[FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+INFO:src.dataset:Creating features from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode dev: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+/scratch/jy03364/MeZO_/medium_models/src/dataset.py:363: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  self.support_examples, self.query_examples = torch.load(cached_features_file)
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16/cached_dev_RobertaTokenizerFast-roberta_128_sst-5 [took 0.012 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: dev-0
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 627, 936, 19, 4133, 59, 30859, 16, 51, 33, 10, 16699, 7, 9215, 88, 1368, 1638, 783, 479, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=1, mask_pos=[21], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>the problem with movies about angels is they have a tendency to slip into hokum . It was<mask>.</s>
+RobertaConfig {
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "dtype": "float32",
+  "eos_token_id": 2,
+  "finetuning_task": "sst-5",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "id2label": {
+    "0": "LABEL_0",
+    "1": "LABEL_1",
+    "2": "LABEL_2",
+    "3": "LABEL_3",
+    "4": "LABEL_4"
+  },
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "label2id": {
+    "LABEL_0": 0,
+    "LABEL_1": 1,
+    "LABEL_2": 2,
+    "LABEL_3": 3,
+    "LABEL_4": 4
+  },
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "transformers_version": "4.56.0",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+
+[fp16] batch 1/1 direction 4/64
+[fp16] batch 1/1 direction 8/64
+[fp16] batch 1/1 direction 12/64
+[fp16] batch 1/1 direction 16/64
+[fp16] batch 1/1 direction 20/64
+[fp16] batch 1/1 direction 24/64
+[fp16] batch 1/1 direction 28/64
+[fp16] batch 1/1 direction 32/64
+[fp16] batch 1/1 direction 36/64
+[fp16] batch 1/1 direction 40/64
+[fp16] batch 1/1 direction 44/64
+[fp16] batch 1/1 direction 48/64
+[fp16] batch 1/1 direction 52/64
+[fp16] batch 1/1 direction 56/64
+[fp16] batch 1/1 direction 60/64
+[fp16] batch 1/1 direction 64/64
+[fp16] done in 56.8s
+WARNING:src.models:By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode train: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:[FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+INFO:src.dataset:Creating features from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode dev: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+/scratch/jy03364/MeZO_/medium_models/src/dataset.py:363: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  self.support_examples, self.query_examples = torch.load(cached_features_file)
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16/cached_dev_RobertaTokenizerFast-roberta_128_sst-5 [took 0.014 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: dev-0
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 627, 936, 19, 4133, 59, 30859, 16, 51, 33, 10, 16699, 7, 9215, 88, 1368, 1638, 783, 479, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=1, mask_pos=[21], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>the problem with movies about angels is they have a tendency to slip into hokum . It was<mask>.</s>
+RobertaConfig {
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "dtype": "float32",
+  "eos_token_id": 2,
+  "finetuning_task": "sst-5",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "id2label": {
+    "0": "LABEL_0",
+    "1": "LABEL_1",
+    "2": "LABEL_2",
+    "3": "LABEL_3",
+    "4": "LABEL_4"
+  },
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "label2id": {
+    "LABEL_0": 0,
+    "LABEL_1": 1,
+    "LABEL_2": 2,
+    "LABEL_3": 3,
+    "LABEL_4": 4
+  },
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "transformers_version": "4.56.0",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+
+[int8] batch 1/1 direction 4/64
+[int8] batch 1/1 direction 8/64
+[int8] batch 1/1 direction 12/64
+[int8] batch 1/1 direction 16/64
+[int8] batch 1/1 direction 20/64
+[int8] batch 1/1 direction 24/64
+[int8] batch 1/1 direction 28/64
+[int8] batch 1/1 direction 32/64
+[int8] batch 1/1 direction 36/64
+[int8] batch 1/1 direction 40/64
+[int8] batch 1/1 direction 44/64
+[int8] batch 1/1 direction 48/64
+[int8] batch 1/1 direction 52/64
+[int8] batch 1/1 direction 56/64
+[int8] batch 1/1 direction 60/64
+[int8] batch 1/1 direction 64/64
+[int8] done in 140.8s
+WARNING:src.models:By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode train: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:[FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+INFO:src.dataset:Creating features from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode dev: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16
+/scratch/jy03364/MeZO_/medium_models/src/dataset.py:363: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  self.support_examples, self.query_examples = torch.load(cached_features_file)
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-16/cached_dev_RobertaTokenizerFast-roberta_128_sst-5 [took 0.011 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: dev-0
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 627, 936, 19, 4133, 59, 30859, 16, 51, 33, 10, 16699, 7, 9215, 88, 1368, 1638, 783, 479, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=1, mask_pos=[21], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>the problem with movies about angels is they have a tendency to slip into hokum . It was<mask>.</s>
+RobertaConfig {
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "dtype": "float32",
+  "eos_token_id": 2,
+  "finetuning_task": "sst-5",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "id2label": {
+    "0": "LABEL_0",
+    "1": "LABEL_1",
+    "2": "LABEL_2",
+    "3": "LABEL_3",
+    "4": "LABEL_4"
+  },
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "label2id": {
+    "LABEL_0": 0,
+    "LABEL_1": 1,
+    "LABEL_2": 2,
+    "LABEL_3": 3,
+    "LABEL_4": 4
+  },
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "transformers_version": "4.56.0",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+
+[int4] batch 1/1 direction 4/64
+[int4] batch 1/1 direction 8/64
+[int4] batch 1/1 direction 12/64
+[int4] batch 1/1 direction 16/64
+[int4] batch 1/1 direction 20/64
+[int4] batch 1/1 direction 24/64
+[int4] batch 1/1 direction 28/64
+[int4] batch 1/1 direction 32/64
+[int4] batch 1/1 direction 36/64
+[int4] batch 1/1 direction 40/64
+[int4] batch 1/1 direction 44/64
+[int4] batch 1/1 direction 48/64
+[int4] batch 1/1 direction 52/64
+[int4] batch 1/1 direction 56/64
+[int4] batch 1/1 direction 60/64
+[int4] batch 1/1 direction 64/64
+[int4] done in 141.5s
+Wrote /scratch/jy03364/MeZO_/roberta_sst5_theoretical_windows_20260627
