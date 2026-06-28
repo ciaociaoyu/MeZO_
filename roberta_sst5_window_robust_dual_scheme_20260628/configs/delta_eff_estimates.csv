@@ -1,0 +1,5 @@
+precision,Delta_eff,Delta_eff_source,Delta_notes
+fp16,6e-05,numeric_visibility_transition_delta_approx_2h,"h_vis=3e-05; FP precision estimate, not hardware ulp"
+fp32,2e-08,numeric_visibility_transition_delta_approx_2h,"h_vis=1e-08; FP precision estimate, not hardware ulp"
+int4,0.013262633573972721,quantizer_scale_median_weighted,scale_min=0.002138192532584071; scale_max=0.1428571492433548; saturation=0.026077973289116502
+int8,0.0008443626099339448,quantizer_scale_median_weighted,scale_min=0.00013768953795079142; scale_max=0.007920152507722378; saturation=0.008016716607744424

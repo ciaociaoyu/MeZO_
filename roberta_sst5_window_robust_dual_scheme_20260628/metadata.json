@@ -1,0 +1,10 @@
+{
+  "default_h": 0.001,
+  "generated": "2026-06-28T18:30:00",
+  "git_commit": "bf7d32db55fb58377c8f697d75727caf98a89618",
+  "no_training": true,
+  "notes": "Robust dual-scheme post-processing of existing probe-only metrics.",
+  "source": "/scratch/jy03364/MeZO_/roberta_sst5_theoretical_windows_20260627",
+  "tiny_h": 1e-05,
+  "zero_tol": 1e-12
+}
