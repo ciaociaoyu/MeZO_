@@ -1,0 +1,208 @@
+ *v*)
+ *v*x*)
+ *x*)
+ ;;
+ ;;
+ ;;
+ __lmod_my_status=$?;
+ __lmod_sh_dbg='v'
+ __lmod_sh_dbg='vx'
+ __lmod_sh_dbg='x'
+ case "$-" in 
+ echo "Shell debugging restarted" 1>&2;
+ echo "Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for Lmod's output" 1>&2;
+ esac;
+ eval "$($LMOD_CMD shell "$@")" && eval "$(${LMOD_SETTARG_CMD:-:} -s sh)";
+ eval ${which_declare} ) | /usr/bin/which --tty-only --read-alias --read-functions --show-tilde --show-dot $@
+ fi;
+ fi;
+ fi;
+ if [ -n "${__lmod_sh_dbg:-}" ]; then
+ if [ -n "${__lmod_sh_dbg:-}" ]; then
+ return $__lmod_my_status
+ set +$__lmod_sh_dbg;
+ set -$__lmod_sh_dbg;
+ unset __lmod_sh_dbg;
+BASH_FUNC_ml%%=() {  eval "$($LMOD_DIR/ml_cmd "$@")"
+BASH_FUNC_module%%=() {  if [ -z "${LMOD_SH_DBG_ON+x}" ]; then
+BASH_FUNC_which%%=() {  ( alias;
+CODEX_CI=1
+CODEX_MANAGED_BY_NPM=1
+CODEX_MANAGED_PACKAGE_ROOT=/home/jy03364/.nvm/versions/node/v24.14.1/lib/node_modules/@openai/codex
+CODEX_THREAD_ID=019e2d89-7590-7ad1-960c-a339ef3995fb
+COLORTERM=
+CONDA_DEFAULT_ENV=base
+CONDA_ENV_HP=ciao
+CONDA_ENV_LB=mezo-env
+CONDA_EXE=/home/jy03364/miniconda3/bin/conda
+CONDA_PREFIX=/home/jy03364/miniconda3
+CONDA_PROMPT_MODIFIER=(base) 
+CONDA_PYTHON_EXE=/home/jy03364/miniconda3/bin/python
+CONDA_SHLVL=1
+CUDA_VISIBLE_DEVICES=0
+DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/5943/bus
+DOCKER_HOST=unix:///run/user/5943/podman/podman.sock
+ENVIRONMENT=BATCH
+FPATH=/apps/lmod/lmod/init/ksh_funcs
+GACRC_CLUSTER=Sapelo2
+GH_PAGER=cat
+GIT_PAGER=cat
+HISTCONTROL=ignoredups
+HISTFILE=/home/jy03364/.bash_history.ra8-1
+HISTFILESIZE=
+HISTSIZE=
+HISTTIMEFORMAT=[%F %H:%M:%S]  
+HOME=/home/jy03364
+HOSTNAME=ra7-3
+HYDRA_BOOTSTRAP=slurm
+HYDRA_LAUNCHER_EXTRA_ARGS=--external-launcher
+I_MPI_HYDRA_BOOTSTRAP=slurm
+I_MPI_HYDRA_BOOTSTRAP_EXEC_EXTRA_ARGS=--external-launcher
+LANG=C.UTF-8
+LC_CTYPE=C.UTF-8
+LD_LIBRARY_PATH=/opt/apps/slurm/prod/lib64:/opt/apps/slurm/prod/lib64:/opt/apps/slurm/prod/lib64:/opt/apps/slurm/prod/lib64
+LESSOPEN=||/usr/bin/lesspipe.sh %s
+LMOD_CACHED_LOADS=yes
+LMOD_CMD=/apps/lmod/lmod/libexec/lmod
+LMOD_DIR=/apps/lmod/lmod/libexec
+LMOD_PACKAGE_PATH=/apps/lmod/SitePackageDir
+LMOD_PKG=/apps/lmod/lmod
+LMOD_ROOT=/apps/lmod
+LMOD_SETTARG_FULL_SUPPORT=no
+LMOD_SITE_NAME=Sapelo2
+LMOD_VERSION=8.7.59
+LOGNAME=jy03364
+LS_COLORS=rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=01;37;41:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=01;36:*.au=01;36:*.flac=01;36:*.m4a=01;36:*.mid=01;36:*.midi=01;36:*.mka=01;36:*.mp3=01;36:*.mpc=01;36:*.ogg=01;36:*.ra=01;36:*.wav=01;36:*.oga=01;36:*.opus=01;36:*.spx=01;36:*.xspf=01;36:
+MAIL=/var/spool/mail/jy03364
+MANPATH=/home/jy03364/.nvm/versions/node/v24.14.1/share/man:/usr/local/share/man:/usr/share/man:/opt/apps/slurm/prod/share/man:/opt/apps/slurm/prod/share/man:/opt/apps/slurm/prod/share/man:/opt/apps/slurm/prod/share/man:/opt/apps/slurm/prod/share/man
+MODULEPATH=/apps/mf/gb:/apps/mf/eb/all:/apps/easybuild/modules/all
+MODULESHOME=/apps/lmod/lmod
+MOTD_SHOWN=pam
+NO_COLOR=1
+NVM_BIN=/home/jy03364/.nvm/versions/node/v24.14.1/bin
+NVM_CD_FLAGS=
+NVM_DIR=/home/jy03364/.nvm
+NVM_INC=/home/jy03364/.nvm/versions/node/v24.14.1/include/node
+OLDPWD=/scratch/jy03364/MeZO_
+OMPI_MCA_orte_precondition_transports=02c4d2ee00000000-02c4d2ee00000000
+OMPI_MCA_plm_slurm_args=--external-launcher
+OUT_DIR=v10_medium_supplement_results_20260627
+PAGER=cat
+PATH=/home/jy03364/.nvm/versions/node/v24.14.1/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/jy03364/.codex/tmp/arg0/codex-arg0dNBoIo:/home/jy03364/.nvm/versions/node/v24.14.1/bin:/home/jy03364/miniconda3/bin:/home/jy03364/miniconda3/condabin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin:/usr/local/gacrc/bin:/opt/apps/slurm/prod/bin:/home/jy03364/.local/bin:/home/jy03364/bin
+PMIX_BFROP_BUFFER_TYPE=PMIX_BFROP_BUFFER_NON_DESC
+PMIX_GDS_MODULE=hash
+PMIX_HOSTNAME=ra8-1
+PMIX_MCA_gds=hash
+PMIX_MCA_psec=native
+PMIX_NAMESPACE=slurm.pmix.46453486.0
+PMIX_RANK=0
+PMIX_SECURITY_MODE=native
+PMIX_SERVER_TMPDIR=/var/spool/slurmd/pmix.46453486.0/
+PMIX_SERVER_URI21=pmix-server.981581;tcp4://127.0.0.1:36123
+PMIX_SERVER_URI2=pmix-server.981581;tcp4://127.0.0.1:36123
+PMIX_SERVER_URI3=pmix-server.981581;tcp4://127.0.0.1:36123
+PMIX_SERVER_URI41=pmix-server.981581;tcp4://127.0.0.1:36123
+PMIX_SERVER_URI4=pmix-server.981581;tcp4://127.0.0.1:36123
+PMIX_SYSTEM_TMPDIR=/tmp
+PMIX_VERSION=5.0.7
+PRTE_MCA_plm_slurm_args=--external-launcher
+PWD=/scratch/jy03364/MeZO_
+REPO_ROOT=/scratch/jy03364/MeZO_
+SHELL=/bin/bash
+SHLVL=6
+SLURMD_DEBUG=2
+SLURMD_NODENAME=ra7-3
+SLURM_ARRAY_JOB_ID=46453542
+SLURM_ARRAY_TASK_COUNT=6
+SLURM_ARRAY_TASK_ID=2
+SLURM_ARRAY_TASK_MAX=5
+SLURM_ARRAY_TASK_MIN=0
+SLURM_ARRAY_TASK_STEP=1
+SLURM_CLUSTER_NAME=tc2
+SLURM_CONF=/var/spool/slurmd/conf-cache/slurm.conf
+SLURM_CPUS_ON_NODE=8
+SLURM_CPUS_PER_TASK=8
+SLURM_CPU_BIND=quiet,mask_cpu:0x0000000000000002
+SLURM_CPU_BIND_LIST=0x0000000000000002
+SLURM_CPU_BIND_TYPE=mask_cpu:
+SLURM_CPU_BIND_VERBOSE=quiet
+SLURM_DISTRIBUTION=cyclic
+SLURM_EXPORT_ENV=ALL,OUT_DIR=v10_medium_supplement_results_20260627,REPO_ROOT=/scratch/jy03364/MeZO_,CONDA_ENV_HP=ciao,CONDA_ENV_LB=mezo-env
+SLURM_GET_USER_ENV=1
+SLURM_GPUS_ON_NODE=1
+SLURM_GTIDS=0
+SLURM_JOBID=46453545
+SLURM_JOB_ACCOUNT=nl2lab
+SLURM_JOB_CPUS_PER_NODE=8
+SLURM_JOB_END_TIME=1782853367
+SLURM_JOB_GID=2042
+SLURM_JOB_GPUS=0
+SLURM_JOB_GROUP=nl2lab
+SLURM_JOB_ID=46453545
+SLURM_JOB_NAME=v10-med
+SLURM_JOB_NODELIST=ra7-3
+SLURM_JOB_NUM_NODES=1
+SLURM_JOB_PARTITION=gpu_p
+SLURM_JOB_QOS=normal
+SLURM_JOB_START_TIME=1782594167
+SLURM_JOB_UID=5943
+SLURM_JOB_USER=jy03364
+SLURM_LAUNCH_NODE_IPADDR=10.2.0.226
+SLURM_LOCALID=0
+SLURM_MEM_PER_NODE=98304
+SLURM_MPI_TYPE=pmix
+SLURM_NNODES=1
+SLURM_NODEID=0
+SLURM_NODELIST=ra7-3
+SLURM_NPROCS=1
+SLURM_NTASKS=1
+SLURM_OOM_KILL_STEP=0
+SLURM_PMIXP_ABORT_AGENT_PORT=50553
+SLURM_PMIX_MAPPING_SERV=(vector,(0,1,1))
+SLURM_PRIO_PROCESS=0
+SLURM_PROCID=0
+SLURM_PTY_PORT=50552
+SLURM_PTY_WIN_COL=128
+SLURM_PTY_WIN_ROW=52
+SLURM_SRUN_COMM_HOST=10.2.0.226
+SLURM_SRUN_COMM_PORT=50554
+SLURM_STEPID=0
+SLURM_STEP_GPUS=2
+SLURM_STEP_ID=0
+SLURM_STEP_LAUNCHER_PORT=50554
+SLURM_STEP_NODELIST=ra8-1
+SLURM_STEP_NUM_NODES=1
+SLURM_STEP_NUM_TASKS=1
+SLURM_STEP_TASKS_PER_NODE=1
+SLURM_SUBMIT_DIR=/scratch/jy03364/MeZO_
+SLURM_SUBMIT_HOST=ra8-1
+SLURM_TASKS_PER_NODE=1
+SLURM_TASK_PID=3836913
+SLURM_TOPOLOGY_ADDR=ra7-3
+SLURM_TOPOLOGY_ADDR_PATTERN=node
+SLURM_TRES_PER_TASK=cpu=8
+SRUN_DEBUG=3
+SSH_CLIENT=172.18.101.144 55916 22
+SSH_CONNECTION=172.18.101.108 62245 128.192.75.23 22
+SSH_TTY=/dev/pts/33
+S_COLORS=auto
+TERM=dumb
+TERM_PROGRAM=tmux
+TERM_PROGRAM_VERSION=3.2a
+TMPDIR=/tmp
+TMUX=/tmp/tmux-5943/default,2145162,1
+TMUX_PANE=%1
+USER=jy03364
+XDG_DATA_DIRS=/home/jy03364/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share
+XDG_RUNTIME_DIR=/run/user/5943
+XDG_SESSION_CLASS=user
+XDG_SESSION_ID=21229
+XDG_SESSION_TYPE=tty
+_=/usr/bin/env
+_ModuleTable001_=X01vZHVsZVRhYmxlXyA9IHsKTVR2ZXJzaW9uID0gMywKY19yZWJ1aWxkVGltZSA9IGZhbHNlLApjX3Nob3J0VGltZSA9IGZhbHNlLApkZXB0aFQgPSB7fSwKZmFtaWx5ID0ge30sCm1UID0ge30sCm1wYXRoQSA9IHsKIi9hcHBzL21mL2diIiwgIi9hcHBzL21mL2ViL2FsbCIsICIvYXBwcy9lYXN5YnVpbGQvbW9kdWxlcy9hbGwiLAp9LAp9Cg==
+_ModuleTable_Sz_=1
+__LMOD_REF_COUNT_MODULEPATH=/apps/mf/gb:4;/apps/mf/eb/all:4;/apps/easybuild/modules/all:4
+which_declare=declare -f
+}
+}
+}

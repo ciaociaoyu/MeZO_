@@ -1,0 +1,3 @@
+metric,analysis_set,status,n_h,n_seeds,var_h_policy,var_seed_direction,var_residual_interaction,share_h_policy,share_seed_direction,share_residual_interaction,h_values,seeds
+best_eval_acc,all_h,descriptive_balanced_two_way,4,4,0.00012659550181265742,2.6844502245940017e-05,2.3930813255159673e-05,0.7137335426983935,0.15134678101219937,0.1349196762894071,"1e-05,0.0001,0.001,0.003","32,64,128,256"
+best_eval_acc,inner_plateau_1e-5_1e-4_1e-3,descriptive_balanced_two_way,3,4,3.618306589857879e-07,5.738824688703766e-05,1.7710658571410329e-06,0.006079027355622858,0.964165733482643,0.029755239161734132,"1e-05,0.0001,0.001","32,64,128,256"

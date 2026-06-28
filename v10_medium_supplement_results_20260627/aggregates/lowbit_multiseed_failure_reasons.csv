@@ -1,0 +1,7 @@
+status,failure_type,missing_path,log_path
+failed_before_training,missing_dataset_split,/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-2/full-32/train.tsv,v10_medium_supplement_results_20260627/jobs/v10-med_46453542_0.err
+failed_before_training,missing_dataset_split,/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/trec/full-32/train.csv,v10_medium_supplement_results_20260627/jobs/v10-med_46453542_1.err
+failed_before_training,missing_dataset_split,/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/trec/full-32/train.csv,v10_medium_supplement_results_20260627/jobs/v10-med_46453542_2.err
+failed_before_training,missing_dataset_split,/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/trec/full-32/train.csv,v10_medium_supplement_results_20260627/jobs/v10-med_46453542_3.err
+failed_before_training,missing_dataset_split,/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-2/full-32/train.tsv,v10_medium_supplement_results_20260627/jobs/v10-med_46453542_4.err
+failed_before_training,missing_dataset_split,/scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-2/full-32/train.tsv,v10_medium_supplement_results_20260627/jobs/v10-med_46453542_5.err

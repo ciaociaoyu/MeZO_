@@ -1,0 +1,285 @@
+job_id=46453600 lane=3 host=ra5-4 start=2026-06-27T17:32:30-04:00
+Sat Jun 27 17:32:30 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.124.06             Driver Version: 570.124.06     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA H100 80GB HBM3          Off |   00000000:4E:00.0 Off |                    0 |
+| N/A   35C    P0             69W /  700W |       1MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+5703318c54ce0aaf0c75e58e6d13ee7a53c7882b
+[lane 3] running high-precision manifest v10_medium_supplement_results_20260627/manifests/high_precision_lane3.csv
+[lane] experiment_id=latest_main_roberta_sst5_fp32_fp16_hsweep_seed16_bs64_ckpt1k
+[lane] exp_root=v10_medium_supplement_results_20260627/raw_runs/high_precision_sst5_fp32_multiseed
+[lane] lane_id=3
+[lane] lane_manifest=v10_medium_supplement_results_20260627/manifests/high_precision_lane3.csv
+[lane3] starting fp32_h3e-3_seed32_bs64_ckpt1k
+TASK: SST-5
+K: 16
+Seed: 32
+Data seed: 32
+Dataset mode: full
+Full dev ratio: 0.1
+BS: 64
+LR: 1e-6
+EPS: 0.003
+Step: 20000; Eval step: 1000
+Optimizer: sgd
+Use trainer optimizer for ZO: False
+Efficient zero order: True
+Using adaptive h: False
+Dataloader shuffle: True
+Grid search tag: seed32-bs64-lr1e-6-eps0.003-wd0-step20000-evalstep1000
+Tag: k16-roberta-large-mezo-latest_main_roberta_sst5_fp32_fp16_hsweep_seed16_bs64_ckpt1k
+Result root: v10_medium_supplement_results_20260627/raw_runs/high_precision_sst5_fp32_multiseed/fp32/multiseed_plateau/results
+Job name: fp32_h3e-3_seed32_bs64_ckpt1k
+Output dir: v10_medium_supplement_results_20260627/raw_runs/high_precision_sst5_fp32_multiseed/fp32/multiseed_plateau/results/fp32_h3e-3_seed32_bs64_ckpt1k/seed32
+Dataset mode: full
+Data root: data/k-shot-1k-test
+Full dev ratio: 0.1
+Dataloader shuffle: True
+Keep checkpoints: True
+GPU数量: 1
+RobertaConfig {
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "dtype": "float32",
+  "eos_token_id": 2,
+  "finetuning_task": "sst-5",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "id2label": {
+    "0": "LABEL_0",
+    "1": "LABEL_1",
+    "2": "LABEL_2",
+    "3": "LABEL_3",
+    "4": "LABEL_4"
+  },
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "label2id": {
+    "LABEL_0": 0,
+    "LABEL_1": 1,
+    "LABEL_2": 2,
+    "LABEL_3": 3,
+    "LABEL_4": 4
+  },
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "transformers_version": "4.56.0",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+
+KEEP_CHECKPOINTS=True; preserving checkpoint directories under v10_medium_supplement_results_20260627/raw_runs/high_precision_sst5_fp32_multiseed/fp32/multiseed_plateau/results/fp32_h3e-3_seed32_bs64_ckpt1k/seed32
+[lane3] starting fp32_h1e-4_seed128_bs64_ckpt1k
+TASK: SST-5
+K: 16
+Seed: 128
+Data seed: 128
+Dataset mode: full
+Full dev ratio: 0.1
+BS: 64
+LR: 1e-6
+EPS: 0.0001
+Step: 20000; Eval step: 1000
+Optimizer: sgd
+Use trainer optimizer for ZO: False
+Efficient zero order: True
+Using adaptive h: False
+Dataloader shuffle: True
+Grid search tag: seed128-bs64-lr1e-6-eps0.0001-wd0-step20000-evalstep1000
+Tag: k16-roberta-large-mezo-latest_main_roberta_sst5_fp32_fp16_hsweep_seed16_bs64_ckpt1k
+Result root: v10_medium_supplement_results_20260627/raw_runs/high_precision_sst5_fp32_multiseed/fp32/multiseed_plateau/results
+Job name: fp32_h1e-4_seed128_bs64_ckpt1k
+Output dir: v10_medium_supplement_results_20260627/raw_runs/high_precision_sst5_fp32_multiseed/fp32/multiseed_plateau/results/fp32_h1e-4_seed128_bs64_ckpt1k/seed128
+Dataset mode: full
+Data root: data/k-shot-1k-test
+Full dev ratio: 0.1
+Dataloader shuffle: True
+Keep checkpoints: True
+GPU数量: 1
+RobertaConfig {
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "dtype": "float32",
+  "eos_token_id": 2,
+  "finetuning_task": "sst-5",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "id2label": {
+    "0": "LABEL_0",
+    "1": "LABEL_1",
+    "2": "LABEL_2",
+    "3": "LABEL_3",
+    "4": "LABEL_4"
+  },
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "label2id": {
+    "LABEL_0": 0,
+    "LABEL_1": 1,
+    "LABEL_2": 2,
+    "LABEL_3": 3,
+    "LABEL_4": 4
+  },
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "transformers_version": "4.56.0",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+
+KEEP_CHECKPOINTS=True; preserving checkpoint directories under v10_medium_supplement_results_20260627/raw_runs/high_precision_sst5_fp32_multiseed/fp32/multiseed_plateau/results/fp32_h1e-4_seed128_bs64_ckpt1k/seed128
+[lane3] starting fp32_h3e-3_seed256_bs64_ckpt1k
+TASK: SST-5
+K: 16
+Seed: 256
+Data seed: 256
+Dataset mode: full
+Full dev ratio: 0.1
+BS: 64
+LR: 1e-6
+EPS: 0.003
+Step: 20000; Eval step: 1000
+Optimizer: sgd
+Use trainer optimizer for ZO: False
+Efficient zero order: True
+Using adaptive h: False
+Dataloader shuffle: True
+Grid search tag: seed256-bs64-lr1e-6-eps0.003-wd0-step20000-evalstep1000
+Tag: k16-roberta-large-mezo-latest_main_roberta_sst5_fp32_fp16_hsweep_seed16_bs64_ckpt1k
+Result root: v10_medium_supplement_results_20260627/raw_runs/high_precision_sst5_fp32_multiseed/fp32/multiseed_plateau/results
+Job name: fp32_h3e-3_seed256_bs64_ckpt1k
+Output dir: v10_medium_supplement_results_20260627/raw_runs/high_precision_sst5_fp32_multiseed/fp32/multiseed_plateau/results/fp32_h3e-3_seed256_bs64_ckpt1k/seed256
+Dataset mode: full
+Data root: data/k-shot-1k-test
+Full dev ratio: 0.1
+Dataloader shuffle: True
+Keep checkpoints: True
+GPU数量: 1
+RobertaConfig {
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "dtype": "float32",
+  "eos_token_id": 2,
+  "finetuning_task": "sst-5",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "id2label": {
+    "0": "LABEL_0",
+    "1": "LABEL_1",
+    "2": "LABEL_2",
+    "3": "LABEL_3",
+    "4": "LABEL_4"
+  },
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "label2id": {
+    "LABEL_0": 0,
+    "LABEL_1": 1,
+    "LABEL_2": 2,
+    "LABEL_3": 3,
+    "LABEL_4": 4
+  },
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "transformers_version": "4.56.0",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+
+KEEP_CHECKPOINTS=True; preserving checkpoint directories under v10_medium_supplement_results_20260627/raw_runs/high_precision_sst5_fp32_multiseed/fp32/multiseed_plateau/results/fp32_h3e-3_seed256_bs64_ckpt1k/seed256
+summary_all=/scratch/jy03364/MeZO_/v10_medium_supplement_results_20260627/raw_runs/high_precision_sst5_fp32_multiseed/summaries/summary_all.csv
+failed=0 completed=0 total=0
+[lane 3] running low-bit manifest v10_medium_supplement_results_20260627/manifests/lowbit_lane3.csv
+RobertaConfig {
+  "_attn_implementation_autoset": true,
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "eos_token_id": 2,
+  "finetuning_task": "trec",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "id2label": {
+    "0": "LABEL_0",
+    "1": "LABEL_1",
+    "2": "LABEL_2",
+    "3": "LABEL_3",
+    "4": "LABEL_4",
+    "5": "LABEL_5"
+  },
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "label2id": {
+    "LABEL_0": 0,
+    "LABEL_1": 1,
+    "LABEL_2": 2,
+    "LABEL_3": 3,
+    "LABEL_4": 4,
+    "LABEL_5": 5
+  },
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "torch_dtype": "float32",
+  "transformers_version": "4.51.3",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+

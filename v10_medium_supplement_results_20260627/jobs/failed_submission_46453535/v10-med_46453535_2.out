@@ -1,0 +1,54 @@
+job_id=46453538 lane=2 host=ra7-3 start=2026-06-27T17:01:27-04:00
+Sat Jun 27 17:01:39 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.124.06             Driver Version: 570.124.06     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA H100 80GB HBM3          Off |   00000000:4E:00.0 Off |                    0 |
+| N/A   37C    P0             70W /  700W |       1MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+5703318c54ce0aaf0c75e58e6d13ee7a53c7882b
+[lane 2] running high-precision manifest v10_medium_supplement_results_20260627/manifests/high_precision_lane2.csv
+[lane] experiment_id=latest_main_roberta_sst5_fp32_fp16_hsweep_seed16_bs64_ckpt1k
+[lane] exp_root=v10_medium_supplement_results_20260627/raw_runs/high_precision_sst5_fp32_multiseed
+[lane] lane_id=2
+[lane] lane_manifest=v10_medium_supplement_results_20260627/manifests/high_precision_lane2.csv
+[lane2] starting fp32_h1e-3_seed32_bs64_ckpt1k
+TASK: SST-5
+K: 16
+Seed: 32
+Data seed: 32
+Dataset mode: full
+Full dev ratio: 0.1
+BS: 64
+LR: 1e-6
+EPS: 0.001
+Step: 20000; Eval step: 1000
+Optimizer: sgd
+Use trainer optimizer for ZO: False
+Efficient zero order: True
+Using adaptive h: False
+Dataloader shuffle: True
+Grid search tag: seed32-bs64-lr1e-6-eps0.001-wd0-step20000-evalstep1000
+Tag: k16-roberta-large-mezo-latest_main_roberta_sst5_fp32_fp16_hsweep_seed16_bs64_ckpt1k
+Result root: v10_medium_supplement_results_20260627/raw_runs/high_precision_sst5_fp32_multiseed/fp32/multiseed_plateau/results
+Job name: fp32_h1e-3_seed32_bs64_ckpt1k
+Output dir: v10_medium_supplement_results_20260627/raw_runs/high_precision_sst5_fp32_multiseed/fp32/multiseed_plateau/results/fp32_h1e-3_seed32_bs64_ckpt1k/seed32
+Dataset mode: full
+Data root: data/k-shot-1k-test
+Full dev ratio: 0.1
+Dataloader shuffle: True
+Keep checkpoints: True
+GPU数量: 1

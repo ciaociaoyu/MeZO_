@@ -1,0 +1,9 @@
+{
+  "existing_seed16_reused_lowbit_rows": 12,
+  "git_commit": "5703318c54ce0aaf0c75e58e6d13ee7a53c7882b",
+  "high_precision_new_runs": 16,
+  "lowbit_new_runs": 24,
+  "max_concurrent_lanes": 6,
+  "target_gpu": "H100",
+  "target_time": "72:00:00"
+}

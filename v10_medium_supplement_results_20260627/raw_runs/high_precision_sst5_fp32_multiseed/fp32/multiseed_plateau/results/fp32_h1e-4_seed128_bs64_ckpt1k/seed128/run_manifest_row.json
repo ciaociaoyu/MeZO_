@@ -1,0 +1,22 @@
+{
+  "lane_id": 3,
+  "gpu_type": "H100",
+  "precision_mode": "fp32",
+  "h": 0.0001,
+  "h_label": "1e-4",
+  "run_name": "fp32_h1e-4_seed128_bs64_ckpt1k",
+  "result_root": "v10_medium_supplement_results_20260627/raw_runs/high_precision_sst5_fp32_multiseed/fp32/multiseed_plateau/results",
+  "max_steps": 20000,
+  "eval_steps": 1000,
+  "checkpoint_steps": 1000,
+  "seed": 128,
+  "data_seed": 128,
+  "batch_size": 64,
+  "lr": 1e-06,
+  "dataset": "SST-5",
+  "dataset_mode": "full",
+  "dataloader_shuffle": true,
+  "model": "roberta-large",
+  "method": "mezo",
+  "direction_type": "dense"
+}

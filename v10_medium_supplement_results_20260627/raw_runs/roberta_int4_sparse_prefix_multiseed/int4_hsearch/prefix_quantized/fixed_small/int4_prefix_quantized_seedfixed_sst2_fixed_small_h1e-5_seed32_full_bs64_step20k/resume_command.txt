@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0 DATALOADER_SHUFFLE=True python tools/rtnclip_roberta_sst5_batch.py --manifest v10_medium_supplement_results_20260627/manifests/lowbit_lane4.csv --only-run-name int4_prefix_quantized_seedfixed_sst2_fixed_small_h1e-5_seed32_full_bs64_step20k run-manifest
