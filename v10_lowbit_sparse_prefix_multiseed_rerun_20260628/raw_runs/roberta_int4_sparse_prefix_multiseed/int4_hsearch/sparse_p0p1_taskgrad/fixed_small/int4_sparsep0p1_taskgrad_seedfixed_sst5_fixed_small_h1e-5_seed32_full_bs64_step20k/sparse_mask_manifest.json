@@ -1,0 +1,11 @@
+{
+  "active_params_all": 35568191,
+  "active_params_quantized_linear": 35568191,
+  "mask_active_frac_all": 0.08719015786466959,
+  "mask_active_frac_quantized_linear": 0.1000332964416597,
+  "sparse_mask_hash": "8f7cbd903ce40aaf670d188683ae8cc06108fd5a74833fb50081c1c6489386cf",
+  "sparse_mask_num_tensors": 399,
+  "sparse_mask_restored_from_checkpoint": false,
+  "total_params_all": 407938142,
+  "total_params_quantized_linear": 355563520
+}

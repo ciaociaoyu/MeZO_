@@ -1,0 +1,898 @@
+job_id=46474443 lane=0 host=ra8-1 start=2026-06-28T20:32:52-04:00
+Sun Jun 28 20:32:52 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.124.06             Driver Version: 570.124.06     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA H100 80GB HBM3          Off |   00000000:5F:00.0 Off |                    0 |
+| N/A   58C    P0            147W /  700W |       1MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+dc419b7f46519c8adf35ffdf64fba6c0013dba2c
+[lane 0] running low-bit rerun manifest v10_lowbit_sparse_prefix_multiseed_rerun_20260628/manifests/lowbit_lane0.csv
+RobertaConfig {
+  "_attn_implementation_autoset": true,
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "eos_token_id": 2,
+  "finetuning_task": "sst-2",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "torch_dtype": "float32",
+  "transformers_version": "4.51.3",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+
+[2026-06-28T20:33:51] starting int4_prefix_quantized_seedfixed_sst2_fixed_small_h1e-5_seed32_full_bs64_step20k
+[2026-06-28T20:33:51] prefix mode prefix_params=48 active_params=245760 prefix_quantize=True
+[2026-06-28T20:33:54] step=1/20000 loss=0.778809 d_h=0 eval_acc=None active=0.00011800130208333333
+[2026-06-28T20:34:39] step=100/20000 loss=0.719727 d_h=488.281 eval_acc=None active=0.00011800130208333333
+[2026-06-28T20:35:23] step=200/20000 loss=0.757324 d_h=-97.6562 eval_acc=None active=4.475911458333333e-05
+[2026-06-28T20:36:08] step=300/20000 loss=0.743652 d_h=2246.09 eval_acc=None active=2.0345052083333332e-05
+[2026-06-28T20:36:53] step=400/20000 loss=0.732422 d_h=439.453 eval_acc=None active=1.6276041666666666e-05
+[2026-06-28T20:37:38] step=500/20000 loss=0.710449 d_h=-439.453 eval_acc=None active=8.138020833333333e-06
+[2026-06-28T20:38:23] step=600/20000 loss=0.750244 d_h=-1733.4 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T20:39:07] step=700/20000 loss=0.77002 d_h=-48.8281 eval_acc=None active=2.44140625e-05
+[2026-06-28T20:39:52] step=800/20000 loss=0.791992 d_h=292.969 eval_acc=None active=1.6276041666666666e-05
+[2026-06-28T20:40:37] step=900/20000 loss=0.7771 d_h=610.352 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T20:41:28] step=1000/20000 loss=0.795654 d_h=-122.07 eval_acc=0.4650334075723831 active=1.220703125e-05
+[2026-06-28T20:42:13] step=1100/20000 loss=0.718262 d_h=0 eval_acc=None active=8.138020833333333e-06
+[2026-06-28T20:42:58] step=1200/20000 loss=0.749512 d_h=0 eval_acc=None active=0.0
+[2026-06-28T20:43:42] step=1300/20000 loss=0.753906 d_h=0 eval_acc=None active=8.138020833333333e-06
+[2026-06-28T20:44:27] step=1400/20000 loss=0.721924 d_h=-24.4141 eval_acc=None active=0.0
+[2026-06-28T20:45:12] step=1500/20000 loss=0.866943 d_h=-73.2422 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T20:45:57] step=1600/20000 loss=0.777832 d_h=0 eval_acc=None active=1.6276041666666666e-05
+[2026-06-28T20:46:42] step=1700/20000 loss=0.858643 d_h=-512.695 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T20:47:27] step=1800/20000 loss=0.827637 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T20:48:12] step=1900/20000 loss=0.831055 d_h=0 eval_acc=None active=0.0
+[2026-06-28T20:49:01] step=2000/20000 loss=0.757324 d_h=-439.453 eval_acc=0.4883444691907944 active=1.220703125e-05
+[2026-06-28T20:49:46] step=2100/20000 loss=0.802246 d_h=-48.8281 eval_acc=None active=0.0
+[2026-06-28T20:50:31] step=2200/20000 loss=0.76123 d_h=0 eval_acc=None active=8.138020833333333e-06
+[2026-06-28T20:51:16] step=2300/20000 loss=0.726807 d_h=-1196.29 eval_acc=None active=0.0
+[2026-06-28T20:52:01] step=2400/20000 loss=0.756348 d_h=0 eval_acc=None active=0.0
+[2026-06-28T20:52:46] step=2500/20000 loss=0.816895 d_h=0 eval_acc=None active=0.0
+[2026-06-28T20:53:31] step=2600/20000 loss=0.83252 d_h=0 eval_acc=None active=0.0
+[2026-06-28T20:54:15] step=2700/20000 loss=0.870361 d_h=-708.008 eval_acc=None active=0.0
+[2026-06-28T20:55:00] step=2800/20000 loss=0.742188 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T20:55:45] step=2900/20000 loss=0.82251 d_h=24.4141 eval_acc=None active=8.138020833333333e-06
+[2026-06-28T20:56:32] step=3000/20000 loss=0.780273 d_h=0 eval_acc=0.4489977728285078 active=1.6276041666666666e-05
+[2026-06-28T20:57:17] step=3100/20000 loss=0.89209 d_h=0 eval_acc=None active=0.0
+[2026-06-28T20:58:02] step=3200/20000 loss=0.931396 d_h=122.07 eval_acc=None active=0.0
+[2026-06-28T20:58:47] step=3300/20000 loss=0.74707 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T20:59:32] step=3400/20000 loss=0.959961 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:00:16] step=3500/20000 loss=0.826172 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:01:01] step=3600/20000 loss=0.833984 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:01:46] step=3700/20000 loss=0.868652 d_h=-830.078 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:02:31] step=3800/20000 loss=0.697266 d_h=0 eval_acc=None active=8.138020833333333e-06
+[2026-06-28T21:03:16] step=3900/20000 loss=0.88623 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:04:03] step=4000/20000 loss=0.755371 d_h=0 eval_acc=0.45493689680772087 active=0.0
+[2026-06-28T21:04:48] step=4100/20000 loss=0.822021 d_h=-317.383 eval_acc=None active=0.0
+[2026-06-28T21:05:33] step=4200/20000 loss=0.82666 d_h=0 eval_acc=None active=1.220703125e-05
+[2026-06-28T21:06:18] step=4300/20000 loss=0.790527 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:07:02] step=4400/20000 loss=0.803223 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:07:47] step=4500/20000 loss=0.816406 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:08:32] step=4600/20000 loss=0.775391 d_h=1611.33 eval_acc=None active=0.0
+[2026-06-28T21:09:17] step=4700/20000 loss=0.831543 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:10:02] step=4800/20000 loss=0.84375 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:10:47] step=4900/20000 loss=0.787598 d_h=0 eval_acc=None active=8.138020833333333e-06
+[2026-06-28T21:11:34] step=5000/20000 loss=0.822266 d_h=0 eval_acc=0.43994060876020785 active=0.0
+[2026-06-28T21:12:19] step=5100/20000 loss=0.842773 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:13:04] step=5200/20000 loss=0.903564 d_h=170.898 eval_acc=None active=0.0
+[2026-06-28T21:13:48] step=5300/20000 loss=0.844727 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:14:33] step=5400/20000 loss=0.848145 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:15:18] step=5500/20000 loss=1.01953 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:16:03] step=5600/20000 loss=0.936768 d_h=-854.492 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:16:48] step=5700/20000 loss=1.02637 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:17:33] step=5800/20000 loss=1.08398 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:18:18] step=5900/20000 loss=1.01562 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:19:05] step=6000/20000 loss=0.866211 d_h=-244.141 eval_acc=0.4424647364513734 active=4.069010416666667e-06
+[2026-06-28T21:19:49] step=6100/20000 loss=0.87207 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:20:34] step=6200/20000 loss=0.872559 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:21:19] step=6300/20000 loss=0.869141 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:22:04] step=6400/20000 loss=0.746826 d_h=219.727 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:22:49] step=6500/20000 loss=0.900391 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:23:34] step=6600/20000 loss=0.901855 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:24:18] step=6700/20000 loss=0.953125 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:25:03] step=6800/20000 loss=1.09912 d_h=-1318.36 eval_acc=None active=0.0
+[2026-06-28T21:25:48] step=6900/20000 loss=0.951172 d_h=0 eval_acc=None active=8.138020833333333e-06
+[2026-06-28T21:26:35] step=7000/20000 loss=0.992676 d_h=0 eval_acc=0.44201930215293245 active=0.0
+[2026-06-28T21:27:20] step=7100/20000 loss=0.879395 d_h=-48.8281 eval_acc=None active=0.0
+[2026-06-28T21:28:05] step=7200/20000 loss=0.868896 d_h=-463.867 eval_acc=None active=0.0
+[2026-06-28T21:28:49] step=7300/20000 loss=1.02246 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:29:34] step=7400/20000 loss=0.896484 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:30:19] step=7500/20000 loss=0.846191 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:31:04] step=7600/20000 loss=0.871582 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:31:49] step=7700/20000 loss=0.833984 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:32:34] step=7800/20000 loss=1.0332 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:33:18] step=7900/20000 loss=0.725098 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:34:05] step=8000/20000 loss=0.976074 d_h=0 eval_acc=0.44320712694877507 active=0.0
+[2026-06-28T21:34:50] step=8100/20000 loss=0.896973 d_h=146.484 eval_acc=None active=0.0
+[2026-06-28T21:35:35] step=8200/20000 loss=0.819824 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:36:20] step=8300/20000 loss=0.916992 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:37:05] step=8400/20000 loss=0.929688 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:37:50] step=8500/20000 loss=0.946777 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:38:35] step=8600/20000 loss=0.814453 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:39:20] step=8700/20000 loss=0.80127 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:40:05] step=8800/20000 loss=0.850586 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:40:49] step=8900/20000 loss=1.0166 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:41:36] step=9000/20000 loss=0.95166 d_h=0 eval_acc=0.4424647364513734 active=8.138020833333333e-06
+[2026-06-28T21:42:21] step=9100/20000 loss=0.85498 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:43:06] step=9200/20000 loss=0.880371 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:43:51] step=9300/20000 loss=1.01172 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:44:36] step=9400/20000 loss=0.912598 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:45:20] step=9500/20000 loss=0.956055 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:46:05] step=9600/20000 loss=0.921875 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:46:50] step=9700/20000 loss=0.930664 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:47:35] step=9800/20000 loss=1.05469 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:48:20] step=9900/20000 loss=0.899902 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:49:07] step=10000/20000 loss=0.700195 d_h=97.6562 eval_acc=0.44201930215293245 active=0.0
+[2026-06-28T21:49:52] step=10100/20000 loss=0.89209 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:50:37] step=10200/20000 loss=0.889648 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:51:21] step=10300/20000 loss=1.07227 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:52:06] step=10400/20000 loss=0.806641 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:52:51] step=10500/20000 loss=0.973633 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:53:36] step=10600/20000 loss=0.950195 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:54:21] step=10700/20000 loss=1.00635 d_h=-48.8281 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:55:05] step=10800/20000 loss=0.976074 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:55:50] step=10900/20000 loss=0.935059 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:56:37] step=11000/20000 loss=1.0752 d_h=0 eval_acc=0.44261321455085373 active=4.069010416666667e-06
+[2026-06-28T21:57:22] step=11100/20000 loss=1.04102 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:58:07] step=11200/20000 loss=0.913086 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T21:58:52] step=11300/20000 loss=0.945312 d_h=0 eval_acc=None active=0.0
+[2026-06-28T21:59:37] step=11400/20000 loss=0.81543 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:00:21] step=11500/20000 loss=0.943848 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T22:01:06] step=11600/20000 loss=0.858398 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:01:51] step=11700/20000 loss=0.838867 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:02:36] step=11800/20000 loss=0.761719 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:03:21] step=11900/20000 loss=0.854492 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T22:04:07] step=12000/20000 loss=0.925049 d_h=-24.4141 eval_acc=0.44409799554565704 active=0.0
+[2026-06-28T22:04:52] step=12100/20000 loss=0.864746 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T22:05:37] step=12200/20000 loss=0.851074 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T22:06:22] step=12300/20000 loss=1.00488 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:07:07] step=12400/20000 loss=1.06836 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:07:52] step=12500/20000 loss=0.983398 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:08:36] step=12600/20000 loss=0.887451 d_h=317.383 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T22:09:21] step=12700/20000 loss=0.810059 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:10:06] step=12800/20000 loss=0.831543 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:10:51] step=12900/20000 loss=0.85791 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:11:38] step=13000/20000 loss=0.862305 d_h=0 eval_acc=0.4418708240534521 active=0.0
+[2026-06-28T22:12:23] step=13100/20000 loss=1.02637 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:13:08] step=13200/20000 loss=0.935547 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:13:53] step=13300/20000 loss=0.945801 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:14:37] step=13400/20000 loss=0.845215 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:15:22] step=13500/20000 loss=1.09863 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:16:07] step=13600/20000 loss=0.983887 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:16:52] step=13700/20000 loss=1.09961 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:17:37] step=13800/20000 loss=1.02148 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:18:22] step=13900/20000 loss=0.927734 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:19:09] step=14000/20000 loss=0.914551 d_h=0 eval_acc=0.4418708240534521 active=0.0
+[2026-06-28T22:19:54] step=14100/20000 loss=1.0293 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:20:39] step=14200/20000 loss=0.981934 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:21:23] step=14300/20000 loss=0.895996 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:22:08] step=14400/20000 loss=0.937744 d_h=-1489.26 eval_acc=None active=0.0
+[2026-06-28T22:22:53] step=14500/20000 loss=1.09668 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:23:38] step=14600/20000 loss=0.945312 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:24:23] step=14700/20000 loss=1.04883 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:25:08] step=14800/20000 loss=1.0498 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:25:52] step=14900/20000 loss=0.925293 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:26:39] step=15000/20000 loss=1.00098 d_h=0 eval_acc=0.45835189309576835 active=0.0
+[2026-06-28T22:27:24] step=15100/20000 loss=0.92041 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:28:09] step=15200/20000 loss=0.993652 d_h=-927.734 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T22:28:54] step=15300/20000 loss=0.883789 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:29:39] step=15400/20000 loss=0.932129 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:30:24] step=15500/20000 loss=0.944336 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:31:09] step=15600/20000 loss=0.893555 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T22:31:53] step=15700/20000 loss=0.97168 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:32:38] step=15800/20000 loss=1.06055 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:33:23] step=15900/20000 loss=1.02344 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:34:10] step=16000/20000 loss=1.0752 d_h=0 eval_acc=0.444543429844098 active=0.0
+[2026-06-28T22:34:55] step=16100/20000 loss=0.875977 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:35:40] step=16200/20000 loss=1.02539 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:36:24] step=16300/20000 loss=0.830078 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T22:37:09] step=16400/20000 loss=0.926758 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:37:54] step=16500/20000 loss=0.891113 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T22:38:39] step=16600/20000 loss=0.962891 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-28T22:39:23] step=16700/20000 loss=1.0542 d_h=-146.484 eval_acc=None active=0.0
+[2026-06-28T22:40:08] step=16800/20000 loss=1.07031 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:40:53] step=16900/20000 loss=0.922852 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:41:40] step=17000/20000 loss=0.9375 d_h=0 eval_acc=0.44216778025241277 active=0.0
+[2026-06-28T22:42:25] step=17100/20000 loss=1.09766 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:43:10] step=17200/20000 loss=1.09082 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:43:54] step=17300/20000 loss=1.32422 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:44:39] step=17400/20000 loss=0.977051 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:45:24] step=17500/20000 loss=1.01758 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:46:09] step=17600/20000 loss=1.04785 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:46:54] step=17700/20000 loss=0.975098 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:47:39] step=17800/20000 loss=0.883789 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:48:23] step=17900/20000 loss=0.940918 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:49:10] step=18000/20000 loss=1.02637 d_h=0 eval_acc=0.4429101707498144 active=0.0
+[2026-06-28T22:49:55] step=18100/20000 loss=1.17773 d_h=0 eval_acc=None active=1.220703125e-05
+[2026-06-28T22:50:40] step=18200/20000 loss=1.25684 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:51:25] step=18300/20000 loss=0.860352 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:52:10] step=18400/20000 loss=0.967285 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:52:54] step=18500/20000 loss=0.981445 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:53:39] step=18600/20000 loss=0.884766 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:54:24] step=18700/20000 loss=0.983887 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:55:09] step=18800/20000 loss=1.09277 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:55:54] step=18900/20000 loss=1.0293 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:56:40] step=19000/20000 loss=1.12988 d_h=0 eval_acc=0.44216778025241277 active=0.0
+[2026-06-28T22:57:25] step=19100/20000 loss=0.935547 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:58:10] step=19200/20000 loss=1.10938 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:58:55] step=19300/20000 loss=0.846191 d_h=0 eval_acc=None active=0.0
+[2026-06-28T22:59:40] step=19400/20000 loss=0.870605 d_h=0 eval_acc=None active=0.0
+[2026-06-28T23:00:25] step=19500/20000 loss=0.862305 d_h=0 eval_acc=None active=0.0
+[2026-06-28T23:01:10] step=19600/20000 loss=0.716797 d_h=0 eval_acc=None active=0.0
+[2026-06-28T23:01:55] step=19700/20000 loss=1.05469 d_h=0 eval_acc=None active=0.0
+[2026-06-28T23:02:39] step=19800/20000 loss=0.800781 d_h=0 eval_acc=None active=0.0
+[2026-06-28T23:03:24] step=19900/20000 loss=1.0166 d_h=0 eval_acc=None active=0.0
+[2026-06-28T23:04:11] step=20000/20000 loss=0.887695 d_h=0 eval_acc=0.44097995545657015 active=0.0
+[2026-06-28T23:04:12] finished int4_prefix_quantized_seedfixed_sst2_fixed_small_h1e-5_seed32_full_bs64_step20k status=complete steps=20000
+RobertaConfig {
+  "_attn_implementation_autoset": true,
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "eos_token_id": 2,
+  "finetuning_task": "sst-5",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "id2label": {
+    "0": "LABEL_0",
+    "1": "LABEL_1",
+    "2": "LABEL_2",
+    "3": "LABEL_3",
+    "4": "LABEL_4"
+  },
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "label2id": {
+    "LABEL_0": 0,
+    "LABEL_1": 1,
+    "LABEL_2": 2,
+    "LABEL_3": 3,
+    "LABEL_4": 4
+  },
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "torch_dtype": "float32",
+  "transformers_version": "4.51.3",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+
+[2026-06-28T23:04:13] starting int4_sparsep0p1_taskgrad_seedfixed_sst5_fixed_small_h1e-5_seed32_full_bs64_step20k
+[2026-06-28T23:04:17] sparse mask strategy=task_grad_static p=0.1 source=static_task_gradient_square_before_zo_training hash=8f7cbd903ce4 selection=global_topk_grad_square_linear_weight active_all=0.0871902 active_quantized_linear=0.100033
+[2026-06-28T23:04:20] step=1/20000 loss=1.80518 d_h=-146.484 eval_acc=None active=0.00011273091232756386
+[2026-06-28T23:04:58] step=100/20000 loss=1.65088 d_h=-244.141 eval_acc=None active=0.00011273091232756386
+[2026-06-28T23:05:37] step=200/20000 loss=1.6333 d_h=-48.8281 eval_acc=None active=0.00012108103778475363
+[2026-06-28T23:06:16] step=300/20000 loss=1.62549 d_h=-146.484 eval_acc=None active=0.00010906068204072228
+[2026-06-28T23:06:55] step=400/20000 loss=1.59717 d_h=-48.8281 eval_acc=None active=0.00011536616579788613
+[2026-06-28T23:07:34] step=500/20000 loss=1.64502 d_h=-244.141 eval_acc=None active=0.00011813922868127754
+[2026-06-28T23:08:14] step=600/20000 loss=1.64453 d_h=-390.625 eval_acc=None active=0.00011031784138035308
+[2026-06-28T23:08:53] step=700/20000 loss=1.64307 d_h=-146.484 eval_acc=None active=0.00011651645253146329
+[2026-06-28T23:09:32] step=800/20000 loss=1.83105 d_h=-1171.88 eval_acc=None active=0.00011467149385853757
+[2026-06-28T23:10:11] step=900/20000 loss=1.71436 d_h=-1025.39 eval_acc=None active=0.00011005065986521902
+[2026-06-28T23:10:59] step=1000/20000 loss=1.8418 d_h=-195.312 eval_acc=0.24941451990632318 active=0.00011103782525271434
+[2026-06-28T23:11:39] step=1100/20000 loss=1.64355 d_h=-195.312 eval_acc=None active=0.00010708072639172883
+[2026-06-28T23:12:17] step=1200/20000 loss=1.72412 d_h=-537.109 eval_acc=None active=0.00010980316540909483
+[2026-06-28T23:12:57] step=1300/20000 loss=1.74805 d_h=-683.594 eval_acc=None active=0.00012111478702877056
+[2026-06-28T23:13:35] step=1400/20000 loss=1.75537 d_h=-1806.64 eval_acc=None active=0.0001025667650044639
+[2026-06-28T23:14:14] step=1500/20000 loss=2.0332 d_h=1953.12 eval_acc=None active=0.00011116438491777784
+[2026-06-28T23:14:53] step=1600/20000 loss=1.72168 d_h=1269.53 eval_acc=None active=0.00010044056263139706
+[2026-06-28T23:15:32] step=1700/20000 loss=1.95215 d_h=390.625 eval_acc=None active=9.81596762232526e-05
+[2026-06-28T23:16:11] step=1800/20000 loss=1.81055 d_h=-97.6562 eval_acc=None active=0.00010183553138409699
+[2026-06-28T23:16:50] step=1900/20000 loss=2.14062 d_h=-3515.62 eval_acc=None active=9.993432397114305e-05
+[2026-06-28T23:17:38] step=2000/20000 loss=1.9248 d_h=488.281 eval_acc=0.25995316159250587 active=0.00010162459860899115
+[2026-06-28T23:18:17] step=2100/20000 loss=2.11523 d_h=0 eval_acc=None active=0.00010667011058952279
+[2026-06-28T23:18:56] step=2200/20000 loss=1.7793 d_h=-1074.22 eval_acc=None active=0.00010137991658986838
+[2026-06-28T23:19:35] step=2300/20000 loss=2.15039 d_h=-976.562 eval_acc=None active=0.00010273551122454857
+[2026-06-28T23:20:14] step=2400/20000 loss=2.07227 d_h=390.625 eval_acc=None active=8.89433201696282e-05
+[2026-06-28T23:20:53] step=2500/20000 loss=1.70654 d_h=634.766 eval_acc=None active=9.665502242749762e-05
+[2026-06-28T23:21:32] step=2600/20000 loss=1.93164 d_h=195.312 eval_acc=None active=8.475560147452697e-05
+[2026-06-28T23:22:11] step=2700/20000 loss=2.21289 d_h=1367.19 eval_acc=None active=8.712367342971518e-05
+[2026-06-28T23:22:50] step=2800/20000 loss=1.90234 d_h=-683.594 eval_acc=None active=8.97476771520318e-05
+[2026-06-28T23:23:29] step=2900/20000 loss=1.81152 d_h=-1464.84 eval_acc=None active=8.036538731532413e-05
+[2026-06-28T23:24:17] step=3000/20000 loss=1.62109 d_h=390.625 eval_acc=0.2716627634660422 active=8.105724681767129e-05
+[2026-06-28T23:24:56] step=3100/20000 loss=1.51367 d_h=-390.625 eval_acc=None active=7.973821386400944e-05
+[2026-06-28T23:25:35] step=3200/20000 loss=1.80371 d_h=976.562 eval_acc=None active=7.815762426921638e-05
+[2026-06-28T23:26:14] step=3300/20000 loss=1.5625 d_h=-488.281 eval_acc=None active=7.55954941609308e-05
+[2026-06-28T23:26:53] step=3400/20000 loss=2.22363 d_h=-1074.22 eval_acc=None active=8.185597892607206e-05
+[2026-06-28T23:27:32] step=3500/20000 loss=1.63965 d_h=-585.938 eval_acc=None active=7.823356006825448e-05
+[2026-06-28T23:28:11] step=3600/20000 loss=2.60156 d_h=195.312 eval_acc=None active=7.639422626933157e-05
+[2026-06-28T23:28:50] step=3700/20000 loss=2.29688 d_h=781.25 eval_acc=None active=7.628172878927511e-05
+[2026-06-28T23:29:29] step=3800/20000 loss=1.7915 d_h=-244.141 eval_acc=None active=7.231056774328255e-05
+[2026-06-28T23:30:08] step=3900/20000 loss=1.92383 d_h=97.6562 eval_acc=None active=7.26733721164646e-05
+[2026-06-28T23:30:49] step=4000/20000 loss=1.59326 d_h=-244.141 eval_acc=0.18969555035128804 active=7.533674995680096e-05
+[2026-06-28T23:31:28] step=4100/20000 loss=1.79395 d_h=390.625 eval_acc=None active=7.125590386775336e-05
+[2026-06-28T23:32:07] step=4200/20000 loss=1.70312 d_h=97.6562 eval_acc=None active=7.504425650865421e-05
+[2026-06-28T23:32:46] step=4300/20000 loss=1.74365 d_h=146.484 eval_acc=None active=7.433552238429859e-05
+[2026-06-28T23:33:25] step=4400/20000 loss=1.78955 d_h=1123.05 eval_acc=None active=6.944469443884457e-05
+[2026-06-28T23:34:04] step=4500/20000 loss=1.64062 d_h=0 eval_acc=None active=6.971468839098005e-05
+[2026-06-28T23:34:43] step=4600/20000 loss=1.85303 d_h=-146.484 eval_acc=None active=7.397553044811796e-05
+[2026-06-28T23:35:22] step=4700/20000 loss=1.80469 d_h=390.625 eval_acc=None active=6.991999629208306e-05
+[2026-06-28T23:36:01] step=4800/20000 loss=2.18066 d_h=488.281 eval_acc=None active=7.053029512138929e-05
+[2026-06-28T23:36:40] step=4900/20000 loss=1.67139 d_h=-244.141 eval_acc=None active=7.497113314661752e-05
+[2026-06-28T23:37:21] step=5000/20000 loss=1.78125 d_h=-585.938 eval_acc=0.25995316159250587 active=6.767567156495694e-05
+[2026-06-28T23:38:01] step=5100/20000 loss=1.89404 d_h=341.797 eval_acc=None active=6.872471056648331e-05
+[2026-06-28T23:38:40] step=5200/20000 loss=1.63525 d_h=-244.141 eval_acc=None active=7.013374150419031e-05
+[2026-06-28T23:39:19] step=5300/20000 loss=1.60059 d_h=-292.969 eval_acc=None active=6.433730884428189e-05
+[2026-06-28T23:39:57] step=5400/20000 loss=2.03125 d_h=-390.625 eval_acc=None active=6.679819122051665e-05
+[2026-06-28T23:40:36] step=5500/20000 loss=1.84473 d_h=-488.281 eval_acc=None active=6.399981640411255e-05
+[2026-06-28T23:41:15] step=5600/20000 loss=1.64746 d_h=97.6562 eval_acc=None active=6.560290549491691e-05
+[2026-06-28T23:41:54] step=5700/20000 loss=1.95801 d_h=-97.6562 eval_acc=None active=6.635101373729228e-05
+[2026-06-28T23:42:33] step=5800/20000 loss=2.03613 d_h=-488.281 eval_acc=None active=6.301265101661723e-05
+[2026-06-28T23:43:12] step=5900/20000 loss=3.0127 d_h=292.969 eval_acc=None active=6.20479851251332e-05
+[2026-06-28T23:43:53] step=6000/20000 loss=2.18848 d_h=2832.03 eval_acc=0.18969555035128804 active=6.0751451667482646e-05
+[2026-06-28T23:44:33] step=6100/20000 loss=2.11133 d_h=-2148.44 eval_acc=None active=6.17976782320076e-05
+[2026-06-28T23:45:12] step=6200/20000 loss=4.28711 d_h=-1757.81 eval_acc=None active=6.284671723353397e-05
+[2026-06-28T23:45:50] step=6300/20000 loss=2.44141 d_h=390.625 eval_acc=None active=5.8194946433199897e-05
+[2026-06-28T23:46:29] step=6400/20000 loss=2.91406 d_h=-585.938 eval_acc=None active=5.8166822063185785e-05
+[2026-06-28T23:47:08] step=6500/20000 loss=3.875 d_h=585.938 eval_acc=None active=5.4384094296287765e-05
+[2026-06-28T23:47:47] step=6600/20000 loss=3.32324 d_h=878.906 eval_acc=None active=5.29581887365723e-05
+[2026-06-28T23:48:26] step=6700/20000 loss=4.38477 d_h=-2148.44 eval_acc=None active=5.925804761973332e-05
+[2026-06-28T23:49:05] step=6800/20000 loss=4.56445 d_h=2929.69 eval_acc=None active=5.95561659418829e-05
+[2026-06-28T23:49:44] step=6900/20000 loss=4.10938 d_h=0 eval_acc=None active=4.928514601272931e-05
+[2026-06-28T23:50:26] step=7000/20000 loss=4.00977 d_h=-2929.69 eval_acc=0.18969555035128804 active=5.299193798058924e-05
+[2026-06-28T23:51:05] step=7100/20000 loss=3.38379 d_h=3613.28 eval_acc=None active=4.423119672119344e-05
+[2026-06-28T23:51:44] step=7200/20000 loss=3.06641 d_h=1953.12 eval_acc=None active=4.8961715757567034e-05
+[2026-06-28T23:52:22] step=7300/20000 loss=2.86426 d_h=292.969 eval_acc=None active=4.020097449817124e-05
+[2026-06-28T23:53:01] step=7400/20000 loss=3.01855 d_h=-1464.84 eval_acc=None active=4.121345181867926e-05
+[2026-06-28T23:53:40] step=7500/20000 loss=2.54883 d_h=2343.75 eval_acc=None active=4.2273740568211274e-05
+[2026-06-28T23:54:19] step=7600/20000 loss=3.19922 d_h=-3906.25 eval_acc=None active=4.383464310399447e-05
+[2026-06-28T23:54:58] step=7700/20000 loss=3.73828 d_h=585.938 eval_acc=None active=4.1199389633672206e-05
+[2026-06-28T23:55:37] step=7800/20000 loss=3.50977 d_h=-585.938 eval_acc=None active=3.840101481726809e-05
+[2026-06-28T23:56:16] step=7900/20000 loss=5.5625 d_h=1171.88 eval_acc=None active=3.864288439938946e-05
+[2026-06-28T23:56:57] step=8000/20000 loss=5.93164 d_h=976.562 eval_acc=0.25995316159250587 active=4.042596945828414e-05
+[2026-06-28T23:57:36] step=8100/20000 loss=4.31445 d_h=4101.56 eval_acc=None active=3.846570086830055e-05
+[2026-06-28T23:58:15] step=8200/20000 loss=3.90918 d_h=-488.281 eval_acc=None active=3.7374475311753015e-05
+[2026-06-28T23:58:54] step=8300/20000 loss=5.24805 d_h=-195.312 eval_acc=None active=3.6961047072545576e-05
+[2026-06-28T23:59:33] step=8400/20000 loss=2.90332 d_h=1074.22 eval_acc=None active=3.9680673652910174e-05
+[2026-06-29T00:00:12] step=8500/20000 loss=3.85156 d_h=781.25 eval_acc=None active=4.073252509143795e-05
+[2026-06-29T00:00:51] step=8600/20000 loss=3.81543 d_h=1269.53 eval_acc=None active=3.822101884917778e-05
+[2026-06-29T00:01:30] step=8700/20000 loss=4.25977 d_h=-585.938 eval_acc=None active=3.3369565021743516e-05
+[2026-06-29T00:02:09] step=8800/20000 loss=8.73828 d_h=1953.12 eval_acc=None active=3.086087121648475e-05
+[2026-06-29T00:02:48] step=8900/20000 loss=3.70312 d_h=585.938 eval_acc=None active=3.342581376177174e-05
+[2026-06-29T00:03:30] step=9000/20000 loss=3.08008 d_h=0 eval_acc=0.25995316159250587 active=3.3352690399735044e-05
+[2026-06-29T00:04:09] step=9100/20000 loss=2.38965 d_h=292.969 eval_acc=None active=2.852654850531348e-05
+[2026-06-29T00:04:48] step=9200/20000 loss=5.07031 d_h=2343.75 eval_acc=None active=3.003682717507128e-05
+[2026-06-29T00:05:27] step=9300/20000 loss=4.89648 d_h=-1367.19 eval_acc=None active=2.924653237767474e-05
+[2026-06-29T00:06:06] step=9400/20000 loss=3.16113 d_h=-1660.16 eval_acc=None active=3.184241172997725e-05
+[2026-06-29T00:06:44] step=9500/20000 loss=4.75 d_h=-4687.5 eval_acc=None active=3.0351820119229328e-05
+[2026-06-29T00:07:23] step=9600/20000 loss=4.04297 d_h=3906.25 eval_acc=None active=2.9972141124038823e-05
+[2026-06-29T00:08:02] step=9700/20000 loss=3.18945 d_h=-976.562 eval_acc=None active=2.928871893269591e-05
+[2026-06-29T00:08:41] step=9800/20000 loss=3.57422 d_h=-5273.44 eval_acc=None active=2.9226845318664863e-05
+[2026-06-29T00:09:20] step=9900/20000 loss=2.01367 d_h=390.625 eval_acc=None active=2.6940334036517582e-05
+[2026-06-29T00:10:02] step=10000/20000 loss=2.24512 d_h=-97.6562 eval_acc=0.25995316159250587 active=2.6735026135414566e-05
+[2026-06-29T00:10:41] step=10100/20000 loss=4.1875 d_h=-10156.2 eval_acc=None active=2.57112990669009e-05
+[2026-06-29T00:11:20] step=10200/20000 loss=1.83398 d_h=97.6562 eval_acc=None active=2.3483848961783257e-05
+[2026-06-29T00:11:58] step=10300/20000 loss=4.15625 d_h=1562.5 eval_acc=None active=2.354009770181148e-05
+[2026-06-29T00:12:37] step=10400/20000 loss=3.10156 d_h=976.562 eval_acc=None active=2.61387894911154e-05
+[2026-06-29T00:13:16] step=10500/20000 loss=1.7417 d_h=-1513.67 eval_acc=None active=2.55847394018374e-05
+[2026-06-29T00:13:56] step=10600/20000 loss=3.78809 d_h=878.906 eval_acc=None active=2.3841028460962473e-05
+[2026-06-29T00:14:35] step=10700/20000 loss=3.80176 d_h=683.594 eval_acc=None active=2.2783552148431874e-05
+[2026-06-29T00:15:14] step=10800/20000 loss=5.24805 d_h=-2929.69 eval_acc=None active=2.3815716527949775e-05
+[2026-06-29T00:15:53] step=10900/20000 loss=4.31445 d_h=1367.19 eval_acc=None active=2.0643287590357977e-05
+[2026-06-29T00:16:34] step=11000/20000 loss=3.19141 d_h=4296.88 eval_acc=0.25995316159250587 active=2.305917097457017e-05
+[2026-06-29T00:17:13] step=11100/20000 loss=5.125 d_h=13671.9 eval_acc=None active=2.2499496011289346e-05
+[2026-06-29T00:17:51] step=11200/20000 loss=1.97266 d_h=488.281 eval_acc=None active=2.0502665740287416e-05
+[2026-06-29T00:18:30] step=11300/20000 loss=3.28516 d_h=8789.06 eval_acc=None active=2.1388583395731937e-05
+[2026-06-29T00:19:09] step=11400/20000 loss=6.70117 d_h=-2929.69 eval_acc=None active=2.3514785768798778e-05
+[2026-06-29T00:19:48] step=11500/20000 loss=7.86914 d_h=-8789.06 eval_acc=None active=2.1458894320767216e-05
+[2026-06-29T00:20:26] step=11600/20000 loss=3.11133 d_h=3320.31 eval_acc=None active=2.0851407928462403e-05
+[2026-06-29T00:21:05] step=11700/20000 loss=7.73633 d_h=1367.19 eval_acc=None active=2.1577016674826484e-05
+[2026-06-29T00:21:44] step=11800/20000 loss=6.94336 d_h=-8398.44 eval_acc=None active=1.5167472748610431e-05
+[2026-06-29T00:22:23] step=11900/20000 loss=10.9766 d_h=-16406.2 eval_acc=None active=1.896707513751692e-05
+[2026-06-29T00:23:03] step=12000/20000 loss=10.8398 d_h=17578.1 eval_acc=0.25995316159250587 active=1.576652182991101e-05
+[2026-06-29T00:23:42] step=12100/20000 loss=7.85156 d_h=-4687.5 eval_acc=None active=1.7088367220574258e-05
+[2026-06-29T00:24:21] step=12200/20000 loss=9.16016 d_h=7421.87 eval_acc=None active=1.6255885868156553e-05
+[2026-06-29T00:25:00] step=12300/20000 loss=9.40234 d_h=6640.62 eval_acc=None active=1.5803083510929354e-05
+[2026-06-29T00:25:38] step=12400/20000 loss=8.86328 d_h=-3515.62 eval_acc=None active=1.47315450133917e-05
+[2026-06-29T00:26:17] step=12500/20000 loss=8.92969 d_h=11718.7 eval_acc=None active=1.2790963482417993e-05
+[2026-06-29T00:26:56] step=12600/20000 loss=15.168 d_h=23828.1 eval_acc=None active=1.2321286503182328e-05
+[2026-06-29T00:27:34] step=12700/20000 loss=7.13867 d_h=9179.69 eval_acc=None active=1.1860046834950897e-05
+[2026-06-29T00:28:13] step=12800/20000 loss=7.72266 d_h=-2734.38 eval_acc=None active=1.3201579284624024e-05
+[2026-06-29T00:28:52] step=12900/20000 loss=31.3828 d_h=25781.2 eval_acc=None active=1.538121796071768e-05
+[2026-06-29T00:29:32] step=13000/20000 loss=17.9531 d_h=4687.5 eval_acc=0.2716627634660422 active=1.627276049016502e-05
+[2026-06-29T00:30:11] step=13100/20000 loss=21.6719 d_h=-1562.5 eval_acc=None active=1.2506907345275466e-05
+[2026-06-29T00:30:50] step=13200/20000 loss=24.7734 d_h=11718.7 eval_acc=None active=1.14831802767618e-05
+[2026-06-29T00:31:29] step=13300/20000 loss=26.25 d_h=32812.5 eval_acc=None active=1.5001538965527172e-05
+[2026-06-29T00:32:07] step=13400/20000 loss=24.3047 d_h=-13281.2 eval_acc=None active=1.4281555093165914e-05
+[2026-06-29T00:32:46] step=13500/20000 loss=49.5938 d_h=-12500 eval_acc=None active=1.1466305654753334e-05
+[2026-06-29T00:33:24] step=13600/20000 loss=15.0977 d_h=11328.1 eval_acc=None active=1.0889756069464044e-05
+[2026-06-29T00:34:03] step=13700/20000 loss=24.8594 d_h=-26562.5 eval_acc=None active=1.314251810759439e-05
+[2026-06-29T00:34:42] step=13800/20000 loss=19.6328 d_h=-13281.2 eval_acc=None active=1.0293519425164877e-05
+[2026-06-29T00:35:20] step=13900/20000 loss=40.0469 d_h=-17187.5 eval_acc=None active=1.3257828024652247e-05
+[2026-06-29T00:36:01] step=14000/20000 loss=10.3594 d_h=-13281.2 eval_acc=0.27049180327868855 active=1.2124415913083546e-05
+[2026-06-29T00:36:40] step=14100/20000 loss=20.6641 d_h=21093.8 eval_acc=None active=1.1013503297526135e-05
+[2026-06-29T00:37:18] step=14200/20000 loss=13.9414 d_h=-16015.6 eval_acc=None active=1.340688718572704e-05
+[2026-06-29T00:37:57] step=14300/20000 loss=31.7812 d_h=15625 eval_acc=None active=1.1182249517610806e-05
+[2026-06-29T00:38:36] step=14400/20000 loss=15.8203 d_h=-8593.75 eval_acc=None active=9.72540715087982e-06
+[2026-06-29T00:39:14] step=14500/20000 loss=23.6953 d_h=71093.8 eval_acc=None active=9.160107313596176e-06
+[2026-06-29T00:39:53] step=14600/20000 loss=37.6094 d_h=4687.5 eval_acc=None active=9.86884143795179e-06
+[2026-06-29T00:40:32] step=14700/20000 loss=71.5312 d_h=46875 eval_acc=None active=1.016133488609855e-05
+[2026-06-29T00:41:10] step=14800/20000 loss=55.4062 d_h=37500 eval_acc=None active=1.1536616579788612e-05
+[2026-06-29T00:41:49] step=14900/20000 loss=46.5 d_h=84375 eval_acc=None active=1.1069752037554358e-05
+[2026-06-29T00:42:33] step=15000/20000 loss=62.8438 d_h=25000 eval_acc=0.27400468384074944 active=8.299501591164359e-06
+[2026-06-29T00:43:11] step=15100/20000 loss=64.5625 d_h=37500 eval_acc=None active=1.0541013881289059e-05
+[2026-06-29T00:43:50] step=15200/20000 loss=47.7812 d_h=34375 eval_acc=None active=9.641034040837486e-06
+[2026-06-29T00:44:28] step=15300/20000 loss=45.1406 d_h=-48437.5 eval_acc=None active=1.0116335894075972e-05
+[2026-06-29T00:45:07] step=15400/20000 loss=76 d_h=-62500 eval_acc=None active=1.0299144299167698e-05
+[2026-06-29T00:45:46] step=15500/20000 loss=39.9062 d_h=62500 eval_acc=None active=8.991361093511506e-06
+[2026-06-29T00:46:24] step=15600/20000 loss=39.8125 d_h=-3125 eval_acc=None active=9.806967823920744e-06
+[2026-06-29T00:47:03] step=15700/20000 loss=141.125 d_h=37500 eval_acc=None active=9.514474375773982e-06
+[2026-06-29T00:47:41] step=15800/20000 loss=131.062 d_h=-131250 eval_acc=None active=1.0020713036027993e-05
+[2026-06-29T00:48:20] step=15900/20000 loss=47.5 d_h=12500 eval_acc=None active=1.0046024969040693e-05
+[2026-06-29T00:49:00] step=16000/20000 loss=97.0312 d_h=-34375 eval_acc=0.12763466042154567 active=1.2461908353252887e-05
+[2026-06-29T00:49:39] step=16100/20000 loss=98.5938 d_h=21875 eval_acc=None active=9.12354563257783e-06
+[2026-06-29T00:50:18] step=16200/20000 loss=39.1875 d_h=-3125 eval_acc=None active=9.430101265731648e-06
+[2026-06-29T00:50:56] step=16300/20000 loss=153.438 d_h=-18750 eval_acc=None active=8.01544545402183e-06
+[2026-06-29T00:51:35] step=16400/20000 loss=95.375 d_h=43750 eval_acc=None active=8.732616889381678e-06
+[2026-06-29T00:52:13] step=16500/20000 loss=93.0938 d_h=46875 eval_acc=None active=1.1320058930679953e-05
+[2026-06-29T00:52:48] finished int4_sparsep0p1_taskgrad_seedfixed_sst5_fixed_small_h1e-5_seed32_full_bs64_step20k status=failed steps=16584
+RobertaConfig {
+  "_attn_implementation_autoset": true,
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "eos_token_id": 2,
+  "finetuning_task": "sst-2",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "torch_dtype": "float32",
+  "transformers_version": "4.51.3",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+
+[2026-06-29T00:53:22] starting int4_prefix_quantized_seedfixed_sst2_fixed_small_h1e-5_seed64_full_bs64_step20k
+[2026-06-29T00:53:22] prefix mode prefix_params=48 active_params=245760 prefix_quantize=True
+[2026-06-29T00:53:24] step=1/20000 loss=0.683594 d_h=0 eval_acc=None active=8.951822916666666e-05
+[2026-06-29T00:54:08] step=100/20000 loss=0.74707 d_h=-878.906 eval_acc=None active=8.951822916666666e-05
+[2026-06-29T00:54:52] step=200/20000 loss=0.630371 d_h=-439.453 eval_acc=None active=3.662109375e-05
+[2026-06-29T00:55:37] step=300/20000 loss=0.80542 d_h=561.523 eval_acc=None active=5.289713541666667e-05
+[2026-06-29T00:56:21] step=400/20000 loss=0.727783 d_h=708.008 eval_acc=None active=2.44140625e-05
+[2026-06-29T00:57:06] step=500/20000 loss=0.767578 d_h=2197.27 eval_acc=None active=1.220703125e-05
+[2026-06-29T00:57:50] step=600/20000 loss=0.741455 d_h=-1440.43 eval_acc=None active=1.6276041666666666e-05
+[2026-06-29T00:58:35] step=700/20000 loss=0.723145 d_h=0 eval_acc=None active=1.6276041666666666e-05
+[2026-06-29T00:59:19] step=800/20000 loss=0.747314 d_h=463.867 eval_acc=None active=1.6276041666666666e-05
+[2026-06-29T01:00:04] step=900/20000 loss=0.720459 d_h=-122.07 eval_acc=None active=8.138020833333333e-06
+[2026-06-29T01:00:54] step=1000/20000 loss=0.688721 d_h=-366.211 eval_acc=0.5023014105419451 active=1.220703125e-05
+[2026-06-29T01:01:39] step=1100/20000 loss=0.715088 d_h=24.4141 eval_acc=None active=1.6276041666666666e-05
+[2026-06-29T01:02:23] step=1200/20000 loss=0.755615 d_h=2026.37 eval_acc=None active=8.138020833333333e-06
+[2026-06-29T01:03:08] step=1300/20000 loss=0.779785 d_h=634.766 eval_acc=None active=1.220703125e-05
+[2026-06-29T01:03:52] step=1400/20000 loss=0.743652 d_h=-1171.88 eval_acc=None active=1.220703125e-05
+[2026-06-29T01:04:37] step=1500/20000 loss=0.78125 d_h=-1367.19 eval_acc=None active=8.138020833333333e-06
+[2026-06-29T01:05:21] step=1600/20000 loss=0.733398 d_h=244.141 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T01:06:06] step=1700/20000 loss=0.893555 d_h=634.766 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T01:06:50] step=1800/20000 loss=0.735596 d_h=-24.4141 eval_acc=None active=1.6276041666666666e-05
+[2026-06-29T01:07:35] step=1900/20000 loss=0.792725 d_h=-122.07 eval_acc=None active=0.0
+[2026-06-29T01:08:21] step=2000/20000 loss=0.746094 d_h=0 eval_acc=0.49755011135857463 active=4.069010416666667e-06
+[2026-06-29T01:09:06] step=2100/20000 loss=0.78125 d_h=0 eval_acc=None active=1.6276041666666666e-05
+[2026-06-29T01:09:51] step=2200/20000 loss=0.771729 d_h=317.383 eval_acc=None active=8.138020833333333e-06
+[2026-06-29T01:10:35] step=2300/20000 loss=0.778564 d_h=756.836 eval_acc=None active=0.0
+[2026-06-29T01:11:20] step=2400/20000 loss=0.729248 d_h=561.523 eval_acc=None active=1.220703125e-05
+[2026-06-29T01:12:04] step=2500/20000 loss=0.812988 d_h=0 eval_acc=None active=1.220703125e-05
+[2026-06-29T01:12:49] step=2600/20000 loss=0.709473 d_h=683.594 eval_acc=None active=8.138020833333333e-06
+[2026-06-29T01:13:33] step=2700/20000 loss=0.681641 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:14:18] step=2800/20000 loss=0.742188 d_h=1123.05 eval_acc=None active=0.0
+[2026-06-29T01:15:02] step=2900/20000 loss=0.709473 d_h=0 eval_acc=None active=8.138020833333333e-06
+[2026-06-29T01:15:51] step=3000/20000 loss=0.695801 d_h=0 eval_acc=0.4935412026726058 active=4.069010416666667e-06
+[2026-06-29T01:16:35] step=3100/20000 loss=0.710938 d_h=0 eval_acc=None active=1.6276041666666666e-05
+[2026-06-29T01:17:20] step=3200/20000 loss=0.757812 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:18:04] step=3300/20000 loss=0.703369 d_h=24.4141 eval_acc=None active=0.0
+[2026-06-29T01:18:49] step=3400/20000 loss=0.779785 d_h=0 eval_acc=None active=8.138020833333333e-06
+[2026-06-29T01:19:33] step=3500/20000 loss=0.714844 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T01:20:18] step=3600/20000 loss=0.759766 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T01:21:02] step=3700/20000 loss=0.748779 d_h=1586.91 eval_acc=None active=0.0
+[2026-06-29T01:21:47] step=3800/20000 loss=0.724121 d_h=146.484 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T01:22:31] step=3900/20000 loss=0.85376 d_h=-170.898 eval_acc=None active=0.0
+[2026-06-29T01:23:18] step=4000/20000 loss=0.743164 d_h=683.594 eval_acc=0.44038604305864887 active=0.0
+[2026-06-29T01:24:02] step=4100/20000 loss=0.710938 d_h=0 eval_acc=None active=8.138020833333333e-06
+[2026-06-29T01:24:47] step=4200/20000 loss=0.804688 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:25:31] step=4300/20000 loss=0.705078 d_h=0 eval_acc=None active=8.138020833333333e-06
+[2026-06-29T01:26:16] step=4400/20000 loss=0.696777 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:27:01] step=4500/20000 loss=0.932617 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:27:45] step=4600/20000 loss=0.745605 d_h=0 eval_acc=None active=8.138020833333333e-06
+[2026-06-29T01:28:30] step=4700/20000 loss=0.668945 d_h=0 eval_acc=None active=1.220703125e-05
+[2026-06-29T01:29:14] step=4800/20000 loss=0.69873 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:29:59] step=4900/20000 loss=0.692383 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T01:30:45] step=5000/20000 loss=0.76416 d_h=0 eval_acc=0.4779510022271715 active=0.0
+[2026-06-29T01:31:30] step=5100/20000 loss=0.668945 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T01:32:14] step=5200/20000 loss=0.739014 d_h=-366.211 eval_acc=None active=0.0
+[2026-06-29T01:32:59] step=5300/20000 loss=0.754395 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:33:44] step=5400/20000 loss=0.800781 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:34:28] step=5500/20000 loss=0.834961 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T01:35:12] step=5600/20000 loss=0.788086 d_h=0 eval_acc=None active=8.138020833333333e-06
+[2026-06-29T01:35:57] step=5700/20000 loss=0.768555 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T01:36:42] step=5800/20000 loss=0.801758 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:37:26] step=5900/20000 loss=0.771973 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:38:14] step=6000/20000 loss=0.689453 d_h=0 eval_acc=0.5342242019302152 active=0.0
+[2026-06-29T01:38:59] step=6100/20000 loss=0.725098 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:39:43] step=6200/20000 loss=0.739746 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:40:28] step=6300/20000 loss=0.786621 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:41:12] step=6400/20000 loss=0.782715 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:41:57] step=6500/20000 loss=0.782227 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:42:41] step=6600/20000 loss=0.770508 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:43:26] step=6700/20000 loss=0.788574 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:44:10] step=6800/20000 loss=0.756348 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:44:55] step=6900/20000 loss=0.744141 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:45:41] step=7000/20000 loss=0.753418 d_h=0 eval_acc=0.4650334075723831 active=0.0
+[2026-06-29T01:46:26] step=7100/20000 loss=0.813965 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:47:10] step=7200/20000 loss=0.718262 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:47:55] step=7300/20000 loss=0.814941 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T01:48:39] step=7400/20000 loss=0.734375 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:49:24] step=7500/20000 loss=0.680664 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:50:08] step=7600/20000 loss=0.851074 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:50:53] step=7700/20000 loss=0.761719 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T01:51:37] step=7800/20000 loss=0.793945 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T01:52:22] step=7900/20000 loss=0.77002 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:53:08] step=8000/20000 loss=0.793945 d_h=0 eval_acc=0.46755753526354865 active=0.0
+[2026-06-29T01:53:53] step=8100/20000 loss=0.750732 d_h=-2954.1 eval_acc=None active=0.0
+[2026-06-29T01:54:37] step=8200/20000 loss=0.670654 d_h=73.2422 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T01:55:22] step=8300/20000 loss=0.769531 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:56:06] step=8400/20000 loss=0.769043 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:56:51] step=8500/20000 loss=0.806152 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:57:35] step=8600/20000 loss=0.786865 d_h=-1977.54 eval_acc=None active=0.0
+[2026-06-29T01:58:20] step=8700/20000 loss=0.781738 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:59:04] step=8800/20000 loss=0.799805 d_h=0 eval_acc=None active=0.0
+[2026-06-29T01:59:49] step=8900/20000 loss=0.740723 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T02:00:35] step=9000/20000 loss=0.740234 d_h=0 eval_acc=0.47988121752041574 active=0.0
+[2026-06-29T02:01:20] step=9100/20000 loss=0.766602 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:02:04] step=9200/20000 loss=0.803711 d_h=97.6562 eval_acc=None active=0.0
+[2026-06-29T02:02:49] step=9300/20000 loss=0.739746 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:03:33] step=9400/20000 loss=0.758789 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:04:18] step=9500/20000 loss=0.768555 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:05:02] step=9600/20000 loss=0.730957 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T02:05:47] step=9700/20000 loss=0.824707 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:06:31] step=9800/20000 loss=0.784668 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T02:07:16] step=9900/20000 loss=0.851562 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:08:02] step=10000/20000 loss=0.760254 d_h=0 eval_acc=0.45968819599109134 active=0.0
+[2026-06-29T02:08:47] step=10100/20000 loss=0.801758 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:09:31] step=10200/20000 loss=0.911133 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:10:16] step=10300/20000 loss=0.77002 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:11:01] step=10400/20000 loss=0.825684 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T02:11:45] step=10500/20000 loss=0.811035 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:12:29] step=10600/20000 loss=0.708984 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:13:14] step=10700/20000 loss=0.789551 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:13:58] step=10800/20000 loss=0.822754 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:14:43] step=10900/20000 loss=0.769531 d_h=0 eval_acc=None active=8.138020833333333e-06
+[2026-06-29T02:15:30] step=11000/20000 loss=0.872559 d_h=0 eval_acc=0.4638455827765405 active=0.0
+[2026-06-29T02:16:14] step=11100/20000 loss=0.798828 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:16:59] step=11200/20000 loss=0.796387 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:17:43] step=11300/20000 loss=0.842285 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:18:28] step=11400/20000 loss=0.918457 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:19:12] step=11500/20000 loss=0.794922 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:19:56] step=11600/20000 loss=0.755371 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:20:41] step=11700/20000 loss=0.699707 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:21:25] step=11800/20000 loss=0.731445 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:22:10] step=11900/20000 loss=0.840332 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T02:22:56] step=12000/20000 loss=0.783691 d_h=0 eval_acc=0.4930957683741648 active=0.0
+[2026-06-29T02:23:41] step=12100/20000 loss=0.886719 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:24:26] step=12200/20000 loss=0.924316 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:25:10] step=12300/20000 loss=0.80127 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:25:55] step=12400/20000 loss=0.797363 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:26:39] step=12500/20000 loss=0.752441 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:27:23] step=12600/20000 loss=0.73291 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:28:08] step=12700/20000 loss=0.727051 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:28:52] step=12800/20000 loss=0.831543 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:29:37] step=12900/20000 loss=0.774902 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:30:23] step=13000/20000 loss=0.759277 d_h=0 eval_acc=0.46429101707498144 active=0.0
+[2026-06-29T02:31:08] step=13100/20000 loss=0.714355 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:31:53] step=13200/20000 loss=0.822754 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:32:37] step=13300/20000 loss=0.810059 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:33:22] step=13400/20000 loss=0.777832 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:34:06] step=13500/20000 loss=0.880371 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:34:51] step=13600/20000 loss=0.92041 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:35:35] step=13700/20000 loss=0.853516 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:36:19] step=13800/20000 loss=0.771484 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:37:04] step=13900/20000 loss=0.913086 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:37:50] step=14000/20000 loss=0.875977 d_h=0 eval_acc=0.4657757980697847 active=0.0
+[2026-06-29T02:38:35] step=14100/20000 loss=0.882812 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:39:20] step=14200/20000 loss=0.816406 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:40:04] step=14300/20000 loss=0.783203 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:40:49] step=14400/20000 loss=0.735107 d_h=-122.07 eval_acc=None active=0.0
+[2026-06-29T02:41:33] step=14500/20000 loss=0.797852 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:42:18] step=14600/20000 loss=0.928223 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:43:02] step=14700/20000 loss=0.818848 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:43:47] step=14800/20000 loss=0.821777 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:44:31] step=14900/20000 loss=0.939941 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:45:18] step=15000/20000 loss=0.712891 d_h=0 eval_acc=0.4724573125463994 active=0.0
+[2026-06-29T02:46:02] step=15100/20000 loss=0.90625 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:46:47] step=15200/20000 loss=0.879395 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:47:31] step=15300/20000 loss=0.806152 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:48:16] step=15400/20000 loss=0.728027 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:49:00] step=15500/20000 loss=0.847168 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:49:44] step=15600/20000 loss=0.833984 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:50:29] step=15700/20000 loss=0.910156 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:51:13] step=15800/20000 loss=0.849609 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:51:58] step=15900/20000 loss=0.830811 d_h=659.18 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T02:52:44] step=16000/20000 loss=0.92627 d_h=0 eval_acc=0.4415738678544915 active=4.069010416666667e-06
+[2026-06-29T02:53:29] step=16100/20000 loss=0.762695 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:54:13] step=16200/20000 loss=0.930664 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:54:58] step=16300/20000 loss=0.893066 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:55:43] step=16400/20000 loss=0.693848 d_h=0 eval_acc=None active=8.138020833333333e-06
+[2026-06-29T02:56:27] step=16500/20000 loss=0.79834 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:57:11] step=16600/20000 loss=0.777832 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:57:56] step=16700/20000 loss=0.793457 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:58:41] step=16800/20000 loss=0.771973 d_h=0 eval_acc=None active=0.0
+[2026-06-29T02:59:25] step=16900/20000 loss=0.803711 d_h=292.969 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T03:00:12] step=17000/20000 loss=0.898926 d_h=0 eval_acc=0.4570155902004454 active=0.0
+[2026-06-29T03:00:56] step=17100/20000 loss=0.868652 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:01:41] step=17200/20000 loss=0.745117 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:02:25] step=17300/20000 loss=0.769043 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:03:10] step=17400/20000 loss=0.726562 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:03:54] step=17500/20000 loss=0.896973 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T03:04:39] step=17600/20000 loss=0.875488 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:05:23] step=17700/20000 loss=0.869629 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:06:07] step=17800/20000 loss=0.724609 d_h=1074.22 eval_acc=None active=0.0
+[2026-06-29T03:06:52] step=17900/20000 loss=0.853027 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:07:38] step=18000/20000 loss=0.841797 d_h=0 eval_acc=0.4617668893838159 active=0.0
+[2026-06-29T03:08:23] step=18100/20000 loss=0.828613 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:09:07] step=18200/20000 loss=0.849121 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:09:52] step=18300/20000 loss=0.805664 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:10:36] step=18400/20000 loss=0.76123 d_h=0 eval_acc=None active=1.220703125e-05
+[2026-06-29T03:11:21] step=18500/20000 loss=0.753906 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:12:06] step=18600/20000 loss=0.821289 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:12:50] step=18700/20000 loss=0.696777 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T03:13:34] step=18800/20000 loss=0.774414 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:14:19] step=18900/20000 loss=0.793457 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:15:05] step=19000/20000 loss=0.792969 d_h=0 eval_acc=0.45048255382331104 active=0.0
+[2026-06-29T03:15:50] step=19100/20000 loss=0.754395 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:16:34] step=19200/20000 loss=0.716309 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T03:17:19] step=19300/20000 loss=0.700684 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:18:03] step=19400/20000 loss=0.754883 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:18:48] step=19500/20000 loss=0.764648 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:19:32] step=19600/20000 loss=0.803711 d_h=0 eval_acc=None active=4.069010416666667e-06
+[2026-06-29T03:20:17] step=19700/20000 loss=0.789551 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:21:01] step=19800/20000 loss=0.762207 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:21:45] step=19900/20000 loss=0.722168 d_h=0 eval_acc=None active=0.0
+[2026-06-29T03:22:32] step=20000/20000 loss=0.755371 d_h=0 eval_acc=0.47334818114328137 active=0.0
+[2026-06-29T03:22:33] finished int4_prefix_quantized_seedfixed_sst2_fixed_small_h1e-5_seed64_full_bs64_step20k status=complete steps=20000
+RobertaConfig {
+  "_attn_implementation_autoset": true,
+  "architectures": [
+    "RobertaForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "classifier_dropout": null,
+  "eos_token_id": 2,
+  "finetuning_task": "sst-5",
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 1024,
+  "id2label": {
+    "0": "LABEL_0",
+    "1": "LABEL_1",
+    "2": "LABEL_2",
+    "3": "LABEL_3",
+    "4": "LABEL_4"
+  },
+  "initializer_range": 0.02,
+  "intermediate_size": 4096,
+  "label2id": {
+    "LABEL_0": 0,
+    "LABEL_1": 1,
+    "LABEL_2": 2,
+    "LABEL_3": 3,
+    "LABEL_4": 4
+  },
+  "layer_norm_eps": 1e-05,
+  "max_position_embeddings": 514,
+  "model_type": "roberta",
+  "num_attention_heads": 16,
+  "num_hidden_layers": 24,
+  "pad_token_id": 1,
+  "position_embedding_type": "absolute",
+  "torch_dtype": "float32",
+  "transformers_version": "4.51.3",
+  "type_vocab_size": 1,
+  "use_cache": true,
+  "vocab_size": 50265
+}
+
+[2026-06-29T03:22:34] starting int4_sparsep0p1_taskgrad_seedfixed_sst5_fixed_small_h1e-5_seed64_full_bs64_step20k
+[2026-06-29T03:22:37] sparse mask strategy=task_grad_static p=0.1 source=static_task_gradient_square_before_zo_training hash=447be9e3765f selection=global_topk_grad_square_linear_weight active_all=0.0872295 active_quantized_linear=0.100078
+[2026-06-29T03:22:39] step=1/20000 loss=1.66699 d_h=-683.594 eval_acc=None active=0.00012248444384845779
+[2026-06-29T03:23:17] step=100/20000 loss=1.6665 d_h=-48.8281 eval_acc=None active=0.00012248444384845779
+[2026-06-29T03:23:56] step=200/20000 loss=1.70996 d_h=-97.6562 eval_acc=None active=0.0001119603045891772
+[2026-06-29T03:24:34] step=300/20000 loss=1.62109 d_h=-97.6562 eval_acc=None active=0.00011205311501022378
+[2026-06-29T03:25:13] step=400/20000 loss=1.64014 d_h=-341.797 eval_acc=None active=0.0001091647422097745
+[2026-06-29T03:25:51] step=500/20000 loss=1.69141 d_h=390.625 eval_acc=None active=0.00011516929520778734
+[2026-06-29T03:26:30] step=600/20000 loss=1.74023 d_h=0 eval_acc=None active=0.0001209994771117127
+[2026-06-29T03:27:08] step=700/20000 loss=1.76611 d_h=-830.078 eval_acc=None active=0.00011795360783918441
+[2026-06-29T03:27:47] step=800/20000 loss=1.84229 d_h=244.141 eval_acc=None active=0.00010620043361028713
+[2026-06-29T03:28:26] step=900/20000 loss=1.59326 d_h=48.8281 eval_acc=None active=0.0001070469771477119
+[2026-06-29T03:29:13] step=1000/20000 loss=1.88379 d_h=195.312 eval_acc=0.24121779859484777 active=0.00010681354487659477
+[2026-06-29T03:29:52] step=1100/20000 loss=1.85205 d_h=-732.422 eval_acc=None active=0.00010420641577628661
+[2026-06-29T03:30:30] step=1200/20000 loss=2.65039 d_h=781.25 eval_acc=None active=0.00010790195799614088
+[2026-06-29T03:31:09] step=1300/20000 loss=2.2207 d_h=-781.25 eval_acc=None active=0.00011187874391613628
+[2026-06-29T03:31:47] step=1400/20000 loss=2.04883 d_h=-1757.81 eval_acc=None active=9.98949498531233e-05
+[2026-06-29T03:32:26] step=1500/20000 loss=2.63379 d_h=97.6562 eval_acc=None active=0.00010776696102007316
+[2026-06-29T03:33:04] step=1600/20000 loss=1.80566 d_h=195.312 eval_acc=None active=0.00010912536809175475
+[2026-06-29T03:33:43] step=1700/20000 loss=1.76514 d_h=146.484 eval_acc=None active=9.73806311738617e-05
+[2026-06-29T03:34:22] step=1800/20000 loss=2.02734 d_h=-976.562 eval_acc=None active=0.00010086805305561155
+[2026-06-29T03:35:00] step=1900/20000 loss=1.9502 d_h=-195.312 eval_acc=None active=8.927518773579471e-05
+[2026-06-29T03:35:41] step=2000/20000 loss=1.89209 d_h=634.766 eval_acc=0.15105386416861827 active=9.944777236989891e-05
+[2026-06-29T03:36:19] step=2100/20000 loss=2.00684 d_h=-683.594 eval_acc=None active=9.110045934971056e-05
+[2026-06-29T03:36:58] step=2200/20000 loss=1.68799 d_h=48.8281 eval_acc=None active=9.762250075598306e-05
+[2026-06-29T03:37:37] step=2300/20000 loss=1.90576 d_h=-537.109 eval_acc=None active=8.615900753823115e-05
+[2026-06-29T03:38:15] step=2400/20000 loss=1.82715 d_h=195.312 eval_acc=None active=9.0658906740489e-05
+[2026-06-29T03:38:54] step=2500/20000 loss=1.78174 d_h=-537.109 eval_acc=None active=8.702523813466578e-05
+[2026-06-29T03:39:32] step=2600/20000 loss=1.87061 d_h=-48.8281 eval_acc=None active=9.164044725398151e-05
+[2026-06-29T03:40:11] step=2700/20000 loss=1.76904 d_h=-439.453 eval_acc=None active=9.251230272441898e-05
+[2026-06-29T03:40:49] step=2800/20000 loss=1.84717 d_h=48.8281 eval_acc=None active=8.562745694496444e-05
+[2026-06-29T03:41:28] step=2900/20000 loss=1.83252 d_h=-1123.05 eval_acc=None active=8.50143456786568e-05
+[2026-06-29T03:42:09] step=3000/20000 loss=2.28418 d_h=-1660.16 eval_acc=0.12763466042154567 active=9.450069568441667e-05
+[2026-06-29T03:42:48] step=3100/20000 loss=1.86768 d_h=830.078 eval_acc=None active=9.37553998790427e-05
+[2026-06-29T03:43:27] step=3200/20000 loss=2.00977 d_h=195.312 eval_acc=None active=8.323407305676353e-05
+[2026-06-29T03:44:05] step=3300/20000 loss=1.7041 d_h=488.281 eval_acc=None active=7.956946764392477e-05
+[2026-06-29T03:44:44] step=3400/20000 loss=1.69385 d_h=-48.8281 eval_acc=None active=8.054538328341446e-05
+[2026-06-29T03:45:22] step=3500/20000 loss=2.54199 d_h=292.969 eval_acc=None active=8.299782834864499e-05
+[2026-06-29T03:46:01] step=3600/20000 loss=2.71191 d_h=-3027.34 eval_acc=None active=8.407499172018547e-05
+[2026-06-29T03:46:39] step=3700/20000 loss=3.45215 d_h=292.969 eval_acc=None active=8.158036009993376e-05
+[2026-06-29T03:47:18] step=3800/20000 loss=1.96582 d_h=-781.25 eval_acc=None active=7.10899700846701e-05
+[2026-06-29T03:47:56] step=3900/20000 loss=2.30469 d_h=-195.312 eval_acc=None active=6.725099357774386e-05
+[2026-06-29T03:48:42] step=4000/20000 loss=1.79541 d_h=1025.39 eval_acc=0.25995316159250587 active=7.379834691702905e-05
+[2026-06-29T03:49:21] step=4100/20000 loss=2.28027 d_h=-97.6562 eval_acc=None active=7.055279461740056e-05
+[2026-06-29T03:49:59] step=4200/20000 loss=1.75488 d_h=97.6562 eval_acc=None active=6.79934769461164e-05
+[2026-06-29T03:50:38] step=4300/20000 loss=2.09473 d_h=-1269.53 eval_acc=None active=6.736630349480171e-05
+[2026-06-29T03:51:16] step=4400/20000 loss=2.29297 d_h=2734.38 eval_acc=None active=7.619173080522996e-05
+[2026-06-29T03:51:55] step=4500/20000 loss=1.62061 d_h=-146.484 eval_acc=None active=6.672225542147855e-05
+[2026-06-29T03:52:34] step=4600/20000 loss=1.78418 d_h=-878.906 eval_acc=None active=6.282140530052127e-05
+[2026-06-29T03:53:12] step=4700/20000 loss=1.7749 d_h=-146.484 eval_acc=None active=6.518385238170666e-05
+[2026-06-29T03:53:51] step=4800/20000 loss=1.66455 d_h=-634.766 eval_acc=None active=6.162893201192293e-05
+[2026-06-29T03:54:29] step=4900/20000 loss=1.75391 d_h=585.938 eval_acc=None active=6.226454277424185e-05
+[2026-06-29T03:55:13] step=5000/20000 loss=1.77881 d_h=146.484 eval_acc=0.25995316159250587 active=6.003990510612562e-05
+[2026-06-29T03:55:52] step=5100/20000 loss=1.69092 d_h=-146.484 eval_acc=None active=6.09398849465772e-05
+[2026-06-29T03:56:31] step=5200/20000 loss=1.77197 d_h=48.8281 eval_acc=None active=6.173861705497797e-05
+[2026-06-29T03:57:09] step=5300/20000 loss=1.62793 d_h=292.969 eval_acc=None active=6.209017168015437e-05
+[2026-06-29T03:57:48] step=5400/20000 loss=1.70557 d_h=-146.484 eval_acc=None active=5.77927679419981e-05
+[2026-06-29T03:58:27] step=5500/20000 loss=1.81055 d_h=585.938 eval_acc=None active=6.193267520807534e-05
+[2026-06-29T03:59:05] step=5600/20000 loss=2.12598 d_h=-1660.16 eval_acc=None active=6.545384633384212e-05
+[2026-06-29T03:59:44] step=5700/20000 loss=2.08301 d_h=-2246.09 eval_acc=None active=5.9753036531981686e-05
+[2026-06-29T04:00:22] step=5800/20000 loss=1.66162 d_h=244.141 eval_acc=None active=5.953647888287303e-05
+[2026-06-29T04:01:01] step=5900/20000 loss=1.97559 d_h=-1074.22 eval_acc=None active=5.8881181061544224e-05
+[2026-06-29T04:01:41] step=6000/20000 loss=3.51074 d_h=3027.34 eval_acc=0.25995316159250587 active=5.600124557209918e-05
+[2026-06-29T04:02:20] step=6100/20000 loss=2.72363 d_h=683.594 eval_acc=None active=6.672225542147855e-05
+[2026-06-29T04:02:58] step=6200/20000 loss=3.44922 d_h=6250 eval_acc=None active=5.4010040175100076e-05
+[2026-06-29T04:03:37] step=6300/20000 loss=4.13281 d_h=1953.12 eval_acc=None active=5.421253563920168e-05
+[2026-06-29T04:04:16] step=6400/20000 loss=2.55664 d_h=2539.06 eval_acc=None active=6.140393705181004e-05
+[2026-06-29T04:04:54] step=6500/20000 loss=3.17383 d_h=1367.19 eval_acc=None active=5.2179143687181405e-05
+[2026-06-29T04:05:33] step=6600/20000 loss=2.28906 d_h=195.312 eval_acc=None active=5.5928122210062495e-05
+[2026-06-29T04:06:11] step=6700/20000 loss=2.1875 d_h=-390.625 eval_acc=None active=5.2567259993376146e-05
+[2026-06-29T04:06:50] step=6800/20000 loss=2.44141 d_h=1953.12 eval_acc=None active=4.9580451897877486e-05
+[2026-06-29T04:07:28] step=6900/20000 loss=2.33398 d_h=-1171.88 eval_acc=None active=5.763245903291766e-05
+[2026-06-29T04:08:09] step=7000/20000 loss=5.72656 d_h=-3125 eval_acc=0.25995316159250587 active=4.720956750568787e-05
+[2026-06-29T04:08:48] step=7100/20000 loss=4.12305 d_h=1757.81 eval_acc=None active=4.460243840537972e-05
+[2026-06-29T04:09:26] step=7200/20000 loss=4.10938 d_h=5859.37 eval_acc=None active=4.8410478105290444e-05
+[2026-06-29T04:10:05] step=7300/20000 loss=4.66797 d_h=390.625 eval_acc=None active=4.3919016214036804e-05
+[2026-06-29T04:10:44] step=7400/20000 loss=3.63184 d_h=-1269.53 eval_acc=None active=4.093502055553956e-05
+[2026-06-29T04:11:22] step=7500/20000 loss=4.09766 d_h=-1562.5 eval_acc=None active=4.3679959068916853e-05
+[2026-06-29T04:12:01] step=7600/20000 loss=2.68359 d_h=2148.44 eval_acc=None active=4.668645422342539e-05
+[2026-06-29T04:12:40] step=7700/20000 loss=3.16504 d_h=-488.281 eval_acc=None active=4.727987843072315e-05
+[2026-06-29T04:13:18] step=7800/20000 loss=3.43164 d_h=585.938 eval_acc=None active=4.0226286431183944e-05
+[2026-06-29T04:13:57] step=7900/20000 loss=3.16016 d_h=-195.312 eval_acc=None active=3.9315056842726725e-05
+[2026-06-29T04:14:38] step=8000/20000 loss=5.25781 d_h=-2343.75 eval_acc=0.25995316159250587 active=4.601709421708954e-05
+[2026-06-29T04:15:17] step=8100/20000 loss=2.79395 d_h=-1074.22 eval_acc=None active=3.919693448866745e-05
+[2026-06-29T04:15:55] step=8200/20000 loss=3.7168 d_h=-1171.88 eval_acc=None active=3.8088834310111454e-05
+[2026-06-29T04:16:34] step=8300/20000 loss=4.08789 d_h=-2929.69 eval_acc=None active=3.584169714598393e-05
+[2026-06-29T04:17:12] step=8400/20000 loss=2.65625 d_h=195.312 eval_acc=None active=3.5394519662759554e-05
+[2026-06-29T04:17:51] step=8500/20000 loss=7.38477 d_h=6835.94 eval_acc=None active=4.008566458111338e-05
+[2026-06-29T04:18:29] step=8600/20000 loss=4.94336 d_h=4882.81 eval_acc=None active=3.6381685050254875e-05
+[2026-06-29T04:19:08] step=8700/20000 loss=4.63867 d_h=2539.06 eval_acc=None active=3.537202016674826e-05
+[2026-06-29T04:19:46] step=8800/20000 loss=4.00586 d_h=-3710.94 eval_acc=None active=3.999847903406964e-05
+[2026-06-29T04:20:25] step=8900/20000 loss=3.88672 d_h=3515.62 eval_acc=None active=3.432860603922472e-05
+[2026-06-29T04:21:06] step=9000/20000 loss=5.82617 d_h=-8789.06 eval_acc=0.15105386416861827 active=3.6094816476110934e-05
+[2026-06-29T04:21:45] step=9100/20000 loss=4.01758 d_h=-2539.06 eval_acc=None active=3.208709374910002e-05
+[2026-06-29T04:22:23] step=9200/20000 loss=2.97168 d_h=-1464.84 eval_acc=None active=3.0121200285113613e-05
+[2026-06-29T04:23:02] step=9300/20000 loss=5.33203 d_h=3906.25 eval_acc=None active=3.0109950537107967e-05
+[2026-06-29T04:23:40] step=9400/20000 loss=7.61328 d_h=-1562.5 eval_acc=None active=3.295051190853325e-05
+[2026-06-29T04:24:19] step=9500/20000 loss=4.22852 d_h=1757.81 eval_acc=None active=3.0337757934222272e-05
+[2026-06-29T04:24:58] step=9600/20000 loss=3.60938 d_h=781.25 eval_acc=None active=2.8430925647265503e-05
+[2026-06-29T04:25:36] step=9700/20000 loss=7.46875 d_h=10937.5 eval_acc=None active=2.6751900757423035e-05
+[2026-06-29T04:26:15] step=9800/20000 loss=7.73438 d_h=6250 eval_acc=None active=2.709783050859661e-05
+[2026-06-29T04:26:53] step=9900/20000 loss=6.24414 d_h=8007.81 eval_acc=None active=2.5913794531002504e-05
+[2026-06-29T04:27:34] step=10000/20000 loss=7.58008 d_h=-585.938 eval_acc=0.25995316159250587 active=2.7857188498977625e-05
+[2026-06-29T04:28:13] step=10100/20000 loss=10.4336 d_h=4296.88 eval_acc=None active=2.433601737321084e-05
+[2026-06-29T04:28:51] step=10200/20000 loss=9.98828 d_h=390.625 eval_acc=None active=2.3475411650779024e-05
+[2026-06-29T04:29:30] step=10300/20000 loss=6.74805 d_h=-976.562 eval_acc=None active=1.9509875478789276e-05
+[2026-06-29T04:30:09] step=10400/20000 loss=5.45898 d_h=-3320.31 eval_acc=None active=1.8758954799412493e-05
+[2026-06-29T04:30:47] step=10500/20000 loss=3.7998 d_h=2832.03 eval_acc=None active=2.2207002563142586e-05
+[2026-06-29T04:31:26] step=10600/20000 loss=18.125 d_h=-4687.5 eval_acc=None active=2.1869510122973245e-05
+[2026-06-29T04:32:04] step=10700/20000 loss=4.90625 d_h=-5078.12 eval_acc=None active=1.7971472439017365e-05
+[2026-06-29T04:32:43] step=10800/20000 loss=16.0078 d_h=-781.25 eval_acc=None active=2.0010489265040462e-05
+[2026-06-29T04:33:22] step=10900/20000 loss=8.56641 d_h=-3515.62 eval_acc=None active=1.848896084727702e-05
+[2026-06-29T04:34:02] step=11000/20000 loss=5.64648 d_h=23632.8 eval_acc=0.25995316159250587 active=1.4720295265386056e-05
+[2026-06-29T04:34:41] step=11100/20000 loss=8.61719 d_h=-781.25 eval_acc=None active=1.3103143989574634e-05
+[2026-06-29T04:35:19] step=11200/20000 loss=12.2031 d_h=-14843.7 eval_acc=None active=1.2079416921060968e-05
+[2026-06-29T04:35:58] step=11300/20000 loss=19.2422 d_h=13281.2 eval_acc=None active=1.3536259287791953e-05
+[2026-06-29T04:36:37] step=11400/20000 loss=8.44922 d_h=-5859.37 eval_acc=None active=1.169692548886905e-05
+[2026-06-29T04:37:15] step=11500/20000 loss=11.9727 d_h=16796.9 eval_acc=None active=1.4309679463180025e-05
+[2026-06-29T04:37:54] step=11600/20000 loss=5.5918 d_h=976.562 eval_acc=None active=1.4399677447225182e-05
+[2026-06-29T04:38:32] step=11700/20000 loss=10.0547 d_h=-7812.5 eval_acc=None active=1.2391597428217608e-05
+[2026-06-29T04:39:11] step=11800/20000 loss=13.0781 d_h=10156.2 eval_acc=None active=1.4512174927281628e-05
+[2026-06-29T04:39:50] step=11900/20000 loss=9.98828 d_h=22265.6 eval_acc=None active=1.290064852547303e-05
+[2026-06-29T04:40:30] step=12000/20000 loss=18.2969 d_h=7812.5 eval_acc=0.25995316159250587 active=1.3207204158626847e-05
+[2026-06-29T04:41:09] step=12100/20000 loss=14.3906 d_h=-26562.5 eval_acc=None active=1.1052877415545891e-05
+[2026-06-29T04:41:47] step=12200/20000 loss=32.7656 d_h=20312.5 eval_acc=None active=9.669158410851597e-06
+[2026-06-29T04:42:26] step=12300/20000 loss=15.5469 d_h=-32031.2 eval_acc=None active=1.1252560442646084e-05
+[2026-06-29T04:43:05] step=12400/20000 loss=27.0781 d_h=15625 eval_acc=None active=1.1367870359703943e-05
+[2026-06-29T04:43:43] step=12500/20000 loss=37.7188 d_h=40625 eval_acc=None active=1.1494430024767445e-05
+[2026-06-29T04:44:22] step=12600/20000 loss=32.9531 d_h=14062.5 eval_acc=None active=1.2788151045416584e-05
+[2026-06-29T04:45:00] step=12700/20000 loss=28.3281 d_h=-56250 eval_acc=None active=1.1305996745672898e-05
+[2026-06-29T04:45:39] step=12800/20000 loss=31.5859 d_h=-35156.2 eval_acc=None active=1.0993816238516257e-05
+[2026-06-29T04:46:17] step=12900/20000 loss=28.9062 d_h=3125 eval_acc=None active=1.360094533882441e-05
+[2026-06-29T04:46:58] step=13000/20000 loss=57.1406 d_h=7812.5 eval_acc=0.1557377049180328 active=1.311720617458169e-05
+[2026-06-29T04:47:36] step=13100/20000 loss=54.1094 d_h=-4687.5 eval_acc=None active=1.08785063214584e-05
+[2026-06-29T04:48:15] step=13200/20000 loss=49.6719 d_h=51562.5 eval_acc=None active=1.2475970538259943e-05
+[2026-06-29T04:48:54] step=13300/20000 loss=91.875 d_h=0 eval_acc=None active=1.3356263319701639e-05
+[2026-06-29T04:49:32] step=13400/20000 loss=85.1875 d_h=131250 eval_acc=None active=8.485122433257494e-06
+[2026-06-29T04:50:11] step=13500/20000 loss=72.9688 d_h=-40625 eval_acc=None active=1.148036783976039e-05
+[2026-06-29T04:50:49] step=13600/20000 loss=72.9688 d_h=9375 eval_acc=None active=9.787280764910866e-06
+[2026-06-29T04:51:28] step=13700/20000 loss=107.719 d_h=-53125 eval_acc=None active=1.427311778216168e-05
+[2026-06-29T04:52:07] step=13800/20000 loss=81.1562 d_h=71875 eval_acc=None active=1.0692885479365262e-05
+[2026-06-29T04:52:45] step=13900/20000 loss=130.875 d_h=-75000 eval_acc=None active=1.1010690860524724e-05
+[2026-06-29T04:53:26] step=14000/20000 loss=85 d_h=-18750 eval_acc=0.12763466042154567 active=1.0909443128473922e-05
+[2026-06-29T04:54:05] step=14100/20000 loss=136.188 d_h=81250 eval_acc=None active=1.3291577268669181e-05
+[2026-06-29T04:54:43] step=14200/20000 loss=40.3125 d_h=-28125 eval_acc=None active=1.2267850200155517e-05
+[2026-06-29T04:55:22] step=14300/20000 loss=81.5938 d_h=-3125 eval_acc=None active=8.344500583186937e-06
+[2026-06-29T04:56:00] step=14400/20000 loss=56.3594 d_h=17187.5 eval_acc=None active=8.358562768193993e-06
+[2026-06-29T04:56:39] step=14500/20000 loss=78.4062 d_h=84375 eval_acc=None active=8.035132513031708e-06
+[2026-06-29T04:57:17] step=14600/20000 loss=112.125 d_h=50000 eval_acc=None active=9.039172522535496e-06
+[2026-06-29T04:57:56] step=14700/20000 loss=77.6875 d_h=-68750 eval_acc=None active=9.719782276876999e-06
+[2026-06-29T04:58:34] step=14800/20000 loss=149 d_h=112500 eval_acc=None active=9.767593705900987e-06
+[2026-06-29T04:59:13] step=14900/20000 loss=89.4688 d_h=153125 eval_acc=None active=8.752303948391557e-06
+[2026-06-29T04:59:40] finished int4_sparsep0p1_taskgrad_seedfixed_sst5_fixed_small_h1e-5_seed64_full_bs64_step20k status=failed steps=14965
+job_id=46474443 lane=0 end=2026-06-29T04:59:49-04:00

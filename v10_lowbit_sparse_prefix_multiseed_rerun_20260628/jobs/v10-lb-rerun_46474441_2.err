@@ -1,0 +1,180 @@
+WARNING:src.models:By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode train: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-2/full-32
+INFO:src.dataset:[FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+INFO:src.dataset:Creating features from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-2/full-32
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode dev: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-2/full-32
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-2/full-32/cached_dev_RobertaTokenizerFast-roberta_128_sst-2 [took 0.092 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: dev-1
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 24483, 8, 1508, 12, 282, 32164, 34239, 15, 5, 8725, 12, 14853, 2827, 1437, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=0, mask_pos=[17], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>death and mind-numbing indifference on the inner-city streets  It was<mask>.</s>
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.0.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.0.attention (layer 0)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.1.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.1.attention (layer 1)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.2.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.2.attention (layer 2)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.3.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.3.attention (layer 3)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.4.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.4.attention (layer 4)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.5.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.5.attention (layer 5)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.6.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.6.attention (layer 6)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.7.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.7.attention (layer 7)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.8.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.8.attention (layer 8)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.9.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.9.attention (layer 9)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.10.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.10.attention (layer 10)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.11.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.11.attention (layer 11)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.12.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.12.attention (layer 12)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.13.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.13.attention (layer 13)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.14.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.14.attention (layer 14)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.15.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.15.attention (layer 15)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.16.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.16.attention (layer 16)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.17.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.17.attention (layer 17)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.18.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.18.attention (layer 18)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.19.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.19.attention (layer 19)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.20.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.20.attention (layer 20)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.21.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.21.attention (layer 21)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.22.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.22.attention (layer 22)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.23.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.23.attention (layer 23)
+WARNING:src.models:By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode train: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-32
+INFO:src.dataset:[FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+INFO:src.dataset:Creating features from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-32
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode dev: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-32
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-32/cached_dev_RobertaTokenizerFast-roberta_128_sst-5 [took 0.013 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: dev-0
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 405, 128, 29, 10, 205, 822, 2156, 53, 24, 5712, 765, 9, 63, 34102, 7, 28, 10, 1528, 22209, 9066, 128, 479, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=2, mask_pos=[25], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>it 's a good film , but it falls short of its aspiration to be a true ` epic ' . It was<mask>.</s>
+WARNING:src.models:By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode train: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-2/full-64
+INFO:src.dataset:[FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+INFO:src.dataset:Creating features from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-2/full-64
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode dev: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-2/full-64
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-2/full-64/cached_dev_RobertaTokenizerFast-roberta_128_sst-2 [took 0.224 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: dev-1
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 31664, 24262, 833, 11581, 1437, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=0, mask_pos=[8], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>saccharine genre  It was<mask>.</s>
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.0.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.0.attention (layer 0)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.1.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.1.attention (layer 1)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.2.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.2.attention (layer 2)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.3.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.3.attention (layer 3)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.4.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.4.attention (layer 4)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.5.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.5.attention (layer 5)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.6.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.6.attention (layer 6)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.7.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.7.attention (layer 7)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.8.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.8.attention (layer 8)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.9.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.9.attention (layer 9)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.10.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.10.attention (layer 10)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.11.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.11.attention (layer 11)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.12.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.12.attention (layer 12)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.13.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.13.attention (layer 13)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.14.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.14.attention (layer 14)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.15.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.15.attention (layer 15)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.16.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.16.attention (layer 16)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.17.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.17.attention (layer 17)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.18.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.18.attention (layer 18)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.19.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.19.attention (layer 19)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.20.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.20.attention (layer 20)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.21.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.21.attention (layer 21)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.22.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.22.attention (layer 22)
+INFO:src.prefix:Inject prefix to: roberta.encoder.layer.23.attention
+INFO:src.prefix:Reinitialize with actual activation: roberta.encoder.layer.23.attention (layer 23)
+WARNING:src.models:By default for RoBERTa models the input embeddings and the output embeddings are NOT tied!!!!
+Some weights of RobertaModelForPromptFinetuning were not initialized from the model checkpoint at roberta-large and are newly initialized: ['classifier.bias', 'classifier.weight', 'lm_head.decoder.weight', 'roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode train: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-64
+INFO:src.dataset:[FewShotDataset] Skip cache in TRAIN mode to avoid OOM on large datasets (e.g., MNLI).
+INFO:src.dataset:Creating features from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-64
+INFO:src.dataset:Label 0 to word Ġterrible (6587)
+INFO:src.dataset:Label 1 to word Ġbad (1099)
+INFO:src.dataset:Label 2 to word Ġokay (8578)
+INFO:src.dataset:Label 3 to word Ġgood (205)
+INFO:src.dataset:Label 4 to word Ġgreat (372)
+INFO:src.dataset:Total num_sample for mode dev: 1
+INFO:src.dataset:Creating/loading examples from dataset file at /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-64
+INFO:src.dataset:Loading features from cached file /scratch/jy03364/MeZO_/medium_models/data/k-shot-1k-test/sst-5/full-64/cached_dev_RobertaTokenizerFast-roberta_128_sst-5 [took 0.012 s]
+INFO:src.dataset:*** Example ***
+INFO:src.dataset:guid: dev-0
+INFO:src.dataset:features: OurInputFeatures(input_ids=[0, 10669, 1782, 22209, 11526, 14, 2156, 128, 939, 619, 357, 416, 479, 85, 21, 50264, 4, 2], attention_mask=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], token_type_ids=None, label=3, mask_pos=[15], label_word_list=None, sfc_input_ids=None, sfc_attention_mask=None, sfc_mask_pos=None)
+INFO:src.dataset:text: <s>after seeing ` analyze that , ' i feel better already . It was<mask>.</s>

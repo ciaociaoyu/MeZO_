@@ -1,0 +1,25 @@
+{
+  "date": "20260626",
+  "repo_root": "/scratch/jy03364/MeZO_",
+  "git_commit": "07c96b8c93a576c66f468835f06a3d8861b1b27a",
+  "generated_by": "tools/build_v10_supplement_results.py",
+  "no_new_training_launched": true,
+  "outputs": [
+    "README.md",
+    "audit_prefix_rte_sparse_trec.csv",
+    "figures",
+    "missing_for_full_v10_supplement.csv",
+    "paper_update_notes.md",
+    "prefix_int4_multiseed_aggregate.csv",
+    "prefix_int4_multiseed_per_run.csv",
+    "priority1_high_precision_existing_runs.csv",
+    "priority1_variance_components.csv",
+    "probe_update_mismatch_diagnostics.csv",
+    "raw_run_summaries",
+    "raw_summary_copies.csv",
+    "sparse_int4_multiseed_aggregate.csv",
+    "sparse_int4_multiseed_per_run.csv",
+    "sparse_prefix_true_mse_visibility.csv",
+    "v10_table_values_audit.csv"
+  ]
+}

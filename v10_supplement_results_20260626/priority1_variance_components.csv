@@ -1,0 +1,2 @@
+model,task,precision,status,reason,var_h_policy,var_seed_direction,var_residual,num_runs
+roberta-large,sst-5,fp32/fp16,insufficient_existing_multiseed_data,"Existing high-precision h sweeps found are seed16 only; paired seed variance decomposition requires seeds {16,32,64,128,256}.",,,,56

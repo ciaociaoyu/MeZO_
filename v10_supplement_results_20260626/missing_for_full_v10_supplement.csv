@@ -1,0 +1,5 @@
+priority,missing_item,details
+1,paired high-precision multiseed plateau full runs,"Need RoBERTa-large/SST-5 FP32 or FP16/BF16 h={1e-5,1e-4,1e-3,3e-3} with seeds {16,32,64,128,256}; existing sweep is mostly seed16."
+2,prefix INT4 visibility geometry,"Existing prefix true-MSE summaries generally lack active fraction, norm ratio, visible-direction cosine, and per-coordinate jump distribution."
+3,prefix INT4 multiseed training confirmation,Existing paper-facing prefix rows are mostly single-seed seed16.
+4,sparse INT4 multiseed training confirmation,Existing paper-facing sparse rows are mostly single-seed seed16.
