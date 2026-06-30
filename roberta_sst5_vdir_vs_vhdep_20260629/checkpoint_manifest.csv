@@ -1,0 +1,5 @@
+precision,checkpoint_id,checkpoint_step,checkpoint_path,source_run_id,source_precision_mode,common_across_precision_modes
+fp32,task_start_seed16_deterministic,0,/scratch/jy03364/MeZO_/roberta_sst5_vdir_vs_vhdep_20260629/checkpoints/task_start_seed16_deterministic_fp32_master.pt,deterministic task-start model load,common task-start,True
+fp16,task_start_seed16_deterministic,0,/scratch/jy03364/MeZO_/roberta_sst5_vdir_vs_vhdep_20260629/checkpoints/task_start_seed16_deterministic_fp16_master.pt,deterministic task-start model load,common task-start,True
+int8,task_start_seed16_deterministic,0,/scratch/jy03364/MeZO_/roberta_sst5_vdir_vs_vhdep_20260629/checkpoints/task_start_seed16_deterministic_int8_master.pt,deterministic task-start model load,common task-start,True
+int4,task_start_seed16_deterministic,0,/scratch/jy03364/MeZO_/roberta_sst5_vdir_vs_vhdep_20260629/checkpoints/task_start_seed16_deterministic_int4_master.pt,deterministic task-start model load,common task-start,True

@@ -1,0 +1,88 @@
+{
+  "batch_size": 64,
+  "created_at": "2026-06-29T19:50:32",
+  "direction_seed_base": 730000,
+  "h_grids": {
+    "fp16": [
+      1e-06,
+      3e-06,
+      5e-06,
+      7e-06,
+      1e-05,
+      2e-05,
+      3e-05,
+      5e-05,
+      7e-05,
+      0.0001,
+      0.0003,
+      0.001,
+      0.0015,
+      0.002,
+      0.003,
+      0.005
+    ],
+    "fp32": [
+      1e-09,
+      3e-09,
+      1e-08,
+      3e-08,
+      1e-07,
+      3e-07,
+      1e-06,
+      3e-06,
+      1e-05,
+      3e-05,
+      0.0001,
+      0.0003,
+      0.001,
+      0.0015,
+      0.002,
+      0.003,
+      0.005,
+      0.01
+    ],
+    "int4": [
+      1e-05,
+      3e-05,
+      0.0001,
+      0.0003,
+      0.0005,
+      0.0007,
+      0.001,
+      0.0012,
+      0.0015,
+      0.002,
+      0.003,
+      0.005
+    ],
+    "int8": [
+      1e-05,
+      3e-05,
+      0.0001,
+      0.0003,
+      0.001,
+      0.0015,
+      0.002,
+      0.003,
+      0.005,
+      0.01
+    ]
+  },
+  "model": "roberta-large",
+  "notes": [
+    "Probe-only; no training.",
+    "rho is vector-level V_h_dep / V_dir, not scalar nMSE.",
+    "The wrapped base probe writes local deterministic task-start checkpoint artifacts under checkpoints/; these are ignored by .gitignore."
+  ],
+  "num_batches": 1,
+  "num_directions": 64,
+  "probe_batch_provenance": "probe_batch_provenance.json",
+  "precisions": [
+    "fp32",
+    "fp16",
+    "int8",
+    "int4"
+  ],
+  "script": "tools/roberta_sst5_vdir_vs_vhdep.py",
+  "task": "SST-5"
+}
