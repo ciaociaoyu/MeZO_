@@ -1,0 +1,150 @@
+{
+  "indices": [
+    36559,
+    14714,
+    10821,
+    40128,
+    18070,
+    10453,
+    36120,
+    58301,
+    27647,
+    28942,
+    47451,
+    15789,
+    18357,
+    66885,
+    65173,
+    57260
+  ],
+  "samples": [
+    {
+      "id": "36559",
+      "data": {
+        "sentence": "settled for a lugubrious romance ",
+        "label": 0,
+        "idx": 36559
+      }
+    },
+    {
+      "id": "14714",
+      "data": {
+        "sentence": "is a festival film that would have been better off staying on the festival circuit . ",
+        "label": 0,
+        "idx": 14714
+      }
+    },
+    {
+      "id": "10821",
+      "data": {
+        "sentence": "the best of the swashbucklers ",
+        "label": 1,
+        "idx": 10821
+      }
+    },
+    {
+      "id": "40128",
+      "data": {
+        "sentence": "of strung-together tv episodes ",
+        "label": 0,
+        "idx": 40128
+      }
+    },
+    {
+      "id": "18070",
+      "data": {
+        "sentence": "of watching this film with an audience full of teenagers fixating on its body humor and reinforcement of stereotypes ",
+        "label": 0,
+        "idx": 18070
+      }
+    },
+    {
+      "id": "10453",
+      "data": {
+        "sentence": "'s nothing interesting in unfaithful whatsoever . ",
+        "label": 0,
+        "idx": 10453
+      }
+    },
+    {
+      "id": "36120",
+      "data": {
+        "sentence": "is a stunning new young talent in one of chabrol 's most intense psychological mysteries ",
+        "label": 1,
+        "idx": 36120
+      }
+    },
+    {
+      "id": "58301",
+      "data": {
+        "sentence": "have shaped the story to show us why it 's compelling ",
+        "label": 1,
+        "idx": 58301
+      }
+    },
+    {
+      "id": "27647",
+      "data": {
+        "sentence": "touches smartly and wistfully ",
+        "label": 1,
+        "idx": 27647
+      }
+    },
+    {
+      "id": "28942",
+      "data": {
+        "sentence": "drains ",
+        "label": 0,
+        "idx": 28942
+      }
+    },
+    {
+      "id": "47451",
+      "data": {
+        "sentence": "to keep from laughing at the ridiculous dialog or the oh-so convenient plot twists ",
+        "label": 0,
+        "idx": 47451
+      }
+    },
+    {
+      "id": "15789",
+      "data": {
+        "sentence": "a satisfactory overview of the bizarre world of extreme athletes as several daredevils express their own views . ",
+        "label": 1,
+        "idx": 15789
+      }
+    },
+    {
+      "id": "18357",
+      "data": {
+        "sentence": "is doing something of a public service -- shedding light on a group of extremely talented musicians who might otherwise go unnoticed and underappreciated by music fans . ",
+        "label": 1,
+        "idx": 18357
+      }
+    },
+    {
+      "id": "66885",
+      "data": {
+        "sentence": "her share of the holiday box office pie ",
+        "label": 1,
+        "idx": 66885
+      }
+    },
+    {
+      "id": "65173",
+      "data": {
+        "sentence": "with phony humility barely camouflaging grotesque narcissism ",
+        "label": 0,
+        "idx": 65173
+      }
+    },
+    {
+      "id": "57260",
+      "data": {
+        "sentence": "a terribly obvious melodrama and rough-hewn vanity project ",
+        "label": 0,
+        "idx": 57260
+      }
+    }
+  ]
+}

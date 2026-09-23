@@ -1,0 +1,150 @@
+{
+  "indices": [
+    66090,
+    52766,
+    63426,
+    15555,
+    16916,
+    57143,
+    2836,
+    42868,
+    3939,
+    23127,
+    3510,
+    18100,
+    52852,
+    18056,
+    66481,
+    35566
+  ],
+  "samples": [
+    {
+      "id": "66090",
+      "data": {
+        "sentence": ", the new film is a subzero version of monsters , inc. , without the latter 's imagination , visual charm or texture . ",
+        "label": 0,
+        "idx": 66090
+      }
+    },
+    {
+      "id": "52766",
+      "data": {
+        "sentence": "corruption ",
+        "label": 0,
+        "idx": 52766
+      }
+    },
+    {
+      "id": "63426",
+      "data": {
+        "sentence": "hossein ",
+        "label": 1,
+        "idx": 63426
+      }
+    },
+    {
+      "id": "15555",
+      "data": {
+        "sentence": "a weirdly beautiful place ",
+        "label": 1,
+        "idx": 15555
+      }
+    },
+    {
+      "id": "16916",
+      "data": {
+        "sentence": "ca n't see why any actor of talent would ever work in a mcculloch production again if they looked at how this movie turned out . ",
+        "label": 0,
+        "idx": 16916
+      }
+    },
+    {
+      "id": "57143",
+      "data": {
+        "sentence": "will be put to sleep or bewildered by the artsy and often pointless visuals . ",
+        "label": 0,
+        "idx": 57143
+      }
+    },
+    {
+      "id": "2836",
+      "data": {
+        "sentence": "the film never feels draggy ",
+        "label": 1,
+        "idx": 2836
+      }
+    },
+    {
+      "id": "42868",
+      "data": {
+        "sentence": "poetry in motion captured on film . ",
+        "label": 1,
+        "idx": 42868
+      }
+    },
+    {
+      "id": "3939",
+      "data": {
+        "sentence": "i honestly never knew what the hell was coming next ",
+        "label": 1,
+        "idx": 3939
+      }
+    },
+    {
+      "id": "23127",
+      "data": {
+        "sentence": "major problem ",
+        "label": 0,
+        "idx": 23127
+      }
+    },
+    {
+      "id": "3510",
+      "data": {
+        "sentence": "do well to cram earplugs in their ears and ",
+        "label": 0,
+        "idx": 3510
+      }
+    },
+    {
+      "id": "18100",
+      "data": {
+        "sentence": "gets its greatest play from the timeless spectacle of people ",
+        "label": 1,
+        "idx": 18100
+      }
+    },
+    {
+      "id": "52852",
+      "data": {
+        "sentence": "i like all four of the lead actors a lot ",
+        "label": 1,
+        "idx": 52852
+      }
+    },
+    {
+      "id": "18056",
+      "data": {
+        "sentence": ", touching ",
+        "label": 1,
+        "idx": 18056
+      }
+    },
+    {
+      "id": "66481",
+      "data": {
+        "sentence": "as refreshing as a drink from a woodland stream . ",
+        "label": 1,
+        "idx": 66481
+      }
+    },
+    {
+      "id": "35566",
+      "data": {
+        "sentence": "gleaned from this three-hour endurance test built around an hour 's worth of actual material ",
+        "label": 0,
+        "idx": 35566
+      }
+    }
+  ]
+}

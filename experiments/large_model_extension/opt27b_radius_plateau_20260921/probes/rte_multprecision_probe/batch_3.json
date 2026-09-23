@@ -1,0 +1,166 @@
+{
+  "indices": [
+    132,
+    2394,
+    473,
+    1790,
+    386,
+    200,
+    2320,
+    1016,
+    2288,
+    2094,
+    124,
+    2183,
+    2283,
+    72,
+    1067,
+    2401
+  ],
+  "samples": [
+    {
+      "id": "e0777fa47083409f",
+      "data": {
+        "premise": "After lots of speculations and speculative London betting on the outcome it has been announced that British author Doris Lessing (\"The Golden Notebook\", 1962) is the winner of the 2007 Nobel Prize for Literature. At the International Book Fair at Frankfurt, Germany, which is currently underway, this decision has met with general approval, as a decision awarding the literary work of an author well established beyond her native country, rather than a political statement. The reason given for giving the prestigious award to Doris Lessing was to honour \"that epicist of the female experience, who with skepticism, fire and visionary power has subjected a divided civilisation to scrutiny\".",
+        "hypothesis": "Doris Lessing won the Nobel Prize in Literature in 2007.",
+        "idx": 132,
+        "label": 0
+      }
+    },
+    {
+      "id": "9f0e857bc321bb60",
+      "data": {
+        "premise": "Most of Grameen Bank's borrowers use the small loans to start businesses by, for instance, buying a cow to produce milk, or a rickshaw, or materials to make cloth or pottery.",
+        "hypothesis": "Grameen Bank's loans are used to buy a cow.",
+        "idx": 2394,
+        "label": 0
+      }
+    },
+    {
+      "id": "d7fdedafa6c1840a",
+      "data": {
+        "premise": "US telecom giant AT&T reported a nearly 10 percent drop in quarterly net profit on Wednesday but beat expectations on a hefty increase in wireless revenue and improved performance by Apple's iPhone. Net profit fell 9.7 percent in the first quarter compared with the same quarter last year to 3.12 billion US dollars while revenue fell 0.6 percent to 30.6 billion US dollars, the company said in a statement. Earnings per share of 53 cents were better than the 48 cents per share expected by Wall Street analysts.",
+        "hypothesis": "iPhone is a product of AT&T's.",
+        "idx": 473,
+        "label": 1
+      }
+    },
+    {
+      "id": "255e340b30391963",
+      "data": {
+        "premise": "A rocket attack killed two Israelis, including a 3-year-old boy.",
+        "hypothesis": "A three-year-old was killed in a rocket attack.",
+        "idx": 1790,
+        "label": 0
+      }
+    },
+    {
+      "id": "fb5e58ce3120b05b",
+      "data": {
+        "premise": "The decision by French President, Jacques Chirac, to invite Robert Mugabe to a Franco-African summit in Paris, in February, has angered those across Europe who want Zimbabwe's president to remain an international pariah.",
+        "hypothesis": "France invited Mr. Mugabe to attend a Franco-African summit in Paris.",
+        "idx": 386,
+        "label": 0
+      }
+    },
+    {
+      "id": "81b739f325a9f21b",
+      "data": {
+        "premise": "This paper discusses marijuana, crack/cocaine, tranquilizers, hallucinogens, amphetamines, heroin, alcohol, nicotine and caffeine to provide a framework for the author's argument that the legalization of drugs can in no way be deemed as ethical or moral.",
+        "hypothesis": "Drug legalization has benefits.",
+        "idx": 200,
+        "label": 1
+      }
+    },
+    {
+      "id": "9c150f98308526c8",
+      "data": {
+        "premise": "The father of a British soldier who was killed in Iraq yesterday has paid tribute to his son. 29 year-old Corporal Matthew Cornish, who was married with two young children, sustained injuries after a mortar attack on a base in Basra. He was rushed to hospital, but he later died. He was the first soldier to be killed in an attack on a UK military compound in Iraq. \"I'm proud of him as a soldier and as a son. He did the Army proud,\" 60 year-old Robin Cornish said of his son, the one hundred and fifteenth British soldier to be killed in Iraq since operations began in 2003.",
+        "hypothesis": "Matthew Cornish was killed in Iraq.",
+        "idx": 2320,
+        "label": 0
+      }
+    },
+    {
+      "id": "73e73a6633870aee",
+      "data": {
+        "premise": "Experimenting on a raft anchored on the river Elbe, Alfred Nobel tries to make nitroglycerine safer to handle. Finds that the addition of kieselguhr turns nitroglycerine into a dough that can be kneaded, and calls it \"dynamite\".",
+        "hypothesis": "Alfred Nobel is the inventor of dynamite.",
+        "idx": 1016,
+        "label": 0
+      }
+    },
+    {
+      "id": "5a2d028a53b77d11",
+      "data": {
+        "premise": "The owners of Phinda, the South African-based Conservation Corporation, could not have paid for a better advertisement for their philosophy of wildlife conservation: a people-based approach to conservation, which is slowly gaining ground in Africa as game reserves come under ever greater threat from hungry, poor and angry local populations.",
+        "hypothesis": "The South African-based Conservation Corporation threatens the local population.",
+        "idx": 2288,
+        "label": 1
+      }
+    },
+    {
+      "id": "7f17ad01f96d425a",
+      "data": {
+        "premise": "Other wildlife, such as gemsbok, zebras and springbok, are also dependent on the Ugab wetlands.",
+        "hypothesis": "Zebras depend on the Ugab wetlands.",
+        "idx": 2094,
+        "label": 0
+      }
+    },
+    {
+      "id": "d63d9b6b8ee897af",
+      "data": {
+        "premise": "Since the island also lacks wells, water has to be obtained from rain carefully collected in concrete cisterns.",
+        "hypothesis": "The island gets water from collected rain.",
+        "idx": 124,
+        "label": 0
+      }
+    },
+    {
+      "id": "1e11b0b6b3128842",
+      "data": {
+        "premise": "Bogota, 4 May 88 - The dissemination of a document questioning Colombia's oil policy, is reportedly the aim of the publicity stunt carried out by the pro-Castro Army Of National Liberation, which kidnapped several honorary consuls, newsmen, and political leaders.",
+        "hypothesis": "The Army Of National Liberation are supporters of Castro.",
+        "idx": 2183,
+        "label": 0
+      }
+    },
+    {
+      "id": "27bc133d39f7a415",
+      "data": {
+        "premise": "Australian Broadcasting Company (ABC) television head, Sandra Levy, has quit to become the director of development for \"Channel Nine.\" Her new role is expected to focus on drama. ABC managing director Russell Balding said that Ms Levy had lifted audiences to \"historically unprecedented\" levels. However, Ms Levy came under fire during her ABC tenure for an overly conservative programming approach to major news stories - notably a sluggish response to coverage of the December 2004 South Asian Tsunami. She was criticised for refusing to interrupt regular programming to go to breaking news reports.",
+        "hypothesis": "Sandra Levy works for Channel Nine.",
+        "idx": 2283,
+        "label": 0
+      }
+    },
+    {
+      "id": "fba42f512bc44770",
+      "data": {
+        "premise": "Most people are familiar with the idea of St. Bernards or other dogs taking part in rescue and recovery efforts. Robots might also take part in search and rescue missions.",
+        "hypothesis": "Robots are used to find missing victims.",
+        "idx": 72,
+        "label": 0
+      }
+    },
+    {
+      "id": "6e35c19684d4e7d1",
+      "data": {
+        "premise": "Medieval Christians said the rosary as Catholics still do today: by praying five decades of Ave Marias (Hail Marys), each introduced by a Pater Noster (Our Father), while meditating on three series of five mysteries each.",
+        "hypothesis": "Christians pray the rosary.",
+        "idx": 1067,
+        "label": 0
+      }
+    },
+    {
+      "id": "d9cf484488782954",
+      "data": {
+        "premise": "About 3 million years ago, when Lucy was alive, she was rather short, about 4 feet tall, and probably weighed about 50 pounds.",
+        "hypothesis": "Humans existed 10,000 years ago.",
+        "idx": 2401,
+        "label": 1
+      }
+    }
+  ]
+}

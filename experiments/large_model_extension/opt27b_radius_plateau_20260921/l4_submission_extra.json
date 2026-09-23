@@ -1,0 +1,15 @@
+{
+  "job_id": "48464008",
+  "submitted_at": "2026-09-22T22:18:07-04:00",
+  "array": "2-3%2",
+  "max_total_training_workers": 4,
+  "command": [
+    "sbatch",
+    "--parsable",
+    "--array=2-3%2",
+    "--output=/scratch/jy03364/MeZO_/experiments/large_model_extension/opt27b_radius_plateau_20260921/logs/l4_%A_%a.stdout.log",
+    "--error=/scratch/jy03364/MeZO_/experiments/large_model_extension/opt27b_radius_plateau_20260921/logs/l4_%A_%a.stderr.log",
+    "slurm/opt27b_radius_extension_l4.sbatch",
+    "/scratch/jy03364/MeZO_/experiments/large_model_extension/opt27b_radius_plateau_20260921"
+  ]
+}

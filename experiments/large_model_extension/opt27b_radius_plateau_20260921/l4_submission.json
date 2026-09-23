@@ -1,0 +1,13 @@
+{
+  "job_id": "48421053",
+  "command": [
+    "sbatch",
+    "--parsable",
+    "--array=0-1%2",
+    "--output=/scratch/jy03364/MeZO_/experiments/large_model_extension/opt27b_radius_plateau_20260921/logs/l4_%A_%a.stdout.log",
+    "--error=/scratch/jy03364/MeZO_/experiments/large_model_extension/opt27b_radius_plateau_20260921/logs/l4_%A_%a.stderr.log",
+    "/scratch/jy03364/MeZO_/slurm/opt27b_radius_extension_l4.sbatch",
+    "/scratch/jy03364/MeZO_/experiments/large_model_extension/opt27b_radius_plateau_20260921"
+  ],
+  "submitted_at": 1790022224.35783
+}

@@ -1,0 +1,120 @@
+{
+  "created_at": "2026-09-21T16:11:10-0400",
+  "G": 64.72685820098614,
+  "L": 0.00044047427527487125,
+  "L_rho": 1e-05,
+  "L_status": "plateau_q90_primary",
+  "d": 2651596800,
+  "precisions": {
+    "int8": {
+      "raw_weighted_scale_rms": 0.0004879662764879047,
+      "Delta_eff": 0.00019921139818020384,
+      "scale_weighted_mean": 0.0004613139748577577,
+      "scale_weighted_median": 0.00044887271360494196,
+      "scale_weighted_p90": 0.0006372646894305944,
+      "scale_weighted_p95": 0.0007011833949945867,
+      "quantized_parameter_count": 2516582400,
+      "quantizer_group_count": 19660800,
+      "c_d": 1.0000000011313936,
+      "h_q": 9.960569909010192e-05,
+      "h_loc": 2.7709360024163394e-05,
+      "h_ref": 5.253579899978793e-05,
+      "rho_min": 7.1893179139421495,
+      "sqrt_Ku": 2651596801.0,
+      "windows": [
+        {
+          "tau": 1.0,
+          "rho_min": 7.1893179139421495,
+          "window_exists": false,
+          "h_low": null,
+          "h_high": null,
+          "window_width_log10": null,
+          "default_h": 0.001,
+          "default_in_window": false,
+          "window_status": "no predicted window at this tau"
+        },
+        {
+          "tau": 5.0,
+          "rho_min": 7.1893179139421495,
+          "window_exists": false,
+          "h_low": null,
+          "h_high": null,
+          "window_width_log10": null,
+          "default_h": 0.001,
+          "default_in_window": false,
+          "window_status": "no predicted window at this tau"
+        },
+        {
+          "tau": 10.0,
+          "rho_min": 7.1893179139421495,
+          "window_exists": true,
+          "h_low": 3.4214012185377823e-05,
+          "h_high": 8.066900080563117e-05,
+          "window_width_log10": 0.3725026719337513,
+          "default_h": 0.001,
+          "default_in_window": false,
+          "window_status": "predicted"
+        }
+      ]
+    },
+    "int4": {
+      "raw_weighted_scale_rms": 0.007600164178142009,
+      "Delta_eff": 0.0031027540329711663,
+      "scale_weighted_mean": 0.0072014400535258555,
+      "scale_weighted_median": 0.0070242746733129025,
+      "scale_weighted_p90": 0.009909058921039104,
+      "scale_weighted_p95": 0.010946656577289104,
+      "quantized_parameter_count": 2516582400,
+      "quantizer_group_count": 19660800,
+      "c_d": 1.0000000011313936,
+      "h_q": 0.0015513770164855831,
+      "h_loc": 2.7709360024163394e-05,
+      "h_ref": 0.00020733466734487865,
+      "rho_min": 111.974943981958,
+      "sqrt_Ku": 2651596801.0,
+      "windows": [
+        {
+          "tau": 1.0,
+          "rho_min": 111.974943981958,
+          "window_exists": false,
+          "h_low": null,
+          "h_high": null,
+          "window_width_log10": null,
+          "default_h": 0.001,
+          "default_in_window": false,
+          "window_status": "no predicted window at this tau"
+        },
+        {
+          "tau": 5.0,
+          "rho_min": 111.974943981958,
+          "window_exists": false,
+          "h_low": null,
+          "h_high": null,
+          "window_width_log10": null,
+          "default_h": 0.001,
+          "default_in_window": false,
+          "window_status": "no predicted window at this tau"
+        },
+        {
+          "tau": 10.0,
+          "rho_min": 111.974943981958,
+          "window_exists": false,
+          "h_low": null,
+          "h_high": null,
+          "window_width_log10": null,
+          "default_h": 0.001,
+          "default_in_window": false,
+          "window_status": "no predicted window at this tau"
+        }
+      ]
+    },
+    "fp32": {
+      "status": "no_uniform_delta",
+      "notes": "No empirical back-solving of Delta"
+    },
+    "fp16": {
+      "status": "no_uniform_delta",
+      "notes": "No empirical back-solving of Delta"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-09-21T19:36:53-04:00",
+  "hostname": "b7-3",
+  "platform": "Linux-5.14.0-503.31.1.el9_5.x86_64-x86_64-with-glibc2.34",
+  "python": "3.10.19 (main, Oct 21 2025, 16:43:05) [GCC 11.2.0]",
+  "torch": "2.5.1",
+  "cuda_runtime": "12.1",
+  "cuda_visible_devices": "0",
+  "slurm_job_id": "48419105",
+  "slurm_job_name": "interact",
+  "slurm_node": "b7-3",
+  "git_commit": "1ba8f99014233f3e89a75a006253150e684aa45b",
+  "transformers": "4.48.0",
+  "datasets": "4.3.0",
+  "gpu_name": "NVIDIA A100-SXM4-80GB",
+  "gpu_memory_mib": 81152,
+  "cuda_device_count_visible": 1,
+  "nvidia_smi": [
+    "NVIDIA A100-SXM4-80GB, 590.48.01, 81920 MiB"
+  ]
+}

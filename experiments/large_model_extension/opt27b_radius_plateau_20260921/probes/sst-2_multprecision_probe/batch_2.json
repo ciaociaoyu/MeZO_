@@ -1,0 +1,150 @@
+{
+  "indices": [
+    47642,
+    59643,
+    48337,
+    37985,
+    30084,
+    414,
+    6281,
+    43976,
+    24958,
+    47655,
+    48987,
+    16682,
+    55672,
+    9340,
+    26161,
+    62292
+  ],
+  "samples": [
+    {
+      "id": "47642",
+      "data": {
+        "sentence": "the canadian 's inane ramblings ",
+        "label": 0,
+        "idx": 47642
+      }
+    },
+    {
+      "id": "59643",
+      "data": {
+        "sentence": "pretention ",
+        "label": 0,
+        "idx": 59643
+      }
+    },
+    {
+      "id": "48337",
+      "data": {
+        "sentence": "prepare to marvel again ",
+        "label": 1,
+        "idx": 48337
+      }
+    },
+    {
+      "id": "37985",
+      "data": {
+        "sentence": "as jolie 's hideous yellow ` do ",
+        "label": 0,
+        "idx": 37985
+      }
+    },
+    {
+      "id": "30084",
+      "data": {
+        "sentence": "a chilly , brooding but quietly ",
+        "label": 1,
+        "idx": 30084
+      }
+    },
+    {
+      "id": "414",
+      "data": {
+        "sentence": "the stomach-turning violence ",
+        "label": 0,
+        "idx": 414
+      }
+    },
+    {
+      "id": "6281",
+      "data": {
+        "sentence": "gawky actor ",
+        "label": 0,
+        "idx": 6281
+      }
+    },
+    {
+      "id": "43976",
+      "data": {
+        "sentence": "an engaging and intimate first feature ",
+        "label": 1,
+        "idx": 43976
+      }
+    },
+    {
+      "id": "24958",
+      "data": {
+        "sentence": "delightfully compatible ",
+        "label": 1,
+        "idx": 24958
+      }
+    },
+    {
+      "id": "47655",
+      "data": {
+        "sentence": "reminds me of a vastly improved germanic version of my big fat greek wedding -- with better characters , some genuine quirkiness and at least a measure of style . ",
+        "label": 1,
+        "idx": 47655
+      }
+    },
+    {
+      "id": "48987",
+      "data": {
+        "sentence": "more than their unique residences , home movie is about the people who live in them , who have carved their own comfortable niche in the world and have been kind enough to share it . ",
+        "label": 1,
+        "idx": 48987
+      }
+    },
+    {
+      "id": "16682",
+      "data": {
+        "sentence": "more sophisticated and literate than such pictures ",
+        "label": 1,
+        "idx": 16682
+      }
+    },
+    {
+      "id": "55672",
+      "data": {
+        "sentence": "is born out of an engaging storyline , which also is n't embarrassed to make you reach for the tissues . ",
+        "label": 1,
+        "idx": 55672
+      }
+    },
+    {
+      "id": "9340",
+      "data": {
+        "sentence": "done , running off the limited chemistry created by ralph fiennes and jennifer lopez ",
+        "label": 0,
+        "idx": 9340
+      }
+    },
+    {
+      "id": "26161",
+      "data": {
+        "sentence": "conduct in a low , smoky and inviting sizzle ",
+        "label": 1,
+        "idx": 26161
+      }
+    },
+    {
+      "id": "62292",
+      "data": {
+        "sentence": "but oddly compelling ",
+        "label": 1,
+        "idx": 62292
+      }
+    }
+  ]
+}

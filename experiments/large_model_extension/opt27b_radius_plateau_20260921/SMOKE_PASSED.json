@@ -1,0 +1,24 @@
+{
+  "time": "2026-09-21T16:04:39-0400",
+  "commands": [
+    [
+      "/home/jy03364/miniconda3/envs/mezo-mistral/bin/python",
+      "-u",
+      "/scratch/jy03364/MeZO_/tools/opt27b_radius_extension.py",
+      "smoke",
+      "--root",
+      "/scratch/jy03364/MeZO_/experiments/large_model_extension/opt27b_radius_plateau_20260921",
+      "--id",
+      "sst-2_multprecision_probe"
+    ]
+  ],
+  "unit_results": {
+    "int4_quantizer_equivalence": true,
+    "int8_quantizer_equivalence": true,
+    "direction_replay_and_restore": true,
+    "resumed_data_order": true,
+    "vector_identity_and_pooled_nmse": true
+  },
+  "script_sha256": "3cc87793c53c3528fed960295e50ca7a8cd798477fe463809c619572a947e579",
+  "quantizer_sha256": "7754c1f2ca6f98fd5cedf8787c70b562b3969691782ce99135a4f1d5c2b53fe5"
+}

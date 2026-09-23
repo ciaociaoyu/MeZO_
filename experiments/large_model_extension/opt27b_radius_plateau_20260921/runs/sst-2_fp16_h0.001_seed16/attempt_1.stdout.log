@@ -1,0 +1,9 @@
+initial eval {'eval_acc': 0.5630733944954128, 'eval_loss': 1.016056354867867, 'eval_examples': 872}
+sst-2_fp16_h0.001_seed16 step=1 loss+=0.833684 loss-=0.961389 dh=-63.8525 sec=1.452
+sst-2_fp16_h0.001_seed16 step=25 loss+=1.31686 loss-=1.23301 dh=41.9246 sec=1.511
+sst-2_fp16_h0.001_seed16 step=50 loss+=0.661228 loss-=0.570141 dh=45.5434 sec=1.381
+sst-2_fp16_h0.001_seed16 step=75 loss+=1.19801 loss-=1.33744 dh=-69.7144 sec=1.513
+sst-2_fp16_h0.001_seed16 step=100 loss+=0.946535 loss-=0.831696 dh=57.4196 sec=1.485
+sst-2_fp16_h0.001_seed16 step=125 loss+=1.11921 loss-=1.30435 dh=-92.5684 sec=1.470
+sst-2_fp16_h0.001_seed16 step=150 loss+=0.860744 loss-=0.8286 dh=16.0718 sec=1.511
+sst-2_fp16_h0.001_seed16 step=175 loss+=0.8215 loss-=0.611433 dh=105.034 sec=1.482

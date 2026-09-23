@@ -1,0 +1,964 @@
+[
+  {
+    "id": "0",
+    "data": {
+      "sentence": "hide new secretions from the parental units ",
+      "label": 0,
+      "idx": 0
+    },
+    "prompt": "hide new secretions from the parental units It was",
+    "candidates": [
+      "hide new secretions from the parental units It was terrible",
+      "hide new secretions from the parental units It was great"
+    ],
+    "correct_candidate": 0,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          37265,
+          92,
+          3556,
+          2485,
+          31,
+          5,
+          20536,
+          2833,
+          85,
+          21,
+          6587
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          37265,
+          92,
+          3556,
+          2485,
+          31,
+          5,
+          20536,
+          2833,
+          85,
+          21,
+          372
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  },
+  {
+    "id": "1",
+    "data": {
+      "sentence": "contains no wit , only labored gags ",
+      "label": 0,
+      "idx": 1
+    },
+    "prompt": "contains no wit , only labored gags It was",
+    "candidates": [
+      "contains no wit , only labored gags It was terrible",
+      "contains no wit , only labored gags It was great"
+    ],
+    "correct_candidate": 0,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          10800,
+          5069,
+          117,
+          22094,
+          2156,
+          129,
+          6348,
+          3995,
+          821,
+          8299,
+          85,
+          21,
+          6587
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          10800,
+          5069,
+          117,
+          22094,
+          2156,
+          129,
+          6348,
+          3995,
+          821,
+          8299,
+          85,
+          21,
+          372
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  },
+  {
+    "id": "2",
+    "data": {
+      "sentence": "that loves its characters and communicates something rather beautiful about human nature ",
+      "label": 1,
+      "idx": 2
+    },
+    "prompt": "that loves its characters and communicates something rather beautiful about human nature It was",
+    "candidates": [
+      "that loves its characters and communicates something rather beautiful about human nature It was terrible",
+      "that loves its characters and communicates something rather beautiful about human nature It was great"
+    ],
+    "correct_candidate": 1,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          6025,
+          6138,
+          63,
+          3768,
+          8,
+          39906,
+          402,
+          1195,
+          2721,
+          59,
+          1050,
+          2574,
+          85,
+          21,
+          6587
+        ],
+        "labels": 1,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          6025,
+          6138,
+          63,
+          3768,
+          8,
+          39906,
+          402,
+          1195,
+          2721,
+          59,
+          1050,
+          2574,
+          85,
+          21,
+          372
+        ],
+        "labels": 1,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  },
+  {
+    "id": "3",
+    "data": {
+      "sentence": "remains utterly satisfied to remain the same throughout ",
+      "label": 0,
+      "idx": 3
+    },
+    "prompt": "remains utterly satisfied to remain the same throughout It was",
+    "candidates": [
+      "remains utterly satisfied to remain the same throughout It was terrible",
+      "remains utterly satisfied to remain the same throughout It was great"
+    ],
+    "correct_candidate": 0,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          5593,
+          5069,
+          19223,
+          10028,
+          7,
+          1091,
+          5,
+          276,
+          1328,
+          85,
+          21,
+          6587
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          5593,
+          5069,
+          19223,
+          10028,
+          7,
+          1091,
+          5,
+          276,
+          1328,
+          85,
+          21,
+          372
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  },
+  {
+    "id": "4",
+    "data": {
+      "sentence": "on the worst revenge-of-the-nerds clich\u00e9s the filmmakers could dredge up ",
+      "label": 0,
+      "idx": 4
+    },
+    "prompt": "on the worst revenge-of-the-nerds clich\u00e9s the filmmakers could dredge up It was",
+    "candidates": [
+      "on the worst revenge-of-the-nerds clich\u00e9s the filmmakers could dredge up It was terrible",
+      "on the worst revenge-of-the-nerds clich\u00e9s the filmmakers could dredge up It was great"
+    ],
+    "correct_candidate": 0,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          261,
+          5,
+          2373,
+          13543,
+          12,
+          1116,
+          12,
+          627,
+          12,
+          1396,
+          11622,
+          43848,
+          5739,
+          5,
+          17504,
+          115,
+          31120,
+          1899,
+          62,
+          85,
+          21,
+          6587
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          261,
+          5,
+          2373,
+          13543,
+          12,
+          1116,
+          12,
+          627,
+          12,
+          1396,
+          11622,
+          43848,
+          5739,
+          5,
+          17504,
+          115,
+          31120,
+          1899,
+          62,
+          85,
+          21,
+          372
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  },
+  {
+    "id": "5",
+    "data": {
+      "sentence": "that 's far too tragic to merit such superficial treatment ",
+      "label": 0,
+      "idx": 5
+    },
+    "prompt": "that 's far too tragic to merit such superficial treatment It was",
+    "candidates": [
+      "that 's far too tragic to merit such superficial treatment It was terrible",
+      "that 's far too tragic to merit such superficial treatment It was great"
+    ],
+    "correct_candidate": 0,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          6025,
+          128,
+          29,
+          444,
+          350,
+          8805,
+          7,
+          13032,
+          215,
+          34501,
+          1416,
+          85,
+          21,
+          6587
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          6025,
+          128,
+          29,
+          444,
+          350,
+          8805,
+          7,
+          13032,
+          215,
+          34501,
+          1416,
+          85,
+          21,
+          372
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  },
+  {
+    "id": "6",
+    "data": {
+      "sentence": "demonstrates that the director of such hollywood blockbusters as patriot games can still turn out a small , personal film with an emotional wallop . ",
+      "label": 1,
+      "idx": 6
+    },
+    "prompt": "demonstrates that the director of such hollywood blockbusters as patriot games can still turn out a small , personal film with an emotional wallop . It was",
+    "candidates": [
+      "demonstrates that the director of such hollywood blockbusters as patriot games can still turn out a small , personal film with an emotional wallop . It was terrible",
+      "demonstrates that the director of such hollywood blockbusters as patriot games can still turn out a small , personal film with an emotional wallop . It was great"
+    ],
+    "correct_candidate": 1,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          34084,
+          6031,
+          1626,
+          14,
+          5,
+          736,
+          9,
+          215,
+          1368,
+          9718,
+          1803,
+          32353,
+          25,
+          36409,
+          426,
+          64,
+          202,
+          1004,
+          66,
+          10,
+          650,
+          2156,
+          1081,
+          822,
+          19,
+          41,
+          3722,
+          2204,
+          1517,
+          479,
+          85,
+          21,
+          6587
+        ],
+        "labels": 1,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          34084,
+          6031,
+          1626,
+          14,
+          5,
+          736,
+          9,
+          215,
+          1368,
+          9718,
+          1803,
+          32353,
+          25,
+          36409,
+          426,
+          64,
+          202,
+          1004,
+          66,
+          10,
+          650,
+          2156,
+          1081,
+          822,
+          19,
+          41,
+          3722,
+          2204,
+          1517,
+          479,
+          85,
+          21,
+          372
+        ],
+        "labels": 1,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  },
+  {
+    "id": "7",
+    "data": {
+      "sentence": "of saucy ",
+      "label": 1,
+      "idx": 7
+    },
+    "prompt": "of saucy It was",
+    "candidates": [
+      "of saucy It was terrible",
+      "of saucy It was great"
+    ],
+    "correct_candidate": 1,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          1116,
+          2241,
+          257,
+          4469,
+          85,
+          21,
+          6587
+        ],
+        "labels": 1,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          1116,
+          2241,
+          257,
+          4469,
+          85,
+          21,
+          372
+        ],
+        "labels": 1,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  },
+  {
+    "id": "8",
+    "data": {
+      "sentence": "a depressed fifteen-year-old 's suicidal poetry ",
+      "label": 0,
+      "idx": 8
+    },
+    "prompt": "a depressed fifteen-year-old 's suicidal poetry It was",
+    "candidates": [
+      "a depressed fifteen-year-old 's suicidal poetry It was terrible",
+      "a depressed fifteen-year-old 's suicidal poetry It was great"
+    ],
+    "correct_candidate": 0,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          102,
+          16658,
+          23843,
+          12,
+          180,
+          12,
+          279,
+          128,
+          29,
+          23630,
+          14665,
+          85,
+          21,
+          6587
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          102,
+          16658,
+          23843,
+          12,
+          180,
+          12,
+          279,
+          128,
+          29,
+          23630,
+          14665,
+          85,
+          21,
+          372
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  },
+  {
+    "id": "9",
+    "data": {
+      "sentence": "are more deeply thought through than in most ` right-thinking ' films ",
+      "label": 1,
+      "idx": 9
+    },
+    "prompt": "are more deeply thought through than in most ` right-thinking ' films It was",
+    "candidates": [
+      "are more deeply thought through than in most ` right-thinking ' films It was terrible",
+      "are more deeply thought through than in most ` right-thinking ' films It was great"
+    ],
+    "correct_candidate": 1,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          1322,
+          55,
+          4814,
+          802,
+          149,
+          87,
+          11,
+          144,
+          22209,
+          235,
+          12,
+          22710,
+          128,
+          3541,
+          85,
+          21,
+          6587
+        ],
+        "labels": 1,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          1322,
+          55,
+          4814,
+          802,
+          149,
+          87,
+          11,
+          144,
+          22209,
+          235,
+          12,
+          22710,
+          128,
+          3541,
+          85,
+          21,
+          372
+        ],
+        "labels": 1,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  },
+  {
+    "id": "10",
+    "data": {
+      "sentence": "goes to absurd lengths ",
+      "label": 0,
+      "idx": 10
+    },
+    "prompt": "goes to absurd lengths It was",
+    "candidates": [
+      "goes to absurd lengths It was terrible",
+      "goes to absurd lengths It was great"
+    ],
+    "correct_candidate": 0,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          2977,
+          293,
+          7,
+          16091,
+          18915,
+          85,
+          21,
+          6587
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          2977,
+          293,
+          7,
+          16091,
+          18915,
+          85,
+          21,
+          372
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  },
+  {
+    "id": "11",
+    "data": {
+      "sentence": "for those moviegoers who complain that ` they do n't make movies like they used to anymore ",
+      "label": 0,
+      "idx": 11
+    },
+    "prompt": "for those moviegoers who complain that ` they do n't make movies like they used to anymore It was",
+    "candidates": [
+      "for those moviegoers who complain that ` they do n't make movies like they used to anymore It was terrible",
+      "for those moviegoers who complain that ` they do n't make movies like they used to anymore It was great"
+    ],
+    "correct_candidate": 0,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          1990,
+          167,
+          1569,
+          15068,
+          54,
+          11316,
+          14,
+          22209,
+          51,
+          109,
+          295,
+          75,
+          146,
+          4133,
+          101,
+          51,
+          341,
+          7,
+          5988,
+          85,
+          21,
+          6587
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          1990,
+          167,
+          1569,
+          15068,
+          54,
+          11316,
+          14,
+          22209,
+          51,
+          109,
+          295,
+          75,
+          146,
+          4133,
+          101,
+          51,
+          341,
+          7,
+          5988,
+          85,
+          21,
+          372
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  },
+  {
+    "id": "12",
+    "data": {
+      "sentence": "the part where nothing 's happening , ",
+      "label": 0,
+      "idx": 12
+    },
+    "prompt": "the part where nothing 's happening , It was",
+    "candidates": [
+      "the part where nothing 's happening , It was terrible",
+      "the part where nothing 's happening , It was great"
+    ],
+    "correct_candidate": 0,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          627,
+          233,
+          147,
+          1085,
+          128,
+          29,
+          2909,
+          2156,
+          85,
+          21,
+          6587
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          627,
+          233,
+          147,
+          1085,
+          128,
+          29,
+          2909,
+          2156,
+          85,
+          21,
+          372
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  },
+  {
+    "id": "13",
+    "data": {
+      "sentence": "saw how bad this movie was ",
+      "label": 0,
+      "idx": 13
+    },
+    "prompt": "saw how bad this movie was It was",
+    "candidates": [
+      "saw how bad this movie was It was terrible",
+      "saw how bad this movie was It was great"
+    ],
+    "correct_candidate": 0,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          35349,
+          141,
+          1099,
+          42,
+          1569,
+          21,
+          85,
+          21,
+          6587
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          35349,
+          141,
+          1099,
+          42,
+          1569,
+          21,
+          85,
+          21,
+          372
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  },
+  {
+    "id": "14",
+    "data": {
+      "sentence": "lend some dignity to a dumb story ",
+      "label": 0,
+      "idx": 14
+    },
+    "prompt": "lend some dignity to a dumb story It was",
+    "candidates": [
+      "lend some dignity to a dumb story It was terrible",
+      "lend some dignity to a dumb story It was great"
+    ],
+    "correct_candidate": 0,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          462,
+          1397,
+          103,
+          12028,
+          7,
+          10,
+          16881,
+          527,
+          85,
+          21,
+          6587
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          462,
+          1397,
+          103,
+          12028,
+          7,
+          10,
+          16881,
+          527,
+          85,
+          21,
+          372
+        ],
+        "labels": 0,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  },
+  {
+    "id": "15",
+    "data": {
+      "sentence": "the greatest musicians ",
+      "label": 1,
+      "idx": 15
+    },
+    "prompt": "the greatest musicians It was",
+    "candidates": [
+      "the greatest musicians It was terrible",
+      "the greatest musicians It was great"
+    ],
+    "correct_candidate": 1,
+    "encoded": [
+      {
+        "input_ids": [
+          0,
+          627,
+          3968,
+          8884,
+          85,
+          21,
+          6587
+        ],
+        "labels": 1,
+        "option_len": 1,
+        "num_options": 2
+      },
+      {
+        "input_ids": [
+          0,
+          627,
+          3968,
+          8884,
+          85,
+          21,
+          372
+        ],
+        "labels": 1,
+        "option_len": 1,
+        "num_options": 2
+      }
+    ]
+  }
+]

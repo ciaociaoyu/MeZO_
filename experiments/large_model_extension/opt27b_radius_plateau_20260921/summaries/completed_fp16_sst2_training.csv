@@ -1,0 +1,7 @@
+model,task,precision,mode,h,seed,run_type,steps,best_dev_acc,final_dev_acc,best_eval_step,source_path
+facebook/opt-2.7b,sst-2,fp16,dense,1e-05,16,full,20000,0.9220183486238532,0.8704128440366973,9500,runs/sst-2_fp16_h1e-05_seed16/summary.json
+facebook/opt-2.7b,sst-2,fp16,dense,0.0001,16,full,20000,0.9403669724770642,0.926605504587156,11000,runs/sst-2_fp16_h0.0001_seed16/summary.json
+facebook/opt-2.7b,sst-2,fp16,dense,0.001,16,full,20000,0.9461009174311926,0.9369266055045872,16500,runs/sst-2_fp16_h0.001_seed16/summary.json
+facebook/opt-2.7b,sst-2,fp16,dense,0.003,16,full,20000,0.8864678899082569,0.8864678899082569,20000,runs/sst-2_fp16_h0.003_seed16/summary.json
+facebook/opt-2.7b,sst-2,fp16,dense,0.01,16,full,20000,0.6697247706422018,0.6559633027522935,18000,runs/sst-2_fp16_h0.01_seed16/summary.json
+facebook/opt-2.7b,sst-2,fp16,dense,0.03,16,full,20000,0.5974770642201835,0.5974770642201835,19000,runs/sst-2_fp16_h0.03_seed16/summary.json

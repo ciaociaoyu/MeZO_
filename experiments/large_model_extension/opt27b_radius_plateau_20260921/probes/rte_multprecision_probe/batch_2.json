@@ -1,0 +1,166 @@
+{
+  "indices": [
+    1298,
+    1392,
+    2240,
+    549,
+    1803,
+    914,
+    1335,
+    781,
+    1771,
+    734,
+    288,
+    1179,
+    175,
+    1079,
+    1318,
+    1332
+  ],
+  "samples": [
+    {
+      "id": "30566aa21eb2ed15",
+      "data": {
+        "premise": "The tallest building in Tokyo and the second tallest building in Japan, the TMGO was conceived as a high-tech center from which Tokyo could be led into the promising twenty-first century.",
+        "hypothesis": "TMGO is the tallest building in Japan.",
+        "idx": 1298,
+        "label": 1
+      }
+    },
+    {
+      "id": "ce3bf39658390f74",
+      "data": {
+        "premise": "The Mona Lisa, painted by Leonardo da Vinci from 1503-1506, hangs in Paris' Louvre Museum.",
+        "hypothesis": "The Mona Lisa is in France.",
+        "idx": 1392,
+        "label": 0
+      }
+    },
+    {
+      "id": "139b29153d033d02",
+      "data": {
+        "premise": "A statement said to be from al Qaida, claimed the terror group had killed one American and kidnapped another in Riyadh.",
+        "hypothesis": "A U.S. citizen working in Riyadh has been kidnapped after a colleague in the same company was shot dead yesterday.",
+        "idx": 2240,
+        "label": 0
+      }
+    },
+    {
+      "id": "3836ce214a1846de",
+      "data": {
+        "premise": "Today about 75% of people live in cities or towns. Art and culture are an important part of France.",
+        "hypothesis": "75 people live in France.",
+        "idx": 549,
+        "label": 1
+      }
+    },
+    {
+      "id": "775e9351b61f0a1d",
+      "data": {
+        "premise": "Clonaid scientist, Brigitte Boisselier, said the first human clone - a girl nicknamed Eve - was born on Thursday to an American mother.",
+        "hypothesis": "Brigitte Boisselier announced that a cloned baby had been born.",
+        "idx": 1803,
+        "label": 0
+      }
+    },
+    {
+      "id": "ffd19f1bc85aa2a5",
+      "data": {
+        "premise": "Because of Reagan's economic strategy, the federal budget deficit ballooned.",
+        "hypothesis": "Reagan's economic strategy led to huge federal budget deficits.",
+        "idx": 914,
+        "label": 0
+      }
+    },
+    {
+      "id": "09d3d0b451725465",
+      "data": {
+        "premise": "Norwegian police released one of three people arrested when Edvard Munch's painting 'The Scream', stolen from the National Gallery in Oslo, was found.",
+        "hypothesis": "Norwegian police arrested three people for the theft of Munch's painting, 'The Scream'.",
+        "idx": 1335,
+        "label": 0
+      }
+    },
+    {
+      "id": "24761c6354de61e4",
+      "data": {
+        "premise": "Oracle had fought to keep the forms from being released",
+        "hypothesis": "Oracle released a confidential document",
+        "idx": 781,
+        "label": 1
+      }
+    },
+    {
+      "id": "82c9dd4aefb4f4e1",
+      "data": {
+        "premise": "Personal computer maker, Gateway Inc., on Monday, lowered its 2005 revenue and earnings forecast, sending its shares plunging 11 percent, as pricing in the industry became increasingly cut-throat.",
+        "hypothesis": "Gateway lowered its sales and earnings guidance for the year.",
+        "idx": 1771,
+        "label": 0
+      }
+    },
+    {
+      "id": "2fb087b499fdc4a6",
+      "data": {
+        "premise": "United States astronaut Sunita Williams, currently on board the International Space Station, has today broken the record for the longest unbroken space flight by a woman. At 5:47 a.m. UTC Williams passed the previous record of 188 days and four hours set by Shannon Lucid in 1996. This is not the only record Williams has broken. Earlier this year she set a record of 29 hours and 17 minutes for time spent by a woman on space walks.",
+        "hypothesis": "Anousheh Ansari paid to go in space.",
+        "idx": 734,
+        "label": 1
+      }
+    },
+    {
+      "id": "759a00a204b87722",
+      "data": {
+        "premise": "The weapon Inspectors have had since 1991 to peacefully disarm Iraq of its weapons of mass destruction.",
+        "hypothesis": "Weapons inspectors will go back to Iraq.",
+        "idx": 288,
+        "label": 1
+      }
+    },
+    {
+      "id": "1b8d3cb6b985d40f",
+      "data": {
+        "premise": "The development application for a McDonald's restaurant at Minyama, on Queensland's Sunshine Coast in Australia, has been rejected by the Sunshine Coast Regional Council. \"We knocked back a Hungry Jack's on Nicklin Way because of the nuisance code,\" said divisional councilor Chris Thompson. \"We already have a 24-hour McDonald's at Mooloolaba, only one kilometre away, and there are already [anti-social] issues at that site.\"",
+        "hypothesis": "Sunshine Coast Regional Council accepted McDonald's Australia development plans.",
+        "idx": 1179,
+        "label": 1
+      }
+    },
+    {
+      "id": "cadc2dc1b6e8c62b",
+      "data": {
+        "premise": "I will not seek your votes for a new mandate. With these words, the President of France, Jacques Chirac (74) announced during a radio and television broadcast at 20:00 UTC that it's time for him to serve his country in a different way. The announcement was widely speculated about and did not come as a surprise. The official announcement gives the candidate from the majority party UMP, Nicolas Sarkozy, more freedom during the next six weeks that remain before the Presidential elections in France. Although Sarkozy is from the same party as Chirac and hopes to receive an endorsement from him, the President has not yet expressed his support for a particular candidate to succeed him, and he did not refer to Sarkozy during any moment of his speech.",
+        "hypothesis": "Chirac doesn't want to be re-elected.",
+        "idx": 175,
+        "label": 0
+      }
+    },
+    {
+      "id": "9bafe4051d740885",
+      "data": {
+        "premise": "Nevertheless, the international reputation of some Polish artists, notably the film maker Krzysztof Kieslowski, has never been higher. To use a crass commercial yardstick, the DVD boxed set of his Decalogue series (ten one-hour dramas based loosely on the Ten Commandments, made for Polish TV in 1988) is currently number 3,700 in Amazon.com's sales rankings (about even with The Alfred Hitchcock Signature Collection).",
+        "hypothesis": "Kieslowski is a film and TV director.",
+        "idx": 1079,
+        "label": 0
+      }
+    },
+    {
+      "id": "5559fd9ce3fbfa1c",
+      "data": {
+        "premise": "Mr Green, Marks & Spencer's new owner, has made a lot of money by taking over underperforming businesses.",
+        "hypothesis": "Mr Green tries to take over Marks & Spencer.",
+        "idx": 1318,
+        "label": 1
+      }
+    },
+    {
+      "id": "5ce6ff2f83b8aba6",
+      "data": {
+        "premise": "Treasures belonging to Hollywood legend Katharine Hepburn have raised \u00a33.2m at a two-day auction in America.",
+        "hypothesis": "A two-day auction of property belonging to actress Katharine Hepburn brought in 3.2 million pounds.",
+        "idx": 1332,
+        "label": 0
+      }
+    }
+  ]
+}

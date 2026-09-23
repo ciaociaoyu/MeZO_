@@ -1,0 +1,166 @@
+{
+  "indices": [
+    844,
+    2109,
+    161,
+    2121,
+    896,
+    468,
+    45,
+    1093,
+    2114,
+    2033,
+    1785,
+    888,
+    532,
+    1523,
+    206,
+    1541
+  ],
+  "samples": [
+    {
+      "id": "7a31897cb39e1b71",
+      "data": {
+        "premise": "Tom Online revenues for the three months ended June 30, 2005 were US$42.78 mn, an increase of 38.5% over the same period in 2004.",
+        "hypothesis": "Tom Online earned US$42.78 mn in three months.",
+        "idx": 844,
+        "label": 0
+      }
+    },
+    {
+      "id": "ad597e7b4355d577",
+      "data": {
+        "premise": "Jahche Broughton, 15, was sentenced to life imprisonment and ordered to serve at least 12-and-a-half years behind bars for the murder on January 17 last year.  Miss Aim, 26, from Orkney, was killed as she made her way home from a night out with friends in the North Island resort of Taupo.   She suffered serious head injuries and later died in hospital.  A judge at the High Court in Rotorua told Broughton that the sentence took into account his age and guilty plea.  The teenager was 14 when he carried out the murder and is believed to be one of the youngest convicted criminals in New Zealand to be given a life sentence.",
+        "hypothesis": "Jahche Broughton is the murderer of Miss Aim.",
+        "idx": 2109,
+        "label": 0
+      }
+    },
+    {
+      "id": "a46f1c8a0c29c4f6",
+      "data": {
+        "premise": "Gamma ray bursts are some of the most powerful objects observed in the Universe and are thought to signal the birth of black holes. Swift is designed to detect the bursts and automatically re-orient itself to gather images and data of the phenomenon.",
+        "hypothesis": "Gamma rays are forms of electromagnetic radiation.",
+        "idx": 161,
+        "label": 1
+      }
+    },
+    {
+      "id": "3cd6cf1d40f507cd",
+      "data": {
+        "premise": "February 4, 2005, Iraq. With more than two-thirds of the 3.3 million votes counted in the Iraqi legislative election , the United Iraqi Alliance has a considerable lead over interim Iraqi Prime Minister Iyad Allawi's Iraqi List which trails with approximately 17% of the current tally.",
+        "hypothesis": "The first free elections in Iraq were held in January 2005.",
+        "idx": 2121,
+        "label": 1
+      }
+    },
+    {
+      "id": "1b81b7b1cd2c50d6",
+      "data": {
+        "premise": "Trade between China and India is expected to touch $20 bn this year and Chinese investors are now rushing into India - lured by the country's growing wealth.",
+        "hypothesis": "There is a profitable trade between China and India.",
+        "idx": 896,
+        "label": 0
+      }
+    },
+    {
+      "id": "38c36003f4bc8a6e",
+      "data": {
+        "premise": "Movil Access, a Grupo Salinas company, announced today that Gustavo Guzman will appoint Jose Luis Riera as company CFO of Grupo Iusacell.",
+        "hypothesis": "Movil Access appoints Gustavo Guzman as CFO.",
+        "idx": 468,
+        "label": 1
+      }
+    },
+    {
+      "id": "110292c4d75a08bd",
+      "data": {
+        "premise": "Britain agreed to lift by March 31 a 150-mile military protection zone enforced around the islands since Argentina invaded them in 1982.",
+        "hypothesis": "The military protection zone around Falklands was lifted.",
+        "idx": 45,
+        "label": 0
+      }
+    },
+    {
+      "id": "2724c6310230fda7",
+      "data": {
+        "premise": "In June 2004, top Russian oil producer Lukoil signed a $1 billion 35-year production-sharing agreement to develop Uzbek natural gas deposits.",
+        "hypothesis": "Lukoil earned $1 billion in 2004.",
+        "idx": 1093,
+        "label": 1
+      }
+    },
+    {
+      "id": "edd7d2547c3d35f2",
+      "data": {
+        "premise": "As a late September report by the Democrats points out, Republicans have done a poor job at getting their own small business bills through Congress even though they control both Houses and the White House.",
+        "hypothesis": "Republicans control both Houses and the White House.",
+        "idx": 2114,
+        "label": 0
+      }
+    },
+    {
+      "id": "241e786c62cd5a45",
+      "data": {
+        "premise": "Diana, Princess of Wales died on Sunday, 31 August 1997 following a car crash in Paris. There was widespread public mourning at the death of this popular figure, culminating with her funeral at Westminster Abbey on Saturday, 6 September 1997.",
+        "hypothesis": "Lady Diana died in Paris.",
+        "idx": 2033,
+        "label": 0
+      }
+    },
+    {
+      "id": "e0c6f6af45ef7d52",
+      "data": {
+        "premise": "Zhao was arrested at 1:45 p.m. EST without resistance on charges of disorderly conduct; other more serious charges could be filed. However, Allen Doody of U.S. Bureau of Immigration and Customs Enforcement (ICE) has indicated plans to deport Zhao back to Australia within a few days without charges. \"We do not plan to charge him,\" Doody said. Zhao is dual-nationality Chinese-Australian, who entered the US legally on his Australian passport less than a week ago.",
+        "hypothesis": "Zhao is an American citizen.",
+        "idx": 1785,
+        "label": 1
+      }
+    },
+    {
+      "id": "8d8578cae06433b4",
+      "data": {
+        "premise": "The black Muslim activist said that he had relieved Muhammad of his duties \"until he demonstrates that he is willing to conform to the manner of representing Allah and the honorable Elijah Muhammad (founder of the Nation of Islam)\".",
+        "hypothesis": "Elijah Muhammad founded the Nation of Islam.",
+        "idx": 888,
+        "label": 0
+      }
+    },
+    {
+      "id": "bb3991c6bbc71a7b",
+      "data": {
+        "premise": "An act signed into law by Afghan President Hamid Karzai last month dramatically rolled back the rights of women in that country, according to human rights groups and a United Nations report on the bill by the United Nations Development Fund for Women. The Afghan government has not provided a copy of the text of the Shia Family Law to the UN or to other outside groups requesting it, citing \"technical problems\", however, the UN and opposition politicians say that the bill contains numerous provisions restricting the rights of women, such as giving their husbands priority in court; requiring the husband's permission to leave the house, obtain education or employment, or to see a doctor; and reserving the custody of children to male relatives.",
+        "hypothesis": "Hamid Karzai is an employee of the UN.",
+        "idx": 532,
+        "label": 1
+      }
+    },
+    {
+      "id": "703ba64ecf043211",
+      "data": {
+        "premise": "Crude oil dips below $43 on news that Russia's justice ministry will not force Yukos to halt sales.",
+        "hypothesis": "Crude oil rises.",
+        "idx": 1523,
+        "label": 1
+      }
+    },
+    {
+      "id": "a69434df39ca7ac6",
+      "data": {
+        "premise": "In reaction to the ongoing uncertainty, the E.U. enlargement commissioner warned the Turkish Army about interfering: \"It is important that the military leaves the remit of democracy to the democratically-elected government and this is the test case if the Turkish armed forces respect democratic secularism and the democratic arrangement of civil-military relations,\" commissioner Olli Rehn said. Erdogan and G\u00fcl support Turkey's efforts to join the European Union.",
+        "hypothesis": "Turks want G\u00fcl to be President.",
+        "idx": 206,
+        "label": 1
+      }
+    },
+    {
+      "id": "e8845a520593a747",
+      "data": {
+        "premise": "Pakistani officials announced that two South African men in their custody had confessed to planning attacks at popular tourist spots in their home country.",
+        "hypothesis": "Two South Africans were arrested in Pakistan in the past week after a shoot-out at a house between al-Qaeda operatives and security forces.",
+        "idx": 1541,
+        "label": 1
+      }
+    }
+  ]
+}

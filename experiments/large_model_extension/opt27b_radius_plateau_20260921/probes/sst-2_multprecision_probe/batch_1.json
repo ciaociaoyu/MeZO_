@@ -1,0 +1,150 @@
+{
+  "indices": [
+    48372,
+    22732,
+    61515,
+    60244,
+    55945,
+    26984,
+    56117,
+    23369,
+    38503,
+    16485,
+    12609,
+    13194,
+    21977,
+    32932,
+    30921,
+    35718
+  ],
+  "samples": [
+    {
+      "id": "48372",
+      "data": {
+        "sentence": "feels less the product of loving , well integrated homage and more like a mere excuse for the wan , thinly sketched story . ",
+        "label": 0,
+        "idx": 48372
+      }
+    },
+    {
+      "id": "22732",
+      "data": {
+        "sentence": "just another combination of bad animation and mindless violence ",
+        "label": 0,
+        "idx": 22732
+      }
+    },
+    {
+      "id": "61515",
+      "data": {
+        "sentence": "a moving story of determination and the human spirit ",
+        "label": 1,
+        "idx": 61515
+      }
+    },
+    {
+      "id": "60244",
+      "data": {
+        "sentence": "is a divine monument to a single man 's struggle to regain his life , his dignity and his music ",
+        "label": 1,
+        "idx": 60244
+      }
+    },
+    {
+      "id": "55945",
+      "data": {
+        "sentence": "laugh their *** off for an hour-and-a-half ",
+        "label": 1,
+        "idx": 55945
+      }
+    },
+    {
+      "id": "26984",
+      "data": {
+        "sentence": "it celebrates the group 's playful spark of nonconformity , glancing vividly back at what hibiscus grandly called his ` angels of light . ' ",
+        "label": 1,
+        "idx": 26984
+      }
+    },
+    {
+      "id": "56117",
+      "data": {
+        "sentence": "of nijinsky ",
+        "label": 1,
+        "idx": 56117
+      }
+    },
+    {
+      "id": "23369",
+      "data": {
+        "sentence": "look as if it were being shown on the projection television screen of a sports bar ",
+        "label": 0,
+        "idx": 23369
+      }
+    },
+    {
+      "id": "38503",
+      "data": {
+        "sentence": "strikes a defiantly retro chord , and outpaces its contemporaries with daring and verve . ",
+        "label": 1,
+        "idx": 38503
+      }
+    },
+    {
+      "id": "16485",
+      "data": {
+        "sentence": "otherwise excellent film ",
+        "label": 1,
+        "idx": 16485
+      }
+    },
+    {
+      "id": "12609",
+      "data": {
+        "sentence": "as beautifully shaped and ",
+        "label": 1,
+        "idx": 12609
+      }
+    },
+    {
+      "id": "13194",
+      "data": {
+        "sentence": "this interminable , shapeless documentary about the swinging subculture ",
+        "label": 0,
+        "idx": 13194
+      }
+    },
+    {
+      "id": "21977",
+      "data": {
+        "sentence": "an overstylized , pur\u00e9ed m\u00e9lange of sex , psychology , drugs and philosophy . ",
+        "label": 0,
+        "idx": 21977
+      }
+    },
+    {
+      "id": "32932",
+      "data": {
+        "sentence": "the dramatic scenes are frequently unintentionally funny , and the action sequences -- clearly the main event -- are surprisingly uninvolving . ",
+        "label": 0,
+        "idx": 32932
+      }
+    },
+    {
+      "id": "30921",
+      "data": {
+        "sentence": "one of the more influential works of the ` korean new wave ' . ",
+        "label": 1,
+        "idx": 30921
+      }
+    },
+    {
+      "id": "35718",
+      "data": {
+        "sentence": "impressive in imax dimensions ",
+        "label": 1,
+        "idx": 35718
+      }
+    }
+  ]
+}

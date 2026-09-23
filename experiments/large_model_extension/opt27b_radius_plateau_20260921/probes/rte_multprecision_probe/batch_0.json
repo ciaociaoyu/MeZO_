@@ -1,0 +1,166 @@
+{
+  "indices": [
+    223,
+    2372,
+    2209,
+    488,
+    719,
+    2302,
+    774,
+    109,
+    2294,
+    38,
+    331,
+    2119,
+    932,
+    300,
+    50,
+    1200
+  ],
+  "samples": [
+    {
+      "id": "9ab48b05aea25eca",
+      "data": {
+        "premise": "Sotheby's and Christie's, the world's two most powerful auction houses, swapped confidential lists of super-rich clients who were spared from paying fees charged to other sellers, people close to the companies and to a federal antitrust investigation of them said.",
+        "hypothesis": "Christie's is one of the world's largest auction houses.",
+        "idx": 223,
+        "label": 0
+      }
+    },
+    {
+      "id": "d9e7f30dc162c84d",
+      "data": {
+        "premise": "Sani-Seat can offset the rising cost of paper products",
+        "hypothesis": "The cost of paper is rising.",
+        "idx": 2372,
+        "label": 0
+      }
+    },
+    {
+      "id": "b1f6854dadabce3b",
+      "data": {
+        "premise": "Also Friday, five Iraqi soldiers were killed and nine wounded in a bombing, targeting their convoy near Beiji, 150 miles north of Baghdad, the Iraqi military said.",
+        "hypothesis": "Three Iraqi soldiers also died Saturday when their convoy was attacked by gunmen near Adhaim.",
+        "idx": 2209,
+        "label": 1
+      }
+    },
+    {
+      "id": "aa3f516cc16bbf65",
+      "data": {
+        "premise": "Today marks the 80th birthday of Her Majesty Queen Elizabeth II, whose reign has lasted over 54 years. Her Majesty became the first female to become the sovereign since Queen Victoria, who died in 1901 after a 64-year reign. She was crowned on June 2, 1953, in Westminster Abbey. It was the first coronation that was televised live. She is Queen of sixteen independent nations known as the Commonwealth Realms, which includes the United Kingdom.",
+        "hypothesis": "United Kingdom includes the Commonwealth Realms.",
+        "idx": 488,
+        "label": 1
+      }
+    },
+    {
+      "id": "9ebdb1445d1e19de",
+      "data": {
+        "premise": "Kuwait becomes the fourth Gulf country where women as well as men can vote in elections. Saudi Arabia holds strictly limited, male-only elections.",
+        "hypothesis": "Women can vote in elections in Saudi Arabia.",
+        "idx": 719,
+        "label": 1
+      }
+    },
+    {
+      "id": "a488e95ba5f9580a",
+      "data": {
+        "premise": "Seal hunting has been a tradition in Norway for thousands of years, but has dwindled recently with only about half the annual 1,200 quota being killed each year.",
+        "hypothesis": "Seal-hunting endangers species.",
+        "idx": 2302,
+        "label": 1
+      }
+    },
+    {
+      "id": "0e4858df12a0e111",
+      "data": {
+        "premise": "Manuel Rosales, who ran against Mr Chavez in the 2006 presidential election, faces corruption charges he says are baseless. He had been in hiding since the charges were filed last month. Venezuela's Interior Minister Tareck el-Aissami said Mr Rosales was a criminal on the run. \"If he doesn't appear before the appropriate courts, he would be a fugitive from justice, and as a result the court will activate mechanisms for his international capture,\" said Mr Aissami, denying that the charges were political.",
+        "hypothesis": "Manuel Rosales was mayor of Maracaibo.",
+        "idx": 774,
+        "label": 1
+      }
+    },
+    {
+      "id": "dab79f9c400b15b3",
+      "data": {
+        "premise": "Nine months later, John Glenn becomes the first American man to orbit the Earth.",
+        "hypothesis": "John Glenn was the first man in orbit.",
+        "idx": 109,
+        "label": 1
+      }
+    },
+    {
+      "id": "b8e54fdec0185021",
+      "data": {
+        "premise": "The BBC's Tim Franks says frustrated British diplomats insist there have been several achievements but there is no doubt that the continued delay in reaching agreement on a budget for the EU hangs over all discussions.",
+        "hypothesis": "Diplomats agree on EU budget.",
+        "idx": 2294,
+        "label": 1
+      }
+    },
+    {
+      "id": "b26f23e32215e59e",
+      "data": {
+        "premise": "The Christian Democrats (CDU) won 35.2% of the vote, or 225 seats, against 34.3% for Chancellor Gerhard Schroeder's Social Democrats (SPD).",
+        "hypothesis": "It seems unlikely that there will be a coalition between Gerhard Schroeder's Social Democrats and Angela Merkel's Christian Democratic Union.",
+        "idx": 38,
+        "label": 1
+      }
+    },
+    {
+      "id": "67b5e21b9a010a50",
+      "data": {
+        "premise": "Former Chancellor Helmut Kohl, who stunned Germans with admission that he used illegal bank accounts to funnel secret money to Christian Democratic party, invokes personal honor in refusing to disclose names of people who gave more than $1 million between 1993 and 1998; scandal threatens to shred Kohl's place in history for reunifying Germany and leading Europe toward common currency.",
+        "hypothesis": "The name of Helmut Kohl's political party is the Christian Democratic Union.",
+        "idx": 331,
+        "label": 1
+      }
+    },
+    {
+      "id": "2c1a5973a62e56b8",
+      "data": {
+        "premise": "The outlawed Basque political party in Spain, Batasuna, called, on Monday, parties in the Basque Autonomous Government to boycott the parliament decision to ban it.",
+        "hypothesis": "Spain's Basque party calls for the boycott of a parliament decision.",
+        "idx": 2119,
+        "label": 0
+      }
+    },
+    {
+      "id": "784262fa32c34963",
+      "data": {
+        "premise": "Jill Pilgrim, general counsel of USA Track and Field, brought up the issue during a panel on women's sports at the sports lawyers conference. Pilgrim said the law regarding who is legally considered a woman is changing as sex-change operations become more common.",
+        "hypothesis": "Sex-change operations become more common.",
+        "idx": 932,
+        "label": 0
+      }
+    },
+    {
+      "id": "3d17f0aa98ebd0ec",
+      "data": {
+        "premise": "The borrowers must form five-member groups that, along with the bank's field workers, closely supervise the loans. Peer pressure substitutes for collateral because the group's first two borrowers have to start repaying the principal plus interest over a six-week period before the other members can take out loans. The interest rate is fixed at 16 percent.",
+        "hypothesis": "The first two borrowers must start repaying the principal plus interest over a six-week period.",
+        "idx": 300,
+        "label": 0
+      }
+    },
+    {
+      "id": "2ab63f8b44cc513d",
+      "data": {
+        "premise": "Instead of action on crime, we got the federal long gun registry, which became a bloated bureaucratic nightmare to responsible hunters, farmers and rural Canadians. It cost taxpayers some CA$2 billion and it hasn't done a thing to reduce gun crime. said Harper. The Conservatives have provided amnesty for unregistered gun owners. At this time there is no legislation set before the House of Commons. Conservative Garry Breitkreuz from Saskatchewan tabled the bill killing the long-gun registry.",
+        "hypothesis": "Garry Breitkreuz is a member of the Conservative Party.",
+        "idx": 50,
+        "label": 0
+      }
+    },
+    {
+      "id": "9a44a13d91c49f0e",
+      "data": {
+        "premise": "Then the most important part of the day begins as Muslims go to the mosque, their special place of worship.",
+        "hypothesis": "Muslims pray at the mosque.",
+        "idx": 1200,
+        "label": 0
+      }
+    }
+  ]
+}
